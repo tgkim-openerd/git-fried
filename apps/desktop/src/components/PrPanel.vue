@@ -4,7 +4,9 @@
 import { computed, ref } from 'vue'
 import { usePullRequests } from '@/composables/usePullRequests'
 import { describeError } from '@/api/errors'
+import { useStatus } from '@/composables/useStatus'
 import PrDetailModal from './PrDetailModal.vue'
+import CreatePrModal from './CreatePrModal.vue'
 import type { PrState, PullRequest } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -15,7 +17,11 @@ const { data: prs, isFetching, error } = usePullRequests(
   () => stateFilter.value,
 )
 
+const { data: status } = useStatus(() => props.repoId)
+const currentBranch = computed(() => status.value?.branch ?? '')
+
 const selectedNumber = ref<number | null>(null)
+const createOpen = ref(false)
 
 function stateColor(s: PrState): string {
   switch (s) {
@@ -68,22 +74,32 @@ function toggleBot(name: string) {
 <template>
   <div class="flex h-full flex-col">
     <header class="border-b border-border px-3 py-2">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-2">
         <h3 class="text-sm font-semibold">Pull Requests</h3>
-        <div class="flex gap-1 text-[10px]">
+        <div class="flex items-center gap-2">
+          <div class="flex gap-1 text-[10px]">
+            <button
+              v-for="s in [null, 'open', 'closed'] as (PrState | null)[]"
+              :key="String(s)"
+              type="button"
+              class="rounded px-1.5 py-0.5"
+              :class="
+                stateFilter === s
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground'
+              "
+              @click="stateFilter = s"
+            >
+              {{ s ?? 'all' }}
+            </button>
+          </div>
           <button
-            v-for="s in [null, 'open', 'closed'] as (PrState | null)[]"
-            :key="String(s)"
             type="button"
-            class="rounded px-1.5 py-0.5"
-            :class="
-              stateFilter === s
-                ? 'bg-accent text-accent-foreground'
-                : 'text-muted-foreground'
-            "
-            @click="stateFilter = s"
+            class="rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            :disabled="!repoId"
+            @click="createOpen = true"
           >
-            {{ s ?? 'all' }}
+            + 새 PR
           </button>
         </div>
       </div>
@@ -176,6 +192,15 @@ function toggleBot(name: string) {
       :number="selectedNumber"
       :open="selectedNumber != null"
       @close="selectedNumber = null"
+    />
+    <!-- 새 PR 생성 모달 -->
+    <CreatePrModal
+      :repo-id="repoId"
+      :open="createOpen"
+      :initial-head="currentBranch"
+      initial-base="main"
+      @close="createOpen = false"
+      @created="(n: number) => { createOpen = false; selectedNumber = n }"
     />
   </div>
 </template>
