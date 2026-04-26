@@ -4,9 +4,10 @@
 //   - 듀얼 레포 자동 그룹핑 (예: peeloff/frontend + peeloff/frontend-admin)
 //   - 워크스페이스 전체 일괄 Fetch 버튼
 import { computed } from 'vue'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { open } from '@tauri-apps/plugin-dialog'
-import { addRepo, bulkFetch, listRepos, listWorkspaces } from '@/api/git'
+import { addRepo, bulkFetch, listRepos, listWorkspaces, setRepoPinned } from '@/api/git'
+import { useMutation } from '@tanstack/vue-query'
 import { humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
@@ -71,6 +72,17 @@ async function pickAndAddRepo() {
 
 function selectRepo(id: number) {
   store.setActiveRepo(id)
+}
+
+const pinMut = useMutation({
+  mutationFn: ({ id, pinned }: { id: number; pinned: boolean }) =>
+    setRepoPinned(id, pinned),
+  onSuccess: () => qc.invalidateQueries({ queryKey: ['repos'] }),
+})
+
+function togglePin(repo: Repo, e: Event) {
+  e.stopPropagation()
+  pinMut.mutate({ id: repo.id, pinned: !repo.isPinned })
 }
 
 // === 듀얼 레포 그룹핑 ===
@@ -188,15 +200,30 @@ function parentDirName(p: string): string | null {
           <li
             v-for="repo in g.repos"
             :key="repo.id"
-            class="cursor-pointer rounded-md py-1 text-sm hover:bg-accent"
+            class="group cursor-pointer rounded-md py-1 text-sm hover:bg-accent"
             :class="[
               g.label ? 'pl-5 pr-2' : 'px-2',
               store.activeRepoId === repo.id ? 'bg-accent text-accent-foreground' : '',
             ]"
             @click="selectRepo(repo.id)"
           >
-            <div class="flex items-center justify-between">
-              <span class="truncate">{{ repo.name }}</span>
+            <div class="flex items-center justify-between gap-1">
+              <span class="flex flex-1 items-center gap-1 truncate">
+                <button
+                  type="button"
+                  class="shrink-0 text-xs"
+                  :class="
+                    repo.isPinned
+                      ? 'text-amber-500'
+                      : 'text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-amber-500'
+                  "
+                  :title="repo.isPinned ? 'Unpin' : 'Pin'"
+                  @click="togglePin(repo, $event)"
+                >
+                  {{ repo.isPinned ? '⭐' : '☆' }}
+                </button>
+                <span class="truncate">{{ repo.name }}</span>
+              </span>
               <span
                 v-if="repo.forgeKind !== 'unknown'"
                 class="ml-2 shrink-0 rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
@@ -207,6 +234,7 @@ function parentDirName(p: string): string | null {
             <div
               v-if="repo.defaultBranch"
               class="truncate text-[11px] text-muted-foreground"
+              :class="g.label ? 'pl-5' : 'pl-4'"
             >
               {{ repo.defaultBranch }}
             </div>

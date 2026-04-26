@@ -92,6 +92,7 @@ pub trait DbExt {
     ) -> AppResult<Repo>;
     async fn remove_repo(&self, id: i64) -> AppResult<()>;
     async fn get_repo(&self, id: i64) -> AppResult<Repo>;
+    async fn set_repo_pinned(&self, id: i64, pinned: bool) -> AppResult<Repo>;
 }
 
 #[async_trait::async_trait]
@@ -242,6 +243,16 @@ impl DbExt for Db {
             last_fetched_at: r.try_get("last_fetched_at")?,
             is_pinned: r.try_get::<i64, _>("is_pinned")? != 0,
         })
+    }
+
+    async fn set_repo_pinned(&self, id: i64, pinned: bool) -> AppResult<Repo> {
+        sqlx::query("UPDATE repos SET is_pinned = ? WHERE id = ?")
+            .bind(if pinned { 1i64 } else { 0i64 })
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::Db)?;
+        self.get_repo(id).await
     }
 }
 

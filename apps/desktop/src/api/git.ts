@@ -34,6 +34,9 @@ export const addRepo = (args: AddRepoArgs): Promise<Repo> =>
 export const removeRepo = (id: number): Promise<void> =>
   invoke('remove_repo', { id })
 
+export const setRepoPinned = (id: number, pinned: boolean): Promise<Repo> =>
+  invoke('set_repo_pinned', { args: { id, pinned } })
+
 // --- Git read ---
 export const getLog = (args: GetLogArgs): Promise<CommitSummary[]> =>
   invoke('get_log', { args })

@@ -67,6 +67,7 @@ pub fn run() {
             ipc::commands::list_repos,
             ipc::commands::add_repo,
             ipc::commands::remove_repo,
+            ipc::commands::set_repo_pinned,
             ipc::commands::get_log,
             ipc::commands::get_status,
             ipc::commands::stage_paths,

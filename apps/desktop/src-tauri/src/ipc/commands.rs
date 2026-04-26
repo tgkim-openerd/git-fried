@@ -116,6 +116,21 @@ pub async fn remove_repo(
     state.db.remove_repo(id).await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetPinnedArgs {
+    pub id: i64,
+    pub pinned: bool,
+}
+
+#[tauri::command]
+pub async fn set_repo_pinned(
+    args: SetPinnedArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Repo> {
+    state.db.set_repo_pinned(args.id, args.pinned).await
+}
+
 // ====== 헬퍼: repo_id → 로컬 경로 ======
 
 async fn repo_path(state: &Arc<AppState>, repo_id: i64) -> AppResult<PathBuf> {

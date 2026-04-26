@@ -8,6 +8,7 @@ import SyncTemplateModal from './components/SyncTemplateModal.vue'
 import BisectModal from './components/BisectModal.vue'
 import ReflogModal from './components/ReflogModal.vue'
 import ToastContainer from './components/ToastContainer.vue'
+import RepoSwitcherModal from './components/RepoSwitcherModal.vue'
 import { useTheme } from '@/composables/useTheme'
 import { RouterLink } from 'vue-router'
 
@@ -22,6 +23,17 @@ function openSyncTemplate(sha?: string) {
 }
 const bisectOpen = ref(false)
 const reflogOpen = ref(false)
+const repoSwitcherOpen = ref(false)
+
+// ⌘⇧P 빠른 레포 전환 단축키 (Command Palette ⌘P 와 다름).
+function onKeydown(e: KeyboardEvent) {
+  const meta = e.metaKey || e.ctrlKey
+  if (meta && e.shiftKey && e.key.toLowerCase() === 'p') {
+    e.preventDefault()
+    repoSwitcherOpen.value = !repoSwitcherOpen.value
+  }
+}
+window.addEventListener('keydown', onKeydown)
 
 interface GlobalHandles {
   gitFriedOpenSyncTemplate?: typeof openSyncTemplate
@@ -84,6 +96,10 @@ w.gitFriedOpenReflog = () => (reflogOpen.value = true)
     />
     <BisectModal :open="bisectOpen" @close="bisectOpen = false" />
     <ReflogModal :open="reflogOpen" @close="reflogOpen = false" />
+    <RepoSwitcherModal
+      :open="repoSwitcherOpen"
+      @close="repoSwitcherOpen = false"
+    />
     <ToastContainer />
   </div>
 </template>
