@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // PR 패널 — 현재 레포의 PR 목록 (Gitea / GitHub) + 상세 read-only.
 // v0.1 S5: list + detail. PR 코멘트 / 리뷰는 v1.0.
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { usePullRequests } from '@/composables/usePullRequests'
 import { getPullRequest } from '@/api/git'
@@ -17,13 +17,13 @@ const { data: prs, isFetching, error } = usePullRequests(
 
 const selectedNumber = ref<number | null>(null)
 const { data: detail } = useQuery({
-  queryKey: () => ['pr', props.repoId, selectedNumber.value] as const,
+  queryKey: computed(() => ['pr', props.repoId, selectedNumber.value]),
   queryFn: () => {
     if (props.repoId == null || selectedNumber.value == null)
       return Promise.reject(new Error('no selection'))
     return getPullRequest(props.repoId, selectedNumber.value)
   },
-  enabled: () => props.repoId != null && selectedNumber.value != null,
+  enabled: computed(() => props.repoId != null && selectedNumber.value != null),
 })
 
 function stateColor(s: PrState): string {

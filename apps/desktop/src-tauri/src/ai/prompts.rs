@@ -142,7 +142,7 @@ mod tests {
     fn test_commit_prompt_includes_diff_and_recent() {
         let p = commit_message_prompt(
             "diff --git a/foo.rs b/foo.rs\n+hello",
-            &vec!["feat: 첫 커밋".to_string()],
+            &["feat: 첫 커밋".to_string()],
         );
         assert!(p.contains("Conventional"));
         assert!(p.contains("hello"));

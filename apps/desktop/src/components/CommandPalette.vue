@@ -22,44 +22,52 @@ const open = ref(false)
 const filter = ref('')
 const selected = ref(0)
 
-// 등록된 명령어 (정적 — 추후 plugin 으로 확장 가능)
-const allCommands = computed<Cmd[]>(() => [
-  {
-    id: 'go.home',
-    label: '홈으로',
-    hint: 'navigate /',
-    action: () => router.push('/'),
-  },
-  {
-    id: 'go.settings',
-    label: '설정 / Forge 계정',
-    hint: 'navigate /settings',
-    action: () => router.push('/settings'),
-  },
-  {
-    id: 'workspace.all',
-    label: '워크스페이스: 전체',
-    action: () => store.setActiveWorkspace(null),
-  },
-  {
-    id: 'refetch.all',
-    label: '모든 쿼리 무효화',
-    hint: 'invalidate everything',
-    action: () => qc.invalidateQueries(),
-  },
-  {
-    id: 'theme.toggle',
-    label: '다크/라이트 모드 토글',
-    action: () => {
-      const root = document.documentElement
-      root.classList.toggle('dark')
-      localStorage.setItem(
-        'git-fried.theme',
-        root.classList.contains('dark') ? 'dark' : 'light',
-      )
+// 등록된 명령어 (정적 — 추후 plugin 으로 확장 가능).
+// computed 의 return 을 `Cmd[]` 로 명시 (union 추론 회피).
+const allCommands = computed<Cmd[]>(() => {
+  const list: Cmd[] = [
+    {
+      id: 'go.home',
+      label: '홈으로',
+      hint: 'navigate /',
+      action: () => {
+        router.push('/')
+      },
     },
-  },
-])
+    {
+      id: 'go.settings',
+      label: '설정 / Forge 계정',
+      hint: 'navigate /settings',
+      action: () => {
+        router.push('/settings')
+      },
+    },
+    {
+      id: 'workspace.all',
+      label: '워크스페이스: 전체',
+      action: () => store.setActiveWorkspace(null),
+    },
+    {
+      id: 'refetch.all',
+      label: '모든 쿼리 무효화',
+      hint: 'invalidate everything',
+      action: () => qc.invalidateQueries(),
+    },
+    {
+      id: 'theme.toggle',
+      label: '다크/라이트 모드 토글',
+      action: () => {
+        const root = document.documentElement
+        root.classList.toggle('dark')
+        localStorage.setItem(
+          'git-fried.theme',
+          root.classList.contains('dark') ? 'dark' : 'light',
+        )
+      },
+    },
+  ]
+  return list
+})
 
 const filtered = computed(() => {
   const q = filter.value.trim().toLowerCase()

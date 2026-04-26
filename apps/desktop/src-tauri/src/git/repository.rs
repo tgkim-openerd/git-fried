@@ -126,7 +126,7 @@ fn collect_refs_map(
         };
         let oid: Option<Oid> = r
             .target()
-            .or_else(|| r.peel(ObjectType::Commit).ok().and_then(|o| Some(o.id())));
+            .or_else(|| r.peel(ObjectType::Commit).ok().map(|o| o.id()));
         if let Some(oid) = oid {
             map.entry(oid.to_string()).or_default().push(name);
         }
@@ -199,7 +199,7 @@ pub fn parse_forge(url: Option<&str>) -> (ForgeKindLite, Option<String>, Option<
         .replace("ssh://", "");
     // host[:port]/owner/repo OR host:owner/repo
     let parts: Vec<&str> = cleaned
-        .split(|c: char| c == '/' || c == ':')
+        .split(['/', ':'])
         .filter(|s| !s.is_empty())
         .collect();
     if parts.len() < 3 {

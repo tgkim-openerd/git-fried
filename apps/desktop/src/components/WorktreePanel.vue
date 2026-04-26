@@ -60,6 +60,12 @@ function fmtSize(bytes: number | null): string {
 function isAiAgent(branch: string | null): boolean {
   return !!branch && /worktree-agent-/i.test(branch)
 }
+
+function confirmRemove(path: string) {
+  if (window.confirm(`worktree '${path}' 제거?`)) {
+    removeMut.mutate({ p: path, force: false })
+  }
+}
 </script>
 
 <template>
@@ -124,10 +130,7 @@ function isAiAgent(branch: string | null): boolean {
             <button
               type="button"
               class="text-[10px] text-destructive hover:underline"
-              @click="
-                confirm(`worktree '${t.path}' 제거?`) &&
-                removeMut.mutate({ p: t.path, force: false })
-              "
+              @click="confirmRemove(t.path)"
             >
               remove
             </button>

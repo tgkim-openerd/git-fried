@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import VueRouter from 'unplugin-vue-router/vite'
+import { VueRouterAutoImports } from 'unplugin-vue-router'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { fileURLToPath, URL } from 'node:url'
@@ -21,8 +22,7 @@ export default defineConfig({
       imports: [
         'vue',
         'pinia',
-        'vue-router/auto',
-        '@vueuse/core',
+        VueRouterAutoImports,
         {
           '@tanstack/vue-query': [
             'useQuery',

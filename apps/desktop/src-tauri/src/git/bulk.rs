@@ -49,7 +49,7 @@ pub async fn bulk_fetch(
             Ok(r) => out.push(r),
             Err(e) => out.push(BulkResult {
                 repo_id: -1,
-                repo_name: format!("(join error)"),
+                repo_name: "(join error)".to_string(),
                 success: false,
                 data: None,
                 error: Some(e.to_string()),

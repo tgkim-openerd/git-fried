@@ -216,7 +216,7 @@ fn test_nfc_normalization_in_decode() {
     let nfd: String = "한".nfd().collect();
     let nfc: String = nfd.nfc().collect();
     assert_eq!(nfc, "한");
-    assert_ne!(nfd.as_bytes().len(), nfc.as_bytes().len());
+    assert_ne!(nfd.len(), nfc.len());
 }
 
 // ====== Phase 2 (v0.1 Sprint 1) 테스트 ======

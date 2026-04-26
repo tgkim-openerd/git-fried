@@ -1,3 +1,7 @@
+// v0.x 단계 허용 — DbExt::add_repo 같은 8개 인자 함수.
+// 추후 builder pattern 또는 args struct 로 리팩토링 시 제거.
+#![allow(clippy::too_many_arguments)]
+
 // 앱 진입점 라이브러리 — Tauri 빌더 + state + plugin + IPC 등록.
 //
 // 모듈 구조:

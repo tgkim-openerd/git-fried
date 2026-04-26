@@ -58,7 +58,7 @@ pub async fn bulk_cherry_pick(
             Ok(r) => out.push(r),
             Err(e) => out.push(CherryPickResult {
                 repo_id: -1,
-                repo_name: format!("(join error)"),
+                repo_name: "(join error)".to_string(),
                 success: false,
                 stdout: String::new(),
                 stderr: e.to_string(),

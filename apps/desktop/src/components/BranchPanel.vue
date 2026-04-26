@@ -51,7 +51,7 @@ const deleteMut = useMutation({
 
 function onSwitch(b: BranchInfo) {
   if (props.repoId == null) return
-  if (b.is_head) return
+  if (b.isHead) return
   switchMut.mutate({ id: props.repoId, name: localName(b.name) })
 }
 
@@ -124,17 +124,17 @@ function localName(name: string): string {
           v-for="b in filtered"
           :key="`${b.kind}-${b.name}`"
           class="group flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent/40"
-          :class="b.is_head ? 'bg-accent/60 font-semibold' : ''"
+          :class="b.isHead ? 'bg-accent/60 font-semibold' : ''"
           @dblclick="onSwitch(b)"
         >
-          <span class="w-3 text-[10px]">{{ b.is_head ? '●' : '' }}</span>
+          <span class="w-3 text-[10px]">{{ b.isHead ? '●' : '' }}</span>
           <span class="flex-1 truncate font-mono text-xs">{{ b.name }}</span>
           <span v-if="b.ahead || b.behind" class="text-[10px]">
             <span v-if="b.ahead" class="text-emerald-500">↑{{ b.ahead }}</span>
             <span v-if="b.behind" class="ml-0.5 text-rose-500">↓{{ b.behind }}</span>
           </span>
           <button
-            v-if="!b.is_head && b.kind === 'local'"
+            v-if="!b.isHead && b.kind === 'local'"
             type="button"
             class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-destructive"
             title="삭제"
