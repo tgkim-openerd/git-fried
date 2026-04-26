@@ -7,4 +7,4 @@
 //     → 컴파일 타임 schema 의존 제거 (offline 빌드에서도 OK)
 pub mod db;
 
-pub use db::{Db, DbExt};
+pub use db::{Db, DbExt, Repo, Workspace};

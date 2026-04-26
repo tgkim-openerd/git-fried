@@ -8,8 +8,7 @@
 //   5. git CLI 표준 spawn: core.quotepath=false 정상 주입
 
 use super::repository::{detect_meta, log, open, parse_forge, ForgeKindLite};
-use super::runner::{commit_with_message, git_run, git_version, GitRunOpts};
-use std::path::Path;
+use super::runner::{commit_with_message, git_run, git_version};
 use tempfile::TempDir;
 
 /// 임시 디렉토리에 git init 한 새 레포 생성.

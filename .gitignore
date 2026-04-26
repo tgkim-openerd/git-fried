@@ -13,10 +13,10 @@ dist-ssr/
 target/
 *.tsbuildinfo
 
-# tauri
-src-tauri/target/
-src-tauri/gen/
-src-tauri/WixTools/
+# tauri (gitignore 패턴은 separator 있으면 root-relative — apps/* 와 매칭되도록 ** 사용)
+**/src-tauri/target/
+**/src-tauri/gen/
+**/src-tauri/WixTools/
 
 # vite auto-generated
 auto-imports.d.ts
