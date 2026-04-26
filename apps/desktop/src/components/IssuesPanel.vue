@@ -4,6 +4,7 @@
 import { useIssues } from '@/composables/useIssuesReleases'
 import { describeError } from '@/api/errors'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import UserAvatar from './UserAvatar.vue'
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: issues, isFetching, error } = useIssues(() => props.repoId)
@@ -45,6 +46,11 @@ function fmtDate(unix: number): string {
             </div>
             <div class="truncate text-sm">{{ i.title }}</div>
             <div class="text-[11px] text-muted-foreground">
+              <UserAvatar
+                :username="i.author.username"
+                :avatar-url="i.author.avatarUrl"
+                size-class="w-3.5 h-3.5"
+              />
               {{ i.author.username }} · 💬 {{ i.comments }}
             </div>
             <div v-if="i.labels.length" class="mt-0.5 flex flex-wrap gap-1">

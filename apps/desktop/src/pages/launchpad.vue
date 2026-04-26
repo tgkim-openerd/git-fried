@@ -18,6 +18,7 @@ import {
 } from '@/composables/useLaunchpadMeta'
 import { useToast } from '@/composables/useToast'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const store = useReposStore()
 const toast = useToast()
@@ -379,7 +380,16 @@ function applyView(v: { filterJson: string }) {
                     </span>
                   </template>
                 </td>
-                <td class="truncate px-2 py-1 text-xs">{{ row.pr.author.username }}</td>
+                <td class="truncate px-2 py-1 text-xs">
+                  <span class="inline-flex items-center gap-1">
+                    <UserAvatar
+                      :username="row.pr.author.username"
+                      :avatar-url="row.pr.author.avatarUrl"
+                      size-class="w-4 h-4"
+                    />
+                    {{ row.pr.author.username }}
+                  </span>
+                </td>
                 <td class="truncate px-2 py-1 font-mono text-[10px] text-muted-foreground">
                   {{ row.pr.headBranch }}
                 </td>
@@ -521,7 +531,14 @@ function applyView(v: { filterJson: string }) {
                   </a>
                 </td>
                 <td class="px-2 py-1 text-xs text-muted-foreground w-28">
-                  {{ row.pr.author.username }}
+                  <span class="inline-flex items-center gap-1">
+                    <UserAvatar
+                      :username="row.pr.author.username"
+                      :avatar-url="row.pr.author.avatarUrl"
+                      size-class="w-4 h-4"
+                    />
+                    {{ row.pr.author.username }}
+                  </span>
                 </td>
               </tr>
             </tbody>

@@ -7,6 +7,7 @@ import { describeError } from '@/api/errors'
 import { useStatus } from '@/composables/useStatus'
 import PrDetailModal from './PrDetailModal.vue'
 import CreatePrModal from './CreatePrModal.vue'
+import UserAvatar from './UserAvatar.vue'
 import type { PrState, PullRequest } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -130,7 +131,14 @@ function toggleBot(name: string) {
           </div>
           <div class="truncate text-sm">{{ pr.title }}</div>
           <div class="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>{{ pr.author.username }}</span>
+            <span class="flex items-center gap-1">
+              <UserAvatar
+                :username="pr.author.username"
+                :avatar-url="pr.author.avatarUrl"
+                size-class="w-4 h-4"
+              />
+              {{ pr.author.username }}
+            </span>
             <span>{{ pr.headBranch }} → {{ pr.baseBranch }}</span>
           </div>
           <div v-if="pr.labels.length" class="mt-0.5 flex flex-wrap gap-1">

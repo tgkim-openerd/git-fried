@@ -21,6 +21,7 @@ import { useToast } from '@/composables/useToast'
 import { useNotification } from '@/composables/useNotification'
 import { notifyAiDone } from '@/composables/useAiCli'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import UserAvatar from './UserAvatar.vue'
 import type {
   AiCli,
   MergeMethod,
@@ -274,7 +275,12 @@ const aiReviewMut = useMutation({
           </div>
 
           <div v-if="detailQuery.data.value" class="mb-4">
-            <div class="text-xs text-muted-foreground">
+            <div class="flex items-center gap-1 text-xs text-muted-foreground">
+              <UserAvatar
+                :username="detailQuery.data.value.author.username"
+                :avatar-url="detailQuery.data.value.author.avatarUrl"
+                size-class="w-4 h-4"
+              />
               {{ detailQuery.data.value.author.username }} ·
               {{ fmtDate(detailQuery.data.value.createdAt) }}
               · {{ detailQuery.data.value.headBranch }} → {{ detailQuery.data.value.baseBranch }}
@@ -296,7 +302,14 @@ const aiReviewMut = useMutation({
               class="rounded border border-border bg-muted/20 p-2"
             >
               <div class="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>{{ c.author.username }}</span>
+                <span class="flex items-center gap-1">
+                  <UserAvatar
+                    :username="c.author.username"
+                    :avatar-url="c.author.avatarUrl"
+                    size-class="w-3.5 h-3.5"
+                  />
+                  {{ c.author.username }}
+                </span>
                 <span>{{ fmtDate(c.createdAt) }}</span>
               </div>
               <pre class="mt-1 whitespace-pre-wrap font-mono text-[12px]">{{ c.bodyMd }}</pre>
