@@ -608,6 +608,20 @@ export function inferBaseUrl(forgeKind: string): string {
   return forgeKind === 'gitea' ? 'gitea-default' : 'github.com'
 }
 
+// === Conflict Prediction (Sprint B2 / docs/plan/11 §20) ===
+export interface ConflictPrediction {
+  ok: boolean
+  target: string
+  conflictFiles: string[]
+  note: string | null
+}
+
+export const predictTargetConflict = (
+  repoId: number,
+  target?: string | null,
+): Promise<ConflictPrediction> =>
+  invoke('predict_target_conflict', { args: { repoId, target } })
+
 // === Repo alias (Sprint B4 / docs/plan/11 §15) ===
 export interface RepoAlias {
   profileId: number | null

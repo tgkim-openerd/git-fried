@@ -11,6 +11,7 @@ import ToastContainer from './components/ToastContainer.vue'
 import RepoSwitcherModal from './components/RepoSwitcherModal.vue'
 import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
+import StatusBar from './components/StatusBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
@@ -129,6 +130,7 @@ w.gitFriedOpenReflog = () => (reflogOpen.value = true)
         </button>
       </div>
       <RouterView class="flex-1 overflow-hidden" />
+      <StatusBar />
     </main>
     <CommandPalette />
     <SyncTemplateModal

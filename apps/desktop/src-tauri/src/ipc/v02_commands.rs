@@ -3,8 +3,9 @@
 use crate::ai;
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    bisect as git_bisect, cherry_pick as git_cp, file_history as git_fh, lfs as git_lfs,
-    merge as git_merge, rebase as git_rebase, reflog as git_reflog, worktree as git_wt,
+    bisect as git_bisect, cherry_pick as git_cp, conflict_prediction as git_cp_pred,
+    file_history as git_fh, lfs as git_lfs, merge as git_merge, rebase as git_rebase,
+    reflog as git_reflog, worktree as git_wt,
 };
 use crate::AppState;
 use serde::Deserialize;
@@ -555,6 +556,35 @@ pub async fn ai_pr_body(
 
     let prompt = ai::pr_body_prompt(&commits, &stat, &args.head_branch, &args.base_branch);
     ai::ai_run(args.cli, &prompt).await
+}
+
+// ====== Conflict Prediction (Sprint B2 / `docs/plan/11 §20`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PredictConflictArgs {
+    pub repo_id: i64,
+    /// 비교 대상 (예: 'origin/main' 또는 'main'). 비어있으면 default_branch 사용.
+    pub target: Option<String>,
+}
+
+#[tauri::command]
+pub async fn predict_target_conflict(
+    args: PredictConflictArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_cp_pred::ConflictPrediction> {
+    use crate::storage::DbExt;
+    let repo = state.db.get_repo(args.repo_id).await?;
+    let path = std::path::PathBuf::from(&repo.local_path);
+    let target = args
+        .target
+        .or_else(|| {
+            repo.default_branch
+                .as_ref()
+                .map(|b| format!("origin/{b}"))
+        })
+        .unwrap_or_else(|| "origin/main".to_string());
+    git_cp_pred::predict(&path, &target).await
 }
 
 // ====== AI explain / stash (Sprint B7 / `docs/plan/11 §18`) ======

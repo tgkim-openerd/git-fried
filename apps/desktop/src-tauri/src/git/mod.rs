@@ -9,6 +9,7 @@ pub mod branch;
 pub mod bulk;
 pub mod cherry_pick;
 pub mod commit;
+pub mod conflict_prediction;
 pub mod diff;
 pub mod file_history;
 pub mod graph;
