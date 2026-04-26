@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { listRepos } from '@/api/git'
 import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
+import { useRepoAliases } from '@/composables/useRepoAliases'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -22,30 +23,39 @@ const { data: repos } = useQuery({
   staleTime: 30_000,
 })
 
+const aliases = useRepoAliases()
+
+function aliasOrName(r: Repo): string {
+  return aliases.resolveLocal(r.id, r.name).display
+}
+
 const filtered = computed<Repo[]>(() => {
   const q = filter.value.trim().toLowerCase()
   const list = repos.value ?? []
   if (!q) {
-    // pinned 우선, 그 다음 알파벳
+    // pinned 우선, 그 다음 alias/이름 알파벳
     return [...list].sort((a, b) => {
       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
-      return a.name.localeCompare(b.name)
+      return aliasOrName(a).localeCompare(aliasOrName(b))
     })
   }
   return list
-    .filter(
-      (r) =>
+    .filter((r) => {
+      const display = aliasOrName(r).toLowerCase()
+      return (
+        display.includes(q) ||
         r.name.toLowerCase().includes(q) ||
         r.localPath.toLowerCase().includes(q) ||
-        (r.forgeOwner ?? '').toLowerCase().includes(q),
-    )
+        (r.forgeOwner ?? '').toLowerCase().includes(q)
+      )
+    })
     .sort((a, b) => {
       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
-      // 매칭 점수: name startsWith > 포함
-      const aStart = a.name.toLowerCase().startsWith(q)
-      const bStart = b.name.toLowerCase().startsWith(q)
+      // 매칭 점수: alias/name startsWith > 포함
+      const aStart = aliasOrName(a).toLowerCase().startsWith(q)
+      const bStart = aliasOrName(b).toLowerCase().startsWith(q)
       if (aStart !== bStart) return aStart ? -1 : 1
-      return a.name.localeCompare(b.name)
+      return aliasOrName(a).localeCompare(aliasOrName(b))
     })
 })
 
@@ -121,7 +131,19 @@ function onKeydown(e: KeyboardEvent) {
             <div class="flex items-center justify-between gap-2">
               <span class="flex items-center gap-2 truncate">
                 <span v-if="r.isPinned" class="text-amber-500">⭐</span>
-                <span class="font-medium">{{ r.name }}</span>
+                <span
+                  class="font-medium"
+                  :class="aliases.resolveLocal(r.id, r.name).aliased ? 'italic' : ''"
+                >
+                  {{ aliases.resolveLocal(r.id, r.name).display }}
+                </span>
+                <span
+                  v-if="aliases.resolveLocal(r.id, r.name).aliased"
+                  class="text-[10px] text-muted-foreground"
+                  :title="`원본: ${r.name}`"
+                >
+                  ({{ r.name }})
+                </span>
                 <span
                   v-if="r.forgeKind !== 'unknown'"
                   class="rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"

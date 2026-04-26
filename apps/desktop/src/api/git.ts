@@ -604,6 +604,36 @@ export function inferBaseUrl(forgeKind: string): string {
   return forgeKind === 'gitea' ? 'gitea-default' : 'github.com'
 }
 
+// === Repo alias (Sprint B4 / docs/plan/11 §15) ===
+export interface RepoAlias {
+  profileId: number | null
+  repoId: number
+  alias: string
+  updatedAt: number
+}
+
+export const listAllRepoAliases = (): Promise<RepoAlias[]> =>
+  invoke('list_all_repo_aliases')
+
+export const resolveRepoAlias = (
+  repoId: number,
+  profileId: number | null,
+): Promise<string | null> =>
+  invoke('resolve_repo_alias', { args: { repoId, profileId } })
+
+export const setRepoAlias = (
+  repoId: number,
+  profileId: number | null,
+  alias: string,
+): Promise<RepoAlias> =>
+  invoke('set_repo_alias', { args: { repoId, profileId, alias } })
+
+export const unsetRepoAlias = (
+  repoId: number,
+  profileId: number | null,
+): Promise<void> =>
+  invoke('unset_repo_alias', { args: { repoId, profileId } })
+
 // === Hide branches (docs/plan/11 §5d / Sprint A1) ===
 export type HiddenRefKind = 'branch' | 'remote' | 'tag' | 'stash'
 

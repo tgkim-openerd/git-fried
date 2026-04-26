@@ -20,6 +20,7 @@ import { useMutation } from '@tanstack/vue-query'
 import { humanizeGitError, describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
+import { useRepoAliases } from '@/composables/useRepoAliases'
 import type { Repo } from '@/types/git'
 
 // Sprint B9 — Sidebar 그룹핑 모드 (디렉토리 / org) + workspace color 편집.
@@ -235,6 +236,39 @@ function confirmDeleteWorkspace() {
   ) {
     deleteWorkspaceMut.mutate(w.id)
   }
+}
+
+// === Repo alias (Sprint B4) ===
+const aliases = useRepoAliases()
+const editingAliasRepoId = ref<number | null>(null)
+const editingAliasValue = ref('')
+const editingAliasScope = ref<'profile' | 'global'>('profile')
+
+function startEditAlias(r: Repo) {
+  editingAliasRepoId.value = r.id
+  editingAliasValue.value = aliases.activeAliasFor(r.id) ?? ''
+  editingAliasScope.value =
+    aliases.activeProfileId.value != null ? 'profile' : 'global'
+}
+
+function commitEditAlias() {
+  const id = editingAliasRepoId.value
+  if (id == null) return
+  const v = editingAliasValue.value.trim()
+  const profileId =
+    editingAliasScope.value === 'profile'
+      ? aliases.activeProfileId.value
+      : null
+  if (!v) {
+    aliases.unsetMut.mutate({ repoId: id, profileId })
+  } else {
+    aliases.setMut.mutate({ repoId: id, profileId, alias: v })
+  }
+  editingAliasRepoId.value = null
+}
+
+function cancelEditAlias() {
+  editingAliasRepoId.value = null
 }
 </script>
 
@@ -454,7 +488,47 @@ function confirmDeleteWorkspace() {
                 >
                   {{ repo.isPinned ? '⭐' : '☆' }}
                 </button>
-                <span class="truncate">{{ repo.name }}</span>
+                <template v-if="editingAliasRepoId === repo.id">
+                  <input
+                    v-model="editingAliasValue"
+                    autofocus
+                    class="flex-1 rounded border border-input bg-background px-1 py-0.5 text-xs"
+                    :placeholder="repo.name"
+                    @click.stop
+                    @keyup.enter.stop="commitEditAlias"
+                    @keyup.esc.stop="cancelEditAlias"
+                    @blur="commitEditAlias"
+                  />
+                  <select
+                    :value="editingAliasScope"
+                    class="rounded border border-input bg-background px-1 py-0.5 text-[10px]"
+                    @click.stop
+                    @change="(e) => (editingAliasScope = (e.target as HTMLSelectElement).value as 'profile' | 'global')"
+                  >
+                    <option
+                      value="profile"
+                      :disabled="aliases.activeProfileId.value == null"
+                    >
+                      profile
+                    </option>
+                    <option value="global">global</option>
+                  </select>
+                </template>
+                <template v-else>
+                  <span class="flex-1 truncate" :title="aliases.resolveLocal(repo.id, repo.name).aliased ? `별칭 (원본: ${repo.name})` : repo.name">
+                    <span :class="aliases.resolveLocal(repo.id, repo.name).aliased ? 'italic' : ''">
+                      {{ aliases.resolveLocal(repo.id, repo.name).display }}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    class="shrink-0 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
+                    title="별칭 편집"
+                    @click.stop="startEditAlias(repo)"
+                  >
+                    ✏
+                  </button>
+                </template>
               </span>
               <span
                 v-if="repo.forgeKind !== 'unknown'"

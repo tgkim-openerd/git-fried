@@ -10,6 +10,7 @@
 //   - storage: SQLite + sqlx + 마이그레이션
 //   - ipc: Tauri commands (#[tauri::command])
 pub mod ai;
+pub mod alias;
 pub mod auth;
 pub mod error;
 pub mod forge;
@@ -181,6 +182,10 @@ pub fn run() {
             ipc::launchpad_commands::launchpad_list_views,
             ipc::launchpad_commands::launchpad_save_view,
             ipc::launchpad_commands::launchpad_delete_view,
+            ipc::alias_commands::list_all_repo_aliases,
+            ipc::alias_commands::resolve_repo_alias,
+            ipc::alias_commands::set_repo_alias,
+            ipc::alias_commands::unset_repo_alias,
             ipc::profile_commands::list_profiles,
             ipc::profile_commands::create_profile,
             ipc::profile_commands::update_profile,
