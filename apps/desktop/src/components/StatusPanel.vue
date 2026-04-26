@@ -8,16 +8,20 @@ import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import {
   discardPaths,
+  launchMergetool,
   stageAll,
   stagePaths,
   unstagePaths,
 } from '@/api/git'
+import { describeError } from '@/api/errors'
 import { useShortcut } from '@/composables/useShortcuts'
+import { useToast } from '@/composables/useToast'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
 import type { ChangeStatus, FileChange } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
+const toast = useToast()
 const { data: status, isFetching } = useStatus(() => props.repoId)
 const invalidate = useInvalidateRepoQueries()
 
@@ -94,6 +98,30 @@ const mergeOpen = ref(false)
 function openMerge(path: string) {
   mergePath.value = path
   mergeOpen.value = true
+}
+
+// Sprint C6 — 외부 merge tool launch
+const mergetoolMut = useMutation({
+  mutationFn: ({ p }: { p: string }) => {
+    if (props.repoId == null) return Promise.reject(new Error('no repo'))
+    return launchMergetool(props.repoId, p, null)
+  },
+  onSuccess: (res) => {
+    if (res.success) {
+      toast.success('Mergetool 종료', '')
+      invalidate(props.repoId)
+    } else {
+      toast.error(
+        'Mergetool 실패',
+        res.stderr.slice(0, 200) || `exit ${res.exitCode}`,
+      )
+    }
+  },
+  onError: (e) => toast.error('Mergetool 호출 실패', describeError(e)),
+})
+function onLaunchMergetool(p: string) {
+  if (props.repoId == null) return
+  mergetoolMut.mutate({ p })
 }
 
 function statusColor(s: ChangeStatus): string {
@@ -326,6 +354,15 @@ const isSelected = computed(
             class="group flex items-center gap-2 rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
           >
             <span class="flex-1 truncate font-mono">! {{ p }}</span>
+            <button
+              type="button"
+              class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+              :title="`외부 mergetool (git config merge.tool)`"
+              :disabled="mergetoolMut.isPending.value"
+              @click="onLaunchMergetool(p)"
+            >
+              🛠
+            </button>
             <button
               type="button"
               class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"

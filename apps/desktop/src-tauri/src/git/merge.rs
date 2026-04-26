@@ -89,6 +89,30 @@ pub async fn write_resolved(
     Ok(())
 }
 
+/// 외부 merge tool 실행 (Sprint C6 — `docs/plan/11 §9`).
+///
+/// `git mergetool` 호출. git config 의 `merge.tool` 사용 (Beyond Compare /
+/// P4Merge / Kaleidoscope / vimdiff 등). 사용자 사전 설정 필수.
+///
+/// `tool` 명시 시 `--tool=<name>` 사용. `file` 명시 시 단일 파일만.
+/// blocking 동작 — 도구가 종료될 때까지 대기.
+pub async fn launch_mergetool(
+    path: &Path,
+    tool: Option<&str>,
+    file: Option<&str>,
+) -> AppResult<crate::git::runner::GitOutput> {
+    let mut args: Vec<String> = vec!["mergetool".into(), "--no-prompt".into()];
+    if let Some(t) = tool.filter(|s| !s.trim().is_empty()) {
+        args.push(format!("--tool={t}"));
+    }
+    if let Some(f) = file.filter(|s| !s.trim().is_empty()) {
+        args.push("--".into());
+        args.push(f.into());
+    }
+    let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+    git_run(path, &refs, &GitRunOpts::default()).await
+}
+
 /// 충돌 해결을 포기하고 ours 또는 theirs 버전으로 덮어쓰기.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

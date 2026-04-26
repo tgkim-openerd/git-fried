@@ -141,6 +141,7 @@ pub fn run() {
             ipc::v02_commands::read_conflicted,
             ipc::v02_commands::write_resolved,
             ipc::v02_commands::take_side,
+            ipc::v02_commands::launch_mergetool,
             ipc::v02_commands::bisect_status,
             ipc::v02_commands::bisect_start,
             ipc::v02_commands::bisect_mark,

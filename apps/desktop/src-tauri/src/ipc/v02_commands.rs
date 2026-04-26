@@ -198,6 +198,45 @@ pub async fn take_side(
     git_merge::take_side(&path, &args.path, args.side).await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LaunchMergetoolArgs {
+    pub repo_id: i64,
+    /// merge tool 이름 (선택, git config merge.tool 사용 시 None).
+    pub tool: Option<String>,
+    /// 특정 파일만 (선택, 전체 conflicted 파일 처리 시 None).
+    pub file: Option<String>,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MergetoolResult {
+    pub success: bool,
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: Option<i32>,
+}
+
+#[tauri::command]
+pub async fn launch_mergetool(
+    args: LaunchMergetoolArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<MergetoolResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let out = git_merge::launch_mergetool(
+        &path,
+        args.tool.as_deref(),
+        args.file.as_deref(),
+    )
+    .await?;
+    Ok(MergetoolResult {
+        success: out.exit_code == Some(0),
+        stdout: out.stdout,
+        stderr: out.stderr,
+        exit_code: out.exit_code,
+    })
+}
+
 // ====== Bisect ======
 
 #[tauri::command]

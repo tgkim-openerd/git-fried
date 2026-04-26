@@ -230,6 +230,21 @@ export const takeSide = (
   side: SideTake,
 ): Promise<void> => invoke('take_side', { args: { repoId, path, side } })
 
+// Sprint C6 — 외부 merge tool launch
+export interface MergetoolResult {
+  success: boolean
+  stdout: string
+  stderr: string
+  exitCode: number | null
+}
+
+export const launchMergetool = (
+  repoId: number,
+  file?: string | null,
+  tool?: string | null,
+): Promise<MergetoolResult> =>
+  invoke('launch_mergetool', { args: { repoId, file, tool } })
+
 // === File history / Blame ===
 export interface BlameLine {
   sha: string
