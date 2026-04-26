@@ -83,6 +83,39 @@ pub async fn prune_worktrees(
     git_wt::prune_worktrees(&path).await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LockWorktreeArgs {
+    pub repo_id: i64,
+    pub path: String,
+    pub reason: Option<String>,
+}
+
+#[tauri::command]
+pub async fn lock_worktree(
+    args: LockWorktreeArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_wt::lock_worktree(&path, &args.path, args.reason.as_deref()).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnlockWorktreeArgs {
+    pub repo_id: i64,
+    pub path: String,
+}
+
+#[tauri::command]
+pub async fn unlock_worktree(
+    args: UnlockWorktreeArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_wt::unlock_worktree(&path, &args.path).await
+}
+
 // ====== Cherry-pick (단일 + 멀티 레포) ======
 
 #[derive(Debug, Deserialize)]

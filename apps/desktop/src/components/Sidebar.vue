@@ -238,6 +238,10 @@ function confirmDeleteWorkspace() {
   }
 }
 
+function tryCreateWorkspace() {
+  if (newWorkspaceName.value.trim()) createWorkspaceMut.mutate()
+}
+
 // === Repo alias (Sprint B4) ===
 const aliases = useRepoAliases()
 const editingAliasRepoId = ref<number | null>(null)
@@ -390,9 +394,7 @@ function cancelEditAlias() {
             v-model="newWorkspaceName"
             placeholder="이름 (예: 회사)"
             class="rounded border border-input bg-background px-2 py-1 text-xs"
-            @keyup.enter="
-              if (newWorkspaceName.trim()) createWorkspaceMut.mutate()
-            "
+            @keyup.enter="tryCreateWorkspace"
           />
           <div class="flex flex-wrap gap-1">
             <button

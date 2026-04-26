@@ -7,8 +7,10 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useWorktrees } from '@/composables/useWorktrees'
 import {
   addWorktree,
+  lockWorktree,
   pruneWorktrees,
   removeWorktree,
+  unlockWorktree,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
@@ -70,6 +72,42 @@ function confirmRemove(path: string) {
     removeMut.mutate({ p: path, force: false })
   }
 }
+
+// === Sprint C1 — Lock / Unlock ===
+const lockMut = useMutation({
+  mutationFn: ({ p, reason }: { p: string; reason: string | null }) =>
+    lockWorktree(props.repoId!, p, reason),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] })
+    toast.success('Worktree 잠금', '')
+  },
+  onError: (e) => toast.error('Lock 실패', describeError(e)),
+})
+
+const unlockMut = useMutation({
+  mutationFn: (p: string) => unlockWorktree(props.repoId!, p),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] })
+    toast.success('Worktree 잠금 해제', '')
+  },
+  onError: (e) => toast.error('Unlock 실패', describeError(e)),
+})
+
+function onLock(path: string) {
+  if (props.repoId == null) return
+  const reason = window.prompt(
+    `'${path}' 잠금 사유 (선택, 외장 디스크 / 비활성 등)`,
+    '',
+  )
+  // reason 이 null = cancel.
+  if (reason === null) return
+  lockMut.mutate({ p: path, reason: reason.trim() || null })
+}
+
+function onUnlock(path: string) {
+  if (props.repoId == null) return
+  unlockMut.mutate(path)
+}
 </script>
 
 <template>
@@ -130,10 +168,30 @@ function confirmRemove(path: string) {
             <span class="text-[10px] text-muted-foreground">{{ fmtSize(t.sizeBytes) }}</span>
           </div>
           <div class="truncate font-mono text-[10px] text-muted-foreground">{{ t.path }}</div>
-          <div v-if="!t.isMain" class="mt-1 flex justify-end">
+          <div v-if="!t.isMain" class="mt-1 flex justify-end gap-2">
+            <button
+              v-if="!t.isLocked"
+              type="button"
+              class="text-[10px] text-amber-500 hover:underline"
+              :disabled="lockMut.isPending.value"
+              @click="onLock(t.path)"
+            >
+              lock
+            </button>
+            <button
+              v-else
+              type="button"
+              class="text-[10px] text-amber-500 hover:underline"
+              :disabled="unlockMut.isPending.value"
+              @click="onUnlock(t.path)"
+            >
+              unlock
+            </button>
             <button
               type="button"
               class="text-[10px] text-destructive hover:underline"
+              :disabled="t.isLocked"
+              :title="t.isLocked ? 'unlock 후 제거' : ''"
               @click="confirmRemove(t.path)"
             >
               remove

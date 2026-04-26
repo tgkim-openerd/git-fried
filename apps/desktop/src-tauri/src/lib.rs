@@ -135,6 +135,8 @@ pub fn run() {
             ipc::v02_commands::add_worktree,
             ipc::v02_commands::remove_worktree,
             ipc::v02_commands::prune_worktrees,
+            ipc::v02_commands::lock_worktree,
+            ipc::v02_commands::unlock_worktree,
             ipc::v02_commands::bulk_cherry_pick,
             ipc::v02_commands::read_conflicted,
             ipc::v02_commands::write_resolved,

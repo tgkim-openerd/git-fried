@@ -371,6 +371,17 @@ export const removeWorktree = (
 export const pruneWorktrees = (repoId: number): Promise<void> =>
   invoke('prune_worktrees', { repoId })
 
+// Sprint C1
+export const lockWorktree = (
+  repoId: number,
+  path: string,
+  reason?: string | null,
+): Promise<void> =>
+  invoke('lock_worktree', { args: { repoId, path, reason } })
+
+export const unlockWorktree = (repoId: number, path: string): Promise<void> =>
+  invoke('unlock_worktree', { args: { repoId, path } })
+
 // === Cherry-pick (멀티 레포) ===
 export type CherryPickStrategy = 'default' | 'mainlineParent'
 export interface CherryPickResult {
