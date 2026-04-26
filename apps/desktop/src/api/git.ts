@@ -85,6 +85,21 @@ export const pull = (args: PullArgs): Promise<SyncResult> =>
 export const push = (args: PushArgs): Promise<SyncResult> =>
   invoke('push', { args })
 
+// --- Commit graph ---
+export interface GraphRow {
+  commit: CommitSummary
+  lane: number
+  parentLanes: number[]
+  crossingLanes: number[]
+  isMerge: boolean
+}
+export interface GraphResult {
+  rows: GraphRow[]
+  maxLane: number
+}
+export const getGraph = (repoId: number, limit?: number): Promise<GraphResult> =>
+  invoke('get_graph', { args: { repoId, limit } })
+
 // --- Branches ---
 export interface BranchInfo {
   name: string

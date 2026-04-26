@@ -3,7 +3,7 @@
 import { computed, ref } from 'vue'
 import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
-import CommitTable from '@/components/CommitTable.vue'
+import CommitGraph from '@/components/CommitGraph.vue'
 import StatusPanel from '@/components/StatusPanel.vue'
 import SyncBar from '@/components/SyncBar.vue'
 import CommitMessageInput from '@/components/CommitMessageInput.vue'
@@ -33,8 +33,8 @@ const tab = ref<Tab>('status')
     />
 
     <div class="grid h-full grid-cols-[1fr_360px] overflow-hidden">
-      <!-- 좌측: 커밋 로그 -->
-      <CommitTable :repo-id="store.activeRepoId" />
+      <!-- 좌측: 커밋 그래프 + 로그 -->
+      <CommitGraph :repo-id="store.activeRepoId" />
 
       <!-- 우측: 탭 (Status / Branches / Stash) + 하단 commit input -->
       <div class="grid grid-rows-[auto_1fr_auto] overflow-hidden border-l border-border">

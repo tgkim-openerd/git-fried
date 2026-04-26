@@ -86,6 +86,7 @@ pub fn run() {
             ipc::commands::show_stash,
             ipc::commands::reset,
             ipc::commands::revert,
+            ipc::commands::get_graph,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -7,6 +7,7 @@
 pub mod branch;
 pub mod commit;
 pub mod diff;
+pub mod graph;
 pub mod repository;
 pub mod reset;
 pub mod runner;

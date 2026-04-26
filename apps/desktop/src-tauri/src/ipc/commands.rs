@@ -9,8 +9,9 @@
 
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    branch as git_branch, commit as git_commit, diff as git_diff, repository as repo,
-    reset as git_reset, runner, stage, stash as git_stash, status as git_status, sync as git_sync,
+    branch as git_branch, commit as git_commit, diff as git_diff, graph as git_graph,
+    repository as repo, reset as git_reset, runner, stage, stash as git_stash,
+    status as git_status, sync as git_sync,
 };
 use crate::storage::{Db, DbExt, Repo, Workspace};
 use crate::AppState;
@@ -379,6 +380,27 @@ pub async fn push(
         },
     )
     .await
+}
+
+// ====== Commit graph ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetGraphArgs {
+    pub repo_id: i64,
+    pub limit: Option<usize>,
+}
+
+#[tauri::command]
+pub async fn get_graph(
+    args: GetGraphArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_graph::GraphResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let limit = args.limit.unwrap_or(500).min(5000);
+    tokio::task::spawn_blocking(move || git_graph::compute_graph(&path, limit))
+        .await
+        .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))?
 }
 
 // ====== Branches ======
