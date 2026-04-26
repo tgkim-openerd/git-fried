@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { listReflog } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useReposStore } from '@/stores/repos'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -22,7 +23,7 @@ const reflogQuery = useQuery({
 })
 
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleString('ko-KR', {
+  return formatDateLocalized(unix, {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',

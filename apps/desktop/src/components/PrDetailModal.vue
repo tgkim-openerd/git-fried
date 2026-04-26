@@ -20,6 +20,7 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useNotification } from '@/composables/useNotification'
 import { notifyAiDone } from '@/composables/useAiCli'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 import type {
   AiCli,
   MergeMethod,
@@ -153,7 +154,7 @@ const reopenMut = useMutation({
 })
 
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleString('ko-KR', {
+  return formatDateLocalized(unix, {
     year: '2-digit',
     month: '2-digit',
     day: '2-digit',

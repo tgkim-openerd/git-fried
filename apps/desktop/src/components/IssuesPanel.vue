@@ -3,12 +3,13 @@
 // v0.3 단계: read-only. 코멘트/생성은 v1.0+.
 import { useIssues } from '@/composables/useIssuesReleases'
 import { describeError } from '@/api/errors'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: issues, isFetching, error } = useIssues(() => props.repoId)
 
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleDateString('ko-KR', {
+  return formatDateLocalized(unix, {
     month: '2-digit',
     day: '2-digit',
   })

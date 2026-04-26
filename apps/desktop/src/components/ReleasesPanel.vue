@@ -3,12 +3,13 @@
 // release-please 봇 자동 생성된 release 도 포함.
 import { useReleases } from '@/composables/useIssuesReleases'
 import { describeError } from '@/api/errors'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: releases, isFetching, error } = useReleases(() => props.repoId)
 
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleDateString('ko-KR', {
+  return formatDateLocalized(unix, {
     year: '2-digit',
     month: '2-digit',
     day: '2-digit',
