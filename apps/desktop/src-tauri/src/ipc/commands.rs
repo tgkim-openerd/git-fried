@@ -659,5 +659,20 @@ pub async fn bulk_status(
     git_bulk::bulk_status(&state.db, workspace_id).await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkPrsArgs {
+    pub workspace_id: Option<i64>,
+    pub state_filter: Option<crate::forge::PrState>,
+}
+
+#[tauri::command]
+pub async fn bulk_list_prs(
+    args: BulkPrsArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_bulk::BulkResult<Vec<crate::forge::PullRequest>>>> {
+    git_bulk::bulk_list_prs(&state.db, args.workspace_id, args.state_filter).await
+}
+
 #[allow(dead_code)]
 fn _db_marker(_: &Db) {}

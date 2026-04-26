@@ -178,6 +178,12 @@ export const bulkStatus = (
   workspaceId?: number | null,
 ): Promise<BulkResult<RepoStatus>[]> => invoke('bulk_status', { workspaceId })
 
+export const bulkListPrs = (
+  workspaceId?: number | null,
+  stateFilter?: PrState | null,
+): Promise<BulkResult<PullRequest[]>[]> =>
+  invoke('bulk_list_prs', { args: { workspaceId, stateFilter } })
+
 // --- Reset / Revert ---
 export type ResetMode = 'soft' | 'mixed' | 'hard' | 'keep'
 export const reset = (repoId: number, mode: ResetMode, target: string): Promise<void> =>

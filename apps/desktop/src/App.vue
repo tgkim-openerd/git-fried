@@ -40,6 +40,13 @@ function openSyncTemplate(sha?: string) {
           홈
         </RouterLink>
         <RouterLink
+          to="/launchpad"
+          class="text-muted-foreground hover:text-foreground"
+          active-class="text-foreground font-semibold"
+        >
+          Launchpad
+        </RouterLink>
+        <RouterLink
           to="/settings"
           class="text-muted-foreground hover:text-foreground"
           active-class="text-foreground font-semibold"

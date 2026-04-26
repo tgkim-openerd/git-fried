@@ -101,6 +101,7 @@ pub fn run() {
             ipc::commands::sync_submodules,
             ipc::commands::bulk_fetch,
             ipc::commands::bulk_status,
+            ipc::commands::bulk_list_prs,
             ipc::forge_commands::forge_save_token,
             ipc::forge_commands::forge_list_accounts,
             ipc::forge_commands::forge_delete_account,
