@@ -52,6 +52,7 @@ export type ShortcutAction =
   | 'nextTab' // ⌃Tab — 다음 레포 탭 (Sprint G)
   | 'prevTab' // ⌃⇧Tab — 이전 레포 탭 (Sprint G)
   | 'closeTab' // ⌘⇧W — 활성 레포 탭 닫기 (Sprint G)
+  | 'filterRepos' // ⌘⌥F — Sidebar 레포 필터 focus (Sprint I)
 
 type Handler = () => void
 
@@ -168,6 +169,27 @@ function installGlobal() {
     if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Tab') {
       const action: ShortcutAction = e.shiftKey ? 'prevTab' : 'nextTab'
       const set = bus.handlers.get(action)
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+        return
+      }
+    }
+
+    // ⌘⌥F / Ctrl+Alt+F — Sidebar 레포 필터 focus (Sprint I).
+    if (
+      e.altKey &&
+      (e.metaKey || e.ctrlKey) &&
+      !e.shiftKey &&
+      e.key.toLowerCase() === 'f'
+    ) {
+      const set = bus.handlers.get('filterRepos')
       if (set && set.size > 0) {
         e.preventDefault()
         for (const fn of set) {

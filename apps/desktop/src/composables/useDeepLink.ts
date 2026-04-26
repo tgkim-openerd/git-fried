@@ -42,6 +42,7 @@ const COMMAND_ALIASES: Record<string, ShortcutAction> = {
   'next-tab': 'nextTab',
   'prev-tab': 'prevTab',
   'close-tab': 'closeTab',
+  'filter-repos': 'filterRepos',
 }
 
 interface UnlistenFn {

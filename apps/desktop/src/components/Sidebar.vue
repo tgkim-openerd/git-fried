@@ -3,7 +3,7 @@
 // 추가 기능 (v0.1 S4):
 //   - 듀얼 레포 자동 그룹핑 (예: peeloff/frontend + peeloff/frontend-admin)
 //   - 워크스페이스 전체 일괄 Fetch 버튼
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { open } from '@tauri-apps/plugin-dialog'
 import {
@@ -21,6 +21,7 @@ import { humanizeGitError, describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
+import { useShortcut } from '@/composables/useShortcuts'
 import { useNotification } from '@/composables/useNotification'
 import type { Repo } from '@/types/git'
 
@@ -137,6 +138,9 @@ function setGroupMode(m: GroupMode) {
   }
 }
 
+// alias resolver — 필터 로직이 일찍 사용. 원래 below 였으나 hoist.
+const aliases = useRepoAliases()
+
 function groupKey(r: Repo): string {
   if (groupMode.value === 'org') {
     return r.forgeOwner ?? '__no-org__'
@@ -144,10 +148,39 @@ function groupKey(r: Repo): string {
   return parentDirName(r.localPath) ?? '__solo__'
 }
 
-const groups = computed<RepoGroup[]>(() => {
+// Sprint I — Sidebar 레포 필터 (⌘⌥F).
+const repoFilter = ref('')
+const filterInputRef = useTemplateRef<HTMLInputElement>('filterInput')
+
+const filteredRepos = computed<Repo[]>(() => {
   if (!repos.value) return []
+  const q = repoFilter.value.trim().toLowerCase()
+  if (!q) return repos.value
+  return repos.value.filter((r) => {
+    if (r.name.toLowerCase().includes(q)) return true
+    const alias = aliases.resolveLocal(r.id, r.name).display
+    if (alias.toLowerCase().includes(q)) return true
+    if (r.forgeOwner?.toLowerCase().includes(q)) return true
+    if (r.forgeRepo?.toLowerCase().includes(q)) return true
+    if (r.localPath.toLowerCase().includes(q)) return true
+    return false
+  })
+})
+
+// 외부 (App.vue) 에서 호출 가능 — sidebar 가 hidden 일 때 App.vue 가 toggle 후 호출.
+function focusRepoFilter() {
+  filterInputRef.value?.focus()
+  filterInputRef.value?.select()
+}
+;(window as unknown as { gitFriedFocusRepoFilter?: () => void }).gitFriedFocusRepoFilter =
+  focusRepoFilter
+
+useShortcut('filterRepos', focusRepoFilter)
+
+const groups = computed<RepoGroup[]>(() => {
+  if (!filteredRepos.value.length) return []
   const map = new Map<string, Repo[]>()
-  for (const r of repos.value) {
+  for (const r of filteredRepos.value) {
     const k = groupKey(r)
     if (!map.has(k)) map.set(k, [])
     map.get(k)!.push(r)
@@ -249,8 +282,7 @@ function tryCreateWorkspace() {
   if (newWorkspaceName.value.trim()) createWorkspaceMut.mutate()
 }
 
-// === Repo alias (Sprint B4) ===
-const aliases = useRepoAliases()
+// === Repo alias (Sprint B4) === — `aliases` 는 위에서 hoist (Sprint I).
 const editingAliasRepoId = ref<number | null>(null)
 const editingAliasValue = ref('')
 const editingAliasScope = ref<'profile' | 'global'>('profile')
@@ -462,6 +494,22 @@ function cancelEditAlias() {
           </button>
         </div>
       </div>
+
+      <div class="px-3 pb-1">
+        <input
+          ref="filterInput"
+          v-model="repoFilter"
+          type="search"
+          placeholder="필터 (이름 / 별칭 / org / 경로) — ⌘⌥F"
+          class="w-full rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:border-primary"
+        />
+      </div>
+      <p
+        v-if="repoFilter && filteredRepos.length === 0"
+        class="px-3 py-2 text-center text-[11px] text-muted-foreground"
+      >
+        '{{ repoFilter }}' 매칭 레포 없음
+      </p>
 
       <ul class="px-1 pb-3">
         <template v-for="g in groups" :key="g.key">

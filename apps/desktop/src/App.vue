@@ -106,6 +106,20 @@ useShortcut('closeTab', () => {
   }
 })
 
+// Sprint I — Sidebar 가 숨겨져 있을 때도 ⌘⌥F 동작하도록 wrap.
+useShortcut('filterRepos', () => {
+  if (!ui.sidebarVisible.value) {
+    ui.sidebarVisible.value = true
+    // 다음 tick 후 Sidebar mount 완료 대기.
+    setTimeout(() => {
+      const fn = (window as unknown as { gitFriedFocusRepoFilter?: () => void })
+        .gitFriedFocusRepoFilter
+      fn?.()
+    }, 80)
+  }
+  // visible 일 때는 Sidebar 가 자체적으로 focusRepoFilter 처리.
+})
+
 // Sprint F5 — F11 / ⌃⌘F Fullscreen 토글.
 useShortcut('toggleFullscreen', () => {
   void (async () => {

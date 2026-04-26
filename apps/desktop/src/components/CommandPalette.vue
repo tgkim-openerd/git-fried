@@ -211,6 +211,13 @@ const allCommands = computed<Cmd[]>(() => {
       action: store.prevTab,
     },
     {
+      id: 'repo.filter',
+      category: 'repo',
+      label: 'Sidebar 레포 필터 focus',
+      hint: '⌘⌥F',
+      action: trigger('filterRepos'),
+    },
+    {
       id: 'repo.go.home',
       category: 'repo',
       label: '홈으로',
