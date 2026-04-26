@@ -174,6 +174,43 @@ const allCommands = computed<Cmd[]>(() => {
       action: () => store.setActiveRepo(null),
     },
     {
+      id: 'repo.tab.close',
+      category: 'repo',
+      label: '탭: 활성 탭 닫기',
+      hint: '⌘⇧W',
+      action: () => {
+        if (store.activeRepoId != null) store.closeTab(store.activeRepoId)
+      },
+    },
+    {
+      id: 'repo.tab.close-others',
+      category: 'repo',
+      label: '탭: 다른 탭 모두 닫기',
+      action: () => {
+        if (store.activeRepoId != null) store.closeOthers(store.activeRepoId)
+      },
+    },
+    {
+      id: 'repo.tab.close-all',
+      category: 'repo',
+      label: '탭: 모두 닫기',
+      action: () => store.closeAll(),
+    },
+    {
+      id: 'repo.tab.next',
+      category: 'repo',
+      label: '탭: 다음',
+      hint: '⌃Tab',
+      action: store.nextTab,
+    },
+    {
+      id: 'repo.tab.prev',
+      category: 'repo',
+      label: '탭: 이전',
+      hint: '⌃⇧Tab',
+      action: store.prevTab,
+    },
+    {
       id: 'repo.go.home',
       category: 'repo',
       label: '홈으로',

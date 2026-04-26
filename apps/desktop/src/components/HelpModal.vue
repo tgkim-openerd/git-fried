@@ -60,6 +60,15 @@ const groups: Group[] = [
     ],
   },
   {
+    title: '레포 탭 (Sprint G)',
+    items: [
+      { keys: '⌃Tab', desc: '다음 탭' },
+      { keys: '⌃⇧Tab', desc: '이전 탭' },
+      { keys: '⌘⇧W', desc: '활성 탭 닫기' },
+      { keys: 'Mouse middle-click', desc: '탭 닫기' },
+    ],
+  },
+  {
     title: '우측 탭 전환',
     items: [
       { keys: '⌘1', desc: '변경 (Status)' },

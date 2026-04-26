@@ -39,6 +39,9 @@ const COMMAND_ALIASES: Record<string, ShortcutAction> = {
   'close-modal': 'closeModal',
   'open-in-explorer': 'openInExplorer',
   fullscreen: 'toggleFullscreen',
+  'next-tab': 'nextTab',
+  'prev-tab': 'prevTab',
+  'close-tab': 'closeTab',
 }
 
 interface UnlistenFn {

@@ -49,6 +49,9 @@ export type ShortcutAction =
   | 'newTab' // ⌘T — Repo Switcher (⌘⇧P alias)
   | 'openInExplorer' // ⌥O — OS 파일 매니저 (Sprint F4)
   | 'toggleFullscreen' // F11 — 전체화면 토글 (Sprint F5)
+  | 'nextTab' // ⌃Tab — 다음 레포 탭 (Sprint G)
+  | 'prevTab' // ⌃⇧Tab — 이전 레포 탭 (Sprint G)
+  | 'closeTab' // ⌘⇧W — 활성 레포 탭 닫기 (Sprint G)
 
 type Handler = () => void
 
@@ -161,6 +164,23 @@ function installGlobal() {
       }
     }
 
+    // ⌃Tab / ⌃⇧Tab — 레포 탭 전환 (Sprint G). browser-default Tab 키 충돌 방지.
+    if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Tab') {
+      const action: ShortcutAction = e.shiftKey ? 'prevTab' : 'nextTab'
+      const set = bus.handlers.get(action)
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+        return
+      }
+    }
+
     // F11 (또는 ⌃⌘F) — Fullscreen 토글 (Sprint F5).
     if (
       (e.key === 'F11' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) ||
@@ -207,6 +227,7 @@ function installGlobal() {
     else if (k === 'h' && e.shiftKey) action = 'fileHistorySearch'
     else if (k === 'd' && !e.shiftKey) action = 'showDiff'
     else if (k === 'w' && !e.shiftKey) action = 'closeModal'
+    else if (k === 'w' && e.shiftKey) action = 'closeTab'
     else if (k === 'j' && !e.shiftKey) action = 'toggleSidebar'
     else if (k === 'k' && !e.shiftKey) action = 'toggleDetail'
     else if (k === 't' && !e.shiftKey) action = 'newTab'

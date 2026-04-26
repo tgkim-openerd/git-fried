@@ -2,6 +2,7 @@
 // 최상위 레이아웃: 사이드바(좌) + 본문(우, file-routing 페이지) + 헤더 (Profiles / Theme / Settings).
 import { ref } from 'vue'
 import Sidebar from './components/Sidebar.vue'
+import RepoTabBar from './components/RepoTabBar.vue'
 import CommandPalette from './components/CommandPalette.vue'
 import ProfileSwitcher from './components/ProfileSwitcher.vue'
 import SyncTemplateModal from './components/SyncTemplateModal.vue'
@@ -96,6 +97,15 @@ useShortcut('openInExplorer', () => {
   })
 })
 
+// Sprint G — Tab 시스템 단축키.
+useShortcut('nextTab', reposStore.nextTab)
+useShortcut('prevTab', reposStore.prevTab)
+useShortcut('closeTab', () => {
+  if (reposStore.activeRepoId != null) {
+    reposStore.closeTab(reposStore.activeRepoId)
+  }
+})
+
 // Sprint F5 — F11 / ⌃⌘F Fullscreen 토글.
 useShortcut('toggleFullscreen', () => {
   void (async () => {
@@ -166,6 +176,7 @@ w.gitFriedOpenReflog = () => (reflogOpen.value = true)
           {{ theme === 'dark' ? '☾' : '☀' }}
         </button>
       </div>
+      <RepoTabBar @open-switcher="repoSwitcherOpen = true" />
       <RouterView class="flex-1 overflow-hidden" />
       <StatusBar />
     </main>
