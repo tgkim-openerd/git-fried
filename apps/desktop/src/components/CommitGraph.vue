@@ -10,10 +10,12 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useGraph } from '@/composables/useGraph'
+import { useRefVisibility } from '@/composables/useHiddenRefs'
 import type { GraphRow } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
+const { visibleFn: visibleRef, soloRef } = useRefVisibility(() => props.repoId)
 
 // === 검색 (in-memory) ===
 // v0.x 단계: 현재 그래프 (최대 500 commits) 내에서 subject / author / sha 부분일치.
@@ -293,7 +295,15 @@ function selectRow(r: GraphRow) {
           <span class="flex-1 truncate">
             {{ rows[v.index]?.commit.subject }}
             <template v-for="r in rows[v.index]?.commit.refs ?? []" :key="r">
-              <span class="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              <span
+                v-if="visibleRef(r)"
+                class="ml-1.5 rounded px-1.5 py-0.5 text-[10px]"
+                :class="
+                  soloRef === r
+                    ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
+                    : 'bg-muted text-muted-foreground'
+                "
+              >
                 {{ r }}
               </span>
             </template>

@@ -474,6 +474,42 @@ export const rebaseAbort = (repoId: number): Promise<void> =>
 export const rebaseSkip = (repoId: number): Promise<RebaseRunResult> =>
   invoke('rebase_skip', { repoId })
 
+// === Hide branches (docs/plan/11 §5d / Sprint A1) ===
+export type HiddenRefKind = 'branch' | 'remote' | 'tag' | 'stash'
+
+export interface HiddenRef {
+  refName: string
+  refKind: HiddenRefKind
+  hiddenAt: number
+}
+
+export const listHiddenRefs = (repoId: number): Promise<HiddenRef[]> =>
+  invoke('list_hidden_refs', { repoId })
+
+export const hideRef = (
+  repoId: number,
+  refName: string,
+  refKind: HiddenRefKind,
+): Promise<void> =>
+  invoke('hide_ref', { args: { repoId, refName, refKind } })
+
+export const unhideRef = (repoId: number, refName: string): Promise<void> =>
+  invoke('unhide_ref', { args: { repoId, refName } })
+
+export const hideRefsBulk = (
+  repoId: number,
+  refs: { refName: string; refKind: HiddenRefKind }[],
+): Promise<number> => invoke('hide_refs_bulk', { args: { repoId, refs } })
+
+export const unhideRefsByKind = (
+  repoId: number,
+  refKind: HiddenRefKind,
+): Promise<number> =>
+  invoke('unhide_refs_by_kind', { args: { repoId, refKind } })
+
+export const unhideAllRefs = (repoId: number): Promise<number> =>
+  invoke('unhide_all_refs', { repoId })
+
 // === 통합 터미널 (docs/plan/10 옵션 A) — Tauri Channel<Vec<u8>> stream ===
 import { Channel } from '@tauri-apps/api/core'
 

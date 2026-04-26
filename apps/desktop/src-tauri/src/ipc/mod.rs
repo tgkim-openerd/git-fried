@@ -5,12 +5,14 @@
 // (Box<dyn Fn> 으로 감싸지 못하는 매크로 한계 우회)
 pub mod commands;
 pub mod forge_commands;
+pub mod hide_commands;
 pub mod profile_commands;
 pub mod pty_commands;
 pub mod v02_commands;
 
 pub use commands::*;
 pub use forge_commands::*;
+pub use hide_commands::*;
 pub use profile_commands::*;
 pub use pty_commands::*;
 pub use v02_commands::*;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 브랜치 패널 — 로컬/원격 트리 + switch / create / delete.
+// 브랜치 패널 — 로컬/원격 트리 + switch / create / delete + Hide / Solo (Sprint A1).
 // HEAD 표시, ahead/behind 카운터 포함.
 import { computed, ref } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
@@ -12,7 +12,12 @@ import {
 } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
-import type { BranchInfo } from '@/api/git'
+import {
+  useHiddenRefs,
+  useHiddenRefMutations,
+  useSoloRef,
+} from '@/composables/useHiddenRefs'
+import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
 const toast = useToast()
 
@@ -23,11 +28,65 @@ const invalidate = useInvalidateRepoQueries()
 const newBranchName = ref('')
 const filterKind = ref<'all' | 'local' | 'remote'>('local')
 
+// Hide/Solo state
+const { data: hiddenList } = useHiddenRefs(() => props.repoId)
+const hiddenMut = useHiddenRefMutations(() => props.repoId)
+const { current: soloRef, setSolo } = useSoloRef(() => props.repoId)
+
+const hiddenSet = computed<Set<string>>(() => {
+  const s = new Set<string>()
+  for (const h of hiddenList.value ?? []) s.add(h.refName)
+  return s
+})
+
 const filtered = computed(() => {
   if (!branches.value) return []
   if (filterKind.value === 'all') return branches.value
   return branches.value.filter((b) => b.kind === filterKind.value)
 })
+
+function refKindOf(b: BranchInfo): HiddenRefKind {
+  return b.kind === 'remote' ? 'remote' : 'branch'
+}
+
+function isHidden(name: string): boolean {
+  return hiddenSet.value.has(name)
+}
+
+function toggleHide(b: BranchInfo) {
+  if (props.repoId == null) return
+  if (isHidden(b.name)) {
+    hiddenMut.unhide.mutate(b.name)
+  } else {
+    hiddenMut.hide.mutate({ refName: b.name, refKind: refKindOf(b) })
+  }
+}
+
+function toggleSolo(b: BranchInfo) {
+  setSolo(b.name)
+}
+
+function bulkHideKind(kind: HiddenRefKind) {
+  if (!branches.value) return
+  const targets = branches.value
+    .filter((b) => refKindOf(b) === kind && !isHidden(b.name))
+    .map((b) => ({ refName: b.name, refKind: kind }))
+  if (targets.length === 0) {
+    toast.success('이미 모두 hidden', '')
+    return
+  }
+  hiddenMut.bulkHide.mutate(targets, {
+    onSuccess: (n) => toast.success(`${n}개 hidden`, kind),
+    onError: (e) => toast.error('일괄 hide 실패', describeError(e)),
+  })
+}
+
+function unhideKind(kind: HiddenRefKind) {
+  hiddenMut.unhideKind.mutate(kind, {
+    onSuccess: (n) => toast.success(`${n}개 복원`, kind),
+    onError: (e) => toast.error('복원 실패', describeError(e)),
+  })
+}
 
 const switchMut = useMutation({
   mutationFn: ({ id, name }: { id: number; name: string }) =>
@@ -89,7 +148,12 @@ function localName(name: string): string {
 <template>
   <section class="flex h-full flex-col border-l border-border bg-card">
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
-      <h3 class="text-sm font-semibold">브랜치</h3>
+      <h3 class="text-sm font-semibold">
+        브랜치
+        <span v-if="soloRef" class="ml-1 text-[10px] font-normal text-orange-500">
+          [Solo: {{ soloRef }}]
+        </span>
+      </h3>
       <div class="flex gap-1 text-[10px]">
         <button
           v-for="k in ['local', 'remote', 'all'] as const"
@@ -103,6 +167,48 @@ function localName(name: string): string {
         </button>
       </div>
     </header>
+
+    <!-- Hide/Solo 컨트롤 (필터 별 일괄) -->
+    <div
+      class="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1 text-[10px] text-muted-foreground"
+    >
+      <span>Hide:</span>
+      <button
+        type="button"
+        class="rounded border border-border px-1.5 hover:bg-accent/40"
+        title="모든 remote 일괄 hide"
+        @click="bulkHideKind('remote')"
+      >
+        all remotes
+      </button>
+      <button
+        type="button"
+        class="rounded border border-border px-1.5 hover:bg-accent/40"
+        title="모든 local branch 일괄 hide"
+        @click="bulkHideKind('branch')"
+      >
+        all local
+      </button>
+      <span class="ml-auto" />
+      <button
+        v-if="hiddenSet.size > 0"
+        type="button"
+        class="rounded border border-border px-1.5 hover:bg-accent/40"
+        title="복원"
+        @click="hiddenMut.unhideAll.mutate()"
+      >
+        복원 ({{ hiddenSet.size }})
+      </button>
+      <button
+        v-if="soloRef"
+        type="button"
+        class="rounded border border-orange-500 px-1.5 text-orange-500 hover:bg-orange-500/10"
+        title="Solo 해제"
+        @click="setSolo(null)"
+      >
+        Solo ✕
+      </button>
+    </div>
 
     <!-- 새 브랜치 입력 -->
     <div class="flex gap-1 border-b border-border px-3 py-2">
@@ -128,7 +234,11 @@ function localName(name: string): string {
           v-for="b in filtered"
           :key="`${b.kind}-${b.name}`"
           class="group flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent/40"
-          :class="b.isHead ? 'bg-accent/60 font-semibold' : ''"
+          :class="[
+            b.isHead ? 'bg-accent/60 font-semibold' : '',
+            isHidden(b.name) ? 'opacity-40 line-through' : '',
+            soloRef === b.name ? 'bg-orange-500/10 ring-1 ring-orange-500/40' : '',
+          ]"
           @dblclick="onSwitch(b)"
         >
           <span class="w-3 text-[10px]">{{ b.isHead ? '●' : '' }}</span>
@@ -137,6 +247,26 @@ function localName(name: string): string {
             <span v-if="b.ahead" class="text-emerald-500">↑{{ b.ahead }}</span>
             <span v-if="b.behind" class="ml-0.5 text-rose-500">↓{{ b.behind }}</span>
           </span>
+          <!-- Hide 토글 (eye icon) — 항상 보이되 hidden 일 때 닫힌 눈 -->
+          <button
+            type="button"
+            class="text-[11px] opacity-30 group-hover:opacity-100"
+            :class="isHidden(b.name) ? 'opacity-100 text-muted-foreground' : ''"
+            :title="isHidden(b.name) ? '숨김 해제' : '그래프에서 숨김'"
+            @click.stop="toggleHide(b)"
+          >
+            {{ isHidden(b.name) ? '🙈' : '👁' }}
+          </button>
+          <!-- Solo 토글 -->
+          <button
+            type="button"
+            class="text-[10px] opacity-0 group-hover:opacity-100"
+            :class="soloRef === b.name ? 'opacity-100 text-orange-500' : 'text-muted-foreground'"
+            :title="soloRef === b.name ? 'Solo 해제' : '이 브랜치만 표시'"
+            @click.stop="toggleSolo(b)"
+          >
+            ◉
+          </button>
           <button
             v-if="!b.isHead && b.kind === 'local'"
             type="button"
