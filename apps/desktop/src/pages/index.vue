@@ -18,6 +18,7 @@ import TerminalPanel from '@/components/TerminalPanel.vue'
 import CommitDiffModal from '@/components/CommitDiffModal.vue'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
+import { useTabPerProfile } from '@/composables/useTabPerProfile'
 
 const store = useReposStore()
 const { data: status } = useStatus(() => store.activeRepoId)
@@ -36,6 +37,9 @@ type Tab =
   | 'pr'
   | 'worktree'
 const tab = ref<Tab>('status')
+
+// Sprint B10 — per-profile 탭 영속화.
+useTabPerProfile<Tab>(tab, 'status')
 
 // 통합 터미널 가시성 (⌘` 토글) — `docs/plan/10 옵션 A`.
 const terminalOpen = ref(false)
