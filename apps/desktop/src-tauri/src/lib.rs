@@ -5,7 +5,9 @@
 //   - git: git2-rs / git CLI 하이브리드 + 한글 spawn 표준
 //   - storage: SQLite + sqlx + 마이그레이션
 //   - ipc: Tauri commands (#[tauri::command])
+pub mod auth;
 pub mod error;
+pub mod forge;
 pub mod git;
 pub mod ipc;
 pub mod storage;
@@ -93,6 +95,15 @@ pub fn run() {
             ipc::commands::sync_submodules,
             ipc::commands::bulk_fetch,
             ipc::commands::bulk_status,
+            ipc::forge_commands::forge_save_token,
+            ipc::forge_commands::forge_list_accounts,
+            ipc::forge_commands::forge_delete_account,
+            ipc::forge_commands::forge_whoami,
+            ipc::forge_commands::list_pull_requests,
+            ipc::forge_commands::get_pull_request,
+            ipc::forge_commands::create_pull_request,
+            ipc::forge_commands::list_issues,
+            ipc::forge_commands::list_releases,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

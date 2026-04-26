@@ -185,6 +185,125 @@ export const reset = (repoId: number, mode: ResetMode, target: string): Promise<
 export const revert = (repoId: number, sha: string, noCommit = false): Promise<void> =>
   invoke('revert', { args: { repoId, sha, noCommit } })
 
+// === Forge (Gitea + GitHub) ===
+export type PrState = 'open' | 'closed' | 'merged' | 'draft'
+export type IssueState = 'open' | 'closed'
+export type ForgeKindWide = 'gitea' | 'github'
+
+export interface ForgeAuthor {
+  username: string
+  displayName: string | null
+  avatarUrl: string | null
+}
+export interface ForgeLabel {
+  name: string
+  color: string
+}
+export interface PullRequest {
+  forgeKind: ForgeKindWide
+  owner: string
+  repo: string
+  number: number
+  title: string
+  bodyMd: string
+  state: PrState
+  headBranch: string
+  baseBranch: string
+  headSha: string | null
+  author: ForgeAuthor
+  createdAt: number
+  updatedAt: number
+  merged: boolean
+  mergeable: boolean | null
+  draft: boolean
+  labels: ForgeLabel[]
+  comments: number
+  additions: number | null
+  deletions: number | null
+  htmlUrl: string
+}
+export interface ForgeIssue {
+  forgeKind: ForgeKindWide
+  owner: string
+  repo: string
+  number: number
+  title: string
+  bodyMd: string
+  state: IssueState
+  author: ForgeAuthor
+  labels: ForgeLabel[]
+  createdAt: number
+  updatedAt: number
+  comments: number
+  htmlUrl: string
+}
+export interface ForgeRelease {
+  forgeKind: ForgeKindWide
+  owner: string
+  repo: string
+  tag: string
+  name: string
+  bodyMd: string
+  draft: boolean
+  prerelease: boolean
+  createdAt: number
+  htmlUrl: string
+}
+export interface ForgeAccount {
+  id: number
+  forgeKind: string
+  baseUrl: string
+  username: string | null
+  keychainRef: string
+}
+
+export const forgeSaveToken = (
+  forgeKind: 'gitea' | 'github',
+  baseUrl: string,
+  username: string | null,
+  token: string,
+): Promise<ForgeAccount> =>
+  invoke('forge_save_token', {
+    args: { forgeKind, baseUrl, username, token },
+  })
+
+export const forgeListAccounts = (): Promise<ForgeAccount[]> =>
+  invoke('forge_list_accounts')
+
+export const forgeDeleteAccount = (id: number): Promise<void> =>
+  invoke('forge_delete_account', { id })
+
+export const forgeWhoami = (
+  forgeKind: 'gitea' | 'github',
+  baseUrl: string,
+  token: string,
+): Promise<ForgeAuthor> =>
+  invoke('forge_whoami', { args: { forgeKind, baseUrl, token } })
+
+export const listPullRequests = (
+  repoId: number,
+  stateFilter?: PrState | null,
+): Promise<PullRequest[]> =>
+  invoke('list_pull_requests', { args: { repoId, stateFilter } })
+
+export const getPullRequest = (repoId: number, number: number): Promise<PullRequest> =>
+  invoke('get_pull_request', { args: { repoId, number } })
+
+export const createPullRequest = (args: {
+  repoId: number
+  title: string
+  body: string
+  head: string
+  base: string
+  draft?: boolean
+}): Promise<PullRequest> => invoke('create_pull_request', { args })
+
+export const listForgeIssues = (repoId: number): Promise<ForgeIssue[]> =>
+  invoke('list_issues', { repoId })
+
+export const listForgeReleases = (repoId: number): Promise<ForgeRelease[]> =>
+  invoke('list_releases', { repoId })
+
 // --- 진단 ---
 export interface AppInfo {
   version: string

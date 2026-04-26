@@ -4,5 +4,7 @@
 // generate_handler! 매크로 호출은 lib.rs 의 invoke_handler() 에서 직접.
 // (Box<dyn Fn> 으로 감싸지 못하는 매크로 한계 우회)
 pub mod commands;
+pub mod forge_commands;
 
 pub use commands::*;
+pub use forge_commands::*;

@@ -58,6 +58,11 @@ parking_lot = "0.12"
 once_cell = "1.20"
 dirs = "5.0"
 
+# OS keychain — PAT / SSH passphrase 저장
+keyring = { version = "3.4", features = ["apple-native", "windows-native", "linux-native"] }
+# URL parsing for forge clients
+url = "2.5"
+
 [dev-dependencies]
 tempfile = "3.13"
 tokio-test = "0.4"
