@@ -14,6 +14,8 @@ import { computed, ref, watch } from 'vue'
 import ForgeSetup from '@/components/ForgeSetup.vue'
 import ProfilesSection from '@/components/ProfilesSection.vue'
 import { useUiState } from '@/composables/useUiState'
+import { useCustomTheme } from '@/composables/useCustomTheme'
+import { useToast } from '@/composables/useToast'
 
 type Category =
   | 'profiles'
@@ -116,6 +118,37 @@ watch(
   },
   { deep: true },
 )
+
+// ===== Custom theme JSON (Sprint C4) =====
+const ctheme = useCustomTheme()
+const toast = useToast()
+const themeImportText = ref('')
+const themeExportText = ref('')
+
+function onExportTheme() {
+  themeExportText.value = ctheme.exportJson()
+}
+function onImportTheme() {
+  const r = ctheme.importJson(themeImportText.value)
+  if (r.ok) {
+    toast.success('테마 적용', '커스텀 CSS 변수 활성화')
+    themeImportText.value = ''
+  } else {
+    toast.error('테마 import 실패', r.error || '?')
+  }
+}
+function onResetTheme() {
+  ctheme.reset()
+  toast.success('테마 초기화', '기본 dark/light 로 복원')
+}
+async function copyThemeExport() {
+  try {
+    await navigator.clipboard.writeText(themeExportText.value)
+    toast.success('클립보드 복사', '')
+  } catch {
+    toast.error('복사 실패', '')
+  }
+}
 
 // ===== About =====
 const uiState = useUiState()
@@ -252,8 +285,62 @@ const buildInfo = computed(() => ({
         </label>
 
         <p class="text-[10px] text-muted-foreground">
-          v1.x 추가 예정: 그래프 메타데이터 토글 / 알림 위치 / 데스크탑 OS notification.
+          v1.x 추가 예정: 그래프 메타데이터 토글 / 알림 위치.
         </p>
+
+        <!-- Sprint C4 — Custom theme JSON -->
+        <h3 class="mt-4 text-sm font-semibold">Custom theme (JSON)</h3>
+        <p class="text-xs text-muted-foreground">
+          GitKraken 11.8 부터 일시 비활성된 custom theme — git-fried 가 단순 CSS
+          변수 export/import 로 흡수.
+          {{ ctheme.customTheme.value ? `현재 적용 중: ${ctheme.customTheme.value.name}` : '커스텀 미적용' }}
+        </p>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="rounded border border-input px-2 py-0.5 text-xs hover:bg-accent"
+            @click="onExportTheme"
+          >
+            현재 테마 export
+          </button>
+          <button
+            v-if="ctheme.customTheme.value"
+            type="button"
+            class="rounded border border-destructive/40 px-2 py-0.5 text-xs text-destructive hover:bg-destructive/10"
+            @click="onResetTheme"
+          >
+            기본값 복원
+          </button>
+        </div>
+        <textarea
+          v-if="themeExportText"
+          :value="themeExportText"
+          readonly
+          rows="6"
+          class="mt-1 w-full rounded border border-border bg-muted/20 p-2 font-mono text-[11px]"
+        />
+        <button
+          v-if="themeExportText"
+          type="button"
+          class="self-end rounded border border-input px-2 py-0.5 text-xs hover:bg-accent"
+          @click="copyThemeExport"
+        >
+          복사
+        </button>
+        <textarea
+          v-model="themeImportText"
+          rows="5"
+          placeholder='커스텀 테마 JSON 붙여넣기 — { "name": "...", "mode": "dark"|"light", "vars": { "--background": "240 10% 3.9%", ... } }'
+          class="mt-3 w-full rounded border border-border bg-background p-2 font-mono text-[11px]"
+        />
+        <button
+          type="button"
+          class="self-end rounded bg-primary px-3 py-0.5 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          :disabled="!themeImportText.trim()"
+          @click="onImportTheme"
+        >
+          Import / 적용
+        </button>
       </div>
 
       <!-- Editor / Terminal -->
