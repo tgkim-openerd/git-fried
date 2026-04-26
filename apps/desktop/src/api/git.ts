@@ -191,6 +191,28 @@ export const reset = (repoId: number, mode: ResetMode, target: string): Promise<
 export const revert = (repoId: number, sha: string, noCommit = false): Promise<void> =>
   invoke('revert', { args: { repoId, sha, noCommit } })
 
+// === 3-way merge ===
+export interface ConflictedFile {
+  path: string
+  base: string | null
+  ours: string | null
+  theirs: string | null
+  working: string | null
+}
+export type SideTake = 'ours' | 'theirs'
+export const readConflicted = (repoId: number, path: string): Promise<ConflictedFile> =>
+  invoke('read_conflicted', { args: { repoId, path } })
+export const writeResolved = (
+  repoId: number,
+  path: string,
+  content: string,
+): Promise<void> => invoke('write_resolved', { args: { repoId, path, content } })
+export const takeSide = (
+  repoId: number,
+  path: string,
+  side: SideTake,
+): Promise<void> => invoke('take_side', { args: { repoId, path, side } })
+
 // === File history / Blame ===
 export interface BlameLine {
   sha: string

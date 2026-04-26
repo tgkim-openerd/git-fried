@@ -13,6 +13,7 @@ import {
   unstagePaths,
 } from '@/api/git'
 import FileHistoryModal from './FileHistoryModal.vue'
+import MergeEditorModal from './MergeEditorModal.vue'
 import type { ChangeStatus, FileChange } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -84,6 +85,14 @@ const historyOpen = ref(false)
 function openHistory(path: string) {
   historyPath.value = path
   historyOpen.value = true
+}
+
+// 3-way merge modal state
+const mergePath = ref<string | null>(null)
+const mergeOpen = ref(false)
+function openMerge(path: string) {
+  mergePath.value = path
+  mergeOpen.value = true
 }
 
 function statusColor(s: ChangeStatus): string {
@@ -229,9 +238,16 @@ function statusColor(s: ChangeStatus): string {
           <li
             v-for="p in status.conflicted"
             :key="`c-${p}`"
-            class="rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
+            class="group flex items-center gap-2 rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
           >
-            ! {{ p }}
+            <span class="flex-1 truncate font-mono">! {{ p }}</span>
+            <button
+              type="button"
+              class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+              @click="openMerge(p)"
+            >
+              해결
+            </button>
           </li>
         </ul>
       </div>
@@ -242,6 +258,12 @@ function statusColor(s: ChangeStatus): string {
       :path="historyPath"
       :open="historyOpen"
       @close="historyOpen = false"
+    />
+    <MergeEditorModal
+      :repo-id="repoId"
+      :path="mergePath"
+      :open="mergeOpen"
+      @close="mergeOpen = false"
     />
   </section>
 </template>

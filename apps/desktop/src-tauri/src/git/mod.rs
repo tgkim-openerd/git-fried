@@ -11,6 +11,7 @@ pub mod commit;
 pub mod diff;
 pub mod file_history;
 pub mod graph;
+pub mod merge;
 pub mod repository;
 pub mod reset;
 pub mod runner;

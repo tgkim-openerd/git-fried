@@ -2,7 +2,9 @@
 
 use crate::ai;
 use crate::error::{AppError, AppResult};
-use crate::git::{cherry_pick as git_cp, file_history as git_fh, worktree as git_wt};
+use crate::git::{
+    cherry_pick as git_cp, file_history as git_fh, merge as git_merge, worktree as git_wt,
+};
 use crate::AppState;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -104,6 +106,61 @@ pub async fn bulk_cherry_pick(
         args.no_commit,
     )
     .await
+}
+
+// ====== 3-way merge ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConflictedFileArgs {
+    pub repo_id: i64,
+    pub path: String,
+}
+
+#[tauri::command]
+pub async fn read_conflicted(
+    args: ConflictedFileArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_merge::ConflictedFile> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let p = args.path;
+    tokio::task::spawn_blocking(move || git_merge::read_conflicted(&path, &p))
+        .await
+        .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))?
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WriteResolvedArgs {
+    pub repo_id: i64,
+    pub path: String,
+    pub content: String,
+}
+
+#[tauri::command]
+pub async fn write_resolved(
+    args: WriteResolvedArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_merge::write_resolved(&path, &args.path, &args.content).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TakeSideArgs {
+    pub repo_id: i64,
+    pub path: String,
+    pub side: git_merge::SideTake,
+}
+
+#[tauri::command]
+pub async fn take_side(
+    args: TakeSideArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_merge::take_side(&path, &args.path, args.side).await
 }
 
 // ====== File history / Blame ======
