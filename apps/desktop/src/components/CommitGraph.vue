@@ -66,14 +66,35 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 const ROW_H = 28
-const LANE_W = 16
+const DEFAULT_LANE_W = 16
+const LANE_W_KEY = 'git-fried.commit-graph-lane-width'
+const LANE_W_MIN = 8
+const LANE_W_MAX = 36
+
+function loadLaneW(): number {
+  if (typeof localStorage === 'undefined') return DEFAULT_LANE_W
+  const v = localStorage.getItem(LANE_W_KEY)
+  if (!v) return DEFAULT_LANE_W
+  const n = Number.parseInt(v, 10)
+  if (!Number.isFinite(n)) return DEFAULT_LANE_W
+  return Math.min(LANE_W_MAX, Math.max(LANE_W_MIN, n))
+}
+const laneW = ref<number>(loadLaneW())
+watch(laneW, (v) => {
+  if (typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(LANE_W_KEY, String(v))
+  } catch {
+    /* ignore */
+  }
+})
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 const rows = computed<GraphRow[]>(() => graph.value?.rows ?? [])
 const maxLane = computed(() => graph.value?.maxLane ?? 1)
-const graphWidth = computed(() => Math.max(1, maxLane.value) * LANE_W + 16)
+const graphWidth = computed(() => Math.max(1, maxLane.value) * laneW.value + 16)
 
 const virtualizer = useVirtualizer(
   computed(() => ({
@@ -129,7 +150,8 @@ function drawGraph() {
 
     // 1. crossing lanes — vertical line
     for (const lane of row.crossingLanes) {
-      const x = lane * LANE_W + LANE_W / 2
+      const lw = laneW.value
+      const x = lane * lw + lw / 2
       ctx.strokeStyle = laneColor(lane)
       ctx.lineWidth = 1.5
       ctx.beginPath()
@@ -142,9 +164,10 @@ function drawGraph() {
     const nextRow = rows.value[idx + 1]
     if (nextRow) {
       const nextY = v.start - scrollTop + ROW_H + ROW_H / 2
-      const fromX = row.lane * LANE_W + LANE_W / 2
+      const lw = laneW.value
+      const fromX = row.lane * lw + lw / 2
       for (const pl of row.parentLanes) {
-        const toX = pl * LANE_W + LANE_W / 2
+        const toX = pl * lw + lw / 2
         ctx.strokeStyle = laneColor(pl)
         ctx.lineWidth = 1.5
         ctx.beginPath()
@@ -169,7 +192,8 @@ function drawGraph() {
     }
 
     // 3. node circle (이 commit 의 lane)
-    const cx = row.lane * LANE_W + LANE_W / 2
+    const lw3 = laneW.value
+    const cx = row.lane * lw3 + lw3 / 2
     ctx.fillStyle = laneColor(row.lane)
     ctx.beginPath()
     ctx.arc(cx, y, row.isMerge ? 4 : 3.5, 0, Math.PI * 2)
@@ -186,7 +210,7 @@ onMounted(() => {
   nextTick(() => drawGraph())
   window.addEventListener('keydown', onKeydown)
 })
-watch([rows, maxLane, virtualItems], () => nextTick(() => drawGraph()))
+watch([rows, maxLane, virtualItems, laneW], () => nextTick(() => drawGraph()))
 import { onUnmounted } from 'vue'
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
@@ -287,6 +311,40 @@ function onReorder() {
 function colDef(id: CommitColumnId) {
   return cols.allColumns.find((c) => c.id === id)
 }
+
+// === Sprint C5 — Lane drag-resize ===
+let dragStartX = 0
+let dragStartLaneW = 16
+let dragging = false
+
+function onDragHandleStart(ev: MouseEvent) {
+  ev.preventDefault()
+  dragging = true
+  dragStartX = ev.clientX
+  dragStartLaneW = laneW.value
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('mouseup', onDragEnd)
+}
+
+function onDragMove(ev: MouseEvent) {
+  if (!dragging) return
+  const dx = ev.clientX - dragStartX
+  // maxLane 가 1 이면 dx 1 = laneW 1 변화. maxLane 가 5 면 dx 5 = laneW 1.
+  const denom = Math.max(1, maxLane.value)
+  const next = Math.round(dragStartLaneW + dx / denom)
+  laneW.value = Math.min(36, Math.max(8, next))
+}
+
+function onDragEnd() {
+  dragging = false
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+}
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+})
 </script>
 
 <template>
@@ -404,6 +462,21 @@ function colDef(id: CommitColumnId) {
             pointerEvents: 'none',
           }"
           class="block"
+        />
+        <!-- Sprint C5 — Lane drag-resize handle -->
+        <div
+          :style="{
+            position: 'sticky',
+            top: 0,
+            left: graphWidth - 2 + 'px',
+            width: '4px',
+            height: '100%',
+            zIndex: 2,
+            cursor: 'col-resize',
+          }"
+          class="hover:bg-primary/40 transition-colors"
+          title="드래그로 그래프 폭 조절"
+          @mousedown="onDragHandleStart"
         />
         <!-- row 들 -->
         <div
