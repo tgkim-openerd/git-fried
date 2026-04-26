@@ -18,6 +18,7 @@ import { useShortcut } from '@/composables/useShortcuts'
 import { useToast } from '@/composables/useToast'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
+import HunkStageModal from './HunkStageModal.vue'
 import type { ChangeStatus, FileChange } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -98,6 +99,16 @@ const mergeOpen = ref(false)
 function openMerge(path: string) {
   mergePath.value = path
   mergeOpen.value = true
+}
+
+// Sprint H — Hunk-level stage / unstage
+const hunkPath = ref<string | null>(null)
+const hunkStaged = ref(false)
+const hunkOpen = ref(false)
+function openHunk(path: string, staged: boolean) {
+  hunkPath.value = path
+  hunkStaged.value = staged
+  hunkOpen.value = true
 }
 
 // Sprint C6 — 외부 merge tool launch
@@ -254,7 +265,18 @@ const isSelected = computed(
             :selected="isSelected(f.path)"
             @select="selectPath(f.path)"
             @action="onUnstageOne(f.path)"
-          />
+          >
+            <template #extra>
+              <button
+                type="button"
+                class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-foreground"
+                title="Hunk-level unstage (✂)"
+                @click.stop="openHunk(f.path, true)"
+              >
+                ✂
+              </button>
+            </template>
+          </FileRow>
         </ul>
       </div>
 
@@ -299,6 +321,14 @@ const isSelected = computed(
               @click.stop="onDiscardOne(f.path)"
             >
               ⤺
+            </button>
+            <button
+              type="button"
+              class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-foreground"
+              title="Hunk-level stage (✂)"
+              @click.stop="openHunk(f.path, false)"
+            >
+              ✂
             </button>
             <button
               type="button"
@@ -386,6 +416,13 @@ const isSelected = computed(
       :path="mergePath"
       :open="mergeOpen"
       @close="mergeOpen = false"
+    />
+    <HunkStageModal
+      :repo-id="repoId"
+      :path="hunkPath"
+      :staged="hunkStaged"
+      :open="hunkOpen"
+      @close="hunkOpen = false"
     />
   </section>
 </template>

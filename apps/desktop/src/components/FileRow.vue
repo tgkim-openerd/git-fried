@@ -20,6 +20,7 @@ defineEmits<{ action: []; select: [] }>()
   >
     <span :class="['shrink-0 w-12 text-[10px] uppercase', color]">{{ label }}</span>
     <span class="flex-1 truncate font-mono text-xs">{{ file.path }}</span>
+    <slot name="extra" />
     <button
       type="button"
       class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
