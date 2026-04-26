@@ -147,6 +147,37 @@ export const dropStash = (repoId: number, index: number): Promise<void> =>
 export const showStash = (repoId: number, index: number): Promise<string> =>
   invoke('show_stash', { args: { repoId, index } })
 
+// --- Submodule ---
+export interface SubmoduleEntry {
+  path: string
+  sha: string | null
+  status: 'uninitialized' | 'initialized' | 'modified' | 'conflicted' | 'unknown'
+  flag: string
+}
+export const listSubmodules = (repoId: number): Promise<SubmoduleEntry[]> =>
+  invoke('list_submodules', { repoId })
+export const initSubmodules = (repoId: number): Promise<void> =>
+  invoke('init_submodules', { repoId })
+export const updateSubmodules = (repoId: number, remote = false): Promise<void> =>
+  invoke('update_submodules', { args: { repoId, remote } })
+export const syncSubmodules = (repoId: number): Promise<void> =>
+  invoke('sync_submodules', { repoId })
+
+// --- Bulk (multi-repo) ---
+export interface BulkResult<T> {
+  repoId: number
+  repoName: string
+  success: boolean
+  data: T | null
+  error: string | null
+}
+export const bulkFetch = (
+  workspaceId?: number | null,
+): Promise<BulkResult<SyncResult>[]> => invoke('bulk_fetch', { workspaceId })
+export const bulkStatus = (
+  workspaceId?: number | null,
+): Promise<BulkResult<RepoStatus>[]> => invoke('bulk_status', { workspaceId })
+
 // --- Reset / Revert ---
 export type ResetMode = 'soft' | 'mixed' | 'hard' | 'keep'
 export const reset = (repoId: number, mode: ResetMode, target: string): Promise<void> =>

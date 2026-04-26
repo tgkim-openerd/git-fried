@@ -87,6 +87,12 @@ pub fn run() {
             ipc::commands::reset,
             ipc::commands::revert,
             ipc::commands::get_graph,
+            ipc::commands::list_submodules,
+            ipc::commands::init_submodules,
+            ipc::commands::update_submodules,
+            ipc::commands::sync_submodules,
+            ipc::commands::bulk_fetch,
+            ipc::commands::bulk_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -9,9 +9,9 @@
 
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    branch as git_branch, commit as git_commit, diff as git_diff, graph as git_graph,
-    repository as repo, reset as git_reset, runner, stage, stash as git_stash,
-    status as git_status, sync as git_sync,
+    branch as git_branch, bulk as git_bulk, commit as git_commit, diff as git_diff,
+    graph as git_graph, repository as repo, reset as git_reset, runner, stage,
+    stash as git_stash, status as git_status, submodule as git_sub, sync as git_sync,
 };
 use crate::storage::{Db, DbExt, Repo, Workspace};
 use crate::AppState;
@@ -593,6 +593,70 @@ pub async fn revert(
 ) -> AppResult<()> {
     let path = repo_path(&state, args.repo_id).await?;
     git_reset::revert(&path, &args.sha, args.no_commit).await
+}
+
+// ====== Submodule ======
+
+#[tauri::command]
+pub async fn list_submodules(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_sub::SubmoduleEntry>> {
+    let path = repo_path(&state, repo_id).await?;
+    git_sub::list_submodules(&path).await
+}
+
+#[tauri::command]
+pub async fn init_submodules(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_sub::init_submodules(&path).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSubmodulesArgs {
+    pub repo_id: i64,
+    #[serde(default)]
+    pub remote: bool,
+}
+
+#[tauri::command]
+pub async fn update_submodules(
+    args: UpdateSubmodulesArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_sub::update_submodules(&path, args.remote).await
+}
+
+#[tauri::command]
+pub async fn sync_submodules(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_sub::sync_submodules(&path).await
+}
+
+// ====== Bulk (multi-repo) ======
+
+#[tauri::command]
+pub async fn bulk_fetch(
+    workspace_id: Option<i64>,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_bulk::BulkResult<git_sync::SyncResult>>> {
+    git_bulk::bulk_fetch(&state.db, workspace_id).await
+}
+
+#[tauri::command]
+pub async fn bulk_status(
+    workspace_id: Option<i64>,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_bulk::BulkResult<git_status::RepoStatus>>> {
+    git_bulk::bulk_status(&state.db, workspace_id).await
 }
 
 #[allow(dead_code)]

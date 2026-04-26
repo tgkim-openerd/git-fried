@@ -9,6 +9,7 @@ import SyncBar from '@/components/SyncBar.vue'
 import CommitMessageInput from '@/components/CommitMessageInput.vue'
 import BranchPanel from '@/components/BranchPanel.vue'
 import StashPanel from '@/components/StashPanel.vue'
+import SubmodulePanel from '@/components/SubmodulePanel.vue'
 
 const store = useReposStore()
 const { data: status } = useStatus(() => store.activeRepoId)
@@ -18,7 +19,7 @@ const upstream = computed(() => status.value?.upstream ?? null)
 const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
-type Tab = 'status' | 'branches' | 'stash'
+type Tab = 'status' | 'branches' | 'stash' | 'submodule'
 const tab = ref<Tab>('status')
 </script>
 
@@ -40,7 +41,7 @@ const tab = ref<Tab>('status')
       <div class="grid grid-rows-[auto_1fr_auto] overflow-hidden border-l border-border">
         <nav class="flex border-b border-border bg-card text-xs">
           <button
-            v-for="t in ['status', 'branches', 'stash'] as Tab[]"
+            v-for="t in ['status', 'branches', 'stash', 'submodule'] as Tab[]"
             :key="t"
             type="button"
             class="flex-1 px-2 py-1.5 capitalize"
@@ -51,14 +52,23 @@ const tab = ref<Tab>('status')
             "
             @click="tab = t"
           >
-            {{ t === 'status' ? '변경' : t === 'branches' ? '브랜치' : 'Stash' }}
+            {{
+              t === 'status'
+                ? '변경'
+                : t === 'branches'
+                ? '브랜치'
+                : t === 'stash'
+                ? 'Stash'
+                : 'Submodule'
+            }}
           </button>
         </nav>
 
         <div class="overflow-hidden">
           <StatusPanel v-if="tab === 'status'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
           <BranchPanel v-else-if="tab === 'branches'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
-          <StashPanel v-else :repo-id="store.activeRepoId" class="h-full border-l-0" />
+          <StashPanel v-else-if="tab === 'stash'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
+          <SubmodulePanel v-else :repo-id="store.activeRepoId" class="h-full border-l-0" />
         </div>
 
         <CommitMessageInput

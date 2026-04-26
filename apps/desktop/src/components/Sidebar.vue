@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+// 워크스페이스 + 레포 사이드바.
+// 추가 기능 (v0.1 S4):
+//   - 듀얼 레포 자동 그룹핑 (예: peeloff/frontend + peeloff/frontend-admin)
+//   - 워크스페이스 전체 일괄 Fetch 버튼
+import { computed } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { open } from '@tauri-apps/plugin-dialog'
-import { addRepo, listRepos, listWorkspaces } from '@/api/git'
+import { addRepo, bulkFetch, listRepos, listWorkspaces } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
+import type { Repo } from '@/types/git'
 
 const store = useReposStore()
-const queryClient = useQueryClient()
+const qc = useQueryClient()
 
 const { data: workspaces } = useQuery({
   queryKey: ['workspaces'],
@@ -13,17 +19,36 @@ const { data: workspaces } = useQuery({
 })
 
 const { data: repos, isFetching } = useQuery({
-  queryKey: ['repos', store.activeWorkspaceId],
+  queryKey: computed(() => ['repos', store.activeWorkspaceId]),
   queryFn: () => listRepos(store.activeWorkspaceId),
 })
 
 const addRepoMutation = useMutation({
   mutationFn: addRepo,
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['repos'] }),
+  onSuccess: () => qc.invalidateQueries({ queryKey: ['repos'] }),
+})
+
+const bulkFetchMut = useMutation({
+  mutationFn: () => bulkFetch(store.activeWorkspaceId),
+  onSuccess: (results) => {
+    qc.invalidateQueries({ queryKey: ['status'] })
+    qc.invalidateQueries({ queryKey: ['log'] })
+    qc.invalidateQueries({ queryKey: ['graph'] })
+    qc.invalidateQueries({ queryKey: ['branches'] })
+    const failed = results.filter((r) => !r.success)
+    if (failed.length > 0) {
+      alert(
+        `일괄 fetch 일부 실패 (${failed.length}/${results.length}):\n` +
+          failed
+            .slice(0, 5)
+            .map((f) => `- ${f.repoName}: ${(f.error || '').split('\n')[0]}`)
+            .join('\n'),
+      )
+    }
+  },
 })
 
 async function pickAndAddRepo() {
-  // OS 네이티브 폴더 선택 다이얼로그
   const selected = await open({ directory: true, multiple: false })
   if (typeof selected === 'string' && selected) {
     addRepoMutation.mutate({
@@ -36,44 +61,99 @@ async function pickAndAddRepo() {
 function selectRepo(id: number) {
   store.setActiveRepo(id)
 }
+
+// === 듀얼 레포 그룹핑 ===
+//
+// peeloff/frontend + peeloff/frontend-admin 같은 패턴 자동 감지:
+// localPath 의 부모 디렉토리 이름이 같으면 같은 그룹으로 묶음.
+interface RepoGroup {
+  key: string
+  label: string | null
+  repos: Repo[]
+}
+
+const groups = computed<RepoGroup[]>(() => {
+  if (!repos.value) return []
+  const map = new Map<string, Repo[]>()
+  for (const r of repos.value) {
+    const key = parentDirName(r.localPath) || '__solo__'
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(r)
+  }
+  const result: RepoGroup[] = []
+  for (const [key, list] of map.entries()) {
+    if (list.length === 1) {
+      result.push({ key, label: null, repos: list })
+    } else {
+      result.push({ key, label: key, repos: list })
+    }
+  }
+  // 그룹 우선 → solo 알파벳
+  result.sort((a, b) => {
+    if (a.label && !b.label) return -1
+    if (!a.label && b.label) return 1
+    return (a.label || a.repos[0].name).localeCompare(b.label || b.repos[0].name)
+  })
+  return result
+})
+
+function parentDirName(p: string): string | null {
+  // 윈도/유닉스 둘 다 처리
+  const norm = p.replace(/\\/g, '/').replace(/\/+$/, '')
+  const parts = norm.split('/')
+  return parts.length >= 2 ? parts[parts.length - 2] : null
+}
 </script>
 
 <template>
   <aside
     class="flex h-screen flex-col border-r border-border bg-card text-card-foreground"
   >
-    <header class="flex items-center justify-between border-b border-border px-4 py-3">
+    <header
+      class="flex items-center justify-between border-b border-border px-4 py-3"
+    >
       <span class="font-mono text-sm font-semibold tracking-tight">git-fried</span>
       <span class="text-xs text-muted-foreground">v0.0</span>
     </header>
 
-    <!-- 워크스페이스 선택 -->
+    <!-- 워크스페이스 + 일괄 Fetch -->
     <section class="border-b border-border px-3 py-2">
       <label class="text-xs uppercase tracking-wider text-muted-foreground">
         워크스페이스
       </label>
-      <select
-        :value="store.activeWorkspaceId ?? ''"
-        @change="
-          (e) =>
-            store.setActiveWorkspace(
-              ((e.target as HTMLSelectElement).value || null) as never
-            )
-        "
-        class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-      >
-        <option value="">전체</option>
-        <option v-for="w in workspaces" :key="w.id" :value="w.id">
-          {{ w.name }}
-        </option>
-      </select>
+      <div class="mt-1 flex gap-1">
+        <select
+          :value="store.activeWorkspaceId ?? ''"
+          @change="
+            (e) =>
+              store.setActiveWorkspace(
+                ((e.target as HTMLSelectElement).value || null) as never,
+              )
+          "
+          class="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm"
+        >
+          <option value="">전체</option>
+          <option v-for="w in workspaces" :key="w.id" :value="w.id">
+            {{ w.name }}
+          </option>
+        </select>
+        <button
+          type="button"
+          class="rounded-md border border-input px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+          :disabled="bulkFetchMut.isPending.value || !repos || repos.length === 0"
+          :title="`현재 ${repos?.length ?? 0}개 레포 일괄 fetch`"
+          @click="bulkFetchMut.mutate()"
+        >
+          {{ bulkFetchMut.isPending.value ? '⟳' : '⤓' }}
+        </button>
+      </div>
     </section>
 
-    <!-- 레포 리스트 -->
+    <!-- 레포 리스트 (그룹 + solo) -->
     <section class="flex-1 overflow-auto">
       <div class="flex items-center justify-between px-3 py-2">
         <span class="text-xs uppercase tracking-wider text-muted-foreground">
-          레포
+          레포 ({{ repos?.length ?? 0 }})
         </span>
         <button
           type="button"
@@ -84,32 +164,44 @@ function selectRepo(id: number) {
           + 추가
         </button>
       </div>
+
       <ul class="px-1 pb-3">
-        <li
-          v-for="repo in repos"
-          :key="repo.id"
-          class="cursor-pointer rounded-md px-2 py-1 text-sm hover:bg-accent"
-          :class="{
-            'bg-accent text-accent-foreground': store.activeRepoId === repo.id,
-          }"
-          @click="selectRepo(repo.id)"
-        >
-          <div class="flex items-center justify-between">
-            <span class="truncate">{{ repo.name }}</span>
-            <span
-              v-if="repo.forgeKind !== 'unknown'"
-              class="ml-2 shrink-0 rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
-            >
-              {{ repo.forgeKind }}
-            </span>
-          </div>
-          <div
-            v-if="repo.defaultBranch"
-            class="truncate text-[11px] text-muted-foreground"
+        <template v-for="g in groups" :key="g.key">
+          <!-- 그룹 헤더 (듀얼 레포만) -->
+          <li
+            v-if="g.label"
+            class="mt-2 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground"
           >
-            {{ repo.defaultBranch }}
-          </div>
-        </li>
+            ⇆ {{ g.label }}
+          </li>
+          <li
+            v-for="repo in g.repos"
+            :key="repo.id"
+            class="cursor-pointer rounded-md py-1 text-sm hover:bg-accent"
+            :class="[
+              g.label ? 'pl-5 pr-2' : 'px-2',
+              store.activeRepoId === repo.id ? 'bg-accent text-accent-foreground' : '',
+            ]"
+            @click="selectRepo(repo.id)"
+          >
+            <div class="flex items-center justify-between">
+              <span class="truncate">{{ repo.name }}</span>
+              <span
+                v-if="repo.forgeKind !== 'unknown'"
+                class="ml-2 shrink-0 rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+              >
+                {{ repo.forgeKind }}
+              </span>
+            </div>
+            <div
+              v-if="repo.defaultBranch"
+              class="truncate text-[11px] text-muted-foreground"
+            >
+              {{ repo.defaultBranch }}
+            </div>
+          </li>
+        </template>
+
         <li
           v-if="!isFetching && (!repos || repos.length === 0)"
           class="px-2 py-3 text-xs text-muted-foreground"
