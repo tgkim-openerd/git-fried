@@ -2,7 +2,7 @@
 
 > **GitHub 개인 + Gitea 회사를 동시에 다루는 한국 풀스택 개발자를 위한, GitKraken 보다 가볍고 정확한 데스크탑 Git 클라이언트.**
 
-상태: **planning (v0.0 진입 전)** — 종합 기획서 작성 중. 코드 없음.
+상태: **v0.2-stretch (검증 대기)** — v0.0 + v0.1 (5 sprint) + v0.2 stretch 4개 작성 완료. **사용자 Windows 환경에서 빌드/dogfood 필요**. → [REVIEW.md](REVIEW.md) / [DOGFOOD.md](DOGFOOD.md)
 
 ## 차별화 4축
 
