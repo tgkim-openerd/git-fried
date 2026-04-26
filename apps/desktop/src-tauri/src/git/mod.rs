@@ -6,6 +6,7 @@
 //   - 모든 child process 는 한글 안전 spawn 함수 (runner::git_run) 통과
 pub mod branch;
 pub mod bulk;
+pub mod cherry_pick;
 pub mod commit;
 pub mod diff;
 pub mod graph;
@@ -17,6 +18,7 @@ pub mod stash;
 pub mod status;
 pub mod submodule;
 pub mod sync;
+pub mod worktree;
 
 #[cfg(test)]
 mod tests;

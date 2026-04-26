@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 최상위 레이아웃: 사이드바(좌) + 본문(우, file-routing 페이지) + 헤더 (Theme / Settings).
 import Sidebar from './components/Sidebar.vue'
+import CommandPalette from './components/CommandPalette.vue'
 import { useTheme } from '@/composables/useTheme'
 import { RouterLink } from 'vue-router'
 
@@ -40,5 +41,6 @@ const { theme, toggle } = useTheme()
       </div>
       <RouterView class="flex-1 overflow-hidden" />
     </main>
+    <CommandPalette />
   </div>
 </template>

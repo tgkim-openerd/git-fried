@@ -62,6 +62,8 @@ dirs = "5.0"
 keyring = { version = "3.4", features = ["apple-native", "windows-native", "linux-native"] }
 # URL parsing for forge clients
 url = "2.5"
+# regex for secret masking (AI subprocess input)
+regex = "1.10"
 
 [dev-dependencies]
 tempfile = "3.13"

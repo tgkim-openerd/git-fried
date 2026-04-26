@@ -5,6 +5,7 @@
 //   - git: git2-rs / git CLI 하이브리드 + 한글 spawn 표준
 //   - storage: SQLite + sqlx + 마이그레이션
 //   - ipc: Tauri commands (#[tauri::command])
+pub mod ai;
 pub mod auth;
 pub mod error;
 pub mod forge;
@@ -104,6 +105,14 @@ pub fn run() {
             ipc::forge_commands::create_pull_request,
             ipc::forge_commands::list_issues,
             ipc::forge_commands::list_releases,
+            ipc::v02_commands::list_worktrees,
+            ipc::v02_commands::add_worktree,
+            ipc::v02_commands::remove_worktree,
+            ipc::v02_commands::prune_worktrees,
+            ipc::v02_commands::bulk_cherry_pick,
+            ipc::v02_commands::ai_detect_clis,
+            ipc::v02_commands::ai_commit_message,
+            ipc::v02_commands::ai_pr_body,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -185,6 +185,82 @@ export const reset = (repoId: number, mode: ResetMode, target: string): Promise<
 export const revert = (repoId: number, sha: string, noCommit = false): Promise<void> =>
   invoke('revert', { args: { repoId, sha, noCommit } })
 
+// === Worktree ===
+export interface WorktreeEntry {
+  path: string
+  branch: string | null
+  headSha: string | null
+  isMain: boolean
+  isLocked: boolean
+  isPrunable: boolean
+  sizeBytes: number | null
+}
+export const listWorktrees = (repoId: number): Promise<WorktreeEntry[]> =>
+  invoke('list_worktrees', { repoId })
+export const addWorktree = (args: {
+  repoId: number
+  path: string
+  createBranch?: string
+  branch?: string
+  startPoint?: string
+}): Promise<void> => invoke('add_worktree', { args })
+export const removeWorktree = (
+  repoId: number,
+  path: string,
+  force = false,
+): Promise<void> =>
+  invoke('remove_worktree', { args: { repoId, path, force } })
+export const pruneWorktrees = (repoId: number): Promise<void> =>
+  invoke('prune_worktrees', { repoId })
+
+// === Cherry-pick (멀티 레포) ===
+export type CherryPickStrategy = 'default' | 'mainlineParent'
+export interface CherryPickResult {
+  repoId: number
+  repoName: string
+  success: boolean
+  stdout: string
+  stderr: string
+  conflicted: boolean
+}
+export const bulkCherryPick = (args: {
+  repoIds: number[]
+  sha: string
+  strategy: CherryPickStrategy
+  noCommit?: boolean
+}): Promise<CherryPickResult[]> => invoke('bulk_cherry_pick', { args })
+
+// === AI (Claude / Codex CLI subprocess) ===
+export type AiCli = 'claude' | 'codex'
+export interface AiProbe {
+  cli: AiCli
+  installed: boolean
+  version: string | null
+}
+export interface AiOutput {
+  success: boolean
+  text: string
+  stderr: string
+  tookMs: number
+}
+export const aiDetectClis = (): Promise<AiProbe[]> => invoke('ai_detect_clis')
+export const aiCommitMessage = (
+  repoId: number,
+  cli: AiCli,
+  userApproved: boolean,
+): Promise<AiOutput> =>
+  invoke('ai_commit_message', { args: { repoId, cli, userApproved } })
+export const aiPrBody = (
+  repoId: number,
+  cli: AiCli,
+  headBranch: string,
+  baseBranch: string,
+  userApproved: boolean,
+): Promise<AiOutput> =>
+  invoke('ai_pr_body', {
+    args: { repoId, cli, headBranch, baseBranch, userApproved },
+  })
+
 // === Forge (Gitea + GitHub) ===
 export type PrState = 'open' | 'closed' | 'merged' | 'draft'
 export type IssueState = 'open' | 'closed'

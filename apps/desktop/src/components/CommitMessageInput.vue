@@ -5,8 +5,9 @@
 //   - 한글 메시지 55~72%
 // → 디폴트 빌더 모드, 자유 입력 토글 가능.
 import { computed, ref } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
-import { commit as ipcCommit } from '@/api/git'
+import { useMutation, useQuery } from '@tanstack/vue-query'
+import { aiCommitMessage, aiDetectClis, commit as ipcCommit } from '@/api/git'
+import type { AiCli } from '@/api/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import {
   buildConventional,
@@ -76,6 +77,63 @@ const commitMut = useMutation({
 function canCommit(): boolean {
   return finalMessage.value.trim().length > 0 && props.repoId != null
 }
+
+// === AI commit message (Claude / Codex CLI) ===
+const { data: aiProbes } = useQuery({
+  queryKey: ['aiProbes'],
+  queryFn: aiDetectClis,
+  staleTime: 60_000,
+})
+const availableCli = computed<AiCli | null>(() => {
+  const p = aiProbes.value
+  if (!p) return null
+  if (p.find((x) => x.cli === 'claude' && x.installed)) return 'claude'
+  if (p.find((x) => x.cli === 'codex' && x.installed)) return 'codex'
+  return null
+})
+
+const aiMut = useMutation({
+  mutationFn: () => {
+    if (props.repoId == null || availableCli.value == null) {
+      return Promise.reject(new Error('AI 사용 불가'))
+    }
+    if (
+      !confirm(
+        '⚠ staged diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?',
+      )
+    ) {
+      return Promise.reject(new Error('cancelled'))
+    }
+    return aiCommitMessage(props.repoId, availableCli.value, true)
+  },
+  onSuccess: (out) => {
+    if (out.success) {
+      const lines = out.text.trim().split(/\r?\n/)
+      // 첫 줄 = subject. 빈 줄 이후 = body
+      mode.value = 'free'
+      freeMessage.value = out.text.trim()
+      // conventional 모드 채울 수도 있음
+      const m = lines[0].match(/^(\w+)(?:\(([^)]+)\))?(!?):\s*(.+)$/)
+      if (m && CONVENTIONAL_TYPES.includes(m[1] as ConventionalType)) {
+        type.value = m[1] as ConventionalType
+        scope.value = m[2] || ''
+        breaking.value = m[3] === '!'
+        subject.value = m[4]
+        const bodyStart = lines.findIndex((l, i) => i > 0 && l.trim() === '')
+        if (bodyStart > 0) {
+          body.value = lines.slice(bodyStart + 1).join('\n').trim()
+        }
+        mode.value = 'conventional'
+      }
+    } else {
+      alert(`AI 실패:\n${out.stderr || out.text}`)
+    }
+  },
+  onError: (e) => {
+    if (String(e).includes('cancelled')) return
+    alert(`AI 호출 실패: ${String(e)}`)
+  },
+})
 </script>
 
 <template>
@@ -175,14 +233,26 @@ function canCommit(): boolean {
           --no-verify
         </label>
       </div>
-      <button
-        type="button"
-        class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
-        :disabled="!canCommit() || commitMut.isPending.value"
-        @click="commitMut.mutate()"
-      >
-        {{ commitMut.isPending.value ? '커밋 중...' : 'Commit (⌘Enter)' }}
-      </button>
+      <div class="flex gap-1">
+        <button
+          v-if="availableCli"
+          type="button"
+          class="rounded-md border border-input px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
+          :disabled="!repoId || aiMut.isPending.value"
+          :title="`${availableCli} CLI 사용`"
+          @click="aiMut.mutate()"
+        >
+          {{ aiMut.isPending.value ? '✨...' : '✨ AI' }}
+        </button>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          :disabled="!canCommit() || commitMut.isPending.value"
+          @click="commitMut.mutate()"
+        >
+          {{ commitMut.isPending.value ? '커밋 중...' : 'Commit (⌘Enter)' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
