@@ -7,19 +7,24 @@ defineProps<{
   color: string
   action: string
   actionTitle: string
+  selected?: boolean
 }>()
-defineEmits<{ action: [] }>()
+defineEmits<{ action: []; select: [] }>()
 </script>
 
 <template>
-  <li class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40">
+  <li
+    class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+    :class="selected ? 'bg-accent ring-1 ring-primary/40' : ''"
+    @click="$emit('select')"
+  >
     <span :class="['shrink-0 w-12 text-[10px] uppercase', color]">{{ label }}</span>
     <span class="flex-1 truncate font-mono text-xs">{{ file.path }}</span>
     <button
       type="button"
       class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
       :title="actionTitle"
-      @click="$emit('action')"
+      @click.stop="$emit('action')"
     >
       {{ action }}
     </button>

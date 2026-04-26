@@ -3,7 +3,7 @@
 // - staged / unstaged / untracked / conflicted 분리
 // - 파일 클릭 시 stage / unstage 토글
 // - "+ 모두 stage" / "− 모두 unstage" 단축
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import {
@@ -12,6 +12,7 @@ import {
   stagePaths,
   unstagePaths,
 } from '@/api/git'
+import { useShortcut } from '@/composables/useShortcuts'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
 import type { ChangeStatus, FileChange } from '@/types/git'
@@ -110,6 +111,62 @@ function statusColor(s: ChangeStatus): string {
       return 'text-muted-foreground'
   }
 }
+
+// Vim S/U — 현재 선택된 파일 stage / unstage (Sprint A2).
+// 우선순위:
+//   1. 명시적 클릭으로 selectedPath 가 있으면 그 파일.
+//   2. unstage list 첫 파일 (stage S 의 일반 케이스).
+//   3. staged list 첫 파일 (unstage U 의 일반 케이스).
+const selectedPath = ref<string | null>(null)
+
+function pickStageTarget(): string | null {
+  if (selectedPath.value) {
+    // staged 에 있으면 이미 stage 됨 → 다음 unstaged 행으로.
+    if (status.value?.staged.some((f) => f.path === selectedPath.value)) {
+      return status.value?.unstaged[0]?.path
+        ?? status.value?.untracked[0]
+        ?? null
+    }
+    return selectedPath.value
+  }
+  return (
+    status.value?.unstaged[0]?.path ??
+    status.value?.untracked[0] ??
+    null
+  )
+}
+
+function pickUnstageTarget(): string | null {
+  if (selectedPath.value) {
+    if (status.value?.unstaged.some((f) => f.path === selectedPath.value)) {
+      return status.value?.staged[0]?.path ?? null
+    }
+    return selectedPath.value
+  }
+  return status.value?.staged[0]?.path ?? null
+}
+
+useShortcut('stageCurrent', () => {
+  if (props.repoId == null) return
+  const target = pickStageTarget()
+  if (!target) return
+  stageMut.mutate({ id: props.repoId, paths: [target] })
+})
+
+useShortcut('unstageCurrent', () => {
+  if (props.repoId == null) return
+  const target = pickUnstageTarget()
+  if (!target) return
+  unstageMut.mutate({ id: props.repoId, paths: [target] })
+})
+
+function selectPath(path: string) {
+  selectedPath.value = selectedPath.value === path ? null : path
+}
+
+const isSelected = computed(
+  () => (path: string) => selectedPath.value === path,
+)
 </script>
 
 <template>
@@ -144,6 +201,8 @@ function statusColor(s: ChangeStatus): string {
             :color="statusColor(f.status)"
             action="−"
             action-title="unstage"
+            :selected="isSelected(f.path)"
+            @select="selectPath(f.path)"
             @action="onUnstageOne(f.path)"
           />
         </ul>
@@ -168,6 +227,8 @@ function statusColor(s: ChangeStatus): string {
             v-for="f in status.unstaged"
             :key="`u-${f.path}`"
             class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+            :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+            @click="selectPath(f.path)"
           >
             <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(f.status)]">
               {{ statusLabel(f.status) }}
@@ -177,7 +238,7 @@ function statusColor(s: ChangeStatus): string {
               type="button"
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
               title="file history / blame"
-              @click="openHistory(f.path)"
+              @click.stop="openHistory(f.path)"
             >
               📜
             </button>
@@ -185,7 +246,7 @@ function statusColor(s: ChangeStatus): string {
               type="button"
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
               title="discard"
-              @click="onDiscardOne(f.path)"
+              @click.stop="onDiscardOne(f.path)"
             >
               ⤺
             </button>
@@ -193,7 +254,7 @@ function statusColor(s: ChangeStatus): string {
               type="button"
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
               title="stage"
-              @click="onStageOne(f.path)"
+              @click.stop="onStageOne(f.path)"
             >
               +
             </button>
@@ -213,6 +274,8 @@ function statusColor(s: ChangeStatus): string {
             v-for="p in status.untracked"
             :key="`n-${p}`"
             class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+            :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
+            @click="selectPath(p)"
           >
             <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">
               new
@@ -221,7 +284,7 @@ function statusColor(s: ChangeStatus): string {
             <button
               type="button"
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
-              @click="onStageOne(p)"
+              @click.stop="onStageOne(p)"
             >
               +
             </button>

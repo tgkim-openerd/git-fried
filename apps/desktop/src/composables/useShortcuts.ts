@@ -25,6 +25,14 @@ export type ShortcutAction =
   | 'tab5'
   | 'tab6'
   | 'tab7'
+  // Vim nav (Sprint A2 — `docs/plan/11 §27`).
+  // input focus 가 아닐 때만 발화 (modifier 없이 단일 키).
+  | 'vimDown' // J — CommitGraph 다음 행
+  | 'vimUp' // K — 이전 행
+  | 'vimRight' // L — Enter (선택 commit 확장)
+  | 'vimLeft' // H — Escape (선택 해제)
+  | 'stageCurrent' // S — StatusPanel 의 selected 파일 stage
+  | 'unstageCurrent' // U — selected 파일 unstage
 
 type Handler = () => void
 
@@ -73,6 +81,52 @@ function installGlobal() {
         }
       }
       return
+    }
+
+    // Vim nav (modifier 없이 단일 키, input focus 시 비활성).
+    // J/K/H/L = nav, S/U = stage/unstage current.
+    if (
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !e.shiftKey &&
+      !isInputFocused()
+    ) {
+      let vimAction: ShortcutAction | null = null
+      switch (e.key) {
+        case 'j':
+          vimAction = 'vimDown'
+          break
+        case 'k':
+          vimAction = 'vimUp'
+          break
+        case 'l':
+          vimAction = 'vimRight'
+          break
+        case 'h':
+          vimAction = 'vimLeft'
+          break
+        case 's':
+          vimAction = 'stageCurrent'
+          break
+        case 'u':
+          vimAction = 'unstageCurrent'
+          break
+      }
+      if (vimAction) {
+        const set = bus.handlers.get(vimAction)
+        if (set && set.size > 0) {
+          e.preventDefault()
+          for (const fn of set) {
+            try {
+              fn()
+            } catch {
+              /* ignore */
+            }
+          }
+          return
+        }
+      }
     }
 
     const meta = e.metaKey || e.ctrlKey

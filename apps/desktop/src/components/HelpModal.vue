@@ -57,6 +57,19 @@ const groups: Group[] = [
       { keys: '⌘P → "sync"', desc: 'Sync template (다중 레포 cherry-pick)' },
       { keys: '⌘P → "bisect"', desc: 'Bisect' },
       { keys: '⌘P → "reflog"', desc: 'Reflog viewer' },
+      { keys: '⌘P → "rebase"', desc: 'Interactive rebase (옵션 A)' },
+      { keys: '⌘`', desc: '통합 터미널 토글' },
+    ],
+  },
+  {
+    title: 'Vim navigation (입력창 외에서, 단일 키)',
+    items: [
+      { keys: 'J', desc: '커밋 그래프 다음 행' },
+      { keys: 'K', desc: '커밋 그래프 이전 행' },
+      { keys: 'L', desc: '(예약 — 우측 detail 확장)' },
+      { keys: 'H', desc: '선택 해제' },
+      { keys: 'S', desc: '현재 파일 stage (변경 패널)' },
+      { keys: 'U', desc: '현재 파일 unstage' },
     ],
   },
 ]

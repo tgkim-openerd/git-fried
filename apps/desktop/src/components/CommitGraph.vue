@@ -11,6 +11,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useGraph } from '@/composables/useGraph'
 import { useRefVisibility } from '@/composables/useHiddenRefs'
+import { useShortcut } from '@/composables/useShortcuts'
 import type { GraphRow } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -209,6 +210,37 @@ function selectRow(r: GraphRow) {
   selectedSha.value = r.commit.sha
   emit('selectCommit', r.commit.sha)
 }
+
+// Vim nav (J/K) — selectedSha 다음/이전 행. 비어있으면 첫 행 선택.
+function moveSelection(delta: 1 | -1) {
+  const list = rows.value
+  if (list.length === 0) return
+  let idx = list.findIndex((r) => r.commit.sha === selectedSha.value)
+  if (idx < 0) {
+    idx = delta > 0 ? 0 : list.length - 1
+  } else {
+    idx = Math.max(0, Math.min(list.length - 1, idx + delta))
+  }
+  const r = list[idx]
+  if (!r) return
+  selectedSha.value = r.commit.sha
+  emit('selectCommit', r.commit.sha)
+  // 가시 영역으로 스크롤
+  if (containerRef.value) {
+    const targetTop = idx * ROW_H
+    const ct = containerRef.value
+    if (targetTop < ct.scrollTop) ct.scrollTop = targetTop
+    else if (targetTop + ROW_H > ct.scrollTop + ct.clientHeight) {
+      ct.scrollTop = targetTop + ROW_H - ct.clientHeight
+    }
+  }
+}
+
+useShortcut('vimDown', () => moveSelection(1))
+useShortcut('vimUp', () => moveSelection(-1))
+useShortcut('vimLeft', () => {
+  selectedSha.value = null
+})
 </script>
 
 <template>
