@@ -4,7 +4,8 @@
 // 사용자 회사 인스턴스: https://git.dev.opnd.io
 
 use super::model::{
-    Author, ForgeKind, Issue, IssueState, Label, PrState, PullRequest, Release,
+    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrState, PullRequest,
+    Release, ReviewVerdict,
 };
 use super::{CreatePullRequestReq, ForgeClient};
 use crate::error::{AppError, AppResult};
@@ -142,6 +143,140 @@ impl ForgeClient for GiteaClient {
         let url = self.url("/user");
         let r: RawUser = self.http.get(&url).send().await?.error_for_status()?.json().await?;
         Ok(r.into_author())
+    }
+
+    async fn list_pr_comments(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+    ) -> AppResult<Vec<PrComment>> {
+        // Gitea: /repos/{owner}/{repo}/issues/{index}/comments — PR/Issue 동일 endpoint.
+        let url = self.url(&format!("/repos/{owner}/{repo}/issues/{number}/comments"));
+        let res: Vec<RawComment> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(res.into_iter().map(|c| c.into_comment()).collect())
+    }
+
+    async fn add_pr_comment(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        body: &str,
+    ) -> AppResult<PrComment> {
+        let url = self.url(&format!("/repos/{owner}/{repo}/issues/{number}/comments"));
+        let r: RawComment = self
+            .http
+            .post(&url)
+            .json(&serde_json::json!({ "body": body }))
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(r.into_comment())
+    }
+
+    async fn submit_pr_review(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        verdict: ReviewVerdict,
+        body: &str,
+    ) -> AppResult<()> {
+        let event = match verdict {
+            ReviewVerdict::Approve => "APPROVED",
+            ReviewVerdict::RequestChanges => "REQUEST_CHANGES",
+            ReviewVerdict::Comment => "COMMENT",
+        };
+        let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}/reviews"));
+        self.http
+            .post(&url)
+            .json(&serde_json::json!({ "event": event, "body": body }))
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+
+    async fn merge_pr(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        method: MergeMethod,
+        title: Option<&str>,
+        message: Option<&str>,
+    ) -> AppResult<()> {
+        let do_str = match method {
+            MergeMethod::Merge => "merge",
+            MergeMethod::Squash => "squash",
+            MergeMethod::Rebase => "rebase",
+        };
+        let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}/merge"));
+        self.http
+            .post(&url)
+            .json(&serde_json::json!({
+                "Do": do_str,
+                "MergeTitleField": title,
+                "MergeMessageField": message,
+            }))
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+
+    async fn close_pr(&self, owner: &str, repo: &str, number: u64) -> AppResult<()> {
+        let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}"));
+        self.http
+            .patch(&url)
+            .json(&serde_json::json!({ "state": "closed" }))
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+
+    async fn reopen_pr(&self, owner: &str, repo: &str, number: u64) -> AppResult<()> {
+        let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}"));
+        self.http
+            .patch(&url)
+            .json(&serde_json::json!({ "state": "open" }))
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct RawComment {
+    id: u64,
+    user: RawUser,
+    #[serde(default)]
+    body: String,
+    created_at: String,
+    html_url: String,
+}
+
+impl RawComment {
+    fn into_comment(self) -> PrComment {
+        PrComment {
+            id: self.id,
+            author: self.user.into_author(),
+            body_md: self.body,
+            created_at: parse_iso(&self.created_at),
+            html_url: self.html_url,
+        }
     }
 }
 

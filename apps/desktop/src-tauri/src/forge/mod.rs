@@ -8,7 +8,8 @@ pub mod github;
 pub mod model;
 
 pub use model::{
-    Author, ForgeKind, Issue, IssueState, Label, PrState, PullRequest, Release,
+    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrState, PullRequest,
+    Release, ReviewVerdict,
 };
 
 use crate::error::AppResult;
@@ -46,6 +47,50 @@ pub trait ForgeClient: Send + Sync {
     async fn list_releases(&self, owner: &str, repo: &str) -> AppResult<Vec<Release>>;
 
     async fn whoami(&self) -> AppResult<Author>;
+
+    /// PR 의 일반 issue-comment 목록.
+    async fn list_pr_comments(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+    ) -> AppResult<Vec<PrComment>>;
+
+    /// PR 에 일반 코멘트 추가.
+    async fn add_pr_comment(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        body: &str,
+    ) -> AppResult<PrComment>;
+
+    /// PR review 제출 (Approve / RequestChanges / Comment + 본문).
+    async fn submit_pr_review(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        verdict: ReviewVerdict,
+        body: &str,
+    ) -> AppResult<()>;
+
+    /// PR 머지 (method 선택).
+    async fn merge_pr(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        method: MergeMethod,
+        title: Option<&str>,
+        message: Option<&str>,
+    ) -> AppResult<()>;
+
+    /// PR 닫기 (머지 안 함).
+    async fn close_pr(&self, owner: &str, repo: &str, number: u64) -> AppResult<()>;
+
+    /// PR 다시 열기.
+    async fn reopen_pr(&self, owner: &str, repo: &str, number: u64) -> AppResult<()>;
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

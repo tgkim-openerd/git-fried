@@ -13,7 +13,7 @@ use crate::auth;
 use crate::error::{AppError, AppResult};
 use crate::forge::{
     gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, ForgeKind,
-    Issue, PrState, PullRequest, Release,
+    Issue, MergeMethod, PrComment, PrState, PullRequest, Release, ReviewVerdict,
 };
 use crate::storage::{Db, DbExt};
 use crate::AppState;
@@ -307,6 +307,102 @@ pub async fn list_releases(
 ) -> AppResult<Vec<Release>> {
     let (client, owner, repo) = forge_client_for_repo(&state, repo_id).await?;
     client.list_releases(&owner, &repo).await
+}
+
+// ====== PR Review / Comments / Merge / Close / Reopen ======
+
+#[tauri::command]
+pub async fn list_pr_comments(
+    args: GetPrArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<PrComment>> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client.list_pr_comments(&owner, &repo, args.number).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddPrCommentArgs {
+    pub repo_id: i64,
+    pub number: u64,
+    pub body: String,
+}
+
+#[tauri::command]
+pub async fn add_pr_comment(
+    args: AddPrCommentArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<PrComment> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client
+        .add_pr_comment(&owner, &repo, args.number, &args.body)
+        .await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitReviewArgs {
+    pub repo_id: i64,
+    pub number: u64,
+    pub verdict: ReviewVerdict,
+    pub body: String,
+}
+
+#[tauri::command]
+pub async fn submit_pr_review(
+    args: SubmitReviewArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client
+        .submit_pr_review(&owner, &repo, args.number, args.verdict, &args.body)
+        .await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MergePrArgs {
+    pub repo_id: i64,
+    pub number: u64,
+    pub method: MergeMethod,
+    pub title: Option<String>,
+    pub message: Option<String>,
+}
+
+#[tauri::command]
+pub async fn merge_pr(
+    args: MergePrArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client
+        .merge_pr(
+            &owner,
+            &repo,
+            args.number,
+            args.method,
+            args.title.as_deref(),
+            args.message.as_deref(),
+        )
+        .await
+}
+
+#[tauri::command]
+pub async fn close_pr(
+    args: GetPrArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client.close_pr(&owner, &repo, args.number).await
+}
+
+#[tauri::command]
+pub async fn reopen_pr(
+    args: GetPrArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client.reopen_pr(&owner, &repo, args.number).await
 }
 
 #[allow(dead_code)]

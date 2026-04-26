@@ -2,10 +2,9 @@
 // PR 패널 — 현재 레포의 PR 목록 (Gitea / GitHub) + 상세 read-only.
 // v0.3 단계: 봇 PR 그룹핑 (release-please / dependabot / renovate) — collapsible.
 import { computed, ref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
 import { usePullRequests } from '@/composables/usePullRequests'
-import { getPullRequest } from '@/api/git'
 import { describeError } from '@/api/errors'
+import PrDetailModal from './PrDetailModal.vue'
 import type { PrState, PullRequest } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -17,15 +16,6 @@ const { data: prs, isFetching, error } = usePullRequests(
 )
 
 const selectedNumber = ref<number | null>(null)
-const { data: detail } = useQuery({
-  queryKey: computed(() => ['pr', props.repoId, selectedNumber.value]),
-  queryFn: () => {
-    if (props.repoId == null || selectedNumber.value == null)
-      return Promise.reject(new Error('no selection'))
-    return getPullRequest(props.repoId, selectedNumber.value)
-  },
-  enabled: computed(() => props.repoId != null && selectedNumber.value != null),
-})
 
 function stateColor(s: PrState): string {
   switch (s) {
@@ -180,23 +170,12 @@ function toggleBot(name: string) {
       </div>
     </div>
 
-    <!-- 상세 -->
-    <div
-      v-if="detail"
-      class="max-h-72 overflow-auto border-t border-border bg-muted/20 p-3 text-xs"
-    >
-      <div class="mb-1 flex items-center justify-between">
-        <a
-          :href="detail.htmlUrl"
-          target="_blank"
-          rel="noopener"
-          class="font-semibold hover:underline"
-        >
-          #{{ detail.number }} {{ detail.title }}
-        </a>
-        <button class="text-muted-foreground" @click="selectedNumber = null">×</button>
-      </div>
-      <pre class="whitespace-pre-wrap font-mono text-[11px]">{{ detail.bodyMd || '(본문 없음)' }}</pre>
-    </div>
+    <!-- 상세 모달 -->
+    <PrDetailModal
+      :repo-id="repoId"
+      :number="selectedNumber"
+      :open="selectedNumber != null"
+      @close="selectedNumber = null"
+    />
   </div>
 </template>

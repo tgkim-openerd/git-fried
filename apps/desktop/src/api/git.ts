@@ -435,6 +435,50 @@ export const listForgeIssues = (repoId: number): Promise<ForgeIssue[]> =>
 export const listForgeReleases = (repoId: number): Promise<ForgeRelease[]> =>
   invoke('list_releases', { repoId })
 
+// === PR Review / Comments / Merge ===
+export type ReviewVerdict = 'comment' | 'approve' | 'request_changes'
+export type MergeMethod = 'merge' | 'squash' | 'rebase'
+
+export interface PrComment {
+  id: number
+  author: ForgeAuthor
+  bodyMd: string
+  createdAt: number
+  htmlUrl: string
+}
+
+export const listPrComments = (repoId: number, number: number): Promise<PrComment[]> =>
+  invoke('list_pr_comments', { args: { repoId, number } })
+
+export const addPrComment = (
+  repoId: number,
+  number: number,
+  body: string,
+): Promise<PrComment> => invoke('add_pr_comment', { args: { repoId, number, body } })
+
+export const submitPrReview = (
+  repoId: number,
+  number: number,
+  verdict: ReviewVerdict,
+  body: string,
+): Promise<void> =>
+  invoke('submit_pr_review', { args: { repoId, number, verdict, body } })
+
+export const mergePr = (
+  repoId: number,
+  number: number,
+  method: MergeMethod,
+  title?: string,
+  message?: string,
+): Promise<void> =>
+  invoke('merge_pr', { args: { repoId, number, method, title, message } })
+
+export const closePr = (repoId: number, number: number): Promise<void> =>
+  invoke('close_pr', { args: { repoId, number } })
+
+export const reopenPr = (repoId: number, number: number): Promise<void> =>
+  invoke('reopen_pr', { args: { repoId, number } })
+
 // --- 진단 ---
 export interface AppInfo {
   version: string
