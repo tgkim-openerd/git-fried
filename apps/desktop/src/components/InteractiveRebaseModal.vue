@@ -11,6 +11,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useMutation } from '@tanstack/vue-query'
 import {
+  aiComposerPlan,
   rebasePrepareTodo,
   rebaseRun,
   rebaseAbort,
@@ -26,6 +27,7 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
 
 type Step = 'setup' | 'edit' | 'running' | 'result'
 
@@ -145,6 +147,89 @@ function setAction(idx: number, action: RebaseAction) {
     newMessage: action === 'reword' ? e.newMessage ?? e.subject : null,
   }
 }
+
+// === Sprint B3 — AI Commit Composer ===
+const ai = useAiCli()
+
+interface ComposerPlanEntry {
+  sha: string
+  action: RebaseAction
+  newMessage: string | null
+}
+
+function parseComposerPlan(text: string): ComposerPlanEntry[] {
+  // 응답에 마크다운 코드블록이 끼어 있을 가능성 → 첫/마지막 [ ] 추출.
+  const start = text.indexOf('[')
+  const end = text.lastIndexOf(']')
+  if (start < 0 || end <= start) return []
+  const json = text.slice(start, end + 1)
+  try {
+    const arr = JSON.parse(json) as unknown
+    if (!Array.isArray(arr)) return []
+    const out: ComposerPlanEntry[] = []
+    const allowed: RebaseAction[] = ['pick', 'reword', 'squash', 'fixup', 'drop']
+    for (const item of arr) {
+      if (!item || typeof item !== 'object') continue
+      const obj = item as Record<string, unknown>
+      const sha = typeof obj.sha === 'string' ? obj.sha : null
+      const action = typeof obj.action === 'string' ? obj.action : null
+      const newMessage =
+        typeof obj.newMessage === 'string' ? obj.newMessage : null
+      if (!sha || !action) continue
+      if (!allowed.includes(action as RebaseAction)) continue
+      out.push({ sha, action: action as RebaseAction, newMessage })
+    }
+    return out
+  } catch {
+    return []
+  }
+}
+
+function applyComposerPlan(plan: ComposerPlanEntry[]) {
+  const bySha = new Map<string, ComposerPlanEntry>()
+  for (const p of plan) bySha.set(p.sha, p)
+  todo.value = todo.value.map((e) => {
+    const p = bySha.get(e.sha)
+    if (!p) return e
+    return {
+      ...e,
+      action: p.action,
+      newMessage: p.action === 'reword' ? p.newMessage ?? e.subject : null,
+    }
+  })
+}
+
+const composerMut = useMutation({
+  mutationFn: () => {
+    if (repoId.value == null || ai.available.value == null) {
+      return Promise.reject(new Error('AI 사용 불가 — Claude/Codex CLI 미설치'))
+    }
+    if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
+    return aiComposerPlan(repoId.value, ai.available.value, todo.value.length, true)
+  },
+  onSuccess: (out) => {
+    if (!out.success) {
+      toast.error('AI 응답 실패', out.stderr || out.text || '')
+      return
+    }
+    const plan = parseComposerPlan(out.text)
+    if (plan.length === 0) {
+      toast.error('AI 응답 파싱 실패', '응답이 JSON array 가 아니거나 비어있음.')
+      return
+    }
+    applyComposerPlan(plan)
+    const changed = plan.filter((p) => p.action !== 'pick').length
+    toast.success(
+      `✨ AI 제안 적용 (${changed}건 변경)`,
+      'pick 외 액션 검토 후 Run rebase.',
+    )
+  },
+  onError: (e) => {
+    const m = describeError(e)
+    if (m.includes('cancelled')) return
+    toast.error('AI 호출 실패', m)
+  },
+})
 
 const canRun = computed(() => {
   if (todo.value.length === 0) return false
@@ -306,22 +391,35 @@ onUnmounted(() => {
               </div>
             </li>
           </VueDraggable>
-          <footer class="flex justify-end gap-2 border-t border-border px-4 py-2">
+          <footer class="flex justify-between gap-2 border-t border-border px-4 py-2">
             <button
+              v-if="ai.available.value"
               type="button"
-              class="rounded border border-border px-3 py-1 text-sm hover:bg-accent/40"
-              @click="step = 'setup'"
+              class="rounded border border-border px-3 py-1 text-sm hover:bg-accent/40 disabled:opacity-50"
+              :title="`✨ ${ai.available.value} 가 squash/reword/drop 제안`"
+              :disabled="composerMut.isPending.value || todo.length === 0"
+              @click="composerMut.mutate()"
             >
-              뒤로
+              ✨ {{ composerMut.isPending.value ? 'AI...' : 'AI 제안' }}
             </button>
-            <button
-              type="button"
-              class="rounded bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              :disabled="!canRun || runMut.isPending.value"
-              @click="runMut.mutate()"
-            >
-              {{ runMut.isPending.value ? '실행 중...' : 'Run rebase' }}
-            </button>
+            <span v-else />
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="rounded border border-border px-3 py-1 text-sm hover:bg-accent/40"
+                @click="step = 'setup'"
+              >
+                뒤로
+              </button>
+              <button
+                type="button"
+                class="rounded bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                :disabled="!canRun || runMut.isPending.value"
+                @click="runMut.mutate()"
+              >
+                {{ runMut.isPending.value ? '실행 중...' : 'Run rebase' }}
+              </button>
+            </div>
           </footer>
         </section>
 

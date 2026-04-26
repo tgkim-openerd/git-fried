@@ -466,6 +466,15 @@ export const aiStashMessage = (
     args: { repoId, cli, includeUntracked, userApproved },
   })
 
+// === Sprint B3 — Commit Composer AI ===
+export const aiComposerPlan = (
+  repoId: number,
+  cli: AiCli,
+  count: number,
+  userApproved: boolean,
+): Promise<AiOutput> =>
+  invoke('ai_composer_plan', { args: { repoId, cli, count, userApproved } })
+
 // === Interactive rebase (docs/plan/09 옵션 A) ===
 export type RebaseAction = 'pick' | 'reword' | 'squash' | 'fixup' | 'drop'
 

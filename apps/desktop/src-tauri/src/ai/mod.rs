@@ -12,6 +12,7 @@ pub mod prompts;
 
 pub use runner::{ai_run, detect_clis, AiCli, AiOutput, AiProbe};
 pub use prompts::{
-    code_review_prompt, commit_message_prompt, explain_branch_prompt, explain_commit_prompt,
-    mask_secrets, merge_resolution_prompt, pr_body_prompt, stash_message_prompt,
+    code_review_prompt, commit_message_prompt, composer_plan_prompt, explain_branch_prompt,
+    explain_commit_prompt, mask_secrets, merge_resolution_prompt, pr_body_prompt,
+    stash_message_prompt,
 };

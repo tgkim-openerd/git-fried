@@ -742,6 +742,71 @@ pub async fn ai_stash_message(
     ai::ai_run(args.cli, &prompt).await
 }
 
+// ====== Commit Composer AI (Sprint B3 / `docs/plan/11 §18`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiComposerArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    /// 마지막 N 개 commit 을 대상으로 (oldest → newest 순서로 prompt).
+    pub count: usize,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_composer_plan(
+    args: AiComposerArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    if args.count == 0 || args.count > 30 {
+        return Err(AppError::validation("count 는 1~30."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    // 마지막 N commit 의 (sha, subject) 추출 (oldest → newest).
+    let n = format!("-n{}", args.count);
+    let log = crate::git::runner::git_run(
+        &path,
+        &["log", &n, "--pretty=%H%x1f%s", "--reverse"],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+
+    let mut entries: Vec<(String, String, String)> = Vec::new();
+    for line in log.lines() {
+        let mut parts = line.splitn(2, '\x1f');
+        let sha = parts.next().unwrap_or("").trim().to_string();
+        let subject = parts.next().unwrap_or("").to_string();
+        if sha.is_empty() {
+            continue;
+        }
+        // 각 commit 의 diff 추출 (parent vs commit). truncate 는 prompt 가 처리.
+        let diff = crate::git::runner::git_run(
+            &path,
+            &["show", "--no-color", "--format=", &sha],
+            &crate::git::runner::GitRunOpts::default(),
+        )
+        .await
+        .ok()
+        .and_then(|o| o.into_ok().ok())
+        .unwrap_or_default();
+        entries.push((sha, subject, diff));
+    }
+
+    if entries.is_empty() {
+        return Err(AppError::validation("commit 이 없습니다."));
+    }
+
+    let prompt = ai::composer_plan_prompt(&entries);
+    ai::ai_run(args.cli, &prompt).await
+}
+
 // ====== Interactive rebase (`docs/plan/09 옵션 A`) ======
 
 #[derive(Debug, Deserialize)]

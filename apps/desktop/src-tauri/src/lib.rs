@@ -159,6 +159,7 @@ pub fn run() {
             ipc::v02_commands::ai_explain_branch,
             ipc::v02_commands::ai_stash_message,
             ipc::v02_commands::predict_target_conflict,
+            ipc::v02_commands::ai_composer_plan,
             ipc::v02_commands::rebase_prepare_todo,
             ipc::v02_commands::rebase_run,
             ipc::v02_commands::rebase_status,

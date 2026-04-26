@@ -299,6 +299,56 @@ pub fn explain_branch_prompt(
     )
 }
 
+/// Commit Composer plan — 범위 N개 commit 을 reorder/squash/reword/drop 추천
+/// (Sprint B3 / `docs/plan/11 §18`).
+///
+/// 응답 형식: **JSON array 만**. 다른 텍스트 없이.
+/// 각 entry: { "sha": "...", "action": "pick|reword|squash|fixup|drop", "newMessage": "..." | null }
+/// 응답 순서가 그대로 rebase todo 순서가 된다 (oldest → newest).
+pub fn composer_plan_prompt(commits: &[(String, String, String)]) -> String {
+    let mut sections = String::new();
+    for (i, (sha, subject, diff)) in commits.iter().enumerate() {
+        let masked = mask_secrets(diff);
+        // 너무 큰 diff 잘라내기 (LLM context 한도).
+        let truncated: String = if masked.chars().count() > 4000 {
+            let mut s: String = masked.chars().take(4000).collect();
+            s.push_str("\n... (truncated)");
+            s
+        } else {
+            masked
+        };
+        sections.push_str(&format!(
+            "\n## #{idx} `{sha}`\n**제목**: {subject}\n```diff\n{truncated}\n```\n",
+            idx = i + 1,
+            sha = sha,
+            subject = subject,
+            truncated = truncated,
+        ));
+    }
+    format!(
+        r#"다음 commit 범위를 정리/재작성하기 위한 rebase plan 을 제안해주세요.
+
+**규칙**:
+- 응답은 **JSON array 한 개만**. 다른 설명/마크다운/코드블록 백틱 없이.
+- 각 entry: `{{"sha": "<원본 sha>", "action": "pick"|"reword"|"squash"|"fixup"|"drop", "newMessage": "<reword 시 새 메시지>" | null}}`.
+- 입력 순서를 유지 (oldest → newest). 재정렬은 v1 미지원.
+- action 선택 가이드:
+  - `pick`: 그대로.
+  - `reword`: 메시지 모호하면 한국어로 명료하게. newMessage 채움.
+  - `squash`: 직전 commit 과 의미 동일한 후속 커밋 (typo / 작은 fixup). 직전 pick 과 합침.
+  - `fixup`: squash 와 동일하되 메시지 버림.
+  - `drop`: 의미 없는 commit (revert 후 같은 변경, 노이즈).
+- 보수적으로: 확신 없으면 `pick`.
+- newMessage 는 한국어 Conventional Commit 형식 (예: "feat: ...").
+
+**Commit 범위**:
+{sections}
+
+응답: JSON array 만.
+"#
+    )
+}
+
 /// Stash 메시지 한 줄 생성 (`docs/plan/11 §18` Sprint B7).
 ///
 /// commit message 와 비슷하지만 더 짧고 ad-hoc — "WIP: " prefix.
@@ -410,5 +460,19 @@ mod tests {
         let p = stash_message_prompt("diff --git\n+test");
         assert!(p.contains("한 줄"));
         assert!(p.contains("WIP"));
+    }
+
+    #[test]
+    fn test_composer_plan_prompt_includes_all_commits() {
+        let commits = vec![
+            ("abc1234".into(), "feat: A".into(), "diff a".into()),
+            ("def5678".into(), "fix typo".into(), "diff b".into()),
+        ];
+        let p = composer_plan_prompt(&commits);
+        assert!(p.contains("abc1234"));
+        assert!(p.contains("def5678"));
+        assert!(p.contains("feat: A"));
+        assert!(p.contains("JSON array"));
+        assert!(p.contains("squash"));
     }
 }
