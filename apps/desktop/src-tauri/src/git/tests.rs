@@ -301,6 +301,86 @@ async fn test_commit_simple_with_korean() {
     assert!(last.starts_with("feat: 첫 한글 커밋"));
 }
 
+// ====== Phase 3 (v0.1 Sprint 2) 테스트 ======
+
+#[tokio::test]
+async fn test_branch_create_switch_delete() {
+    let (_tmp, path) = init_test_repo().await;
+    git_run(&path, &["commit", "--allow-empty", "-m", "init"], &Default::default())
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+
+    super::branch::create_branch(&path, "feat/한글-브랜치", None)
+        .await
+        .unwrap();
+    let branches = super::branch::list_branches(&path).unwrap();
+    assert!(branches.iter().any(|b| b.name == "feat/한글-브랜치"));
+
+    super::branch::switch_branch(&path, "feat/한글-브랜치", false)
+        .await
+        .unwrap();
+    let branches2 = super::branch::list_branches(&path).unwrap();
+    let head = branches2.iter().find(|b| b.is_head).unwrap();
+    assert_eq!(head.name, "feat/한글-브랜치");
+
+    super::branch::switch_branch(&path, "main", false)
+        .await
+        .unwrap();
+    super::branch::delete_branch(&path, "feat/한글-브랜치", false)
+        .await
+        .unwrap();
+    let branches3 = super::branch::list_branches(&path).unwrap();
+    assert!(!branches3.iter().any(|b| b.name == "feat/한글-브랜치"));
+}
+
+#[tokio::test]
+async fn test_stash_round_trip() {
+    let (_tmp, path) = init_test_repo().await;
+    std::fs::write(path.join("a.txt"), "hello\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+    super::commit::commit_simple(&path, "init").await.unwrap();
+
+    // 변경 추가 후 stash
+    std::fs::write(path.join("a.txt"), "hello modified\n").unwrap();
+    super::stash::push_stash(&path, Some("작업 중 한글 메시지"), false)
+        .await
+        .unwrap();
+
+    let list = super::stash::list_stash(&path).await.unwrap();
+    assert_eq!(list.len(), 1);
+    assert!(list[0].message.contains("작업 중 한글"));
+
+    let diff = super::stash::show_stash(&path, 0).await.unwrap();
+    assert!(diff.contains("hello modified"));
+
+    super::stash::pop_stash(&path, 0).await.unwrap();
+    let list2 = super::stash::list_stash(&path).await.unwrap();
+    assert!(list2.is_empty());
+    let st = super::status::read_status(&path).unwrap();
+    assert!(!st.is_clean, "pop 후 변경이 살아있어야 함");
+}
+
+#[tokio::test]
+async fn test_reset_soft_keeps_index() {
+    let (_tmp, path) = init_test_repo().await;
+    std::fs::write(path.join("a.txt"), "v1\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+    super::commit::commit_simple(&path, "v1").await.unwrap();
+
+    std::fs::write(path.join("a.txt"), "v2\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+    super::commit::commit_simple(&path, "v2").await.unwrap();
+
+    super::reset::reset(&path, super::reset::ResetMode::Soft, "HEAD~1")
+        .await
+        .unwrap();
+    // staged 에 v2 변경이 있어야 함 (soft 는 working/index 유지)
+    let st = super::status::read_status(&path).unwrap();
+    assert!(!st.staged.is_empty(), "soft reset 후 staged 변경 유지");
+}
+
 #[tokio::test]
 async fn test_diff_returns_text() {
     let (_tmp, path) = init_test_repo().await;

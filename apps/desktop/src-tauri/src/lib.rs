@@ -73,6 +73,19 @@ pub fn run() {
             ipc::commands::fetch_all,
             ipc::commands::pull,
             ipc::commands::push,
+            ipc::commands::list_branches,
+            ipc::commands::switch_branch,
+            ipc::commands::create_branch,
+            ipc::commands::delete_branch,
+            ipc::commands::rename_branch,
+            ipc::commands::list_stash,
+            ipc::commands::push_stash,
+            ipc::commands::apply_stash,
+            ipc::commands::pop_stash,
+            ipc::commands::drop_stash,
+            ipc::commands::show_stash,
+            ipc::commands::reset,
+            ipc::commands::revert,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

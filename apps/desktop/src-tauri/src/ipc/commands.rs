@@ -9,8 +9,8 @@
 
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    commit as git_commit, diff as git_diff, repository as repo, runner, stage, status as git_status,
-    sync as git_sync,
+    branch as git_branch, commit as git_commit, diff as git_diff, repository as repo,
+    reset as git_reset, runner, stage, stash as git_stash, status as git_status, sync as git_sync,
 };
 use crate::storage::{Db, DbExt, Repo, Workspace};
 use crate::AppState;
@@ -379,6 +379,198 @@ pub async fn push(
         },
     )
     .await
+}
+
+// ====== Branches ======
+
+#[tauri::command]
+pub async fn list_branches(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_branch::BranchInfo>> {
+    let path = repo_path(&state, repo_id).await?;
+    tokio::task::spawn_blocking(move || git_branch::list_branches(&path))
+        .await
+        .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))?
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SwitchBranchArgs {
+    pub repo_id: i64,
+    pub name: String,
+    #[serde(default)]
+    pub create: bool,
+}
+
+#[tauri::command]
+pub async fn switch_branch(
+    args: SwitchBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_branch::switch_branch(&path, &args.name, args.create).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateBranchArgs {
+    pub repo_id: i64,
+    pub name: String,
+    pub start: Option<String>,
+}
+
+#[tauri::command]
+pub async fn create_branch(
+    args: CreateBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_branch::create_branch(&path, &args.name, args.start.as_deref()).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeleteBranchArgs {
+    pub repo_id: i64,
+    pub name: String,
+    #[serde(default)]
+    pub force: bool,
+}
+
+#[tauri::command]
+pub async fn delete_branch(
+    args: DeleteBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_branch::delete_branch(&path, &args.name, args.force).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RenameBranchArgs {
+    pub repo_id: i64,
+    pub old_name: String,
+    pub new_name: String,
+}
+
+#[tauri::command]
+pub async fn rename_branch(
+    args: RenameBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_branch::rename_branch(&path, &args.old_name, &args.new_name).await
+}
+
+// ====== Stash ======
+
+#[tauri::command]
+pub async fn list_stash(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_stash::StashEntry>> {
+    let path = repo_path(&state, repo_id).await?;
+    git_stash::list_stash(&path).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushStashArgs {
+    pub repo_id: i64,
+    pub message: Option<String>,
+    #[serde(default)]
+    pub include_untracked: bool,
+}
+
+#[tauri::command]
+pub async fn push_stash(
+    args: PushStashArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::push_stash(&path, args.message.as_deref(), args.include_untracked).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StashIndexArgs {
+    pub repo_id: i64,
+    pub index: usize,
+}
+
+#[tauri::command]
+pub async fn apply_stash(
+    args: StashIndexArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::apply_stash(&path, args.index).await
+}
+
+#[tauri::command]
+pub async fn pop_stash(
+    args: StashIndexArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::pop_stash(&path, args.index).await
+}
+
+#[tauri::command]
+pub async fn drop_stash(
+    args: StashIndexArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::drop_stash(&path, args.index).await
+}
+
+#[tauri::command]
+pub async fn show_stash(
+    args: StashIndexArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<String> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::show_stash(&path, args.index).await
+}
+
+// ====== Reset / Revert ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResetArgs {
+    pub repo_id: i64,
+    pub mode: git_reset::ResetMode,
+    pub target: String,
+}
+
+#[tauri::command]
+pub async fn reset(
+    args: ResetArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_reset::reset(&path, args.mode, &args.target).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevertArgs {
+    pub repo_id: i64,
+    pub sha: String,
+    #[serde(default)]
+    pub no_commit: bool,
+}
+
+#[tauri::command]
+pub async fn revert(
+    args: RevertArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_reset::revert(&path, &args.sha, args.no_commit).await
 }
 
 #[allow(dead_code)]

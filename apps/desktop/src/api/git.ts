@@ -85,6 +85,60 @@ export const pull = (args: PullArgs): Promise<SyncResult> =>
 export const push = (args: PushArgs): Promise<SyncResult> =>
   invoke('push', { args })
 
+// --- Branches ---
+export interface BranchInfo {
+  name: string
+  kind: 'local' | 'remote'
+  isHead: boolean
+  upstream: string | null
+  lastCommitSha: string | null
+  lastCommitSubject: string | null
+  ahead: number
+  behind: number
+}
+export const listBranches = (repoId: number): Promise<BranchInfo[]> =>
+  invoke('list_branches', { repoId })
+export const switchBranch = (repoId: number, name: string, create = false): Promise<void> =>
+  invoke('switch_branch', { args: { repoId, name, create } })
+export const createBranch = (repoId: number, name: string, start?: string): Promise<void> =>
+  invoke('create_branch', { args: { repoId, name, start } })
+export const deleteBranch = (repoId: number, name: string, force = false): Promise<void> =>
+  invoke('delete_branch', { args: { repoId, name, force } })
+export const renameBranch = (repoId: number, oldName: string, newName: string): Promise<void> =>
+  invoke('rename_branch', { args: { repoId, oldName, newName } })
+
+// --- Stash ---
+export interface StashEntry {
+  index: number
+  sha: string
+  message: string
+  branch: string | null
+  createdAt: number
+}
+export const listStash = (repoId: number): Promise<StashEntry[]> =>
+  invoke('list_stash', { repoId })
+export const pushStash = (
+  repoId: number,
+  message?: string | null,
+  includeUntracked = false,
+): Promise<void> =>
+  invoke('push_stash', { args: { repoId, message, includeUntracked } })
+export const applyStash = (repoId: number, index: number): Promise<void> =>
+  invoke('apply_stash', { args: { repoId, index } })
+export const popStash = (repoId: number, index: number): Promise<void> =>
+  invoke('pop_stash', { args: { repoId, index } })
+export const dropStash = (repoId: number, index: number): Promise<void> =>
+  invoke('drop_stash', { args: { repoId, index } })
+export const showStash = (repoId: number, index: number): Promise<string> =>
+  invoke('show_stash', { args: { repoId, index } })
+
+// --- Reset / Revert ---
+export type ResetMode = 'soft' | 'mixed' | 'hard' | 'keep'
+export const reset = (repoId: number, mode: ResetMode, target: string): Promise<void> =>
+  invoke('reset', { args: { repoId, mode, target } })
+export const revert = (repoId: number, sha: string, noCommit = false): Promise<void> =>
+  invoke('revert', { args: { repoId, sha, noCommit } })
+
 // --- 진단 ---
 export interface AppInfo {
   version: string
