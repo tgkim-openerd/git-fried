@@ -2,7 +2,7 @@
 
 use crate::ai;
 use crate::error::{AppError, AppResult};
-use crate::git::{cherry_pick as git_cp, worktree as git_wt};
+use crate::git::{cherry_pick as git_cp, file_history as git_fh, worktree as git_wt};
 use crate::AppState;
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -104,6 +104,42 @@ pub async fn bulk_cherry_pick(
         args.no_commit,
     )
     .await
+}
+
+// ====== File history / Blame ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileHistoryArgs {
+    pub repo_id: i64,
+    pub path: String,
+    pub limit: Option<usize>,
+}
+
+#[tauri::command]
+pub async fn get_file_history(
+    args: FileHistoryArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<crate::git::repository::CommitSummary>> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let limit = args.limit.unwrap_or(200).min(1000);
+    git_fh::file_history(&path, &args.path, limit).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileBlameArgs {
+    pub repo_id: i64,
+    pub path: String,
+}
+
+#[tauri::command]
+pub async fn get_file_blame(
+    args: FileBlameArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_fh::BlameLine>> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_fh::file_blame(&path, &args.path).await
 }
 
 // ====== AI subprocess ======

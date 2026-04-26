@@ -115,6 +115,8 @@ pub fn run() {
             ipc::v02_commands::remove_worktree,
             ipc::v02_commands::prune_worktrees,
             ipc::v02_commands::bulk_cherry_pick,
+            ipc::v02_commands::get_file_history,
+            ipc::v02_commands::get_file_blame,
             ipc::v02_commands::ai_detect_clis,
             ipc::v02_commands::ai_commit_message,
             ipc::v02_commands::ai_pr_body,

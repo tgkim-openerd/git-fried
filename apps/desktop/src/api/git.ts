@@ -185,6 +185,26 @@ export const reset = (repoId: number, mode: ResetMode, target: string): Promise<
 export const revert = (repoId: number, sha: string, noCommit = false): Promise<void> =>
   invoke('revert', { args: { repoId, sha, noCommit } })
 
+// === File history / Blame ===
+export interface BlameLine {
+  sha: string
+  shortSha: string
+  authorName: string
+  authorAt: number
+  summary: string
+  originalLine: number
+  finalLine: number
+  content: string
+}
+export const getFileHistory = (
+  repoId: number,
+  path: string,
+  limit?: number,
+): Promise<CommitSummary[]> =>
+  invoke('get_file_history', { args: { repoId, path, limit } })
+export const getFileBlame = (repoId: number, path: string): Promise<BlameLine[]> =>
+  invoke('get_file_blame', { args: { repoId, path } })
+
 // === Profiles (개인 ↔ 회사 1-click 토글) ===
 export interface Profile {
   id: number

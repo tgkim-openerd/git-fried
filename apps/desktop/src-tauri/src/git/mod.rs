@@ -9,6 +9,7 @@ pub mod bulk;
 pub mod cherry_pick;
 pub mod commit;
 pub mod diff;
+pub mod file_history;
 pub mod graph;
 pub mod repository;
 pub mod reset;

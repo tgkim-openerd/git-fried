@@ -3,6 +3,7 @@
 // - staged / unstaged / untracked / conflicted 분리
 // - 파일 클릭 시 stage / unstage 토글
 // - "+ 모두 stage" / "− 모두 unstage" 단축
+import { ref } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import {
@@ -11,6 +12,7 @@ import {
   stagePaths,
   unstagePaths,
 } from '@/api/git'
+import FileHistoryModal from './FileHistoryModal.vue'
 import type { ChangeStatus, FileChange } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -74,6 +76,14 @@ function statusLabel(s: ChangeStatus): string {
     default:
       return '?'
   }
+}
+
+// File history modal state
+const historyPath = ref<string | null>(null)
+const historyOpen = ref(false)
+function openHistory(path: string) {
+  historyPath.value = path
+  historyOpen.value = true
 }
 
 function statusColor(s: ChangeStatus): string {
@@ -157,6 +167,14 @@ function statusColor(s: ChangeStatus): string {
             <button
               type="button"
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+              title="file history / blame"
+              @click="openHistory(f.path)"
+            >
+              📜
+            </button>
+            <button
+              type="button"
+              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
               title="discard"
               @click="onDiscardOne(f.path)"
             >
@@ -218,5 +236,12 @@ function statusColor(s: ChangeStatus): string {
         </ul>
       </div>
     </div>
+
+    <FileHistoryModal
+      :repo-id="repoId"
+      :path="historyPath"
+      :open="historyOpen"
+      @close="historyOpen = false"
+    />
   </section>
 </template>
