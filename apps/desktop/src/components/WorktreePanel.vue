@@ -11,6 +11,9 @@ import {
   removeWorktree,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: trees } = useWorktrees(() => props.repoId)
@@ -34,7 +37,7 @@ const addMut = useMutation({
     newBranch.value = ''
     qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] })
   },
-  onError: (e) => alert(`add 실패: ${describeError(e)}`),
+  onError: (e) => toast.error('Worktree add 실패', describeError(e)),
 })
 
 const removeMut = useMutation({

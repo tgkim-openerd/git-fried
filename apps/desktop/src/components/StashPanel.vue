@@ -12,6 +12,9 @@ import {
   showStash,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: stashes } = useStash(() => props.repoId)
@@ -35,25 +38,25 @@ const pushMut = useMutation({
     newMessage.value = ''
     invalidate(props.repoId)
   },
-  onError: (e) => alert(`stash push 실패: ${describeError(e)}`),
+  onError: (e) => toast.error('Stash push 실패', describeError(e)),
 })
 
 async function onApply(idx: number) {
   if (props.repoId == null) return
   await applyStash(props.repoId, idx).catch((e) =>
-    alert(`apply 실패: ${describeError(e)}`),
+    toast.error('Apply 실패', describeError(e)),
   )
   invalidate(props.repoId)
 }
 async function onPop(idx: number) {
   if (props.repoId == null) return
-  await popStash(props.repoId, idx).catch((e) => alert(`pop 실패: ${describeError(e)}`))
+  await popStash(props.repoId, idx).catch((e) => toast.error('Pop 실패', describeError(e)))
   invalidate(props.repoId)
 }
 async function onDrop(idx: number) {
   if (props.repoId == null) return
   if (!confirm(`stash@{${idx}} 를 삭제하시겠습니까?`)) return
-  await dropStash(props.repoId, idx).catch((e) => alert(`drop 실패: ${describeError(e)}`))
+  await dropStash(props.repoId, idx).catch((e) => toast.error('Drop 실패', describeError(e)))
   invalidate(props.repoId)
 }
 async function onShow(idx: number) {

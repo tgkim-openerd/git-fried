@@ -5,6 +5,9 @@ import { ref } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { activateProfile } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 import { useProfiles } from '@/composables/useProfiles'
 
 const { data: profiles, active } = useProfiles()
@@ -13,11 +16,12 @@ const open = ref(false)
 
 const activateMut = useMutation({
   mutationFn: (id: number) => activateProfile(id),
-  onSuccess: () => {
+  onSuccess: (p) => {
     qc.invalidateQueries({ queryKey: ['profiles'] })
     open.value = false
+    toast.success(`프로파일 활성화: ${p.name}`)
   },
-  onError: (e) => alert(`프로파일 활성화 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('프로파일 활성화 실패', describeError(e)),
 })
 
 function pick(id: number) {

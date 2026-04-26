@@ -13,7 +13,9 @@ import {
   lfsUntrack,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 
+const toast = useToast()
 const props = defineProps<{ repoId: number | null }>()
 const qc = useQueryClient()
 
@@ -48,7 +50,7 @@ const trackMut = useMutation({
     newPattern.value = ''
     qc.invalidateQueries({ queryKey: ['lfs-status'] })
   },
-  onError: (e) => alert(`track 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('LFS track 실패', describeError(e)),
 })
 
 const untrackMut = useMutation({
@@ -57,7 +59,7 @@ const untrackMut = useMutation({
     return lfsUntrack(props.repoId, pattern)
   },
   onSuccess: () => qc.invalidateQueries({ queryKey: ['lfs-status'] }),
-  onError: (e) => alert(`untrack 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('LFS untrack 실패', describeError(e)),
 })
 
 const fetchMut = useMutation({
@@ -66,7 +68,7 @@ const fetchMut = useMutation({
     return lfsFetch(props.repoId)
   },
   onSuccess: () => qc.invalidateQueries({ queryKey: ['lfs-files'] }),
-  onError: (e) => alert(`fetch 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('LFS fetch 실패', describeError(e)),
 })
 
 const pullMut = useMutation({
@@ -75,7 +77,7 @@ const pullMut = useMutation({
     return lfsPull(props.repoId)
   },
   onSuccess: () => qc.invalidateQueries({ queryKey: ['lfs-files'] }),
-  onError: (e) => alert(`pull 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('LFS pull 실패', describeError(e)),
 })
 
 const pruneMut = useMutation({
@@ -84,7 +86,7 @@ const pruneMut = useMutation({
     return lfsPrune(props.repoId)
   },
   onSuccess: () => qc.invalidateQueries({ queryKey: ['lfs-files'] }),
-  onError: (e) => alert(`prune 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('LFS prune 실패', describeError(e)),
 })
 
 function confirmUntrack(p: string) {

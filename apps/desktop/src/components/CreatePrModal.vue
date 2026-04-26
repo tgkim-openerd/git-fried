@@ -14,6 +14,9 @@ import {
 } from '@/api/git'
 import type { AiCli, BranchInfo } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps<{
   repoId: number | null
@@ -99,13 +102,13 @@ const aiBodyMut = useMutation({
     if (out.success) {
       body.value = out.text.trim()
     } else {
-      alert(`AI body 생성 실패:\n${out.stderr || out.text}`)
+      toast.error('AI body 생성 실패', out.stderr || out.text)
     }
   },
   onError: (e) => {
     const msg = describeError(e)
     if (msg.includes('cancelled')) return
-    alert(`AI 호출 실패:\n${msg}`)
+    toast.error('AI 호출 실패', msg)
   },
 })
 
@@ -122,10 +125,11 @@ const createMut = useMutation({
     })
   },
   onSuccess: (pr) => {
+    toast.success(`PR #${pr.number} 생성됨`, pr.title)
     emit('created', pr.number)
     emit('close')
   },
-  onError: (e) => alert(`PR 생성 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('PR 생성 실패', describeError(e)),
 })
 
 const canCreate = computed(

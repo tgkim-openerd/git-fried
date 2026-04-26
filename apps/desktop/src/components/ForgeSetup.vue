@@ -10,8 +10,10 @@ import {
   forgeWhoami,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 import type { ForgeAccount, ForgeAuthor } from '@/api/git'
 
+const toast = useToast()
 const qc = useQueryClient()
 
 const { data: accounts } = useQuery({
@@ -55,9 +57,9 @@ const saveMut = useMutation({
     qc.invalidateQueries({ queryKey: ['forgeAccounts'] })
     token.value = ''
     verified.value = null
-    alert('계정 등록 완료')
+    toast.success('Forge 계정 등록 완료')
   },
-  onError: (e) => alert(`등록 실패: ${describeError(e)}`),
+  onError: (e) => toast.error('Forge 계정 등록 실패', describeError(e)),
 })
 
 const deleteMut = useMutation({

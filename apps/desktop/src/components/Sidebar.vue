@@ -8,8 +8,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { open } from '@tauri-apps/plugin-dialog'
 import { addRepo, bulkFetch, listRepos, listWorkspaces } from '@/api/git'
 import { humanizeGitError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import type { Repo } from '@/types/git'
+
+const toast = useToast()
 
 const store = useReposStore()
 const qc = useQueryClient()
@@ -37,17 +40,21 @@ const bulkFetchMut = useMutation({
     qc.invalidateQueries({ queryKey: ['graph'] })
     qc.invalidateQueries({ queryKey: ['branches'] })
     const failed = results.filter((r) => !r.success)
+    const ok = results.length - failed.length
     if (failed.length > 0) {
-      alert(
-        `일괄 fetch 일부 실패 (${failed.length}/${results.length}):\n` +
-          failed
-            .slice(0, 5)
-            .map(
-              (f) =>
-                `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`,
-            )
-            .join('\n'),
+      const detail = failed
+        .slice(0, 5)
+        .map(
+          (f) =>
+            `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`,
+        )
+        .join('\n')
+      toast.warning(
+        `일괄 Fetch: ${ok}/${results.length} 성공 (${failed.length} 실패)`,
+        detail,
       )
+    } else if (results.length > 0) {
+      toast.success(`일괄 Fetch 완료 (${ok} 레포)`)
     }
   },
 })

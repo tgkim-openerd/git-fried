@@ -9,6 +9,9 @@ import {
   updateProfile,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 import { useProfiles } from '@/composables/useProfiles'
 import type { Profile, ProfileInput } from '@/api/git'
 
@@ -35,7 +38,7 @@ const createMut = useMutation({
     Object.assign(form, emptyForm())
     qc.invalidateQueries({ queryKey: ['profiles'] })
   },
-  onError: (e) => alert(`생성 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('프로파일 생성 실패', describeError(e)),
 })
 const updateMut = useMutation({
   mutationFn: ({ id, input }: { id: number; input: ProfileInput }) =>
@@ -45,17 +48,17 @@ const updateMut = useMutation({
     editingId.value = null
     qc.invalidateQueries({ queryKey: ['profiles'] })
   },
-  onError: (e) => alert(`수정 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('프로파일 수정 실패', describeError(e)),
 })
 const deleteMut = useMutation({
   mutationFn: (id: number) => deleteProfile(id),
   onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  onError: (e) => alert(`삭제 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('프로파일 삭제 실패', describeError(e)),
 })
 const activateMut = useMutation({
   mutationFn: (id: number) => activateProfile(id),
   onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  onError: (e) => alert(`활성화 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('프로파일 활성화 실패', describeError(e)),
 })
 
 function startEdit(p: Profile) {

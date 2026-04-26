@@ -18,7 +18,10 @@ import {
 } from '@/api/git'
 import type { AiCli } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+
+const toast = useToast()
 
 const props = defineProps<{
   repoId: number | null
@@ -72,7 +75,7 @@ const stageMut = useMutation({
     qc.invalidateQueries({ queryKey: ['conflicted'] })
     emit('close')
   },
-  onError: (e) => alert(`충돌 해결 저장 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('충돌 해결 저장 실패', describeError(e)),
 })
 
 const sideMut = useMutation({
@@ -86,7 +89,7 @@ const sideMut = useMutation({
     qc.invalidateQueries({ queryKey: ['conflicted'] })
     emit('close')
   },
-  onError: (e) => alert(`take side 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('Take side 실패', describeError(e)),
 })
 
 function applyOurs() {
@@ -144,13 +147,13 @@ const aiMut = useMutation({
       // result textarea 에 자동 채움 — 사용자 검토 후 저장
       resolved.value = out.text.trim()
     } else {
-      alert(`AI 응답 실패:\n${out.stderr || out.text}`)
+      toast.error('AI 응답 실패', out.stderr || out.text)
     }
   },
   onError: (e) => {
     const msg = describeError(e)
     if (msg.includes('cancelled')) return
-    alert(`AI 호출 실패:\n${msg}`)
+    toast.error('AI 호출 실패', msg)
   },
 })
 </script>

@@ -18,7 +18,9 @@ import type { CherryPickResult, CherryPickStrategy } from '@/api/git'
 import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 
+const toast = useToast()
 const props = defineProps<{
   open: boolean
   /** 사전 입력될 source sha (커밋 그래프에서 호출 시). */
@@ -77,7 +79,7 @@ const runMut = useMutation({
   onSuccess: (res) => {
     results.value = res
   },
-  onError: (e) => alert(`cherry-pick 호출 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('Cherry-pick 호출 실패', describeError(e)),
 })
 
 const canRun = computed(

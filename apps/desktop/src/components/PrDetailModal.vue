@@ -17,12 +17,15 @@ import {
   submitPrReview,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 import type {
   AiCli,
   MergeMethod,
   PullRequest,
   ReviewVerdict,
 } from '@/api/git'
+
+const toast = useToast()
 
 const props = defineProps<{
   repoId: number | null
@@ -83,7 +86,7 @@ const addCommentMut = useMutation({
     newComment.value = ''
     qc.invalidateQueries({ queryKey: ['pr-comments', props.repoId, props.number] })
   },
-  onError: (e) => alert(`코멘트 등록 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('코멘트 등록 실패', describeError(e)),
 })
 
 const reviewMut = useMutation({
@@ -100,7 +103,7 @@ const reviewMut = useMutation({
     qc.invalidateQueries({ queryKey: ['prs'] })
     qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
   },
-  onError: (e) => alert(`리뷰 제출 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('리뷰 제출 실패', describeError(e)),
 })
 
 const mergeMut = useMutation({
@@ -115,7 +118,7 @@ const mergeMut = useMutation({
     qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
     emit('close')
   },
-  onError: (e) => alert(`머지 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('PR 머지 실패', describeError(e)),
 })
 
 const closeMut = useMutation({
@@ -128,7 +131,7 @@ const closeMut = useMutation({
     qc.invalidateQueries({ queryKey: ['pr'] })
     qc.invalidateQueries({ queryKey: ['prs'] })
   },
-  onError: (e) => alert(`PR 닫기 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('PR 닫기 실패', describeError(e)),
 })
 
 const reopenMut = useMutation({
@@ -141,7 +144,7 @@ const reopenMut = useMutation({
     qc.invalidateQueries({ queryKey: ['pr'] })
     qc.invalidateQueries({ queryKey: ['prs'] })
   },
-  onError: (e) => alert(`PR 다시 열기 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('PR 다시 열기 실패', describeError(e)),
 })
 
 function fmtDate(unix: number): string {
@@ -222,13 +225,13 @@ const aiReviewMut = useMutation({
       // 리뷰 본문 textarea 에 자동 채움 → 사용자가 verdict 선택 후 제출
       reviewBody.value = out.text.trim()
     } else {
-      alert(`AI 리뷰 실패:\n${out.stderr || out.text}`)
+      toast.error('AI 리뷰 실패', out.stderr || out.text)
     }
   },
   onError: (e) => {
     const msg = describeError(e)
     if (msg.includes('cancelled')) return
-    alert(`AI 호출 실패:\n${msg}`)
+    toast.error('AI 호출 실패', msg)
   },
 })
 </script>

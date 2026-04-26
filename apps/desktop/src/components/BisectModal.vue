@@ -9,8 +9,11 @@ import {
   getBisectStatus,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+
+const toast = useToast()
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -39,7 +42,7 @@ const startMut = useMutation({
     qc.invalidateQueries({ queryKey: ['bisect-status'] })
     invalidate(repoId.value)
   },
-  onError: (e) => alert(`bisect start 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('Bisect start 실패', describeError(e)),
 })
 
 const markMut = useMutation({
@@ -51,7 +54,7 @@ const markMut = useMutation({
     qc.invalidateQueries({ queryKey: ['bisect-status'] })
     invalidate(repoId.value)
   },
-  onError: (e) => alert(`bisect mark 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('Bisect mark 실패', describeError(e)),
 })
 
 const resetMut = useMutation({
@@ -63,7 +66,7 @@ const resetMut = useMutation({
     qc.invalidateQueries({ queryKey: ['bisect-status'] })
     invalidate(repoId.value)
   },
-  onError: (e) => alert(`bisect reset 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('Bisect reset 실패', describeError(e)),
 })
 </script>
 
