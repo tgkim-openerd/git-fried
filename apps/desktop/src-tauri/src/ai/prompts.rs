@@ -75,7 +75,12 @@ pub fn commit_message_prompt(diff: &str, recent_subjects: &[String]) -> String {
 }
 
 /// AI PR body 생성 prompt.
-pub fn pr_body_prompt(commits: &[String], diff_stat: &str, head_branch: &str, base_branch: &str) -> String {
+pub fn pr_body_prompt(
+    commits: &[String],
+    diff_stat: &str,
+    head_branch: &str,
+    base_branch: &str,
+) -> String {
     let cs = if commits.is_empty() {
         String::from("(없음)")
     } else {
@@ -125,10 +130,7 @@ pub fn merge_resolution_prompt(
     let masked_o = mask_secrets(ours);
     let masked_t = mask_secrets(theirs);
     let base_block = match base {
-        Some(b) => format!(
-            "\n**BASE (공통 조상)**:\n```\n{}\n```\n",
-            mask_secrets(b)
-        ),
+        Some(b) => format!("\n**BASE (공통 조상)**:\n```\n{}\n```\n", mask_secrets(b)),
         None => String::new(),
     };
     format!(
@@ -170,12 +172,7 @@ pub fn merge_resolution_prompt(
 ///   - 보안/성능/한글 처리/에러 처리 관점 issue
 ///   - 잘 된 점
 ///   - 사소한 nit
-pub fn code_review_prompt(
-    pr_title: &str,
-    pr_body: &str,
-    commits: &[String],
-    diff: &str,
-) -> String {
+pub fn code_review_prompt(pr_title: &str, pr_body: &str, commits: &[String], diff: &str) -> String {
     let masked_diff = mask_secrets(diff);
     let masked_body = mask_secrets(pr_body);
     let cs = if commits.is_empty() {
@@ -431,10 +428,7 @@ mod tests {
 
     #[test]
     fn test_explain_commit_prompt() {
-        let p = explain_commit_prompt(
-            "feat: 한글 추가",
-            "diff --git a/x b/x\n+한글",
-        );
+        let p = explain_commit_prompt("feat: 한글 추가", "diff --git a/x b/x\n+한글");
         assert!(p.contains("의도"));
         assert!(p.contains("feat: 한글 추가"));
         assert!(p.contains("한글"));

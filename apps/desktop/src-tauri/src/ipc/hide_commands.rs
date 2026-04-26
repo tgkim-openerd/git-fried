@@ -27,10 +27,7 @@ pub struct HideRefArgs {
 }
 
 #[tauri::command]
-pub async fn hide_ref(
-    args: HideRefArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn hide_ref(args: HideRefArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     hide::hide(&state.db, args.repo_id, &args.ref_name, args.ref_kind).await
 }
 

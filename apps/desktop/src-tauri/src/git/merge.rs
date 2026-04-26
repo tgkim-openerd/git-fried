@@ -71,11 +71,7 @@ pub fn read_conflicted(path: &Path, file_path: &str) -> AppResult<ConflictedFile
 }
 
 /// 충돌 해결된 내용을 working tree 에 쓰고 stage 추가.
-pub async fn write_resolved(
-    path: &Path,
-    file_path: &str,
-    content: &str,
-) -> AppResult<()> {
+pub async fn write_resolved(path: &Path, file_path: &str, content: &str) -> AppResult<()> {
     let wt_path = path.join(file_path);
     if let Some(parent) = wt_path.parent() {
         std::fs::create_dir_all(parent).map_err(AppError::Io)?;

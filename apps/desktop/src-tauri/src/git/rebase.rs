@@ -239,11 +239,8 @@ pub fn status(repo: &Path) -> AppResult<RebaseStatus> {
     let current_step = read_trim("msgnum").and_then(|s| s.parse::<usize>().ok());
     let total_steps = read_trim("end").and_then(|s| s.parse::<usize>().ok());
     let stopped_at = read_trim("stopped-sha");
-    let head_name = read_trim("head-name").map(|s| {
-        s.strip_prefix("refs/heads/")
-            .unwrap_or(&s)
-            .to_string()
-    });
+    let head_name =
+        read_trim("head-name").map(|s| s.strip_prefix("refs/heads/").unwrap_or(&s).to_string());
 
     // 충돌 여부 — MERGE_MSG 또는 stage entries (UU 등) 존재.
     let conflict = repo.join(".git").join("MERGE_MSG").exists()

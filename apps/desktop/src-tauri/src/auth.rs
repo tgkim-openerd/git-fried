@@ -12,14 +12,12 @@ use keyring::Entry;
 const SERVICE: &str = "git-fried";
 
 pub fn make_key(forge_kind: &str, base_url: &str, username: Option<&str>) -> String {
-    format!(
-        "{forge_kind}|{base_url}|{}",
-        username.unwrap_or("")
-    )
+    format!("{forge_kind}|{base_url}|{}", username.unwrap_or(""))
 }
 
 pub fn save_token(key: &str, token: &str) -> AppResult<()> {
-    let entry = Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
+    let entry =
+        Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
     entry
         .set_password(token)
         .map_err(|e| AppError::internal(format!("keyring set: {e}")))?;
@@ -27,7 +25,8 @@ pub fn save_token(key: &str, token: &str) -> AppResult<()> {
 }
 
 pub fn load_token(key: &str) -> AppResult<Option<String>> {
-    let entry = Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
+    let entry =
+        Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
     match entry.get_password() {
         Ok(t) => Ok(Some(t)),
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -36,7 +35,8 @@ pub fn load_token(key: &str) -> AppResult<Option<String>> {
 }
 
 pub fn delete_token(key: &str) -> AppResult<()> {
-    let entry = Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
+    let entry =
+        Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
     match entry.delete_credential() {
         Ok(()) => Ok(()),
         Err(keyring::Error::NoEntry) => Ok(()),

@@ -32,9 +32,7 @@ fn handle_helpers(args: &[String]) -> std::io::Result<bool> {
             // args[2] = source path (우리가 만든 todo)
             // args[3] = git 이 넘긴 dest path
             if args.len() != 4 {
-                return Err(io_err(
-                    "--rebase-todo-helper 인자 부족 (src, dst 필수)",
-                ));
+                return Err(io_err("--rebase-todo-helper 인자 부족 (src, dst 필수)"));
             }
             let src = std::fs::read_to_string(&args[2])?;
             std::fs::write(&args[3], src)?;

@@ -42,12 +42,10 @@ pub async fn list_for_repo(db: &Db, repo_id: i64) -> AppResult<Vec<RepoAlias>> {
 
 /// 모든 레포의 모든 alias 한 번에 (Sidebar 처음 렌더 시 N+1 회피).
 pub async fn list_all(db: &Db) -> AppResult<Vec<RepoAlias>> {
-    let rows = sqlx::query(
-        "SELECT profile_id, repo_id, alias, updated_at FROM repo_alias",
-    )
-    .fetch_all(&db.pool)
-    .await
-    .map_err(AppError::Db)?;
+    let rows = sqlx::query("SELECT profile_id, repo_id, alias, updated_at FROM repo_alias")
+        .fetch_all(&db.pool)
+        .await
+        .map_err(AppError::Db)?;
     rows.into_iter().map(parse_alias).collect()
 }
 
@@ -58,25 +56,21 @@ pub async fn resolve(
     active_profile: Option<i64>,
 ) -> AppResult<Option<String>> {
     if let Some(pid) = active_profile {
-        let row = sqlx::query(
-            "SELECT alias FROM repo_alias WHERE repo_id = ? AND profile_id = ?",
-        )
-        .bind(repo_id)
-        .bind(pid)
-        .fetch_optional(&db.pool)
-        .await
-        .map_err(AppError::Db)?;
+        let row = sqlx::query("SELECT alias FROM repo_alias WHERE repo_id = ? AND profile_id = ?")
+            .bind(repo_id)
+            .bind(pid)
+            .fetch_optional(&db.pool)
+            .await
+            .map_err(AppError::Db)?;
         if let Some(r) = row {
             return Ok(Some(r.try_get("alias")?));
         }
     }
-    let row = sqlx::query(
-        "SELECT alias FROM repo_alias WHERE repo_id = ? AND profile_id IS NULL",
-    )
-    .bind(repo_id)
-    .fetch_optional(&db.pool)
-    .await
-    .map_err(AppError::Db)?;
+    let row = sqlx::query("SELECT alias FROM repo_alias WHERE repo_id = ? AND profile_id IS NULL")
+        .bind(repo_id)
+        .fetch_optional(&db.pool)
+        .await
+        .map_err(AppError::Db)?;
     Ok(match row {
         Some(r) => Some(r.try_get("alias")?),
         None => None,
@@ -144,11 +138,7 @@ pub async fn set(
     })
 }
 
-pub async fn unset(
-    db: &Db,
-    repo_id: i64,
-    profile_id: Option<i64>,
-) -> AppResult<()> {
+pub async fn unset(db: &Db, repo_id: i64, profile_id: Option<i64>) -> AppResult<()> {
     sqlx::query(
         "DELETE FROM repo_alias \
          WHERE repo_id = ? AND COALESCE(profile_id, -1) = COALESCE(?, -1)",

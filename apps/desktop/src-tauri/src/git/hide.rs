@@ -81,12 +81,7 @@ pub async fn list_hidden(db: &Db, repo_id: i64) -> AppResult<Vec<HiddenRef>> {
 }
 
 /// 단일 ref 를 hide 마킹 (idempotent — 이미 있으면 hidden_at 만 갱신).
-pub async fn hide(
-    db: &Db,
-    repo_id: i64,
-    ref_name: &str,
-    ref_kind: HiddenRefKind,
-) -> AppResult<()> {
+pub async fn hide(db: &Db, repo_id: i64, ref_name: &str, ref_kind: HiddenRefKind) -> AppResult<()> {
     if ref_name.trim().is_empty() {
         return Err(AppError::validation("ref_name 비어있음"));
     }
@@ -185,7 +180,10 @@ pub async fn gc_stale(db: &Db, repo_id: i64, valid_refs: &[String]) -> AppResult
     // SQLite 변수 바인딩 한도 (보통 999) 회피 — IN 절 chunking.
     let mut total_deleted = 0u64;
     for chunk in valid_refs.chunks(500) {
-        let placeholders = std::iter::repeat("?").take(chunk.len()).collect::<Vec<_>>().join(",");
+        let placeholders = std::iter::repeat("?")
+            .take(chunk.len())
+            .collect::<Vec<_>>()
+            .join(",");
         let q = format!(
             "DELETE FROM repo_ref_hidden \
              WHERE repo_id = ? AND ref_name NOT IN ({placeholders})"
@@ -246,8 +244,7 @@ mod tests {
         // 한글 round-trip
         assert!(list
             .iter()
-            .any(|h| h.ref_name == "origin/feature/한글"
-                && h.ref_kind == HiddenRefKind::Remote));
+            .any(|h| h.ref_name == "origin/feature/한글" && h.ref_kind == HiddenRefKind::Remote));
 
         unhide(&db, repo_id, "old-branch").await.unwrap();
         let list2 = list_hidden(&db, repo_id).await.unwrap();
@@ -260,7 +257,9 @@ mod tests {
         let db = open_test_db().await;
         let repo_id = add_test_repo(&db).await;
 
-        hide(&db, repo_id, "x", HiddenRefKind::Branch).await.unwrap();
+        hide(&db, repo_id, "x", HiddenRefKind::Branch)
+            .await
+            .unwrap();
         hide(&db, repo_id, "x", HiddenRefKind::Tag).await.unwrap();
         let list = list_hidden(&db, repo_id).await.unwrap();
         assert_eq!(list.len(), 1, "duplicate insert 가 같은 row 갱신");
@@ -286,7 +285,9 @@ mod tests {
         .unwrap();
         assert_eq!(list_hidden(&db, repo_id).await.unwrap().len(), 4);
 
-        let removed = unhide_kind(&db, repo_id, HiddenRefKind::Remote).await.unwrap();
+        let removed = unhide_kind(&db, repo_id, HiddenRefKind::Remote)
+            .await
+            .unwrap();
         assert_eq!(removed, 2);
 
         let remain = list_hidden(&db, repo_id).await.unwrap();
@@ -325,7 +326,9 @@ mod tests {
     async fn test_unhide_all_clears_repo() {
         let db = open_test_db().await;
         let repo_id = add_test_repo(&db).await;
-        hide(&db, repo_id, "x", HiddenRefKind::Branch).await.unwrap();
+        hide(&db, repo_id, "x", HiddenRefKind::Branch)
+            .await
+            .unwrap();
         hide(&db, repo_id, "y", HiddenRefKind::Tag).await.unwrap();
         let removed = unhide_all(&db, repo_id).await.unwrap();
         assert_eq!(removed, 2);
@@ -336,7 +339,9 @@ mod tests {
     async fn test_repo_delete_cascades_hidden() {
         let db = open_test_db().await;
         let repo_id = add_test_repo(&db).await;
-        hide(&db, repo_id, "x", HiddenRefKind::Branch).await.unwrap();
+        hide(&db, repo_id, "x", HiddenRefKind::Branch)
+            .await
+            .unwrap();
         db.remove_repo(repo_id).await.unwrap();
         // ON DELETE CASCADE → 자동 정리
         let list = list_hidden(&db, repo_id).await.unwrap();

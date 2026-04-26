@@ -174,13 +174,11 @@ pub async fn set_pinned(db: &Db, id: &PrId, pinned: bool) -> AppResult<PrMeta> {
     upsert_with(db, id, if pinned { 1 } else { 0 }, snoozed).await
 }
 
-pub async fn set_snooze(
-    db: &Db,
-    id: &PrId,
-    snoozed_until: Option<i64>,
-) -> AppResult<PrMeta> {
+pub async fn set_snooze(db: &Db, id: &PrId, snoozed_until: Option<i64>) -> AppResult<PrMeta> {
     let existing = get(db, id).await?;
-    let pinned = existing.map(|m| if m.pinned { 1i64 } else { 0 }).unwrap_or(0);
+    let pinned = existing
+        .map(|m| if m.pinned { 1i64 } else { 0 })
+        .unwrap_or(0);
     upsert_with(db, id, pinned, snoozed_until).await
 }
 
@@ -218,13 +216,11 @@ fn parse_view(r: sqlx::sqlite::SqliteRow) -> AppResult<SavedView> {
 }
 
 pub async fn list_views(db: &Db, view_kind: &str) -> AppResult<Vec<SavedView>> {
-    let rows = sqlx::query(
-        "SELECT * FROM saved_views WHERE view_kind = ? ORDER BY name",
-    )
-    .bind(view_kind)
-    .fetch_all(&db.pool)
-    .await
-    .map_err(AppError::Db)?;
+    let rows = sqlx::query("SELECT * FROM saved_views WHERE view_kind = ? ORDER BY name")
+        .bind(view_kind)
+        .fetch_all(&db.pool)
+        .await
+        .map_err(AppError::Db)?;
     rows.into_iter().map(parse_view).collect()
 }
 
@@ -239,8 +235,7 @@ pub async fn save_view(
         return Err(AppError::validation("view_kind / name 비어있음"));
     }
     // 빠른 JSON 검증 — 파싱 가능한지만.
-    let _: serde_json::Value =
-        serde_json::from_str(filter_json).map_err(AppError::Json)?;
+    let _: serde_json::Value = serde_json::from_str(filter_json).map_err(AppError::Json)?;
     if let Some(s) = sort_json {
         let _: serde_json::Value = serde_json::from_str(s).map_err(AppError::Json)?;
     }
@@ -360,15 +355,9 @@ mod tests {
         p.repo = "한글-레포".into();
         set_pinned(&db, &p, true).await.unwrap();
 
-        let list = list_for_repo(
-            &db,
-            &p.forge_kind,
-            &p.base_url,
-            &p.owner,
-            &p.repo,
-        )
-        .await
-        .unwrap();
+        let list = list_for_repo(&db, &p.forge_kind, &p.base_url, &p.owner, &p.repo)
+            .await
+            .unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].owner, "회사");
         assert_eq!(list[0].repo, "한글-레포");
@@ -381,9 +370,15 @@ mod tests {
         set_snooze(&db, &pr(2), Some(0)).await.unwrap(); // 만료
         let removed = cleanup_defaults(&db).await.unwrap();
         assert_eq!(removed, 1);
-        let remain = list_for_repo(&db, "gitea", "https://git.dev.opnd.io", "opnd-frontend", "ankentrip")
-            .await
-            .unwrap();
+        let remain = list_for_repo(
+            &db,
+            "gitea",
+            "https://git.dev.opnd.io",
+            "opnd-frontend",
+            "ankentrip",
+        )
+        .await
+        .unwrap();
         assert_eq!(remain.len(), 1);
         assert!(remain[0].pinned);
     }
@@ -447,8 +442,12 @@ mod tests {
     #[tokio::test]
     async fn test_saved_view_kind_isolation() {
         let db = open_test_db().await;
-        save_view(&db, "launchpad_pr", "v1", "{}", None).await.unwrap();
-        save_view(&db, "commit_search", "v1", "{}", None).await.unwrap();
+        save_view(&db, "launchpad_pr", "v1", "{}", None)
+            .await
+            .unwrap();
+        save_view(&db, "commit_search", "v1", "{}", None)
+            .await
+            .unwrap();
         let pr_views = list_views(&db, "launchpad_pr").await.unwrap();
         let cs_views = list_views(&db, "commit_search").await.unwrap();
         assert_eq!(pr_views.len(), 1);
@@ -459,7 +458,9 @@ mod tests {
     #[tokio::test]
     async fn test_saved_view_delete() {
         let db = open_test_db().await;
-        let v = save_view(&db, "launchpad_pr", "x", "{}", None).await.unwrap();
+        let v = save_view(&db, "launchpad_pr", "x", "{}", None)
+            .await
+            .unwrap();
         delete_view(&db, v.id).await.unwrap();
         let list = list_views(&db, "launchpad_pr").await.unwrap();
         assert!(list.is_empty());

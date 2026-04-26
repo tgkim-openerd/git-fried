@@ -57,7 +57,9 @@ async fn init_test_repo() -> (TempDir, std::path::PathBuf) {
 
 #[tokio::test]
 async fn test_git_version_available() {
-    let v = git_version().await.expect("git CLI 가 PATH 에 있어야 합니다");
+    let v = git_version()
+        .await
+        .expect("git CLI 가 PATH 에 있어야 합니다");
     assert!(v.starts_with("git version"), "got: {v}");
 }
 
@@ -67,11 +69,15 @@ async fn test_korean_commit_message_roundtrip() {
 
     // 빈 커밋 + 한글 메시지
     let msg = "feat: 한글 커밋 메시지 테스트\n\n본문 줄에도 한글이 잘 들어갑니다.";
-    git_run(&path, &["commit", "--allow-empty", "-m", msg], &Default::default())
-        .await
-        .unwrap()
-        .into_ok()
-        .unwrap();
+    git_run(
+        &path,
+        &["commit", "--allow-empty", "-m", msg],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
 
     // log 로 다시 읽기
     let repo = open(&path).unwrap();
@@ -191,11 +197,15 @@ async fn test_detect_meta_round_trip() {
     .unwrap()
     .into_ok()
     .unwrap();
-    git_run(&path, &["commit", "--allow-empty", "-m", "init"], &Default::default())
-        .await
-        .unwrap()
-        .into_ok()
-        .unwrap();
+    git_run(
+        &path,
+        &["commit", "--allow-empty", "-m", "init"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
 
     let meta = detect_meta(&path).unwrap();
     assert_eq!(meta.default_branch.as_deref(), Some("main"));
@@ -302,7 +312,9 @@ async fn test_commit_simple_with_korean() {
     std::fs::write(path.join("hello.md"), "# 한글\n").unwrap();
     super::stage::stage_all(&path).await.unwrap();
 
-    let res = super::commit::commit_simple(&path, "feat: 첫 한글 커밋").await.unwrap();
+    let res = super::commit::commit_simple(&path, "feat: 첫 한글 커밋")
+        .await
+        .unwrap();
     assert!(res.success, "stderr: {}", res.stderr);
     assert!(res.new_sha.is_some());
 
@@ -315,11 +327,15 @@ async fn test_commit_simple_with_korean() {
 #[tokio::test]
 async fn test_branch_create_switch_delete() {
     let (_tmp, path) = init_test_repo().await;
-    git_run(&path, &["commit", "--allow-empty", "-m", "init"], &Default::default())
-        .await
-        .unwrap()
-        .into_ok()
-        .unwrap();
+    git_run(
+        &path,
+        &["commit", "--allow-empty", "-m", "init"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
 
     super::branch::create_branch(&path, "feat/한글-브랜치", None)
         .await

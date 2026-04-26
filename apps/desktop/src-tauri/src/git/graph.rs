@@ -121,9 +121,7 @@ pub fn compute_graph(path: &Path, limit: usize) -> AppResult<GraphResult> {
             let p_sha = p_oid.to_string();
 
             // 이미 active 에 같은 부모를 기다리는 lane 이 있으면 그걸 재사용
-            let existing = active
-                .iter()
-                .find_map(|(s, l)| (s == &p_sha).then_some(*l));
+            let existing = active.iter().find_map(|(s, l)| (s == &p_sha).then_some(*l));
 
             if let Some(l) = existing {
                 parent_lanes.push(l);
@@ -246,29 +244,21 @@ mod tests {
     async fn test_linear_history() {
         let tmp = tempfile::TempDir::new().unwrap();
         let path = tmp.path().to_path_buf();
-        crate::git::runner::git_run(
-            &path,
-            &["init", "-q", "-b", "main"],
-            &Default::default(),
-        )
-        .await
-        .unwrap()
-        .into_ok()
-        .unwrap();
+        crate::git::runner::git_run(&path, &["init", "-q", "-b", "main"], &Default::default())
+            .await
+            .unwrap()
+            .into_ok()
+            .unwrap();
         crate::git::runner::git_run(&path, &["config", "user.name", "x"], &Default::default())
             .await
             .unwrap()
             .into_ok()
             .unwrap();
-        crate::git::runner::git_run(
-            &path,
-            &["config", "user.email", "x@x"],
-            &Default::default(),
-        )
-        .await
-        .unwrap()
-        .into_ok()
-        .unwrap();
+        crate::git::runner::git_run(&path, &["config", "user.email", "x@x"], &Default::default())
+            .await
+            .unwrap()
+            .into_ok()
+            .unwrap();
         crate::git::runner::git_run(
             &path,
             &["config", "commit.gpgsign", "false"],
@@ -331,7 +321,11 @@ mod tests {
 
         let g = compute_graph(&path, 100).unwrap();
         // 머지 커밋이 첫 row, 그리고 max_lane 은 최소 2 (main + feat)
-        let merge_row = g.rows.iter().find(|r| r.is_merge).expect("머지 커밋 있어야 함");
+        let merge_row = g
+            .rows
+            .iter()
+            .find(|r| r.is_merge)
+            .expect("머지 커밋 있어야 함");
         assert_eq!(merge_row.parent_lanes.len(), 2);
         assert!(g.max_lane >= 2, "max_lane={}", g.max_lane);
     }

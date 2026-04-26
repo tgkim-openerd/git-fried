@@ -7,9 +7,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 #[tauri::command]
-pub async fn list_profiles(
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<Vec<Profile>> {
+pub async fn list_profiles(state: tauri::State<'_, Arc<AppState>>) -> AppResult<Vec<Profile>> {
     profiles::list_all(&state.db.pool).await
 }
 
@@ -37,10 +35,7 @@ pub async fn update_profile(
 }
 
 #[tauri::command]
-pub async fn delete_profile(
-    id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn delete_profile(id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     profiles::delete(&state.db.pool, id).await
 }
 

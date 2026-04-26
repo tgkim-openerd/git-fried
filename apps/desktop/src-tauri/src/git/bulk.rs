@@ -5,9 +5,7 @@
 
 use crate::auth;
 use crate::error::AppError;
-use crate::forge::{
-    gitea::GiteaClient, github::GithubClient, ForgeClient, PrState, PullRequest,
-};
+use crate::forge::{gitea::GiteaClient, github::GithubClient, ForgeClient, PrState, PullRequest};
 use crate::git::{status as git_status, sync as git_sync};
 use crate::storage::{Db, DbExt};
 use serde::{Deserialize, Serialize};
@@ -78,12 +76,11 @@ pub async fn bulk_list_prs(
     // forge_kind 별로 토큰 / base_url 미리 조회 (DB 질의 줄임).
     let mut accounts: std::collections::HashMap<String, (String, String)> =
         std::collections::HashMap::new();
-    let rows = sqlx::query(
-        "SELECT forge_kind, base_url, keychain_ref FROM forge_accounts ORDER BY id",
-    )
-    .fetch_all(&db.pool)
-    .await
-    .map_err(AppError::Db)?;
+    let rows =
+        sqlx::query("SELECT forge_kind, base_url, keychain_ref FROM forge_accounts ORDER BY id")
+            .fetch_all(&db.pool)
+            .await
+            .map_err(AppError::Db)?;
     for r in rows {
         let kind: String = r.try_get("forge_kind")?;
         if accounts.contains_key(&kind) {

@@ -23,13 +23,9 @@ pub struct LfsFile {
 /// 형식 예: `<oid> <state> <path>`
 ///   - state: `*` = downloaded, `-` = pointer only.
 pub async fn list_files(repo: &Path) -> AppResult<Vec<LfsFile>> {
-    let out = git_run(
-        repo,
-        &["lfs", "ls-files", "--long"],
-        &GitRunOpts::default(),
-    )
-    .await?
-    .into_ok()?;
+    let out = git_run(repo, &["lfs", "ls-files", "--long"], &GitRunOpts::default())
+        .await?
+        .into_ok()?;
 
     let mut files = Vec::new();
     for line in out.lines() {
@@ -66,7 +62,10 @@ pub async fn status(repo: &Path) -> AppResult<LfsStatus> {
     // version
     let v = git_run(repo, &["lfs", "version"], &GitRunOpts::default()).await;
     let installed = v.as_ref().map(|o| o.exit_code == Some(0)).unwrap_or(false);
-    let version = v.ok().and_then(|o| o.into_ok().ok()).map(|s| s.trim().to_string());
+    let version = v
+        .ok()
+        .and_then(|o| o.into_ok().ok())
+        .map(|s| s.trim().to_string());
 
     // tracked: `git lfs track` (인자 없음) 가 현재 패턴 출력
     let tracked = git_run(repo, &["lfs", "track"], &GitRunOpts::default()).await;

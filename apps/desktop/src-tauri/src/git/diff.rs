@@ -59,11 +59,7 @@ pub async fn diff_revs(repo: &Path, from: &str, to: &str) -> AppResult<String> {
 ///   - compact: Some(0)  — 변경 라인만
 ///   - default: None     — 컨텍스트 3 라인
 ///   - context: Some(25) — 더 많은 컨텍스트
-pub async fn diff_commit(
-    repo: &Path,
-    sha: &str,
-    context: Option<u32>,
-) -> AppResult<String> {
+pub async fn diff_commit(repo: &Path, sha: &str, context: Option<u32>) -> AppResult<String> {
     let mut args: Vec<String> = vec![
         "show".into(),
         "--patch-with-stat".into(),

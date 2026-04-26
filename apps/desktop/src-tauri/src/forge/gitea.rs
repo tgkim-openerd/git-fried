@@ -83,7 +83,14 @@ impl ForgeClient for GiteaClient {
         let url = self.url(&format!(
             "/repos/{owner}/{repo}/pulls?state={state}&limit=50&page=1"
         ));
-        let res: Vec<RawPr> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let res: Vec<RawPr> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(res.into_iter().map(|r| r.into_pr(owner, repo)).collect())
     }
 
@@ -94,7 +101,14 @@ impl ForgeClient for GiteaClient {
         number: u64,
     ) -> AppResult<PullRequest> {
         let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}"));
-        let r: RawPr = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let r: RawPr = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(r.into_pr(owner, repo))
     }
 
@@ -129,19 +143,43 @@ impl ForgeClient for GiteaClient {
         let url = self.url(&format!(
             "/repos/{owner}/{repo}/issues?state=open&type=issues&limit=50"
         ));
-        let res: Vec<RawIssue> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let res: Vec<RawIssue> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(res.into_iter().map(|r| r.into_issue(owner, repo)).collect())
     }
 
     async fn list_releases(&self, owner: &str, repo: &str) -> AppResult<Vec<Release>> {
         let url = self.url(&format!("/repos/{owner}/{repo}/releases?limit=50"));
-        let res: Vec<RawRelease> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
-        Ok(res.into_iter().map(|r| r.into_release(owner, repo)).collect())
+        let res: Vec<RawRelease> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(res
+            .into_iter()
+            .map(|r| r.into_release(owner, repo))
+            .collect())
     }
 
     async fn whoami(&self) -> AppResult<Author> {
         let url = self.url("/user");
-        let r: RawUser = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let r: RawUser = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(r.into_author())
     }
 

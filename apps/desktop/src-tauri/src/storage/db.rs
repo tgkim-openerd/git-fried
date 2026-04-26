@@ -131,17 +131,17 @@ impl DbExt for Db {
         color: Option<&str>,
     ) -> AppResult<Workspace> {
         // 둘 다 None 이면 no-op fetch.
-        if name.is_some() {
+        if let Some(n) = name {
             sqlx::query("UPDATE workspaces SET name = ? WHERE id = ?")
-                .bind(name.unwrap())
+                .bind(n)
                 .bind(id)
                 .execute(&self.pool)
                 .await
                 .map_err(AppError::Db)?;
         }
-        if color.is_some() {
+        if let Some(c) = color {
             sqlx::query("UPDATE workspaces SET color = ? WHERE id = ?")
-                .bind(color)
+                .bind(c)
                 .bind(id)
                 .execute(&self.pool)
                 .await
@@ -197,12 +197,10 @@ impl DbExt for Db {
 
     async fn list_repos(&self, workspace_id: Option<i64>) -> AppResult<Vec<Repo>> {
         let rows = if let Some(wid) = workspace_id {
-            sqlx::query(
-                "SELECT * FROM repos WHERE workspace_id = ? ORDER BY is_pinned DESC, name",
-            )
-            .bind(wid)
-            .fetch_all(&self.pool)
-            .await
+            sqlx::query("SELECT * FROM repos WHERE workspace_id = ? ORDER BY is_pinned DESC, name")
+                .bind(wid)
+                .fetch_all(&self.pool)
+                .await
         } else {
             sqlx::query("SELECT * FROM repos ORDER BY is_pinned DESC, name")
                 .fetch_all(&self.pool)

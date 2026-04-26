@@ -58,10 +58,8 @@ pub fn list_branches(path: &Path) -> AppResult<Vec<BranchInfo>> {
                         .find_commit(oid)
                         .ok()
                         .and_then(|c| c.summary().map(|s| s.to_string()));
-                    let (a, b) = if let Some(up_oid) = branch
-                        .upstream()
-                        .ok()
-                        .and_then(|b| b.get().target())
+                    let (a, b) = if let Some(up_oid) =
+                        branch.upstream().ok().and_then(|b| b.get().target())
                     {
                         repo.graph_ahead_behind(oid, up_oid).unwrap_or((0, 0))
                     } else {
@@ -90,12 +88,18 @@ pub fn list_branches(path: &Path) -> AppResult<Vec<BranchInfo>> {
 
     // 정렬: HEAD → local → remote, 알파벳
     out.sort_by(|a, b| {
-        let ka = (a.is_head, matches!(a.kind, BranchKindLite::Remote), a.name.clone());
-        let kb = (b.is_head, matches!(b.kind, BranchKindLite::Remote), b.name.clone());
+        let ka = (
+            a.is_head,
+            matches!(a.kind, BranchKindLite::Remote),
+            a.name.clone(),
+        );
+        let kb = (
+            b.is_head,
+            matches!(b.kind, BranchKindLite::Remote),
+            b.name.clone(),
+        );
         // HEAD true 가 위 → reverse
-        kb.0.cmp(&ka.0)
-            .then(ka.1.cmp(&kb.1))
-            .then(ka.2.cmp(&kb.2))
+        kb.0.cmp(&ka.0).then(ka.1.cmp(&kb.1)).then(ka.2.cmp(&kb.2))
     });
     Ok(out)
 }
@@ -107,7 +111,9 @@ pub async fn switch_branch(path: &Path, name: &str, create: bool) -> AppResult<(
         args.push("-c");
     }
     args.push(name);
-    git_run(path, &args, &GitRunOpts::default()).await?.into_ok()?;
+    git_run(path, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 
@@ -117,7 +123,9 @@ pub async fn create_branch(path: &Path, name: &str, start: Option<&str>) -> AppR
     if let Some(s) = start {
         args.push(s);
     }
-    git_run(path, &args, &GitRunOpts::default()).await?.into_ok()?;
+    git_run(path, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 
@@ -226,12 +234,16 @@ pub async fn cherry_pick_sha(
     }
     let restore: Option<String> = if let Some(tb) = target_branch {
         // 현재 HEAD 저장 후 target 으로 switch.
-        let head = git_run(path, &["symbolic-ref", "--short", "HEAD"], &GitRunOpts::default())
-            .await?
-            .into_ok()
-            .ok()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty());
+        let head = git_run(
+            path,
+            &["symbolic-ref", "--short", "HEAD"],
+            &GitRunOpts::default(),
+        )
+        .await?
+        .into_ok()
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
         git_run(path, &["switch", tb], &GitRunOpts::default())
             .await?
             .into_ok()?;

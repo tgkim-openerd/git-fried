@@ -28,11 +28,7 @@ pub async fn list_stash(repo: &Path) -> AppResult<Vec<StashEntry>> {
     // %gd: stash@{0}, %H: SHA, %ct: committer unix, %s: subject
     let out = git_run(
         repo,
-        &[
-            "stash",
-            "list",
-            "--format=%gd\x1f%H\x1f%ct\x1f%s",
-        ],
+        &["stash", "list", "--format=%gd\x1f%H\x1f%ct\x1f%s"],
         &GitRunOpts::default(),
     )
     .await?
@@ -83,7 +79,9 @@ pub async fn push_stash(
         args.push("-m");
         args.push(m);
     }
-    git_run(repo, &args, &GitRunOpts::default()).await?.into_ok()?;
+    git_run(repo, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 

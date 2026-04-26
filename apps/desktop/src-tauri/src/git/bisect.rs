@@ -56,15 +56,11 @@ pub async fn status(repo: &Path) -> AppResult<BisectStatus> {
         }
     }
 
-    let head = git_run(
-        repo,
-        &["rev-parse", "HEAD"],
-        &GitRunOpts::default(),
-    )
-    .await
-    .ok()
-    .and_then(|o| o.into_ok().ok())
-    .map(|s| s.trim().to_string());
+    let head = git_run(repo, &["rev-parse", "HEAD"], &GitRunOpts::default())
+        .await
+        .ok()
+        .and_then(|o| o.into_ok().ok())
+        .map(|s| s.trim().to_string());
 
     Ok(BisectStatus {
         in_progress: true,

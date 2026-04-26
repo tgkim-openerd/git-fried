@@ -7,12 +7,12 @@
 //   - 토큰/비용/rate limit 모두 외부 위임.
 //   - prompt 빌드 + stream + 결과 적용만 책임.
 //   - secret 마스킹 사전 처리 (`.env`, `ghp_*`, `gho_*`, `glpat-*` 등).
-pub mod runner;
 pub mod prompts;
+pub mod runner;
 
-pub use runner::{ai_run, detect_clis, AiCli, AiOutput, AiProbe};
 pub use prompts::{
     code_review_prompt, commit_message_prompt, composer_plan_prompt, explain_branch_prompt,
     explain_commit_prompt, mask_secrets, merge_resolution_prompt, pr_body_prompt,
     stash_message_prompt,
 };
+pub use runner::{ai_run, detect_clis, AiCli, AiOutput, AiProbe};

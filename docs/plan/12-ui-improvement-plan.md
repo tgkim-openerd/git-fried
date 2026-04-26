@@ -1,20 +1,23 @@
 # 12. UI 개선 상세 계획 — GitKraken 흡수 Sprint A & B 통합 plan
 
-작성: 2026-04-26 / 4 에이전트 병렬 분석 통합 / **2026-04-26 patch v2 — 다른 세션이 A1 backend 완료 (`migrations/0002_hide_solo_branches.sql` + `git/hide.rs` + `ipc/hide_commands.rs`) 한 상태 반영**
+작성: 2026-04-26 / 4 에이전트 병렬 분석 통합 / **patch v2 (2026-04-26) — A1 backend 완료** / **patch v3 (2026-04-27) — Sprint A+B 14항목 전부 완료 + Sprint C(P2) 8 + Sprint D~M(v1.x) 21 추가 흡수 = 총 43개**
 
-> **목적**: [docs/plan/11-gitkraken-benchmark.md](./11-gitkraken-benchmark.md) 의 흡수 catalog 를 git-fried 의 현재 코드베이스에 정확히 매핑한 다음, **즉시 구현 가능한 구체 작업 계획**으로 전환. 다음 세션에서 단독 reference 로 사용. 각 항목에 (a) 현재 코드 위치 (b) 구체 변경 (c) IPC/스키마 변경 (d) 작업 시간 (e) 의존성.
+> **목적**: [docs/plan/11-gitkraken-benchmark.md](./11-gitkraken-benchmark.md) 의 흡수 catalog 를 git-fried 의 현재 코드베이스에 정확히 매핑한 다음, **즉시 구현 가능한 구체 작업 계획**으로 전환. 본 문서 v3 부터는 **완료 인벤토리 + 다음 작업 (Line-level stage v2)** 역할로 전환.
 >
-> **⚠️ patch v2 핵심 변경 (2026-04-26)**:
+> **🎉 patch v3 핵심 변경 (2026-04-27)**:
 >
-> - **A1 (Hide/Solo) backend 완료**. 실제 구현은 12번 v1 가정과 다음과 같이 다름:
->   - 마이그레이션 = `0002_hide_solo_branches.sql` (12번 v1 의 "0006" 가정 폐기, 모든 §5 번호 -3 shift)
->   - 테이블 = `repo_ref_hidden(repo_id, ref_name, ref_kind, hidden_at)` (← `ref_visibility(...)` 가정 폐기)
->   - **Solo = 세션 메모리 (transient, DB 안 함)** — 영속화 폐기
->   - IPC = 6개 (`list_hidden_refs` / `hide_ref` / `unhide_ref` / `hide_refs_bulk` / `unhide_refs_by_kind` / `unhide_all_refs`), 위치 = `ipc/hide_commands.rs` 별도 모듈
->   - struct = `HiddenRef { ref_name, ref_kind: HiddenRefKind, hidden_at }`, kind enum = Branch/Remote/Tag/Stash
->   - 보너스: `gc_stale(valid_refs)` — 존재하지 않는 ref 의 hidden 엔트리 자동 정리
-> - **vue-draggable-plus** 이미 `package.json#L44` 에 `^0.6.0` 설치됨. "도입" 표현 폐기 → "재사용".
-> - **A1 잔여 작업 = frontend 만** (~5h). §9-1~9-5 의 backend 부분 폐기, frontend 부분 (§9-3 composable, §9-5 ContextMenu, §9-6 13:00~18:30) 그대로 유효.
+> - **Sprint A (P0 4) ✅ 완료** — A1=`8aaf1cc`, A2=`d6e1ac7`, A3=`eda980c`, A4=`b3db974`
+> - **Sprint B (P1 10) ✅ 완료** — B1=`8f575da`, B2=`42c92d2`, B3=`f9a4d2b`, B4=`d0d1030`, B5=`bc99cd4`, B6=`0ce4489`, B7=`396f821`, B8=`3ae45cd`, B9=`a1aff9a`, B10=`457c3dc`
+> - **Sprint C (P2 8) ✅ 완료** — 본 문서 §4 범위 외였으나 추가 흡수: C1=`f093e74` (Worktree Lock), C2=`1481c1a` (LFS size), C3=`bf95ad7` (Section maximize), C4=`1e2fc7e` (Custom theme JSON), C5=`dc2f665` (Lane resize), C6=`36eb617` (mergetool), C7=`3f19f19` (deep link), C8=`6e5debd` (OS notif)
+> - **Sprint D~F (v1.x 11) ✅ 완료** — Settings store / AutoFetch / avatarStyle / Diff Split / CommandPalette 토글 / StatusBar AI / OS 파일매니저 / Fullscreen 등
+> - **Sprint G~M (미시 디테일 7) ✅ 완료** — G=Multi-repo Tab, H=Hunk-level stage, I=레포 필터 ⌘⌥F, J=WIP banner, K=Branch ref hover hide, L=섹션 collapse, M=drag-drop file→terminal
+> - **누적**: 76 commits / 34,343 lines / 153 파일 / 4 migrations 적용 (0001~0004) / cargo test 73 pass / 0 typecheck 오류
+> - **다음 작업** (★): **Line-level stage** (Sprint H 후속 v2) — `parseDiff.ts` 가 현재 modified 상태로 작업 진행 중 추정. CodeMirror selection 또는 checkbox → 선택 라인 추출 → minimal patch 재조립 → `git apply --cached`. 자세한 내용은 §15 참조.
+>
+> **patch v2 (이전 변경, 그대로 유효)**:
+>
+> - A1 backend 실제 구현: 마이그레이션 `0002_hide_solo_branches.sql`, 테이블 `repo_ref_hidden(..., ref_kind, hidden_at)`, **Solo=세션 메모리**, IPC 6개 (`list_hidden_refs` / `hide_ref` / `unhide_ref` / `hide_refs_bulk` / `unhide_refs_by_kind` / `unhide_all_refs`) in `ipc/hide_commands.rs`, struct `HiddenRef { ref_name, ref_kind: HiddenRefKind, hidden_at }`, 보너스 `gc_stale()`
+> - vue-draggable-plus `^0.6.0` 이미 설치 — `package.json#L44`
 >
 > **연계 문서**: [11-gitkraken-benchmark.md](./11-gitkraken-benchmark.md) (흡수 catalog), [09-interactive-rebase.md](./09-interactive-rebase.md), [10-integrated-terminal.md](./10-integrated-terminal.md), [04-tech-architecture.md](./04-tech-architecture.md), [06-risks-and-pitfalls.md](./06-risks-and-pitfalls.md).
 
@@ -60,22 +63,29 @@
 
 ## 2. 작업량 종합 매트릭스
 
-| # | 항목 | Frontend | Backend | DB | 의존성 | 총 |
-| - | --- | --- | --- | --- | --- | --- |
-| **A1** | Hide / Solo branches | M (~5h, frontend 만) | ✅ 완료 (다른 세션) | ✅ `0002` 적용 완료 | 🔗 ContextMenu | **S~M** (~5h 잔여) |
-| **A2** | Vim nav J/K/H/L + S/U | M (6h) | — | — | useShortcuts 확장 | **M** (~6h) |
-| **A3** | 그래프 컬럼 토글/재정렬 | M (4h) | S (2h) | 1 migration (or settings KV 재사용) | vue-draggable-plus | **M** (~6h) |
-| **A4** | Launchpad Pin/Snooze/SavedView | L (10h) | M (8h) | 1 migration (3 테이블) | 🔗 ContextMenu, SnoozeModal | **L** (~18h) |
-| **B1** | Diff Hunk/Inline/Split + line stage | L (12h) | S (재사용 검증) | — | CodeMirror Split pane | **L** (~14h) |
-| **B2** | Status bar + Conflict Prediction | M (6h) | S (3h) | 0 (캐시 옵션) | 새 IPC 1개 | **M** (~9h) |
-| **B3** | Commit Composer AI | L (12h) | M (6h) | 0 | AI prompt 추가 | **L** (~18h) |
-| **B4** | Repo tab alias + per-profile 영속 | M (5h) | S (3h) | 1 migration | useProfiles 확장 | **M** (~8h) |
-| **B5** | 단축키 12개 추가 | S (4h) | — | — | 각 컴포넌트 핸들러 | **S** (~4h) |
-| **B6** | Command Palette 카테고리 + 30+ | M (6h) | — | — | CommandPalette 확장 | **M** (~6h) |
-| **B7** | AI 진입점 3개 (Explain commit/branch/stash) | M (6h) | M (5h) | 0 | 🔗 ExplainModal | **M** (~11h) |
-| **B8** | Drag-drop 4종 | L (10h) | S (검증) | 0 (localStorage) | 🔗 ContextMenu | **L** (~10h) |
-| **B9** | Sidebar org 그룹핑 + Workspace color | M (5h) | S (2h) | 1 migration (컬럼) | — | **M** (~7h) |
-| **B10** | Preferences 트리 60% | L (16h) | L (14h) | 5~6 migrations | 🔗 PreferencesTree | **L+** (~30h) |
+| # | 항목 | Commit | 핵심 산출물 |
+| - | --- | --- | --- |
+| **A1** | Hide / Solo branches | `8aaf1cc` | ✅ migration `0002_hide_solo_branches.sql`, `git/hide.rs`, `ipc/hide_commands.rs`, `useHiddenRefs.ts`, BranchPanel/CommitGraph 통합 + 🙈 hover (K=`bb5bd8f`) |
+| **A2** | Vim nav J/K/H/L + S/U | `d6e1ac7` | ✅ `useShortcuts.ts` 확장, CommitTable activeRow + virtualizer scrollTo, StatusPanel S/U |
+| **A3** | 그래프 컬럼 토글/재정렬 | `eda980c` | ✅ `useCommitColumns.ts`, vue-draggable-plus 활용, right-click 헤더 |
+| **A4** | Launchpad Pin/Snooze/SavedView | `b3db974` | ✅ migration `0003_launchpad_pr_meta.sql`, `useLaunchpadMeta.ts`, Pin/Snooze/SavedView 모두 |
+| **B1** | Diff 3-mode + Hunk/Line stage | `8f575da` (3-mode) + `aef45ec` (Split) + `356ee57` (multi-file Split) + **`a0dd950` (Hunk-level stage Sprint H)** | ✅ `useDiffMode.ts`, `DiffSplitView.vue`, `HunkStageModal.vue`, `parseDiff.ts`. **Line-level v2 잔여** (다음 작업) |
+| **B2** | Status bar + Conflict Prediction | `42c92d2` + `47394af` (✨ AI 미리해결) | ✅ `StatusBar.vue`, target merge-tree dry-run, ⚠ 옆 ✨ AI 버튼 |
+| **B3** | Commit Composer AI | `f9a4d2b` | ✅ multi-commit 재작성 modal + AI prompt |
+| **B4** | Repo tab alias + per-profile | `d0d1030` | ✅ migration `0004_repo_alias.sql`, `useRepoAliases.ts`, `useTabPerProfile.ts` |
+| **B5** | 단축키 13개 (~~12~~) | `bc99cd4` | ✅ Zoom / Sidebar / Detail / ⌘D / ⌘⇧M / ⌘⇧Enter / ⌘⇧S/U + Sprint F5 (`e97be39` F11 / ⌃⌘F) + Sprint I (`7ebb257` ⌘⌥F) |
+| **B6** | Command Palette 카테고리 + 30+ | `0ce4489` + `85280a7` (F1 토글 9개) | ✅ 카테고리 모델, 9 토글 + 5 탭 명령 + 필터/fullscreen |
+| **B7** | AI 진입점 3개 (Explain) | `396f821` | ✅ Explain commit / branch / stash msg |
+| **B8** | Drag-drop 4종 | `3ae45cd` (Branch→Branch + Commit→Branch) + Sprint G `6939441` (Tab) + Sprint M `313d2de` (file→terminal) | ✅ 4종 모두 + 보너스 file→terminal quoted path |
+| **B9** | Sidebar org 그룹핑 + Color | `a1aff9a` | ✅ workspace color picker + organization grouping |
+| **B10** | Preferences 카테고리 + per-profile 탭 | `457c3dc` + Sprint D1 `3ef7b26` (Settings store) | ✅ Settings 공용 store, per-profile 탭 영속, Hide Launchpad / Date locale 토글 |
+| **G** | Multi-repo Tab 시스템 | `6939441` | ✅ RepoTabBar + ⌃Tab/⌃⇧Tab + ⌘⇧W + drag-drop 재정렬 + localStorage |
+| **H** | Hunk-level stage | `a0dd950` | ✅ HunkStageModal + parseDiffWithHunks + buildHunkPatch (line v2 진행 중) |
+| **I** | 레포 필터 ⌘⌥F | `7ebb257` | ✅ Sidebar 자동 보임 + 이름/별칭/forge owner-repo/경로 매칭 |
+| **J** | WIP 노트 banner | `deaec39` | ✅ 그래프 상단 banner + stash push prefill + clear-on-push |
+| **K** | Branch ref hover Hide | `bb5bd8f` | ✅ ref pill hover → 🙈 inline 버튼 |
+| **L** | 섹션 헤더 collapse | `b8ebeee` | ✅ StatusPanel 4섹션 + StashPanel new form |
+| **M** | Drag-drop file→terminal | `313d2de` | ✅ quotePath (pwsh + bash 안전) + ptyWrite |
 
 ---
 
@@ -618,16 +628,20 @@ async fn test_ref_visibility_korean_round_trip() {
 ## 10. 의존성 / 진입 순서 그래프
 
 ```
-Day 1 (Sprint A 시작):
-  ├─ A1 frontend (~5h, backend 완료) ← ContextMenu 컴포넌트 여기서 신규 ★
-  └─ ContextMenu ──┐ (이후 모든 우클릭 메뉴에서 재사용)
-                  ↓
-Day 2:
-  ├─ A2 (Vim nav) ← 독립
-  └─ A3 (컬럼 토글) ← vue-draggable-plus ^0.6.0 이미 설치 — 즉시 사용
+=== ✅ 모든 Sprint A~M 완료 (2026-04-27 기준) ===
 
-Day 3-5:
-  └─ A4 (Launchpad) ← ContextMenu 재사용, SnoozeModal 신규, migration 0003
+Sprint A (P0 4):    A1 → A2 → A3 → A4              ✅ commit 8aaf1cc → b3db974
+Sprint B (P1 10):   B1 ~ B10                       ✅ commit 8f575da → 457c3dc
+Sprint C (P2 8):    C1 ~ C8                        ✅ commit f093e74 → 6e5debd
+Sprint D~F (v1.x):  D1 D2-D6 D7-D9 E1-E3 F1-F5     ✅ commit 3ef7b26 → e97be39
+Sprint G~M (미시):  G H I J K L M                  ✅ commit 6939441 → 313d2de
+
+=== ⏳ 잔여 (v0.3 / v1.x) ===
+
+다음 작업: Line-level stage (Sprint H 후속 v2)
+       └─ parseDiff.ts modified 상태 (작업 진행 중 추정)
+
+향후: EV 코드 서명 / Sentry self-hosted / macOS / Linux / OAuth / 수익 모델
 
 ═══ Sprint A 완료 (~1주) ═══
 
@@ -741,9 +755,42 @@ Day 18-22:
 
 ## 15. 다음 행동
 
-1. **사용자 결정**: 옵션 1/2/3 중 진입 시퀀스 선택
-2. (옵션 2 권장) Sprint A 1번 진입 → 9시간 시간 단위 (`§9-6`) 따라 실행
-3. PR 마다 §13 체크리스트 점검 + `docs/plan/11` 항목 ✅ 갱신
-4. Sprint A 완료 후 Sprint B 진입 결정 (재평가)
+### A. Line-level stage (Sprint H 후속 v2) ★ 즉시 진입 가능
 
-다음 문서 → (Sprint B 완료 시 `13-v1.x-roadmap-update.md` 또는 사용자 dogfood 결과에 따라 13~ TBD)
+Sprint H (`a0dd950`) 의 hunk-level stage 위에 line 단위 stage 추가. **`apps/desktop/src/utils/parseDiff.ts` 가 modified 상태** — 작업 진행 중인 것으로 추정.
+
+**구현 포인트**:
+- CodeMirror selection 또는 라인 옆 checkbox 로 라인 선택
+- 선택 라인 추출 → minimal patch 재조립
+  - 선택 외 `-` 라인 → context (`  `) 로 변환
+  - 선택 외 `+` 라인 → 무시 (skip)
+  - 선택된 `+` 라인 → 그대로 유지
+  - hunk 헤더 (`@@ -a,b +c,d @@`) → 선택 결과에 맞게 a/b/c/d 재계산
+- `git apply --cached` 로 staged 영역에만 적용
+- 회귀: 한글 파일 / multi-line 선택 / 다중 hunk 동시 선택
+
+**참고 코드**:
+- 이미 있는 `parseDiffWithHunks` / `buildHunkPatch` (Sprint H) 가 hunk 단위 base 제공
+- 새 함수 `buildLinePatch(hunks, selectedLines)` 작성 필요
+
+**작업량**: M~L (4~12h, patch math 까다로움)
+
+### B. dogfood 결과 보고
+
+REVIEW.md §"사용자 dogfood 시 주의사항" 의 12개 신규 진입점 사용 → 발견 사항 보고 → 일괄 패치.
+
+### C. v0.3 / v1.x 신규 방향
+
+EV 코드 서명 / Sentry self-hosted / macOS / Linux / OAuth / GitHub repo 생성 + CI matrix.
+
+---
+
+## 16. 본 문서의 역할 변화 (v3)
+
+- **v1 (2026-04-26 작성)**: Sprint A+B 14항목의 정밀 작업 계획
+- **v2 (2026-04-26)**: A1 backend 완료 반영
+- **v3 (2026-04-27)**: 14항목 + Sprint C+D~M 추가 21개 모두 완료. **완료 인벤토리 + 다음 작업 가이드** 역할로 전환
+
+다음 문서 후보:
+- `13-line-stage-v2.md` — Line-level stage 구현 plan (다음 작업 진입 시)
+- `14-v1.x-roadmap.md` — EV 서명 / macOS / Linux / 수익 모델 검토

@@ -157,7 +157,9 @@ pub async fn remove_worktree(repo: &Path, path: &str, force: bool) -> AppResult<
         args.push("--force");
     }
     args.push(path);
-    git_run(repo, &args, &GitRunOpts::default()).await?.into_ok()?;
+    git_run(repo, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 
@@ -172,11 +174,7 @@ pub async fn prune_worktrees(repo: &Path) -> AppResult<()> {
 ///
 /// Lock 된 worktree 는 prune / remove 가 거부됨. 외장 디스크의 worktree 가
 /// disconnect 됐을 때 의도치 않게 정리되는 것 방지.
-pub async fn lock_worktree(
-    repo: &Path,
-    path: &str,
-    reason: Option<&str>,
-) -> AppResult<()> {
+pub async fn lock_worktree(repo: &Path, path: &str, reason: Option<&str>) -> AppResult<()> {
     let mut args: Vec<&str> = vec!["worktree", "lock", path];
     if let Some(r) = reason.filter(|s| !s.trim().is_empty()) {
         args.push("--reason");
@@ -189,12 +187,8 @@ pub async fn lock_worktree(
 }
 
 pub async fn unlock_worktree(repo: &Path, path: &str) -> AppResult<()> {
-    git_run(
-        repo,
-        &["worktree", "unlock", path],
-        &GitRunOpts::default(),
-    )
-    .await?
-    .into_ok()?;
+    git_run(repo, &["worktree", "unlock", path], &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }

@@ -13,19 +13,14 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// 파일의 commit history (rename 추적 포함).
-pub async fn file_history(
-    repo: &Path,
-    path: &str,
-    limit: usize,
-) -> AppResult<Vec<CommitSummary>> {
+pub async fn file_history(repo: &Path, path: &str, limit: usize) -> AppResult<Vec<CommitSummary>> {
     if path.trim().is_empty() {
         return Err(AppError::validation("파일 경로가 비었습니다."));
     }
     // %H | %P | %an | %ae | %at | %ct | %s | %b | %G? — null byte 로 구분.
     // 본문이 길어지므로 record separator 0x1e 사용.
     let limit_arg = format!("-n{limit}");
-    let format_arg =
-        "--pretty=format:%H\x1f%P\x1f%an\x1f%ae\x1f%at\x1f%ct\x1f%G?\x1f%s\x1f%b\x1e";
+    let format_arg = "--pretty=format:%H\x1f%P\x1f%an\x1f%ae\x1f%at\x1f%ct\x1f%G?\x1f%s\x1f%b\x1e";
     let out = git_run(
         repo,
         &[
@@ -52,10 +47,7 @@ pub async fn file_history(
         if f.len() < 9 {
             continue;
         }
-        let parent_shas: Vec<String> = f[1]
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .collect();
+        let parent_shas: Vec<String> = f[1].split_whitespace().map(|s| s.to_string()).collect();
         out_vec.push(CommitSummary {
             sha: f[0].to_string(),
             short_sha: f[0].chars().take(7).collect(),

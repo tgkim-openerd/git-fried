@@ -10,8 +10,8 @@
 use crate::error::{AppError, AppResult};
 use crate::git::{
     branch as git_branch, bulk as git_bulk, commit as git_commit, diff as git_diff,
-    graph as git_graph, repository as repo, reset as git_reset, runner, stage,
-    stash as git_stash, status as git_status, submodule as git_sub, sync as git_sync,
+    graph as git_graph, repository as repo, reset as git_reset, runner, stage, stash as git_stash,
+    status as git_status, submodule as git_sub, sync as git_sync,
 };
 use crate::storage::{Db, DbExt, Repo, Workspace};
 use crate::AppState;
@@ -42,9 +42,7 @@ pub async fn get_app_info() -> AppInfo {
 // ====== Workspaces ======
 
 #[tauri::command]
-pub async fn list_workspaces(
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<Vec<Workspace>> {
+pub async fn list_workspaces(state: tauri::State<'_, Arc<AppState>>) -> AppResult<Vec<Workspace>> {
     state.db.list_workspaces().await
 }
 
@@ -80,10 +78,7 @@ pub async fn update_workspace(
 }
 
 #[tauri::command]
-pub async fn delete_workspace(
-    id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn delete_workspace(id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     state.db.delete_workspace(id).await
 }
 
@@ -107,8 +102,7 @@ pub async fn merge_branch(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<crate::git::branch::MergeResult> {
     let path = repo_path(&state, args.repo_id).await?;
-    crate::git::branch::merge_into_head(&path, &args.source, args.no_ff, args.no_commit)
-        .await
+    crate::git::branch::merge_into_head(&path, &args.source, args.no_ff, args.no_commit).await
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -142,8 +136,7 @@ pub async fn cherry_pick_sha(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<crate::git::branch::MergeResult> {
     let path = repo_path(&state, args.repo_id).await?;
-    crate::git::branch::cherry_pick_sha(&path, &args.sha, args.target_branch.as_deref())
-        .await
+    crate::git::branch::cherry_pick_sha(&path, &args.sha, args.target_branch.as_deref()).await
 }
 
 // ====== Repos ======
@@ -195,10 +188,7 @@ pub async fn add_repo(
 }
 
 #[tauri::command]
-pub async fn remove_repo(
-    id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn remove_repo(id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     state.db.remove_repo(id).await
 }
 
@@ -272,19 +262,13 @@ pub struct PathsArgs {
 }
 
 #[tauri::command]
-pub async fn stage_paths(
-    args: PathsArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn stage_paths(args: PathsArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, args.repo_id).await?;
     stage::stage_paths(&path, &args.paths).await
 }
 
 #[tauri::command]
-pub async fn stage_all(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn stage_all(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     stage::stage_all(&path).await
 }
@@ -317,10 +301,7 @@ pub struct PatchArgs {
 }
 
 #[tauri::command]
-pub async fn apply_patch(
-    args: PatchArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn apply_patch(args: PatchArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, args.repo_id).await?;
     if args.reverse {
         stage::unstage_patch(&path, &args.patch).await
@@ -672,10 +653,7 @@ pub struct ResetArgs {
 }
 
 #[tauri::command]
-pub async fn reset(
-    args: ResetArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn reset(args: ResetArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, args.repo_id).await?;
     git_reset::reset(&path, args.mode, &args.target).await
 }
@@ -690,10 +668,7 @@ pub struct RevertArgs {
 }
 
 #[tauri::command]
-pub async fn revert(
-    args: RevertArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn revert(args: RevertArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, args.repo_id).await?;
     git_reset::revert(&path, &args.sha, args.no_commit).await
 }

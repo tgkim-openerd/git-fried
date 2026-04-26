@@ -95,9 +95,6 @@ pub async fn pty_resize(
 }
 
 #[tauri::command]
-pub async fn pty_close(
-    id: u64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn pty_close(id: u64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     state.pty.close(id)
 }

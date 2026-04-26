@@ -18,11 +18,7 @@ pub struct ReflogEntry {
     pub at: i64, // unix timestamp
 }
 
-pub async fn list_reflog(
-    repo: &Path,
-    ref_name: &str,
-    limit: usize,
-) -> AppResult<Vec<ReflogEntry>> {
+pub async fn list_reflog(repo: &Path, ref_name: &str, limit: usize) -> AppResult<Vec<ReflogEntry>> {
     let limit_arg = format!("-n{limit}");
     // %H | %gd (HEAD@{0}) | %gs (subject) | %ct (committer time)
     let format = "--format=%H\x1f%gd\x1f%gs\x1f%ct";

@@ -12,8 +12,8 @@
 use crate::auth;
 use crate::error::{AppError, AppResult};
 use crate::forge::{
-    gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, ForgeKind,
-    Issue, MergeMethod, PrComment, PrState, PullRequest, Release, ReviewVerdict,
+    gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, ForgeKind, Issue,
+    MergeMethod, PrComment, PrState, PullRequest, Release, ReviewVerdict,
 };
 use crate::storage::{Db, DbExt};
 use crate::AppState;
@@ -237,7 +237,9 @@ pub async fn list_pull_requests(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Vec<PullRequest>> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
-    client.list_pull_requests(&owner, &repo, args.state_filter).await
+    client
+        .list_pull_requests(&owner, &repo, args.state_filter)
+        .await
 }
 
 #[derive(Debug, Deserialize)]
@@ -370,10 +372,7 @@ pub struct MergePrArgs {
 }
 
 #[tauri::command]
-pub async fn merge_pr(
-    args: MergePrArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn merge_pr(args: MergePrArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
     client
         .merge_pr(
@@ -388,19 +387,13 @@ pub async fn merge_pr(
 }
 
 #[tauri::command]
-pub async fn close_pr(
-    args: GetPrArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn close_pr(args: GetPrArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
     client.close_pr(&owner, &repo, args.number).await
 }
 
 #[tauri::command]
-pub async fn reopen_pr(
-    args: GetPrArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn reopen_pr(args: GetPrArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
     client.reopen_pr(&owner, &repo, args.number).await
 }

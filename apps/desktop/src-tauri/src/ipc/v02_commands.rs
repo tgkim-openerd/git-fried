@@ -261,12 +261,8 @@ pub async fn launch_mergetool(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<MergetoolResult> {
     let path = repo_path(&state, args.repo_id).await?;
-    let out = git_merge::launch_mergetool(
-        &path,
-        args.tool.as_deref(),
-        args.file.as_deref(),
-    )
-    .await?;
+    let out =
+        git_merge::launch_mergetool(&path, args.tool.as_deref(), args.file.as_deref()).await?;
     Ok(MergetoolResult {
         success: out.exit_code == Some(0),
         stdout: out.stdout,
@@ -313,10 +309,7 @@ pub async fn bisect_mark(
 }
 
 #[tauri::command]
-pub async fn bisect_reset(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn bisect_reset(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_bisect::reset(&path).await
 }
@@ -388,28 +381,19 @@ pub async fn lfs_untrack(
 }
 
 #[tauri::command]
-pub async fn lfs_fetch(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn lfs_fetch(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_lfs::fetch(&path).await
 }
 
 #[tauri::command]
-pub async fn lfs_pull(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn lfs_pull(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_lfs::pull(&path).await
 }
 
 #[tauri::command]
-pub async fn lfs_prune(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn lfs_prune(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_lfs::prune(&path).await
 }
@@ -482,9 +466,7 @@ pub async fn ai_commit_message(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<ai::AiOutput> {
     if !args.user_approved {
-        return Err(AppError::validation(
-            "AI 호출 전 송출 승인이 필요합니다.",
-        ));
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
     }
     let path = repo_path(&state, args.repo_id).await?;
 
@@ -639,9 +621,7 @@ pub async fn ai_pr_body(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<ai::AiOutput> {
     if !args.user_approved {
-        return Err(AppError::validation(
-            "AI 호출 전 송출 승인이 필요합니다.",
-        ));
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
     }
     let path = repo_path(&state, args.repo_id).await?;
 
@@ -697,11 +677,7 @@ pub async fn predict_target_conflict(
     let path = std::path::PathBuf::from(&repo.local_path);
     let target = args
         .target
-        .or_else(|| {
-            repo.default_branch
-                .as_ref()
-                .map(|b| format!("origin/{b}"))
-        })
+        .or_else(|| repo.default_branch.as_ref().map(|b| format!("origin/{b}")))
         .unwrap_or_else(|| "origin/main".to_string());
     git_cp_pred::predict(&path, &target).await
 }
@@ -808,12 +784,7 @@ pub async fn ai_explain_branch(
         ));
     }
 
-    let prompt = ai::explain_branch_prompt(
-        &args.head_branch,
-        &args.base_branch,
-        &commits,
-        &stat,
-    );
+    let prompt = ai::explain_branch_prompt(&args.head_branch, &args.base_branch, &commits, &stat);
     ai::ai_run(args.cli, &prompt).await
 }
 
@@ -1006,10 +977,7 @@ pub async fn rebase_continue(
 }
 
 #[tauri::command]
-pub async fn rebase_abort(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn rebase_abort(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_rebase::rebase_abort(&path).await
 }

@@ -1,9 +1,7 @@
 // Launchpad PR meta + Saved Views IPC (Sprint A4 / `docs/plan/11 §14`).
 
 use crate::error::AppResult;
-use crate::launchpad::{
-    self, PrId, PrMeta, SavedView,
-};
+use crate::launchpad::{self, PrId, PrMeta, SavedView};
 use crate::AppState;
 use serde::Deserialize;
 use std::sync::Arc;
@@ -75,9 +73,7 @@ pub async fn launchpad_set_snooze(
 }
 
 #[tauri::command]
-pub async fn launchpad_cleanup_defaults(
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<u64> {
+pub async fn launchpad_cleanup_defaults(state: tauri::State<'_, Arc<AppState>>) -> AppResult<u64> {
     launchpad::cleanup_defaults(&state.db).await
 }
 

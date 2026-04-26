@@ -46,10 +46,7 @@ pub async fn predict(repo: &Path, target: &str) -> AppResult<ConflictPrediction>
     predict_legacy(repo, target).await
 }
 
-async fn predict_modern(
-    repo: &Path,
-    target: &str,
-) -> AppResult<ConflictPrediction> {
+async fn predict_modern(repo: &Path, target: &str) -> AppResult<ConflictPrediction> {
     // Git 2.38+ 의 modern merge-tree.
     // `--no-messages` 없으면 일부 git 빌드가 정보 메시지 출력 → 파싱 노이즈.
     let out = git_run(
@@ -146,10 +143,7 @@ async fn predict_modern(
 ///
 /// 출력은 git diff-like 마커 포함. `<<<<<<<` 마커 존재로 충돌 판단 + `+++ b/<path>`
 /// 헤더에서 영향 파일 추출. 정확도가 modern 보다 낮지만 ok/conflict 분류는 신뢰.
-async fn predict_legacy(
-    repo: &Path,
-    target: &str,
-) -> AppResult<ConflictPrediction> {
+async fn predict_legacy(repo: &Path, target: &str) -> AppResult<ConflictPrediction> {
     // base 구하기.
     let base_out = git_run(
         repo,
@@ -292,7 +286,11 @@ mod tests {
 
         // HEAD (=main) vs feat → 충돌 없음 (서로 다른 파일).
         let p = predict(&path, "feat").await.unwrap();
-        assert!(p.ok, "충돌 없어야 함. note={:?}, files={:?}", p.note, p.conflict_files);
+        assert!(
+            p.ok,
+            "충돌 없어야 함. note={:?}, files={:?}",
+            p.note, p.conflict_files
+        );
     }
 
     #[tokio::test]

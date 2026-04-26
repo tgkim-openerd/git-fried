@@ -66,9 +66,9 @@ pub fn read_status(path: &Path) -> AppResult<RepoStatus> {
                 local.as_ref().and_then(|b| b.get().target()),
                 upstream_branch.as_ref().and_then(|b| b.get().target()),
             ) {
-                (Some(local_oid), Some(up_oid)) => repo
-                    .graph_ahead_behind(local_oid, up_oid)
-                    .unwrap_or((0, 0)),
+                (Some(local_oid), Some(up_oid)) => {
+                    repo.graph_ahead_behind(local_oid, up_oid).unwrap_or((0, 0))
+                }
                 _ => (0, 0),
             };
             (upstream_name, a, b)
