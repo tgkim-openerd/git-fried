@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/vue-query'
 import { useStash } from '@/composables/useStash'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import {
+  aiStashMessage,
   applyStash,
   dropStash,
   popStash,
@@ -13,6 +14,7 @@ import {
 } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
 
 const toast = useToast()
 
@@ -64,6 +66,36 @@ async function onShow(idx: number) {
   previewIndex.value = idx
   previewText.value = await showStash(props.repoId, idx).catch((e) => describeError(e))
 }
+
+// === AI stash message (Sprint B7) ===
+const ai = useAiCli()
+const aiMut = useMutation({
+  mutationFn: () => {
+    if (props.repoId == null || ai.available.value == null) {
+      return Promise.reject(new Error('AI 사용 불가 — Claude/Codex CLI 미설치'))
+    }
+    if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
+    return aiStashMessage(
+      props.repoId,
+      ai.available.value,
+      includeUntracked.value,
+      true,
+    )
+  },
+  onSuccess: (out) => {
+    if (out.success) {
+      // 첫 줄만 사용 (한 줄 prompt 응답).
+      newMessage.value = out.text.trim().split(/\r?\n/)[0] ?? ''
+    } else {
+      toast.error('AI 응답 실패', out.stderr || out.text)
+    }
+  },
+  onError: (e) => {
+    const m = describeError(e)
+    if (m.includes('cancelled')) return
+    toast.error('AI 호출 실패', m)
+  },
+})
 </script>
 
 <template>
@@ -74,11 +106,23 @@ async function onShow(idx: number) {
 
     <!-- 새 stash -->
     <div class="flex flex-col gap-1 border-b border-border px-3 py-2">
-      <input
-        v-model="newMessage"
-        placeholder="메시지 (선택)"
-        class="rounded-md border border-input bg-background px-2 py-1 text-xs"
-      />
+      <div class="flex gap-1">
+        <input
+          v-model="newMessage"
+          placeholder="메시지 (선택, ✨ 로 자동 생성)"
+          class="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
+        />
+        <button
+          v-if="ai.available.value"
+          type="button"
+          class="rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
+          :title="`✨ ${ai.available.value} 로 stash 메시지 생성`"
+          :disabled="!repoId || aiMut.isPending.value"
+          @click="aiMut.mutate()"
+        >
+          ✨ {{ aiMut.isPending.value ? '...' : 'AI' }}
+        </button>
+      </div>
       <div class="flex items-center justify-between text-xs">
         <label class="flex items-center gap-1">
           <input v-model="includeUntracked" type="checkbox" />

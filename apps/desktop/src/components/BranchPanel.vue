@@ -17,6 +17,9 @@ import {
   useHiddenRefMutations,
   useSoloRef,
 } from '@/composables/useHiddenRefs'
+import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
+import { aiExplainBranch } from '@/api/git'
+import AiResultModal from './AiResultModal.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
 const toast = useToast()
@@ -143,6 +146,53 @@ function localName(name: string): string {
   if (parts.length > 1) return parts.slice(1).join('/')
   return name
 }
+
+// === AI Explain branch (Sprint B7) ===
+const ai = useAiCli()
+const explainOpen = ref(false)
+const explainTitle = ref('')
+const explainContent = ref('')
+const explainError = ref<string | null>(null)
+const explainPending = ref(false)
+
+async function onExplainBranch(b: BranchInfo) {
+  if (props.repoId == null || ai.available.value == null) {
+    toast.error('AI 사용 불가', 'Claude/Codex CLI 미설치')
+    return
+  }
+  // base 는 사용자 입력 — 디폴트 main / master 추정.
+  const head = localName(b.name)
+  const guessBase = b.kind === 'local' ? 'main' : 'main'
+  const base = window.prompt(
+    `브랜치 ${head} 을(를) 어떤 base 와 비교?`,
+    guessBase,
+  )
+  if (!base?.trim()) return
+  if (!confirmAiSend()) return
+  explainOpen.value = true
+  explainTitle.value = `Branch ${head} (vs ${base.trim()})`
+  explainContent.value = ''
+  explainError.value = null
+  explainPending.value = true
+  try {
+    const out = await aiExplainBranch(
+      props.repoId,
+      ai.available.value,
+      head,
+      base.trim(),
+      true,
+    )
+    if (out.success) {
+      explainContent.value = out.text
+    } else {
+      explainError.value = out.stderr || out.text || '응답 실패'
+    }
+  } catch (e) {
+    explainError.value = describeError(e)
+  } finally {
+    explainPending.value = false
+  }
+}
 </script>
 
 <template>
@@ -228,6 +278,15 @@ function localName(name: string): string {
       </button>
     </div>
 
+    <AiResultModal
+      :open="explainOpen"
+      :title="explainTitle"
+      :content="explainContent"
+      :loading="explainPending"
+      :error="explainError"
+      @close="explainOpen = false"
+    />
+
     <div class="flex-1 overflow-auto px-1 py-2">
       <ul>
         <li
@@ -266,6 +325,16 @@ function localName(name: string): string {
             @click.stop="toggleSolo(b)"
           >
             ◉
+          </button>
+          <!-- AI Explain (Sprint B7) -->
+          <button
+            v-if="ai.available.value"
+            type="button"
+            class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
+            :title="`✨ ${ai.available.value} 로 브랜치 설명`"
+            @click.stop="onExplainBranch(b)"
+          >
+            ✨
           </button>
           <button
             v-if="!b.isHead && b.kind === 'local'"

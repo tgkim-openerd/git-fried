@@ -557,6 +557,161 @@ pub async fn ai_pr_body(
     ai::ai_run(args.cli, &prompt).await
 }
 
+// ====== AI explain / stash (Sprint B7 / `docs/plan/11 §18`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiExplainCommitArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    pub sha: String,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_explain_commit(
+    args: AiExplainCommitArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    // commit subject + diff 추출.
+    let subject = crate::git::runner::git_run(
+        &path,
+        &["log", "-1", "--pretty=%s", &args.sha],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?
+    .trim()
+    .to_string();
+
+    let diff = crate::git::runner::git_run(
+        &path,
+        &["show", "--no-color", "--format=", &args.sha],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+
+    if diff.trim().is_empty() {
+        return Err(AppError::validation("commit diff 가 비었습니다."));
+    }
+
+    let prompt = ai::explain_commit_prompt(&subject, &diff);
+    ai::ai_run(args.cli, &prompt).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiExplainBranchArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    pub head_branch: String,
+    pub base_branch: String,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_explain_branch(
+    args: AiExplainBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    let log_arg = format!("{}..{}", args.base_branch, args.head_branch);
+    let log = crate::git::runner::git_run(
+        &path,
+        &["log", &log_arg, "--pretty=%s", "--reverse"],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await
+    .ok()
+    .and_then(|o| o.into_ok().ok())
+    .unwrap_or_default();
+    let commits: Vec<String> = log
+        .lines()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.to_string())
+        .collect();
+
+    let stat = crate::git::runner::git_run(
+        &path,
+        &["diff", "--stat", &log_arg],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await
+    .ok()
+    .and_then(|o| o.into_ok().ok())
+    .unwrap_or_default();
+
+    if commits.is_empty() && stat.trim().is_empty() {
+        return Err(AppError::validation(
+            "브랜치에 변경이 없습니다. base/head 확인.",
+        ));
+    }
+
+    let prompt = ai::explain_branch_prompt(
+        &args.head_branch,
+        &args.base_branch,
+        &commits,
+        &stat,
+    );
+    ai::ai_run(args.cli, &prompt).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiStashMessageArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    /// `true` 이면 untracked 포함; `false` 면 tracked 변경만.
+    #[serde(default)]
+    pub include_untracked: bool,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_stash_message(
+    args: AiStashMessageArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    // working tree 의 모든 변경 (staged + unstaged) — `git diff HEAD`.
+    let diff_args: Vec<&str> = if args.include_untracked {
+        vec!["diff", "HEAD", "--no-color"]
+    } else {
+        vec!["diff", "--no-color"]
+    };
+    let diff = crate::git::runner::git_run(
+        &path,
+        &diff_args,
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+
+    if diff.trim().is_empty() {
+        return Err(AppError::validation("stash 할 변경이 없습니다."));
+    }
+
+    let prompt = ai::stash_message_prompt(&diff);
+    ai::ai_run(args.cli, &prompt).await
+}
+
 // ====== Interactive rebase (`docs/plan/09 옵션 A`) ======
 
 #[derive(Debug, Deserialize)]

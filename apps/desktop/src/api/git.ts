@@ -422,6 +422,36 @@ export const aiCodeReview = (args: {
   userApproved: boolean
 }): Promise<AiOutput> => invoke('ai_code_review', { args })
 
+// === Sprint B7 — AI Explain / Stash message (docs/plan/11 §18) ===
+export const aiExplainCommit = (
+  repoId: number,
+  cli: AiCli,
+  sha: string,
+  userApproved: boolean,
+): Promise<AiOutput> =>
+  invoke('ai_explain_commit', { args: { repoId, cli, sha, userApproved } })
+
+export const aiExplainBranch = (
+  repoId: number,
+  cli: AiCli,
+  headBranch: string,
+  baseBranch: string,
+  userApproved: boolean,
+): Promise<AiOutput> =>
+  invoke('ai_explain_branch', {
+    args: { repoId, cli, headBranch, baseBranch, userApproved },
+  })
+
+export const aiStashMessage = (
+  repoId: number,
+  cli: AiCli,
+  includeUntracked: boolean,
+  userApproved: boolean,
+): Promise<AiOutput> =>
+  invoke('ai_stash_message', {
+    args: { repoId, cli, includeUntracked, userApproved },
+  })
+
 // === Interactive rebase (docs/plan/09 옵션 A) ===
 export type RebaseAction = 'pick' | 'reword' | 'squash' | 'fixup' | 'drop'
 

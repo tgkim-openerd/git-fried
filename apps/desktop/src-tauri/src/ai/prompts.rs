@@ -226,6 +226,102 @@ pub fn code_review_prompt(
     )
 }
 
+/// 단일 commit 의 diff 를 한국어로 설명 (`docs/plan/11 §18` Sprint B7).
+///
+/// "what" 보다 **"why" + 영향**. 코드 자체는 사용자가 이미 본 상태 가정.
+pub fn explain_commit_prompt(subject: &str, diff: &str) -> String {
+    let masked = mask_secrets(diff);
+    format!(
+        r#"다음 단일 commit 을 한국어로 설명해주세요.
+
+**규칙**:
+- 의도(why) 와 영향(이게 깨질 위험 / 추가될 기능) 중심.
+- 'what' 은 1줄로 압축, 'why' 가 메인.
+- 마크다운, 200~400자.
+- 섹션:
+  ## 요약 (1줄)
+  ## 의도
+  ## 영향 / 주의
+
+**Commit 제목**: {subject}
+
+**diff**:
+```diff
+{masked}
+```
+
+응답은 위 3 섹션 마크다운만.
+"#
+    )
+}
+
+/// 브랜치 (base..head) 변경 요약 (`docs/plan/11 §18` Sprint B7).
+///
+/// PR body 와 다른 점: PR 작성 전 "이 브랜치가 뭐 했는지" 빠른 조망.
+/// 더 짧고 더 explain 스타일.
+pub fn explain_branch_prompt(
+    head_branch: &str,
+    base_branch: &str,
+    commits: &[String],
+    diff_stat: &str,
+) -> String {
+    let masked_stat = mask_secrets(diff_stat);
+    let cs = if commits.is_empty() {
+        String::from("(없음)")
+    } else {
+        commits
+            .iter()
+            .take(30)
+            .map(|s| format!("  - {s}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    format!(
+        r#"브랜치 `{head_branch}` 가 `{base_branch}` 대비 무엇을 했는지 한국어로 설명해주세요.
+
+**규칙**:
+- 마크다운, 200~500자.
+- 섹션:
+  ## 한 줄 요약
+  ## 주요 변경 (3~5 bullet)
+  ## 영향 / 잠재 위험
+
+**커밋 (시간순)**:
+{cs}
+
+**diff stat**:
+```
+{masked_stat}
+```
+
+응답은 위 3 섹션 마크다운만.
+"#
+    )
+}
+
+/// Stash 메시지 한 줄 생성 (`docs/plan/11 §18` Sprint B7).
+///
+/// commit message 와 비슷하지만 더 짧고 ad-hoc — "WIP: " prefix.
+pub fn stash_message_prompt(diff: &str) -> String {
+    let masked = mask_secrets(diff);
+    format!(
+        r#"다음 변경사항에 대한 stash 메시지를 한국어로 한 줄로 작성해주세요.
+
+**규칙**:
+- 형식: `WIP: <한국어 한 줄 설명>` (50자 이내).
+- 가장 핵심적인 변경에 집중.
+- 마크다운/코드블록/줄바꿈 없이 **한 줄만** 응답.
+
+**Working tree diff**:
+```diff
+{masked}
+```
+
+응답은 한 줄만.
+"#
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -281,5 +377,38 @@ mod tests {
         assert!(p.contains("Conventional"));
         assert!(p.contains("hello"));
         assert!(p.contains("feat: 첫 커밋"));
+    }
+
+    #[test]
+    fn test_explain_commit_prompt() {
+        let p = explain_commit_prompt(
+            "feat: 한글 추가",
+            "diff --git a/x b/x\n+한글",
+        );
+        assert!(p.contains("의도"));
+        assert!(p.contains("feat: 한글 추가"));
+        assert!(p.contains("한글"));
+    }
+
+    #[test]
+    fn test_explain_branch_prompt_includes_commits_and_stat() {
+        let p = explain_branch_prompt(
+            "feat/x",
+            "main",
+            &["feat: A".into(), "fix: B".into()],
+            " 1 file | 5 +",
+        );
+        assert!(p.contains("feat/x"));
+        assert!(p.contains("main"));
+        assert!(p.contains("feat: A"));
+        assert!(p.contains("fix: B"));
+        assert!(p.contains("1 file"));
+    }
+
+    #[test]
+    fn test_stash_message_prompt_one_line() {
+        let p = stash_message_prompt("diff --git\n+test");
+        assert!(p.contains("한 줄"));
+        assert!(p.contains("WIP"));
     }
 }
