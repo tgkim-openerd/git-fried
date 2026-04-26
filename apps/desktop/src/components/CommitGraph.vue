@@ -9,9 +9,11 @@
 //  - 8개 stable color (브랜치 hash)
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
+import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
 import { useRefVisibility } from '@/composables/useHiddenRefs'
 import { useShortcut } from '@/composables/useShortcuts'
+import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
 import type { GraphRow } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -241,6 +243,50 @@ useShortcut('vimUp', () => moveSelection(-1))
 useShortcut('vimLeft', () => {
   selectedSha.value = null
 })
+
+// === 컬럼 토글 / 재정렬 (Sprint A3) ===
+const cols = useCommitColumns()
+const headerMenuOpen = ref(false)
+const headerMenuRef = ref<HTMLDivElement | null>(null)
+
+function openHeaderMenu(ev: MouseEvent) {
+  ev.preventDefault()
+  headerMenuOpen.value = true
+}
+
+function onHeaderMenuOutside(ev: MouseEvent) {
+  if (!headerMenuRef.value) return
+  if (!headerMenuRef.value.contains(ev.target as Node)) {
+    headerMenuOpen.value = false
+  }
+}
+
+watch(headerMenuOpen, (open) => {
+  if (open) {
+    nextTick(() => {
+      window.addEventListener('mousedown', onHeaderMenuOutside)
+    })
+  } else {
+    window.removeEventListener('mousedown', onHeaderMenuOutside)
+  }
+})
+
+// drag-drop 의 v-model 은 visibleColumns 의 mutated 배열.
+// VueDraggable 이 array 를 in-place 변경하므로 setOrder 호출.
+const headerOrder = ref<CommitColumnId[]>(cols.visibleIds.value.slice())
+watch(
+  cols.visibleIds,
+  (ids) => {
+    headerOrder.value = ids.slice()
+  },
+)
+function onReorder() {
+  cols.setOrder(headerOrder.value)
+}
+
+function colDef(id: CommitColumnId) {
+  return cols.allColumns.find((c) => c.id === id)
+}
 </script>
 
 <template>
@@ -278,6 +324,66 @@ useShortcut('vimLeft', () => {
         <span v-if="isFetching" class="text-xs text-muted-foreground">불러오는 중...</span>
       </div>
     </header>
+
+    <!-- 컬럼 헤더 (drag reorder + 우클릭 토글 메뉴) -->
+    <div
+      class="relative flex items-center border-b border-border bg-muted/40 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground"
+      @contextmenu="openHeaderMenu"
+    >
+      <!-- 그래프 sticky 좌측 placeholder -->
+      <span
+        :style="{ width: graphWidth + 'px', flexShrink: 0 }"
+        class="cursor-context-menu select-none"
+        title="컬럼 토글: 우클릭"
+      >
+        Graph
+      </span>
+      <VueDraggable
+        v-model="headerOrder"
+        tag="div"
+        class="flex flex-1 items-center gap-2 px-2"
+        :animation="120"
+        handle=".col-grip"
+        @update="onReorder"
+      >
+        <span
+          v-for="id in headerOrder"
+          :key="id"
+          :class="[colDef(id)?.widthClass, 'col-grip cursor-grab select-none truncate']"
+          :title="`${colDef(id)?.label} — drag 로 순서 변경, 우클릭으로 토글`"
+        >
+          {{ colDef(id)?.label }}
+        </span>
+      </VueDraggable>
+
+      <!-- 우클릭 메뉴 -->
+      <div
+        v-if="headerMenuOpen"
+        ref="headerMenuRef"
+        class="absolute right-2 top-full z-20 mt-1 w-44 rounded-md border border-border bg-card text-xs shadow-lg"
+      >
+        <ul class="py-1">
+          <li
+            v-for="c in cols.allColumns"
+            :key="c.id"
+            class="flex cursor-pointer items-center gap-2 px-3 py-1.5 hover:bg-accent/40"
+            @click="cols.toggle(c.id)"
+          >
+            <span class="w-3 text-center">
+              {{ cols.isVisible(c.id) ? '✓' : '' }}
+            </span>
+            <span class="flex-1">{{ c.label }}</span>
+          </li>
+          <li class="border-t border-border" />
+          <li
+            class="cursor-pointer px-3 py-1.5 text-muted-foreground hover:bg-accent/40"
+            @click="cols.reset(); headerMenuOpen = false"
+          >
+            기본값 복원
+          </li>
+        </ul>
+      </div>
+    </div>
 
     <div
       ref="containerRef"
@@ -321,37 +427,57 @@ useShortcut('vimLeft', () => {
           ]"
           @click="selectRow(rows[v.index])"
         >
-          <span class="w-16 shrink-0 truncate font-mono text-xs text-muted-foreground">
-            {{ rows[v.index]?.commit.shortSha }}
-          </span>
-          <span class="flex-1 truncate">
-            {{ rows[v.index]?.commit.subject }}
-            <template v-for="r in rows[v.index]?.commit.refs ?? []" :key="r">
-              <span
-                v-if="visibleRef(r)"
-                class="ml-1.5 rounded px-1.5 py-0.5 text-[10px]"
-                :class="
-                  soloRef === r
-                    ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
-                    : 'bg-muted text-muted-foreground'
-                "
-              >
-                {{ r }}
-              </span>
-            </template>
-          </span>
-          <span class="w-32 shrink-0 truncate text-xs text-muted-foreground">
-            {{ rows[v.index]?.commit.authorName }}
-          </span>
-          <span class="w-20 shrink-0 text-xs text-muted-foreground">
-            {{ formatDate(rows[v.index]?.commit.authorAt ?? 0) }}
-          </span>
-          <span
-            v-if="rows[v.index]?.commit.signed"
-            class="w-3 text-xs text-emerald-500"
-            title="GPG 서명"
-            >✓</span
-          >
+          <template v-for="col in cols.visibleColumns.value" :key="col.id">
+            <!-- sha -->
+            <span
+              v-if="col.id === 'sha'"
+              :class="[col.widthClass, 'truncate font-mono text-xs text-muted-foreground']"
+            >
+              {{ rows[v.index]?.commit.shortSha }}
+            </span>
+            <!-- message + refs -->
+            <span
+              v-else-if="col.id === 'message'"
+              :class="[col.widthClass, 'truncate']"
+            >
+              {{ rows[v.index]?.commit.subject }}
+              <template v-for="r in rows[v.index]?.commit.refs ?? []" :key="r">
+                <span
+                  v-if="visibleRef(r)"
+                  class="ml-1.5 rounded px-1.5 py-0.5 text-[10px]"
+                  :class="
+                    soloRef === r
+                      ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
+                      : 'bg-muted text-muted-foreground'
+                  "
+                >
+                  {{ r }}
+                </span>
+              </template>
+            </span>
+            <!-- author -->
+            <span
+              v-else-if="col.id === 'author'"
+              :class="[col.widthClass, 'truncate text-xs text-muted-foreground']"
+            >
+              {{ rows[v.index]?.commit.authorName }}
+            </span>
+            <!-- date -->
+            <span
+              v-else-if="col.id === 'date'"
+              :class="[col.widthClass, 'text-xs text-muted-foreground']"
+            >
+              {{ formatDate(rows[v.index]?.commit.authorAt ?? 0) }}
+            </span>
+            <!-- signed -->
+            <span
+              v-else-if="col.id === 'signed'"
+              :class="[col.widthClass, 'text-xs']"
+              :title="rows[v.index]?.commit.signed ? 'GPG 서명' : ''"
+            >
+              <span v-if="rows[v.index]?.commit.signed" class="text-emerald-500">✓</span>
+            </span>
+          </template>
         </div>
       </div>
     </div>
