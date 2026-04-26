@@ -16,12 +16,14 @@ import { useTheme } from '@/composables/useTheme'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
 import { useDeepLink } from '@/composables/useDeepLink'
+import { useUiSettingsStore } from '@/composables/useUserSettings'
 import { useReposStore } from '@/stores/repos'
 import { RouterLink, useRouter } from 'vue-router'
 
 const { theme, toggle } = useTheme()
 const reposStore = useReposStore()
 const ui = useUiState()
+const uiSettings = useUiSettingsStore()
 const router = useRouter()
 useDeepLink(router)
 
@@ -110,6 +112,7 @@ w.gitFriedOpenReflog = () => (reflogOpen.value = true)
           홈
         </RouterLink>
         <RouterLink
+          v-if="!uiSettings.hideLaunchpad"
           to="/launchpad"
           class="text-muted-foreground hover:text-foreground"
           active-class="text-foreground font-semibold"

@@ -17,6 +17,7 @@ import {
   LAUNCHPAD_VIEW_KIND,
 } from '@/composables/useLaunchpadMeta'
 import { useToast } from '@/composables/useToast'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 
 const store = useReposStore()
 const toast = useToast()
@@ -106,7 +107,7 @@ const stats = computed(() => ({
 }))
 
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleDateString('ko-KR', {
+  return formatDateLocalized(unix, {
     month: '2-digit',
     day: '2-digit',
   })

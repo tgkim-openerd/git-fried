@@ -16,6 +16,10 @@ import ProfilesSection from '@/components/ProfilesSection.vue'
 import { useUiState } from '@/composables/useUiState'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
+import {
+  useGeneralSettings,
+  useUiSettingsStore,
+} from '@/composables/useUserSettings'
 
 type Category =
   | 'profiles'
@@ -35,89 +39,9 @@ const CATEGORIES: { id: Category; label: string }[] = [
 ]
 const active = ref<Category>('profiles')
 
-// ===== General settings (localStorage) =====
-const GENERAL_KEY = 'git-fried.general.v1'
-
-interface GeneralSettings {
-  autoFetchIntervalMin: number // 0 = 비활성
-  autoPruneOnFetch: boolean
-  defaultBranch: string // 새 레포 default 추정
-  rememberTabs: boolean // per-profile 탭 영속 (B10 의 useTabPerProfile 가 이미 동작)
-}
-
-function loadGeneral(): GeneralSettings {
-  if (typeof localStorage === 'undefined') return defaultGeneral()
-  try {
-    const raw = localStorage.getItem(GENERAL_KEY)
-    if (!raw) return defaultGeneral()
-    return { ...defaultGeneral(), ...JSON.parse(raw) }
-  } catch {
-    return defaultGeneral()
-  }
-}
-function defaultGeneral(): GeneralSettings {
-  return {
-    autoFetchIntervalMin: 0,
-    autoPruneOnFetch: false,
-    defaultBranch: 'main',
-    rememberTabs: true,
-  }
-}
-const general = ref<GeneralSettings>(loadGeneral())
-watch(
-  general,
-  (v) => {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(GENERAL_KEY, JSON.stringify(v))
-      } catch {
-        /* ignore */
-      }
-    }
-  },
-  { deep: true },
-)
-
-// ===== UI settings (localStorage) =====
-const UI_KEY = 'git-fried.ui.v1'
-
-interface UiSettings {
-  dateLocale: 'auto' | 'ko-KR' | 'en-US'
-  hideLaunchpad: boolean
-  avatarStyle: 'initial' | 'gravatar'
-}
-
-function loadUi(): UiSettings {
-  if (typeof localStorage === 'undefined') return defaultUi()
-  try {
-    const raw = localStorage.getItem(UI_KEY)
-    if (!raw) return defaultUi()
-    return { ...defaultUi(), ...JSON.parse(raw) }
-  } catch {
-    return defaultUi()
-  }
-}
-function defaultUi(): UiSettings {
-  return {
-    dateLocale: 'auto',
-    hideLaunchpad: false,
-    avatarStyle: 'initial',
-  }
-}
-const ui = ref<UiSettings>(loadUi())
-watch(
-  ui,
-  (v) => {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        localStorage.setItem(UI_KEY, JSON.stringify(v))
-      } catch {
-        /* ignore */
-      }
-    }
-  },
-  { deep: true },
-)
+// ===== General + UI settings — Sprint D1 공용 store 로 추출 =====
+const general = useGeneralSettings()
+const ui = useUiSettingsStore()
 
 // ===== Custom theme JSON (Sprint C4) =====
 const ctheme = useCustomTheme()
@@ -240,9 +164,28 @@ const buildInfo = computed(() => ({
           />
         </label>
 
+        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+          <span>
+            <span class="font-medium">Conflict Detection</span>
+            <span class="ml-2 text-xs text-muted-foreground">
+              StatusBar 의 target-branch 충돌 예측 (60s 폴링)
+            </span>
+          </span>
+          <input v-model="general.conflictDetection" type="checkbox" />
+        </label>
+
+        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+          <span>
+            <span class="font-medium">Pull 후 submodule 자동 update</span>
+            <span class="ml-2 text-xs text-muted-foreground">
+              git submodule update --init --recursive
+            </span>
+          </span>
+          <input v-model="general.autoUpdateSubmodules" type="checkbox" />
+        </label>
+
         <p class="text-[10px] text-muted-foreground">
-          v1.x 추가 예정: Conflict Detection / Submodules Auto-Update / .orig 자동 삭제 / Longpaths /
-          AutoCRLF / Logging level. 현재 적용 항목은 위 4개.
+          v1.x 추가 예정: .orig 자동 삭제 / Longpaths / AutoCRLF / Logging level.
         </p>
       </div>
 

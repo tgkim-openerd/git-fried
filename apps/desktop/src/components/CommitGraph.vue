@@ -14,6 +14,7 @@ import { useGraph } from '@/composables/useGraph'
 import { useRefVisibility } from '@/composables/useHiddenRefs'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 import type { GraphRow } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -219,8 +220,7 @@ function onScroll() {
 }
 
 function formatDate(unix: number): string {
-  const d = new Date(unix * 1000)
-  return d.toLocaleString('ko-KR', {
+  return formatDateLocalized(unix, {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
