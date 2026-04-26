@@ -24,6 +24,16 @@ export const createWorkspace = (
   color?: string | null,
 ): Promise<Workspace> => invoke('create_workspace', { name, color })
 
+export const updateWorkspace = (
+  id: number,
+  name?: string | null,
+  color?: string | null,
+): Promise<Workspace> =>
+  invoke('update_workspace', { args: { id, name, color } })
+
+export const deleteWorkspace = (id: number): Promise<void> =>
+  invoke('delete_workspace', { id })
+
 // --- 레포 ---
 export const listRepos = (workspaceId?: number | null): Promise<Repo[]> =>
   invoke('list_repos', { workspaceId })

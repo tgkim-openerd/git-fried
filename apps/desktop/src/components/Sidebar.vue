@@ -3,15 +3,34 @@
 // 추가 기능 (v0.1 S4):
 //   - 듀얼 레포 자동 그룹핑 (예: peeloff/frontend + peeloff/frontend-admin)
 //   - 워크스페이스 전체 일괄 Fetch 버튼
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { open } from '@tauri-apps/plugin-dialog'
-import { addRepo, bulkFetch, listRepos, listWorkspaces, setRepoPinned } from '@/api/git'
+import {
+  addRepo,
+  bulkFetch,
+  createWorkspace,
+  deleteWorkspace,
+  listRepos,
+  listWorkspaces,
+  setRepoPinned,
+  updateWorkspace,
+} from '@/api/git'
 import { useMutation } from '@tanstack/vue-query'
-import { humanizeGitError } from '@/api/errors'
+import { humanizeGitError, describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import type { Repo } from '@/types/git'
+
+// Sprint B9 — Sidebar 그룹핑 모드 (디렉토리 / org) + workspace color 편집.
+// localStorage 영속.
+type GroupMode = 'directory' | 'org'
+const GROUP_KEY = 'git-fried.sidebar-group-mode'
+function loadGroupMode(): GroupMode {
+  if (typeof localStorage === 'undefined') return 'directory'
+  const v = localStorage.getItem(GROUP_KEY)
+  return v === 'org' ? 'org' : 'directory'
+}
 
 const toast = useToast()
 
@@ -85,33 +104,56 @@ function togglePin(repo: Repo, e: Event) {
   pinMut.mutate({ id: repo.id, pinned: !repo.isPinned })
 }
 
-// === 듀얼 레포 그룹핑 ===
+// === 그룹핑 ===
 //
-// peeloff/frontend + peeloff/frontend-admin 같은 패턴 자동 감지:
-// localPath 의 부모 디렉토리 이름이 같으면 같은 그룹으로 묶음.
+// 두 가지 모드:
+//   - directory: 부모 디렉토리 이름 (예: peeloff/frontend + peeloff/frontend-admin)
+//   - org: forge_owner (예: opnd-frontend/x + opnd-frontend/y → "opnd-frontend")
+//
+// 사용자가 회사 50+ 레포를 organization 별 그룹화 — Sprint B9 (`docs/plan/11 §22`).
 interface RepoGroup {
   key: string
   label: string | null
   repos: Repo[]
 }
 
+const groupMode = ref<GroupMode>(loadGroupMode())
+function setGroupMode(m: GroupMode) {
+  groupMode.value = m
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(GROUP_KEY, m)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function groupKey(r: Repo): string {
+  if (groupMode.value === 'org') {
+    return r.forgeOwner ?? '__no-org__'
+  }
+  return parentDirName(r.localPath) ?? '__solo__'
+}
+
 const groups = computed<RepoGroup[]>(() => {
   if (!repos.value) return []
   const map = new Map<string, Repo[]>()
   for (const r of repos.value) {
-    const key = parentDirName(r.localPath) || '__solo__'
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(r)
+    const k = groupKey(r)
+    if (!map.has(k)) map.set(k, [])
+    map.get(k)!.push(r)
   }
   const result: RepoGroup[] = []
   for (const [key, list] of map.entries()) {
-    if (list.length === 1) {
+    const isSolo =
+      key === '__solo__' || key === '__no-org__' || list.length === 1
+    if (isSolo) {
       result.push({ key, label: null, repos: list })
     } else {
       result.push({ key, label: key, repos: list })
     }
   }
-  // 그룹 우선 → solo 알파벳
   result.sort((a, b) => {
     if (a.label && !b.label) return -1
     if (!a.label && b.label) return 1
@@ -125,6 +167,74 @@ function parentDirName(p: string): string | null {
   const norm = p.replace(/\\/g, '/').replace(/\/+$/, '')
   const parts = norm.split('/')
   return parts.length >= 2 ? parts[parts.length - 2] : null
+}
+
+// === Workspace color / 신규 / 편집 (Sprint B9) ===
+const newWorkspaceName = ref('')
+const newWorkspaceColor = ref('#0ea5e9')
+const editingWorkspaceId = ref<number | null>(null)
+
+const COLOR_PRESETS = [
+  '#0ea5e9', // sky
+  '#22c55e', // green
+  '#f59e0b', // amber
+  '#a78bfa', // violet
+  '#f43f5e', // rose
+  '#10b981', // emerald
+  '#06b6d4', // cyan
+  '#ef4444', // red
+  '#6b7280', // gray
+] as const
+
+const createWorkspaceMut = useMutation({
+  mutationFn: () =>
+    createWorkspace(newWorkspaceName.value.trim(), newWorkspaceColor.value),
+  onSuccess: () => {
+    newWorkspaceName.value = ''
+    qc.invalidateQueries({ queryKey: ['workspaces'] })
+  },
+  onError: (e) => toast.error('워크스페이스 생성 실패', describeError(e)),
+})
+
+const updateWorkspaceMut = useMutation({
+  mutationFn: ({
+    id,
+    name,
+    color,
+  }: {
+    id: number
+    name?: string | null
+    color?: string | null
+  }) => updateWorkspace(id, name, color),
+  onSuccess: () => {
+    editingWorkspaceId.value = null
+    qc.invalidateQueries({ queryKey: ['workspaces'] })
+  },
+  onError: (e) => toast.error('워크스페이스 수정 실패', describeError(e)),
+})
+
+const deleteWorkspaceMut = useMutation({
+  mutationFn: (id: number) => deleteWorkspace(id),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ['workspaces'] })
+    qc.invalidateQueries({ queryKey: ['repos'] })
+    if (store.activeWorkspaceId != null) store.setActiveWorkspace(null)
+  },
+  onError: (e) => toast.error('워크스페이스 삭제 실패', describeError(e)),
+})
+
+const activeWorkspace = computed(() =>
+  workspaces.value?.find((w) => w.id === store.activeWorkspaceId),
+)
+
+function confirmDeleteWorkspace() {
+  const w = activeWorkspace.value
+  if (!w) return
+  if (
+    confirm(`워크스페이스 '${w.name}' 삭제? 레포는 보존되고 그룹 해제만.`)
+  ) {
+    deleteWorkspaceMut.mutate(w.id)
+  }
 }
 </script>
 
@@ -144,13 +254,20 @@ function parentDirName(p: string): string | null {
       <label class="text-xs uppercase tracking-wider text-muted-foreground">
         워크스페이스
       </label>
-      <div class="mt-1 flex gap-1">
+      <div class="mt-1 flex items-center gap-1">
+        <span
+          v-if="activeWorkspace?.color"
+          class="inline-block h-3 w-3 shrink-0 rounded-full"
+          :style="{ backgroundColor: activeWorkspace.color }"
+        />
         <select
           :value="store.activeWorkspaceId ?? ''"
           @change="
             (e) =>
               store.setActiveWorkspace(
-                ((e.target as HTMLSelectElement).value || null) as never,
+                ((e.target as HTMLSelectElement).value
+                  ? Number((e.target as HTMLSelectElement).value)
+                  : null) as never,
               )
           "
           class="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm"
@@ -161,6 +278,15 @@ function parentDirName(p: string): string | null {
           </option>
         </select>
         <button
+          v-if="activeWorkspace"
+          type="button"
+          class="rounded-md border border-input px-1.5 py-1 text-xs hover:bg-accent"
+          title="워크스페이스 편집"
+          @click="editingWorkspaceId = activeWorkspace.id"
+        >
+          ⚙
+        </button>
+        <button
           type="button"
           class="rounded-md border border-input px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
           :disabled="bulkFetchMut.isPending.value || !repos || repos.length === 0"
@@ -170,22 +296,128 @@ function parentDirName(p: string): string | null {
           {{ bulkFetchMut.isPending.value ? '⟳' : '⤓' }}
         </button>
       </div>
+
+      <!-- 워크스페이스 편집 inline (color picker + name + delete) -->
+      <div
+        v-if="editingWorkspaceId != null && activeWorkspace"
+        class="mt-2 rounded border border-border bg-muted/20 p-2"
+      >
+        <input
+          :value="activeWorkspace.name"
+          class="mb-1 w-full rounded border border-input bg-background px-2 py-1 text-xs"
+          @change="(e) => updateWorkspaceMut.mutate({
+            id: activeWorkspace!.id,
+            name: (e.target as HTMLInputElement).value,
+          })"
+        />
+        <div class="mb-1 flex flex-wrap gap-1">
+          <button
+            v-for="c in COLOR_PRESETS"
+            :key="c"
+            type="button"
+            class="h-5 w-5 rounded-full ring-2"
+            :class="
+              activeWorkspace.color === c
+                ? 'ring-foreground'
+                : 'ring-transparent hover:ring-muted-foreground'
+            "
+            :style="{ backgroundColor: c }"
+            @click="updateWorkspaceMut.mutate({
+              id: activeWorkspace!.id,
+              color: c,
+            })"
+          />
+        </div>
+        <div class="flex justify-between gap-1 text-[10px]">
+          <button
+            type="button"
+            class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
+            @click="confirmDeleteWorkspace"
+          >
+            삭제
+          </button>
+          <button
+            type="button"
+            class="rounded border border-input px-2 py-0.5 hover:bg-accent"
+            @click="editingWorkspaceId = null"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+
+      <!-- 신규 워크스페이스 -->
+      <details class="mt-1 text-[11px]">
+        <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
+          + 새 워크스페이스
+        </summary>
+        <div class="mt-1 flex flex-col gap-1">
+          <input
+            v-model="newWorkspaceName"
+            placeholder="이름 (예: 회사)"
+            class="rounded border border-input bg-background px-2 py-1 text-xs"
+            @keyup.enter="
+              if (newWorkspaceName.trim()) createWorkspaceMut.mutate()
+            "
+          />
+          <div class="flex flex-wrap gap-1">
+            <button
+              v-for="c in COLOR_PRESETS"
+              :key="c"
+              type="button"
+              class="h-4 w-4 rounded-full ring-2"
+              :class="
+                newWorkspaceColor === c
+                  ? 'ring-foreground'
+                  : 'ring-transparent hover:ring-muted-foreground'
+              "
+              :style="{ backgroundColor: c }"
+              @click="newWorkspaceColor = c"
+            />
+            <button
+              type="button"
+              class="ml-auto rounded border border-input px-2 py-0.5 text-[10px] hover:bg-accent disabled:opacity-50"
+              :disabled="!newWorkspaceName.trim() || createWorkspaceMut.isPending.value"
+              @click="createWorkspaceMut.mutate()"
+            >
+              생성
+            </button>
+          </div>
+        </div>
+      </details>
     </section>
 
     <!-- 레포 리스트 (그룹 + solo) -->
     <section class="flex-1 overflow-auto">
-      <div class="flex items-center justify-between px-3 py-2">
+      <div class="flex items-center justify-between gap-1 px-3 py-2">
         <span class="text-xs uppercase tracking-wider text-muted-foreground">
           레포 ({{ repos?.length ?? 0 }})
         </span>
-        <button
-          type="button"
-          class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent"
-          :disabled="addRepoMutation.isPending.value"
-          @click="pickAndAddRepo"
-        >
-          + 추가
-        </button>
+        <div class="flex gap-1 text-[10px]">
+          <button
+            v-for="m in (['directory', 'org'] as GroupMode[])"
+            :key="m"
+            type="button"
+            class="rounded px-1.5 py-0.5 border border-input"
+            :class="
+              groupMode === m
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:bg-accent/40'
+            "
+            :title="m === 'directory' ? '부모 디렉토리 그룹' : 'forge organization 그룹'"
+            @click="setGroupMode(m)"
+          >
+            {{ m === 'directory' ? '폴더' : 'Org' }}
+          </button>
+          <button
+            type="button"
+            class="rounded-md border border-input px-2 py-0.5 hover:bg-accent"
+            :disabled="addRepoMutation.isPending.value"
+            @click="pickAndAddRepo"
+          >
+            + 추가
+          </button>
+        </div>
       </div>
 
       <ul class="px-1 pb-3">

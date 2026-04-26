@@ -60,6 +60,33 @@ pub async fn create_workspace(
     state.db.create_workspace(&name, color.as_deref()).await
 }
 
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateWorkspaceArgs {
+    pub id: i64,
+    pub name: Option<String>,
+    pub color: Option<String>,
+}
+
+#[tauri::command]
+pub async fn update_workspace(
+    args: UpdateWorkspaceArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Workspace> {
+    state
+        .db
+        .update_workspace(args.id, args.name.as_deref(), args.color.as_deref())
+        .await
+}
+
+#[tauri::command]
+pub async fn delete_workspace(
+    id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    state.db.delete_workspace(id).await
+}
+
 // ====== Repos ======
 
 #[tauri::command]

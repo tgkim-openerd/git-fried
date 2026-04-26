@@ -71,6 +71,8 @@ pub fn run() {
             ipc::commands::get_app_info,
             ipc::commands::list_workspaces,
             ipc::commands::create_workspace,
+            ipc::commands::update_workspace,
+            ipc::commands::delete_workspace,
             ipc::commands::list_repos,
             ipc::commands::add_repo,
             ipc::commands::remove_repo,
