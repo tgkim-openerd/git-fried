@@ -137,6 +137,12 @@ mod tests {
             .current_dir(&path)
             .status()
             .unwrap();
+        // 글로벌 commit.gpgsign=true 환경에서 테스트 안전성 확보.
+        std::process::Command::new("git")
+            .args(["config", "commit.gpgsign", "false"])
+            .current_dir(&path)
+            .status()
+            .unwrap();
         (tmp, path)
     }
 

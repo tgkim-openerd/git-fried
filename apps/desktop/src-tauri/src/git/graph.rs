@@ -269,6 +269,15 @@ mod tests {
         .unwrap()
         .into_ok()
         .unwrap();
+        crate::git::runner::git_run(
+            &path,
+            &["config", "commit.gpgsign", "false"],
+            &Default::default(),
+        )
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
         for i in 0..3 {
             crate::git::runner::git_run(
                 &path,
@@ -311,6 +320,7 @@ mod tests {
         run(&["init", "-q", "-b", "main"]).await;
         run(&["config", "user.name", "x"]).await;
         run(&["config", "user.email", "x@x"]).await;
+        run(&["config", "commit.gpgsign", "false"]).await;
         run(&["commit", "--allow-empty", "-m", "main:c1"]).await;
         run(&["switch", "-c", "feat"]).await;
         run(&["commit", "--allow-empty", "-m", "feat:c1"]).await;

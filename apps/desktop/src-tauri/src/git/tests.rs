@@ -41,6 +41,16 @@ async fn init_test_repo() -> (TempDir, std::path::PathBuf) {
     .unwrap()
     .into_ok()
     .unwrap();
+    // 글로벌 commit.gpgsign=true 환경에서 테스트가 깨지지 않도록 강제 OFF.
+    git_run(
+        &path,
+        &["config", "commit.gpgsign", "false"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
 
     (tmp, path)
 }
