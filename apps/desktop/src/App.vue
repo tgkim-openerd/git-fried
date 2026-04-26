@@ -17,6 +17,7 @@ import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
 import { useDeepLink } from '@/composables/useDeepLink'
 import { useUiSettingsStore } from '@/composables/useUserSettings'
+import { useAutoFetch } from '@/composables/useAutoFetch'
 import { useReposStore } from '@/stores/repos'
 import { RouterLink, useRouter } from 'vue-router'
 
@@ -26,6 +27,7 @@ const ui = useUiState()
 const uiSettings = useUiSettingsStore()
 const router = useRouter()
 useDeepLink(router)
+useAutoFetch()
 
 // Sync-template Modal — Command Palette / 추후 우클릭 메뉴에서 trigger.
 const syncTemplateOpen = ref(false)

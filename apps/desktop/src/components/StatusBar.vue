@@ -6,14 +6,22 @@
 //      Prediction (target-branch 한정, 로컬 fetch + merge-tree dry-run).
 //   2. Launchpad badge (활성 PR meta count — pinned + active snooze 외).
 //   3. Sync 진행 (별도 SyncBar 가 상단에 있으니 여기는 prediction + Launchpad 만).
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { predictTargetConflict } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { useLaunchpadMeta } from '@/composables/useLaunchpadMeta'
+import { useGeneralSettings } from '@/composables/useUserSettings'
+import { useNotification } from '@/composables/useNotification'
 
 const store = useReposStore()
 const meta = useLaunchpadMeta()
+const general = useGeneralSettings()
+const notification = useNotification()
+
+const predictionEnabled = computed(
+  () => store.activeRepoId != null && general.value.conflictDetection,
+)
 
 const predictionQuery = useQuery({
   queryKey: computed(() => ['conflict-prediction', store.activeRepoId]),
@@ -23,14 +31,39 @@ const predictionQuery = useQuery({
     }
     return predictTargetConflict(store.activeRepoId, null)
   },
-  enabled: computed(() => store.activeRepoId != null),
+  enabled: predictionEnabled,
   staleTime: 60_000,
-  refetchInterval: 60_000,
+  // refetchInterval 도 false 가능 — 설정 disabled 시 자동 정지.
+  refetchInterval: computed(() => (predictionEnabled.value ? 60_000 : false)),
 })
 
 const prediction = computed(() => predictionQuery.data.value ?? null)
 
 const launchpadCount = computed(() => meta.activeQuery.data.value?.length ?? 0)
+
+// Sprint D3 — Conflict 상태 명확한 변화 (ok ↔ conflict) 시 OS notification.
+let lastOk: boolean | null = null
+watch(
+  prediction,
+  (next) => {
+    if (!next) return
+    const ok = next.ok
+    if (lastOk !== null && lastOk !== ok) {
+      if (!ok) {
+        void notification.notify(
+          '⚠ 충돌 발생 예측',
+          `${next.target}: ${next.conflictFiles.length}개 파일`,
+        )
+      } else {
+        void notification.notify(
+          '✓ 충돌 해소',
+          `${next.target} 와 동기화 가능`,
+        )
+      }
+    }
+    lastOk = ok
+  },
+)
 </script>
 
 <template>

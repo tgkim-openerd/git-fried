@@ -18,6 +18,7 @@ import {
 } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { useNotification } from '@/composables/useNotification'
 import type {
   AiCli,
   MergeMethod,
@@ -26,6 +27,7 @@ import type {
 } from '@/api/git'
 
 const toast = useToast()
+const notification = useNotification()
 
 const props = defineProps<{
   repoId: number | null
@@ -116,6 +118,8 @@ const mergeMut = useMutation({
     qc.invalidateQueries({ queryKey: ['pr'] })
     qc.invalidateQueries({ queryKey: ['prs'] })
     qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
+    toast.success('PR 머지 완료', `#${props.number ?? ''}`)
+    void notification.notify('PR 머지 완료', `#${props.number ?? ''}`)
     emit('close')
   },
   onError: (e) => toast.error('PR 머지 실패', describeError(e)),

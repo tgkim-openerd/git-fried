@@ -14,6 +14,30 @@ import { onMounted, onUnmounted } from 'vue'
 import type { Router } from 'vue-router'
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { useReposStore } from '@/stores/repos'
+import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
+
+/** `git-fried://command/<alias>` 의 alias → ShortcutAction 매핑. */
+const COMMAND_ALIASES: Record<string, ShortcutAction> = {
+  fetch: 'fetch',
+  pull: 'pull',
+  push: 'push',
+  commit: 'commit',
+  'new-pr': 'newPr',
+  'new-branch': 'newBranch',
+  terminal: 'terminal',
+  help: 'help',
+  'stage-all': 'stageAllExplicit',
+  'unstage-all': 'unstageAll',
+  'stage-and-commit': 'stageAndCommit',
+  'show-diff': 'showDiff',
+  'toggle-sidebar': 'toggleSidebar',
+  'toggle-detail': 'toggleDetail',
+  'zoom-in': 'zoomIn',
+  'zoom-out': 'zoomOut',
+  'zoom-reset': 'zoomReset',
+  'file-history': 'fileHistorySearch',
+  'close-modal': 'closeModal',
+}
 
 interface UnlistenFn {
   (): void
@@ -49,6 +73,17 @@ export function useDeepLink(router: Router) {
             if (!Number.isNaN(id)) {
               store.setActiveRepo(id)
               router.push('/')
+            }
+          }
+          break
+        }
+        case 'command': {
+          // git-fried://command/<alias> — Sprint D6.
+          if (arg) {
+            const action = COMMAND_ALIASES[arg]
+            if (action) {
+              // 다음 tick 에 dispatch (router.push 가 mount 안 된 컴포넌트에 등록할 시간).
+              setTimeout(() => dispatchShortcut(action), 50)
             }
           }
           break
