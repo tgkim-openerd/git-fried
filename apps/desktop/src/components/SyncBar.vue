@@ -5,6 +5,7 @@ import { fetchAll, pull, push } from '@/api/git'
 import { describeError, humanizeGitError } from '@/api/errors'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useToast } from '@/composables/useToast'
+import { useShortcut } from '@/composables/useShortcuts'
 
 const toast = useToast()
 
@@ -77,6 +78,11 @@ function onPull() {
 function onPush() {
   if (props.repoId != null) pushMut.mutate(props.repoId)
 }
+
+// GitKraken 표준 단축키
+useShortcut('fetch', onFetch)
+useShortcut('pull', onPull)
+useShortcut('push', onPush)
 </script>
 
 <template>

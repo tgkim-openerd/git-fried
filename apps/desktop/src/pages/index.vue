@@ -13,6 +13,7 @@ import SubmodulePanel from '@/components/SubmodulePanel.vue'
 import LfsPanel from '@/components/LfsPanel.vue'
 import ForgePanel from '@/components/ForgePanel.vue'
 import WorktreePanel from '@/components/WorktreePanel.vue'
+import { useShortcut } from '@/composables/useShortcuts'
 
 const store = useReposStore()
 const { data: status } = useStatus(() => store.activeRepoId)
@@ -31,6 +32,15 @@ type Tab =
   | 'pr'
   | 'worktree'
 const tab = ref<Tab>('status')
+
+// ⌘1~⌘7 탭 전환 단축키
+useShortcut('tab1', () => (tab.value = 'status'))
+useShortcut('tab2', () => (tab.value = 'branches'))
+useShortcut('tab3', () => (tab.value = 'stash'))
+useShortcut('tab4', () => (tab.value = 'submodule'))
+useShortcut('tab5', () => (tab.value = 'lfs'))
+useShortcut('tab6', () => (tab.value = 'pr'))
+useShortcut('tab7', () => (tab.value = 'worktree'))
 </script>
 
 <template>
