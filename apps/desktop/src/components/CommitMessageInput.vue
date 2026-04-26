@@ -9,6 +9,7 @@ import { useMutation, useQuery } from '@tanstack/vue-query'
 import { aiCommitMessage, aiDetectClis, commit as ipcCommit } from '@/api/git'
 import { describeError } from '@/api/errors'
 import type { AiCli } from '@/api/git'
+import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import {
   buildConventional,
@@ -48,19 +49,28 @@ const finalMessage = computed(() => {
 const subjectLength = computed(() => subject.value.length)
 const subjectWarn = computed(() => subjectLength.value > 72)
 
+// commit 실패 결과 (hook 출력) — alert 대신 inline panel.
+// 사용자 lefthook + husky + lint-staged 출력이 stderr 로 옴.
+const lastResult = ref<CommitResult | null>(null)
+
+function commitWith(noVerifyOverride: boolean) {
+  if (props.repoId == null) return
+  commitMut.mutate({ noVerify: noVerifyOverride })
+}
+
 const commitMut = useMutation({
-  mutationFn: () => {
+  mutationFn: ({ noVerify: nv }: { noVerify: boolean }) => {
     if (props.repoId == null) return Promise.reject(new Error('no repo'))
     return ipcCommit({
       repoId: props.repoId,
       message: finalMessage.value,
       signoff: signoff.value,
-      noVerify: noVerify.value,
+      noVerify: nv,
     })
   },
   onSuccess: (res) => {
     if (res.success) {
-      // 입력 초기화
+      lastResult.value = null
       subject.value = ''
       body.value = ''
       footer.value = ''
@@ -69,14 +79,23 @@ const commitMut = useMutation({
       invalidate(props.repoId)
       emit('committed')
     } else {
-      alert(`commit 실패 (exit ${res.exitCode}):\n${res.stderr}`)
+      // pre-commit hook 실패 등 — inline panel 로 표시
+      lastResult.value = res
     }
   },
-  onError: (e) => alert(`커밋 에러:\n${describeError(e)}`),
+  onError: (e) => alert(`커밋 호출 실패:\n${describeError(e)}`),
 })
 
 function canCommit(): boolean {
   return finalMessage.value.trim().length > 0 && props.repoId != null
+}
+
+// hook 출력에서 husky / lefthook 마커 감지
+function hookKind(stderr: string): string | null {
+  if (/husky/i.test(stderr)) return 'husky'
+  if (/lefthook/i.test(stderr)) return 'lefthook'
+  if (/pre-commit/i.test(stderr)) return 'pre-commit'
+  return null
 }
 
 // === AI commit message (Claude / Codex CLI) ===
@@ -250,9 +269,58 @@ const aiMut = useMutation({
           type="button"
           class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
           :disabled="!canCommit() || commitMut.isPending.value"
-          @click="commitMut.mutate()"
+          @click="commitWith(noVerify)"
         >
           {{ commitMut.isPending.value ? '커밋 중...' : 'Commit (⌘Enter)' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Pre-commit hook 실패 결과 패널 -->
+    <div
+      v-if="lastResult && !lastResult.success"
+      class="rounded-md border border-rose-500/40 bg-rose-500/5 p-2 text-xs"
+    >
+      <div class="mb-1 flex items-center justify-between">
+        <span class="font-semibold text-rose-500">
+          ✕ Commit 실패 (exit {{ lastResult.exitCode }})
+          <span
+            v-if="hookKind(lastResult.stderr)"
+            class="ml-1 rounded bg-rose-500/20 px-1 text-[10px]"
+          >
+            {{ hookKind(lastResult.stderr) }}
+          </span>
+        </span>
+        <button
+          type="button"
+          class="text-muted-foreground hover:text-foreground"
+          @click="lastResult = null"
+        >
+          ✕
+        </button>
+      </div>
+      <pre
+        class="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px]"
+      >{{ lastResult.stderr || lastResult.stdout || '(출력 없음)' }}</pre>
+      <p class="mt-2 text-[10px] text-muted-foreground">
+        💡 Pre-commit hook 이 실패하면 보통 lint / format / typecheck 가 막은 것입니다.
+        에디터에서 수정 후 다시 commit. <strong>--no-verify 우회는 권장하지 않음</strong>
+        (CI 실패 / 코드 품질 저하).
+      </p>
+      <div class="mt-2 flex justify-end gap-2">
+        <button
+          type="button"
+          class="rounded-md border border-rose-500/40 px-2 py-1 text-rose-500 hover:bg-rose-500/10"
+          @click="commitWith(true)"
+        >
+          ⚠ --no-verify 로 강제 commit
+        </button>
+        <button
+          type="button"
+          class="rounded-md border border-input px-2 py-1 hover:bg-accent"
+          @click="commitWith(noVerify)"
+        >
+          재시도
         </button>
       </div>
     </div>
