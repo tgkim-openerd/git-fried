@@ -19,6 +19,7 @@ import {
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useNotification } from '@/composables/useNotification'
+import { notifyAiDone } from '@/composables/useAiCli'
 import type {
   AiCli,
   MergeMethod,
@@ -228,6 +229,7 @@ const aiReviewMut = useMutation({
     if (out.success) {
       // 리뷰 본문 textarea 에 자동 채움 → 사용자가 verdict 선택 후 제출
       reviewBody.value = out.text.trim()
+      notifyAiDone('AI 코드 리뷰', `#${props.number ?? ''}`)
     } else {
       toast.error('AI 리뷰 실패', out.stderr || out.text)
     }

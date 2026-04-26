@@ -17,7 +17,7 @@ import {
   useHiddenRefMutations,
   useSoloRef,
 } from '@/composables/useHiddenRefs'
-import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
+import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import {
   aiExplainBranch,
   cherryPickSha,
@@ -303,6 +303,7 @@ async function onExplainBranch(b: BranchInfo) {
     )
     if (out.success) {
       explainContent.value = out.text
+      notifyAiDone('AI 브랜치 설명', `${head} vs ${base.trim()}`)
     } else {
       explainError.value = out.stderr || out.text || '응답 실패'
     }

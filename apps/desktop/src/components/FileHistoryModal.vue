@@ -4,6 +4,7 @@
 import { ref } from 'vue'
 import { useFileBlame, useFileHistory } from '@/composables/useFileHistory'
 import { describeError } from '@/api/errors'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 import type { CommitSummary } from '@/types/git'
 
 const props = defineProps<{
@@ -26,7 +27,7 @@ const blame = useFileBlame(
 )
 
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleString('ko-KR', {
+  return formatDateLocalized(unix, {
     year: '2-digit',
     month: '2-digit',
     day: '2-digit',

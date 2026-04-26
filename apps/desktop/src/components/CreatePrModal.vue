@@ -15,6 +15,7 @@ import {
 import type { AiCli, BranchInfo } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { notifyAiDone } from '@/composables/useAiCli'
 
 const toast = useToast()
 
@@ -101,6 +102,7 @@ const aiBodyMut = useMutation({
   onSuccess: (out) => {
     if (out.success) {
       body.value = out.text.trim()
+      notifyAiDone('AI PR body 생성', out.text.split(/\r?\n/)[0])
     } else {
       toast.error('AI body 생성 실패', out.stderr || out.text)
     }

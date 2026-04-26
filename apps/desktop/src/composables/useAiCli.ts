@@ -5,6 +5,7 @@
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { aiDetectClis, type AiCli, type AiProbe } from '@/api/git'
+import { useNotification } from '@/composables/useNotification'
 
 export function useAiCli() {
   const { data: probes, isFetching, refetch } = useQuery<AiProbe[]>({
@@ -37,4 +38,13 @@ export function confirmAiSend(): boolean {
   return confirm(
     '⚠ 변경 내용 / diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?',
   )
+}
+
+/**
+ * AI 응답 완료 시 OS notification (window 미focus 시).
+ * Sprint D7 — 모든 AI 진입점 공용.
+ */
+export function notifyAiDone(title: string, body?: string) {
+  const { notify } = useNotification()
+  void notify(`✨ ${title}`, body)
 }

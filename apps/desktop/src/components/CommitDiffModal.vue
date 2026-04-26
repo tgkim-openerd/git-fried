@@ -8,7 +8,7 @@ import { computed, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { aiExplainCommit, getCommitDiff } from '@/api/git'
 import { describeError } from '@/api/errors'
-import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
+import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import { useDiffMode, DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import AiResultModal from './AiResultModal.vue'
 import DiffViewer from './DiffViewer.vue'
@@ -63,6 +63,7 @@ const explainMut = useMutation({
     if (out.success) {
       explainContent.value = out.text
       explainError.value = null
+      notifyAiDone('AI commit 설명', props.sha?.slice(0, 7))
     } else {
       explainContent.value = ''
       explainError.value = out.stderr || out.text || '응답 실패'

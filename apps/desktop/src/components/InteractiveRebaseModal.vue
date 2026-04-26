@@ -27,7 +27,7 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
-import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
+import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 
 type Step = 'setup' | 'edit' | 'running' | 'result'
 
@@ -223,6 +223,7 @@ const composerMut = useMutation({
       `✨ AI 제안 적용 (${changed}건 변경)`,
       'pick 외 액션 검토 후 Run rebase.',
     )
+    notifyAiDone('AI Commit Composer', `${changed}건 변경 제안`)
   },
   onError: (e) => {
     const m = describeError(e)

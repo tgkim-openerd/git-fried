@@ -19,6 +19,7 @@ import {
 import type { AiCli } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { notifyAiDone } from '@/composables/useAiCli'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 
 const toast = useToast()
@@ -146,6 +147,7 @@ const aiMut = useMutation({
     if (out.success) {
       // result textarea 에 자동 채움 — 사용자 검토 후 저장
       resolved.value = out.text.trim()
+      notifyAiDone('AI 충돌 해결 제안', props.path ?? undefined)
     } else {
       toast.error('AI 응답 실패', out.stderr || out.text)
     }

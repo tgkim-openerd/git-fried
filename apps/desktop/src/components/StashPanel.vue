@@ -14,7 +14,8 @@ import {
 } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
-import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
+import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 
 const toast = useToast()
 
@@ -86,6 +87,7 @@ const aiMut = useMutation({
     if (out.success) {
       // 첫 줄만 사용 (한 줄 prompt 응답).
       newMessage.value = out.text.trim().split(/\r?\n/)[0] ?? ''
+      notifyAiDone('AI stash 메시지', newMessage.value)
     } else {
       toast.error('AI 응답 실패', out.stderr || out.text)
     }
@@ -149,7 +151,7 @@ const aiMut = useMutation({
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs">stash@{{ '{' }}{{ s.index }}{{ '}' }}</span>
             <span class="text-[10px] text-muted-foreground">
-              {{ new Date(s.createdAt * 1000).toLocaleString('ko-KR') }}
+              {{ formatDateLocalized(s.createdAt) }}
             </span>
           </div>
           <div class="truncate text-xs">{{ s.message }}</div>

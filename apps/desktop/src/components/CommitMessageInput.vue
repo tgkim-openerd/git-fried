@@ -15,6 +15,7 @@ import {
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useShortcut } from '@/composables/useShortcuts'
+import { notifyAiDone } from '@/composables/useAiCli'
 import type { AiCli } from '@/api/git'
 import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -137,6 +138,7 @@ const aiMut = useMutation({
   },
   onSuccess: (out) => {
     if (out.success) {
+      notifyAiDone('AI commit message 생성', out.text.split(/\r?\n/)[0])
       const lines = out.text.trim().split(/\r?\n/)
       // 첫 줄 = subject. 빈 줄 이후 = body
       mode.value = 'free'

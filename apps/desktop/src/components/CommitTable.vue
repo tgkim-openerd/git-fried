@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getLog } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 import type { CommitSummary } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -17,8 +18,7 @@ const { data: commits, isFetching, error } = useQuery({
 })
 
 function formatDate(unix: number): string {
-  const d = new Date(unix * 1000)
-  return d.toLocaleString('ko-KR', {
+  return formatDateLocalized(unix, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
