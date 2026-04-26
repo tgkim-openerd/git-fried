@@ -318,7 +318,9 @@ const isSelected = computed(
             :key="`u-${f.path}`"
             class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
             :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+            draggable="true"
             @click="selectPath(f.path)"
+            @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', f.path)"
           >
             <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(f.status)]">
               {{ statusLabel(f.status) }}
@@ -378,7 +380,9 @@ const isSelected = computed(
             :key="`n-${p}`"
             class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
             :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
+            draggable="true"
             @click="selectPath(p)"
+            @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)"
           >
             <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">
               new

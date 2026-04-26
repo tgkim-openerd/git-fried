@@ -167,6 +167,48 @@ onBeforeUnmount(() => {
   fit.value = null
 })
 
+// Sprint M — drag-drop 파일 → 터미널 stdin 에 quoted path 삽입.
+function quotePath(p: string): string {
+  if (!p) return ''
+  // 공백 / 따옴표 / `$` 가 있으면 작은따옴표 (PowerShell + bash 모두 안전).
+  if (/[\s"'$`]/.test(p)) {
+    // 작은따옴표 안 단일따옴표는 '"'"' 로 escape (bash); pwsh 도 ' 단일 ' 안에서는 그대로.
+    return `'${p.replace(/'/g, "'\\''")}'`
+  }
+  return p
+}
+
+const isWindows = computed(() => navigator.userAgent.toLowerCase().includes('windows'))
+
+function pathForShell(p: string): string {
+  // pwsh.exe 환경은 path 가 이미 win style. /bin/sh 환경에서는 그대로.
+  // 사용자 시스템 의존이므로 backslash 그대로 유지 (pwsh 가 이해).
+  return quotePath(p)
+}
+
+function onDragOver(e: DragEvent) {
+  if (e.dataTransfer && e.dataTransfer.types.includes('text/plain')) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+function onDrop(e: DragEvent) {
+  e.preventDefault()
+  if (!e.dataTransfer || sessionId.value == null) return
+  const raw = e.dataTransfer.getData('text/plain')
+  if (!raw) return
+  const text = pathForShell(raw)
+  // 입력 보조: 앞뒤 공백 — 사용자가 명령 가운데 삽입 가능.
+  const bytes = Array.from(new TextEncoder().encode(` ${text} `))
+  ptyWrite(sessionId.value, bytes).catch(() => {
+    /* ignore */
+  })
+  term.value?.focus()
+}
+// isWindows 가 unused 경고 안 뜨도록.
+void isWindows.value
+
 defineExpose({ refit: () => fit.value?.fit() })
 </script>
 
@@ -201,6 +243,11 @@ defineExpose({ refit: () => fit.value?.fit() })
         </button>
       </div>
     </header>
-    <div ref="container" class="flex-1 overflow-hidden p-1" />
+    <div
+      ref="container"
+      class="flex-1 overflow-hidden p-1"
+      @dragover="onDragOver"
+      @drop="onDrop"
+    />
   </div>
 </template>

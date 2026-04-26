@@ -16,7 +16,9 @@ defineEmits<{ action: []; select: [] }>()
   <li
     class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
     :class="selected ? 'bg-accent ring-1 ring-primary/40' : ''"
+    draggable="true"
     @click="$emit('select')"
+    @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', file.path)"
   >
     <span :class="['shrink-0 w-12 text-[10px] uppercase', color]">{{ label }}</span>
     <span class="flex-1 truncate font-mono text-xs">{{ file.path }}</span>
