@@ -3,16 +3,21 @@
 import { invoke } from '@tauri-apps/api/core'
 import type {
   AddRepoArgs,
+  CommitArgs,
+  CommitResult,
   CommitSummary,
+  DiffArgs,
   GetLogArgs,
+  PullArgs,
+  PushArgs,
   Repo,
   RepoStatus,
+  SyncResult,
   Workspace,
 } from '@/types/git'
 
 // --- 워크스페이스 ---
-export const listWorkspaces = (): Promise<Workspace[]> =>
-  invoke('list_workspaces')
+export const listWorkspaces = (): Promise<Workspace[]> => invoke('list_workspaces')
 
 export const createWorkspace = (
   name: string,
@@ -35,6 +40,50 @@ export const getLog = (args: GetLogArgs): Promise<CommitSummary[]> =>
 
 export const getStatus = (repoId: number): Promise<RepoStatus> =>
   invoke('get_status', { repoId })
+
+// --- Stage / Unstage / Discard ---
+export const stagePaths = (repoId: number, paths: string[]): Promise<void> =>
+  invoke('stage_paths', { args: { repoId, paths } })
+
+export const stageAll = (repoId: number): Promise<void> =>
+  invoke('stage_all', { repoId })
+
+export const unstagePaths = (repoId: number, paths: string[]): Promise<void> =>
+  invoke('unstage_paths', { args: { repoId, paths } })
+
+export const discardPaths = (repoId: number, paths: string[]): Promise<void> =>
+  invoke('discard_paths', { args: { repoId, paths } })
+
+export const applyPatch = (
+  repoId: number,
+  patch: string,
+  reverse: boolean,
+): Promise<void> =>
+  invoke('apply_patch', { args: { repoId, patch, reverse } })
+
+// --- Diff ---
+export const getDiff = (args: DiffArgs): Promise<string> =>
+  invoke('get_diff', { args })
+
+export const getCommitDiff = (repoId: number, sha: string): Promise<string> =>
+  invoke('get_commit_diff', { args: { repoId, sha } })
+
+// --- Commit ---
+export const commit = (args: CommitArgs): Promise<CommitResult> =>
+  invoke('commit', { args })
+
+export const lastCommitMessage = (repoId: number): Promise<string> =>
+  invoke('last_commit_message', { repoId })
+
+// --- Sync ---
+export const fetchAll = (repoId: number): Promise<SyncResult> =>
+  invoke('fetch_all', { repoId })
+
+export const pull = (args: PullArgs): Promise<SyncResult> =>
+  invoke('pull', { args })
+
+export const push = (args: PushArgs): Promise<SyncResult> =>
+  invoke('push', { args })
 
 // --- 진단 ---
 export interface AppInfo {

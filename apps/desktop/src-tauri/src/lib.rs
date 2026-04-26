@@ -60,6 +60,19 @@ pub fn run() {
             ipc::commands::add_repo,
             ipc::commands::remove_repo,
             ipc::commands::get_log,
+            ipc::commands::get_status,
+            ipc::commands::stage_paths,
+            ipc::commands::stage_all,
+            ipc::commands::unstage_paths,
+            ipc::commands::discard_paths,
+            ipc::commands::apply_patch,
+            ipc::commands::get_diff,
+            ipc::commands::get_commit_diff,
+            ipc::commands::commit,
+            ipc::commands::last_commit_message,
+            ipc::commands::fetch_all,
+            ipc::commands::pull,
+            ipc::commands::push,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

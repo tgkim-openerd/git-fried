@@ -21,7 +21,7 @@ export interface Workspace {
   id: number
   name: string
   color: string | null
-  forgeKind: ForgeKind
+  forgeKind: ForgeKind | 'mixed'
   createdAt: number
 }
 
@@ -48,6 +48,7 @@ export interface RepoStatus {
   unstaged: FileChange[]
   untracked: string[]
   conflicted: string[]
+  isClean: boolean
 }
 
 export interface FileChange {
@@ -76,4 +77,103 @@ export interface GetLogArgs {
   limit?: number
   skip?: number
   branch?: string | null
+}
+
+export interface CommitArgs {
+  repoId: number
+  message: string
+  amend?: boolean
+  allowEmpty?: boolean
+  noVerify?: boolean
+  signoff?: boolean
+  author?: string | null
+}
+
+export interface CommitResult {
+  success: boolean
+  stdout: string
+  stderr: string
+  exitCode: number | null
+  newSha: string | null
+}
+
+export interface SyncResult {
+  success: boolean
+  stdout: string
+  stderr: string
+  exitCode: number | null
+}
+
+export interface DiffArgs {
+  repoId: number
+  staged: boolean
+  path?: string | null
+  rev?: string | null
+  context?: number | null
+}
+
+export interface PushArgs {
+  repoId: number
+  remote?: string | null
+  branch?: string | null
+  forceWithLease?: boolean
+  setUpstream?: boolean
+  tags?: boolean
+}
+
+export interface PullArgs {
+  repoId: number
+  remote?: string | null
+  branch?: string | null
+}
+
+// === Conventional Commits ===
+export type ConventionalType =
+  | 'feat'
+  | 'fix'
+  | 'chore'
+  | 'docs'
+  | 'refactor'
+  | 'perf'
+  | 'test'
+  | 'ci'
+  | 'build'
+  | 'style'
+  | 'revert'
+
+export const CONVENTIONAL_TYPES: ConventionalType[] = [
+  'feat',
+  'fix',
+  'chore',
+  'docs',
+  'refactor',
+  'perf',
+  'test',
+  'ci',
+  'build',
+  'style',
+  'revert',
+]
+
+export interface ConventionalParts {
+  type: ConventionalType
+  scope: string
+  breaking: boolean
+  subject: string
+  body: string
+  footer: string
+}
+
+/**
+ * Conventional Commit 메시지 빌더.
+ * 형식: `<type>(<scope>)!: <subject>\n\n<body>\n\n<footer>`
+ */
+export function buildConventional(parts: ConventionalParts): string {
+  const scope = parts.scope.trim() ? `(${parts.scope.trim()})` : ''
+  const breaking = parts.breaking ? '!' : ''
+  const head = `${parts.type}${scope}${breaking}: ${parts.subject.trim()}`
+  const sections = [head]
+  if (parts.body.trim()) sections.push(parts.body.trim())
+  if (parts.footer.trim()) sections.push(parts.footer.trim())
+  return sections.join('\n\n')
 }

@@ -5,14 +5,17 @@
 //   - args 는 단일 struct (camelCase 필드, serde rename_all)
 //   - 에러는 AppError (자동 직렬화)
 //   - DB 작업은 state.db 사용
-//   - Git 작업은 storage::Db + git::repository / git::runner
+//   - Git 작업은 storage::Db + git::repository / git::runner / git::stage / ...
 
 use crate::error::{AppError, AppResult};
-use crate::git::{repository as repo, runner};
+use crate::git::{
+    commit as git_commit, diff as git_diff, repository as repo, runner, stage, status as git_status,
+    sync as git_sync,
+};
 use crate::storage::{Db, DbExt, Repo, Workspace};
 use crate::AppState;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 // ====== App info ======
@@ -87,7 +90,6 @@ pub async fn add_repo(
         )));
     }
 
-    // 메타 추출 (default branch / forge / remote)
     let meta = repo::detect_meta(path)?;
 
     state
@@ -113,6 +115,12 @@ pub async fn remove_repo(
     state.db.remove_repo(id).await
 }
 
+// ====== 헬퍼: repo_id → 로컬 경로 ======
+
+async fn repo_path(state: &Arc<AppState>, repo_id: i64) -> AppResult<PathBuf> {
+    Ok(PathBuf::from(state.db.get_repo(repo_id).await?.local_path))
+}
+
 // ====== Git read ======
 
 #[derive(Debug, Deserialize)]
@@ -129,20 +137,249 @@ pub async fn get_log(
     args: GetLogArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Vec<repo::CommitSummary>> {
-    let repo_row = state.db.get_repo(args.repo_id).await?;
-    let path = std::path::PathBuf::from(repo_row.local_path);
+    let path = repo_path(&state, args.repo_id).await?;
     let limit = args.limit.unwrap_or(200).min(2000);
     let skip = args.skip.unwrap_or(0);
 
-    // git2-rs 호출은 동기 — tokio block_in_place 로 감쌈.
     tokio::task::spawn_blocking(move || -> AppResult<Vec<repo::CommitSummary>> {
         let r = repo::open(&path)?;
         repo::log(&r, limit, skip)
     })
     .await
-    .map_err(|e| AppError::internal(format!("spawn_blocking join: {e}")))?
+    .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))?
 }
 
-// 사용하지 않는 Db import 컴파일러 경고 회피 — 추후 fetch/clone 명령에서 사용 예정.
+#[tauri::command]
+pub async fn get_status(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_status::RepoStatus> {
+    let path = repo_path(&state, repo_id).await?;
+    tokio::task::spawn_blocking(move || git_status::read_status(&path))
+        .await
+        .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))?
+}
+
+// ====== Stage / Unstage / Discard ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PathsArgs {
+    pub repo_id: i64,
+    pub paths: Vec<String>,
+}
+
+#[tauri::command]
+pub async fn stage_paths(
+    args: PathsArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    stage::stage_paths(&path, &args.paths).await
+}
+
+#[tauri::command]
+pub async fn stage_all(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    stage::stage_all(&path).await
+}
+
+#[tauri::command]
+pub async fn unstage_paths(
+    args: PathsArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    stage::unstage_paths(&path, &args.paths).await
+}
+
+#[tauri::command]
+pub async fn discard_paths(
+    args: PathsArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    stage::discard_paths(&path, &args.paths).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PatchArgs {
+    pub repo_id: i64,
+    pub patch: String,
+    /// false 면 stage, true 면 unstage (reverse).
+    pub reverse: bool,
+}
+
+#[tauri::command]
+pub async fn apply_patch(
+    args: PatchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    if args.reverse {
+        stage::unstage_patch(&path, &args.patch).await
+    } else {
+        stage::stage_patch(&path, &args.patch).await
+    }
+}
+
+// ====== Diff ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiffCommandArgs {
+    pub repo_id: i64,
+    pub staged: bool,
+    pub path: Option<String>,
+    pub rev: Option<String>,
+    pub context: Option<u32>,
+}
+
+#[tauri::command]
+pub async fn get_diff(
+    args: DiffCommandArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<String> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_diff::diff(
+        &path,
+        &git_diff::DiffArgs {
+            staged: args.staged,
+            path: args.path,
+            rev: args.rev,
+            context: args.context,
+        },
+    )
+    .await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiffCommitArgs {
+    pub repo_id: i64,
+    pub sha: String,
+}
+
+#[tauri::command]
+pub async fn get_commit_diff(
+    args: DiffCommitArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<String> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_diff::diff_commit(&path, &args.sha).await
+}
+
+// ====== Commit ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommitArgs {
+    pub repo_id: i64,
+    pub message: String,
+    #[serde(default)]
+    pub amend: bool,
+    #[serde(default)]
+    pub allow_empty: bool,
+    #[serde(default)]
+    pub no_verify: bool,
+    #[serde(default)]
+    pub signoff: bool,
+    pub author: Option<String>,
+}
+
+#[tauri::command]
+pub async fn commit(
+    args: CommitArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_commit::CommitResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_commit::commit(
+        &path,
+        &args.message,
+        git_commit::CommitOpts {
+            amend: args.amend,
+            allow_empty: args.allow_empty,
+            no_verify: args.no_verify,
+            signoff: args.signoff,
+            author: args.author,
+        },
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn last_commit_message(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<String> {
+    let path = repo_path(&state, repo_id).await?;
+    git_commit::last_commit_message(&path).await
+}
+
+// ====== Sync (push / pull / fetch) ======
+
+#[tauri::command]
+pub async fn fetch_all(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_sync::SyncResult> {
+    let path = repo_path(&state, repo_id).await?;
+    git_sync::fetch_all(&path).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PullArgs {
+    pub repo_id: i64,
+    pub remote: Option<String>,
+    pub branch: Option<String>,
+}
+
+#[tauri::command]
+pub async fn pull(
+    args: PullArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_sync::SyncResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_sync::pull(&path, args.remote.as_deref(), args.branch.as_deref()).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushArgs {
+    pub repo_id: i64,
+    pub remote: Option<String>,
+    pub branch: Option<String>,
+    #[serde(default)]
+    pub force_with_lease: bool,
+    #[serde(default)]
+    pub set_upstream: bool,
+    #[serde(default)]
+    pub tags: bool,
+}
+
+#[tauri::command]
+pub async fn push(
+    args: PushArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_sync::SyncResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_sync::push(
+        &path,
+        args.remote.as_deref(),
+        args.branch.as_deref(),
+        git_sync::PushOpts {
+            force_with_lease: args.force_with_lease,
+            set_upstream: args.set_upstream,
+            tags: args.tags,
+        },
+    )
+    .await
+}
+
 #[allow(dead_code)]
 fn _db_marker(_: &Db) {}

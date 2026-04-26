@@ -219,3 +219,109 @@ fn test_nfc_normalization_in_decode() {
     assert_eq!(nfc, "한");
     assert_ne!(nfd.as_bytes().len(), nfc.as_bytes().len());
 }
+
+// ====== Phase 2 (v0.1 Sprint 1) 테스트 ======
+
+#[tokio::test]
+async fn test_status_clean_after_init() {
+    let (_tmp, path) = init_test_repo().await;
+    // 빈 init 직후엔 commit 0, working tree 도 비어있음.
+    let st = super::status::read_status(&path).unwrap();
+    assert!(st.is_clean, "init 직후는 깨끗해야 함");
+    assert!(st.staged.is_empty());
+    assert!(st.unstaged.is_empty());
+}
+
+#[tokio::test]
+async fn test_status_detects_korean_filename_change() {
+    let (_tmp, path) = init_test_repo().await;
+    // 첫 커밋
+    git_run(
+        &path,
+        &["commit", "--allow-empty", "-m", "init"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    // 한글 파일명 추가
+    let f = path.join("새파일.md");
+    std::fs::write(&f, "# 안녕\n").unwrap();
+
+    let st = super::status::read_status(&path).unwrap();
+    assert!(!st.is_clean);
+    assert_eq!(st.untracked.len(), 1);
+    assert_eq!(st.untracked[0], "새파일.md");
+}
+
+#[tokio::test]
+async fn test_stage_unstage_round_trip() {
+    let (_tmp, path) = init_test_repo().await;
+    git_run(
+        &path,
+        &["commit", "--allow-empty", "-m", "init"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+
+    std::fs::write(path.join("a.txt"), "hello\n").unwrap();
+    std::fs::write(path.join("한글.txt"), "안녕\n").unwrap();
+
+    super::stage::stage_paths(&path, &["a.txt".into(), "한글.txt".into()])
+        .await
+        .unwrap();
+
+    let st = super::status::read_status(&path).unwrap();
+    assert_eq!(st.staged.len(), 2, "한글/영문 모두 staged");
+
+    super::stage::unstage_paths(&path, &["한글.txt".into()])
+        .await
+        .unwrap();
+    let st2 = super::status::read_status(&path).unwrap();
+    assert_eq!(st2.staged.len(), 1);
+    assert!(st2.staged.iter().any(|f| f.path == "a.txt"));
+    assert!(st2.untracked.contains(&"한글.txt".to_string()));
+}
+
+#[tokio::test]
+async fn test_commit_simple_with_korean() {
+    let (_tmp, path) = init_test_repo().await;
+    std::fs::write(path.join("hello.md"), "# 한글\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+
+    let res = super::commit::commit_simple(&path, "feat: 첫 한글 커밋").await.unwrap();
+    assert!(res.success, "stderr: {}", res.stderr);
+    assert!(res.new_sha.is_some());
+
+    let last = super::commit::last_commit_message(&path).await.unwrap();
+    assert!(last.starts_with("feat: 첫 한글 커밋"));
+}
+
+#[tokio::test]
+async fn test_diff_returns_text() {
+    let (_tmp, path) = init_test_repo().await;
+    std::fs::write(path.join("a.txt"), "hello\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+    super::commit::commit_simple(&path, "init").await.unwrap();
+
+    // 수정
+    std::fs::write(path.join("a.txt"), "hello world\n").unwrap();
+
+    let d = super::diff::diff(
+        &path,
+        &super::diff::DiffArgs {
+            staged: false,
+            path: None,
+            rev: None,
+            context: Some(3),
+        },
+    )
+    .await
+    .unwrap();
+    assert!(d.contains("hello world"), "diff 에 변경 라인이 포함");
+    assert!(d.contains("--- a/a.txt"), "표준 diff 헤더");
+}
