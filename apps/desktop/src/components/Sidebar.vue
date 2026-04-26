@@ -21,6 +21,7 @@ import { humanizeGitError, describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
+import { useNotification } from '@/composables/useNotification'
 import type { Repo } from '@/types/git'
 
 // Sprint B9 — Sidebar 그룹핑 모드 (디렉토리 / org) + workspace color 편집.
@@ -53,6 +54,7 @@ const addRepoMutation = useMutation({
   onSuccess: () => qc.invalidateQueries({ queryKey: ['repos'] }),
 })
 
+const notification = useNotification()
 const bulkFetchMut = useMutation({
   mutationFn: () => bulkFetch(store.activeWorkspaceId),
   onSuccess: (results) => {
@@ -74,8 +76,13 @@ const bulkFetchMut = useMutation({
         `일괄 Fetch: ${ok}/${results.length} 성공 (${failed.length} 실패)`,
         detail,
       )
+      void notification.notify(
+        `일괄 Fetch: ${ok}/${results.length}`,
+        `${failed.length}개 실패`,
+      )
     } else if (results.length > 0) {
       toast.success(`일괄 Fetch 완료 (${ok} 레포)`)
+      void notification.notify('일괄 Fetch 완료', `${ok} 레포`)
     }
   },
 })
