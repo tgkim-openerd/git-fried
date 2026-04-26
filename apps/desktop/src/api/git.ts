@@ -422,6 +422,82 @@ export const aiCodeReview = (args: {
   userApproved: boolean
 }): Promise<AiOutput> => invoke('ai_code_review', { args })
 
+// === Interactive rebase (docs/plan/09 옵션 A) ===
+export type RebaseAction = 'pick' | 'reword' | 'squash' | 'fixup' | 'drop'
+
+export interface RebaseTodoEntry {
+  action: RebaseAction
+  sha: string
+  subject: string
+  newMessage: string | null
+}
+
+export interface RebaseStatus {
+  inProgress: boolean
+  currentStep: number | null
+  totalSteps: number | null
+  stoppedAt: string | null
+  conflict: boolean
+  headName: string | null
+}
+
+export interface RebaseRunResult {
+  success: boolean
+  exitCode: number | null
+  stdout: string
+  stderr: string
+  status: RebaseStatus
+}
+
+export const rebasePrepareTodo = (
+  repoId: number,
+  count: number,
+): Promise<RebaseTodoEntry[]> =>
+  invoke('rebase_prepare_todo', { args: { repoId, count } })
+
+export const rebaseRun = (
+  repoId: number,
+  base: string,
+  todo: RebaseTodoEntry[],
+): Promise<RebaseRunResult> =>
+  invoke('rebase_run', { args: { repoId, base, todo } })
+
+export const getRebaseStatus = (repoId: number): Promise<RebaseStatus> =>
+  invoke('rebase_status', { repoId })
+
+export const rebaseContinue = (repoId: number): Promise<RebaseRunResult> =>
+  invoke('rebase_continue', { repoId })
+
+export const rebaseAbort = (repoId: number): Promise<void> =>
+  invoke('rebase_abort', { repoId })
+
+export const rebaseSkip = (repoId: number): Promise<RebaseRunResult> =>
+  invoke('rebase_skip', { repoId })
+
+// === 통합 터미널 (docs/plan/10 옵션 A) — Tauri Channel<Vec<u8>> stream ===
+import { Channel } from '@tauri-apps/api/core'
+
+export const ptyOpen = (
+  cwd: string,
+  shell: string,
+  cols: number,
+  rows: number,
+  onData: Channel<number[]>,
+): Promise<number> =>
+  invoke('pty_open', { args: { cwd, shell, cols, rows }, onData })
+
+export const ptyWrite = (id: number, data: number[]): Promise<void> =>
+  invoke('pty_write', { args: { id, data } })
+
+export const ptyResize = (
+  id: number,
+  cols: number,
+  rows: number,
+): Promise<void> => invoke('pty_resize', { args: { id, cols, rows } })
+
+export const ptyClose = (id: number): Promise<void> =>
+  invoke('pty_close', { id })
+
 // === Forge (Gitea + GitHub) ===
 export type PrState = 'open' | 'closed' | 'merged' | 'draft'
 export type IssueState = 'open' | 'closed'

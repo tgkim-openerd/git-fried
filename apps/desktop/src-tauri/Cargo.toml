@@ -67,6 +67,9 @@ url = "2.5"
 # regex for secret masking (AI subprocess input)
 regex = "1.10"
 
+# 통합 터미널 (`docs/plan/10 옵션 A`) — Windows ConPTY / Unix forkpty 추상화
+portable-pty = "0.8"
+
 [dev-dependencies]
 tokio-test = "0.4"
 pretty_assertions = "1.4"

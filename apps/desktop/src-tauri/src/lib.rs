@@ -16,6 +16,7 @@ pub mod forge;
 pub mod git;
 pub mod ipc;
 pub mod profiles;
+pub mod pty;
 pub mod storage;
 
 use std::sync::Arc;
@@ -25,12 +26,17 @@ pub use error::{AppError, AppResult};
 /// 앱 전역 상태. Tauri State 로 등록되어 모든 IPC 핸들러에서 접근 가능.
 pub struct AppState {
     pub db: storage::Db,
+    /// 통합 터미널 PTY 세션 (`docs/plan/10 옵션 A`).
+    pub pty: pty::PtyRegistry,
 }
 
 impl AppState {
     pub async fn new() -> AppResult<Arc<Self>> {
         let db = storage::Db::open_default().await?;
-        Ok(Arc::new(Self { db }))
+        Ok(Arc::new(Self {
+            db,
+            pty: pty::PtyRegistry::new(),
+        }))
     }
 }
 
@@ -145,6 +151,16 @@ pub fn run() {
             ipc::v02_commands::ai_pr_body,
             ipc::v02_commands::ai_resolve_conflict,
             ipc::v02_commands::ai_code_review,
+            ipc::v02_commands::rebase_prepare_todo,
+            ipc::v02_commands::rebase_run,
+            ipc::v02_commands::rebase_status,
+            ipc::v02_commands::rebase_continue,
+            ipc::v02_commands::rebase_abort,
+            ipc::v02_commands::rebase_skip,
+            ipc::pty_commands::pty_open,
+            ipc::pty_commands::pty_write,
+            ipc::pty_commands::pty_resize,
+            ipc::pty_commands::pty_close,
             ipc::profile_commands::list_profiles,
             ipc::profile_commands::create_profile,
             ipc::profile_commands::update_profile,

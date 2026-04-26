@@ -96,6 +96,26 @@ const allCommands = computed<Cmd[]>(() => {
         if (fn) fn()
       },
     },
+    {
+      id: 'rebase.interactive',
+      label: 'Interactive rebase — 마지막 N 개 commit 편집',
+      hint: 'drop / reword / squash / fixup',
+      action: () => {
+        const fn = (window as unknown as { gitFriedOpenRebase?: () => void })
+          .gitFriedOpenRebase
+        if (fn) fn()
+      },
+    },
+    {
+      id: 'terminal.toggle',
+      label: 'Terminal — 통합 터미널 토글 (⌘`)',
+      hint: 'pwsh / bash, PTY-based',
+      action: () => {
+        const fn = (window as unknown as { gitFriedToggleTerminal?: () => void })
+          .gitFriedToggleTerminal
+        if (fn) fn()
+      },
+    },
   ]
   return list
 })

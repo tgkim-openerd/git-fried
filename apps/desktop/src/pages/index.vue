@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// 메인 페이지 — SyncBar + 좌측(로그/그래프) + 우측 탭 패널 + 하단(commit input).
-import { computed, ref } from 'vue'
+// 메인 페이지 — SyncBar + 좌측(로그/그래프) + 우측 탭 패널 + 하단(commit input + 통합 터미널).
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
 import CommitGraph from '@/components/CommitGraph.vue'
@@ -13,6 +13,8 @@ import SubmodulePanel from '@/components/SubmodulePanel.vue'
 import LfsPanel from '@/components/LfsPanel.vue'
 import ForgePanel from '@/components/ForgePanel.vue'
 import WorktreePanel from '@/components/WorktreePanel.vue'
+import InteractiveRebaseModal from '@/components/InteractiveRebaseModal.vue'
+import TerminalPanel from '@/components/TerminalPanel.vue'
 import { useShortcut } from '@/composables/useShortcuts'
 
 const store = useReposStore()
@@ -33,6 +35,9 @@ type Tab =
   | 'worktree'
 const tab = ref<Tab>('status')
 
+// 통합 터미널 가시성 (⌘` 토글) — `docs/plan/10 옵션 A`.
+const terminalOpen = ref(false)
+
 // ⌘1~⌘7 탭 전환 단축키
 useShortcut('tab1', () => (tab.value = 'status'))
 useShortcut('tab2', () => (tab.value = 'branches'))
@@ -44,10 +49,28 @@ useShortcut('tab7', () => (tab.value = 'worktree'))
 
 // ⌘B → 브랜치 탭 (BranchPanel 의 새 브랜치 input 으로 자동 focus 가능)
 useShortcut('newBranch', () => (tab.value = 'branches'))
+useShortcut('terminal', () => (terminalOpen.value = !terminalOpen.value))
+
+// CommandPalette 에서 호출되는 외부 트리거.
+function externalToggleTerminal() {
+  terminalOpen.value = !terminalOpen.value
+}
+onMounted(() => {
+  ;(window as unknown as {
+    gitFriedToggleTerminal?: () => void
+  }).gitFriedToggleTerminal = externalToggleTerminal
+})
+onUnmounted(() => {
+  delete (window as unknown as { gitFriedToggleTerminal?: () => void })
+    .gitFriedToggleTerminal
+})
 </script>
 
 <template>
-  <div class="grid h-full grid-rows-[auto_1fr] overflow-hidden">
+  <div
+    class="grid h-full overflow-hidden"
+    :class="terminalOpen ? 'grid-rows-[auto_minmax(0,1fr)_minmax(140px,30%)]' : 'grid-rows-[auto_1fr]'"
+  >
     <SyncBar
       :repo-id="store.activeRepoId"
       :branch="branch"
@@ -56,7 +79,7 @@ useShortcut('newBranch', () => (tab.value = 'branches'))
       :behind="behind"
     />
 
-    <div class="grid h-full grid-cols-[1fr_360px] overflow-hidden">
+    <div class="grid min-h-0 grid-cols-[1fr_360px] overflow-hidden">
       <!-- 좌측: 커밋 그래프 + 로그 -->
       <CommitGraph :repo-id="store.activeRepoId" />
 
@@ -118,5 +141,14 @@ useShortcut('newBranch', () => (tab.value = 'branches'))
         />
       </div>
     </div>
+
+    <TerminalPanel
+      v-if="terminalOpen"
+      :visible="terminalOpen"
+      class="row-start-3"
+      @close="terminalOpen = false"
+    />
+
+    <InteractiveRebaseModal />
   </div>
 </template>

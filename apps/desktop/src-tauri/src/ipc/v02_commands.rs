@@ -4,7 +4,7 @@ use crate::ai;
 use crate::error::{AppError, AppResult};
 use crate::git::{
     bisect as git_bisect, cherry_pick as git_cp, file_history as git_fh, lfs as git_lfs,
-    merge as git_merge, reflog as git_reflog, worktree as git_wt,
+    merge as git_merge, rebase as git_rebase, reflog as git_reflog, worktree as git_wt,
 };
 use crate::AppState;
 use serde::Deserialize;
@@ -555,4 +555,109 @@ pub async fn ai_pr_body(
 
     let prompt = ai::pr_body_prompt(&commits, &stat, &args.head_branch, &args.base_branch);
     ai::ai_run(args.cli, &prompt).await
+}
+
+// ====== Interactive rebase (`docs/plan/09 옵션 A`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RebasePrepareArgs {
+    pub repo_id: i64,
+    pub count: usize,
+}
+
+#[tauri::command]
+pub async fn rebase_prepare_todo(
+    args: RebasePrepareArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_rebase::RebaseTodoEntry>> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_rebase::prepare_todo(&path, args.count).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RebaseRunArgs {
+    pub repo_id: i64,
+    pub base: String,
+    pub todo: Vec<git_rebase::RebaseTodoEntry>,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RebaseRunResult {
+    pub success: bool,
+    pub exit_code: Option<i32>,
+    pub stdout: String,
+    pub stderr: String,
+    pub status: git_rebase::RebaseStatus,
+}
+
+#[tauri::command]
+pub async fn rebase_run(
+    args: RebaseRunArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<RebaseRunResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let out = git_rebase::run_interactive(&path, &args.base, &args.todo).await?;
+    let status = git_rebase::status(&path)?;
+    Ok(RebaseRunResult {
+        success: out.exit_code == Some(0) && !status.in_progress,
+        exit_code: out.exit_code,
+        stdout: out.stdout,
+        stderr: out.stderr,
+        status,
+    })
+}
+
+#[tauri::command]
+pub async fn rebase_status(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_rebase::RebaseStatus> {
+    let path = repo_path(&state, repo_id).await?;
+    git_rebase::status(&path)
+}
+
+#[tauri::command]
+pub async fn rebase_continue(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<RebaseRunResult> {
+    let path = repo_path(&state, repo_id).await?;
+    let out = git_rebase::rebase_continue(&path).await?;
+    let status = git_rebase::status(&path)?;
+    Ok(RebaseRunResult {
+        success: out.exit_code == Some(0) && !status.in_progress,
+        exit_code: out.exit_code,
+        stdout: out.stdout,
+        stderr: out.stderr,
+        status,
+    })
+}
+
+#[tauri::command]
+pub async fn rebase_abort(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_rebase::rebase_abort(&path).await
+}
+
+#[tauri::command]
+pub async fn rebase_skip(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<RebaseRunResult> {
+    let path = repo_path(&state, repo_id).await?;
+    let out = git_rebase::rebase_skip(&path).await?;
+    let status = git_rebase::status(&path)?;
+    Ok(RebaseRunResult {
+        success: out.exit_code == Some(0) && !status.in_progress,
+        exit_code: out.exit_code,
+        stdout: out.stdout,
+        stderr: out.stderr,
+        status,
+    })
 }

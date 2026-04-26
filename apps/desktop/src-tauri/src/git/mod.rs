@@ -14,6 +14,7 @@ pub mod file_history;
 pub mod graph;
 pub mod lfs;
 pub mod merge;
+pub mod rebase;
 pub mod reflog;
 pub mod repository;
 pub mod reset;
