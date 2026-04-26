@@ -15,6 +15,51 @@ import type { GraphRow } from '@/api/git'
 const props = defineProps<{ repoId: number | null }>()
 const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
 
+// === 검색 (in-memory) ===
+// v0.x 단계: 현재 그래프 (최대 500 commits) 내에서 subject / author / sha 부분일치.
+// FTS5 인덱싱은 v1.0 (Cross-repo + 5000+ commits 시).
+const searchQuery = ref('')
+const searchOpen = ref(false)
+const searchInputRef = ref<HTMLInputElement | null>(null)
+
+function isMatch(r: GraphRow, q: string): boolean {
+  if (!q) return true
+  const lower = q.toLowerCase()
+  return (
+    r.commit.subject.toLowerCase().includes(lower) ||
+    r.commit.authorName.toLowerCase().includes(lower) ||
+    r.commit.sha.startsWith(lower) ||
+    r.commit.refs.some((x) => x.toLowerCase().includes(lower))
+  )
+}
+
+const matchCount = computed(() => {
+  if (!searchQuery.value) return 0
+  return rows.value.filter((r) => isMatch(r, searchQuery.value)).length
+})
+
+function openSearch() {
+  searchOpen.value = true
+  nextTick(() => searchInputRef.value?.focus())
+}
+function closeSearch() {
+  searchOpen.value = false
+  searchQuery.value = ''
+  drawGraph()
+}
+
+// ⌘F / Ctrl+F 단축키
+function onKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+    e.preventDefault()
+    if (searchOpen.value) closeSearch()
+    else openSearch()
+  } else if (e.key === 'Escape' && searchOpen.value) {
+    e.preventDefault()
+    closeSearch()
+  }
+}
+
 const ROW_H = 28
 const LANE_W = 16
 
@@ -132,8 +177,13 @@ function drawGraph() {
   }
 }
 
-onMounted(() => nextTick(() => drawGraph()))
+onMounted(() => {
+  nextTick(() => drawGraph())
+  window.addEventListener('keydown', onKeydown)
+})
 watch([rows, maxLane, virtualItems], () => nextTick(() => drawGraph()))
+import { onUnmounted } from 'vue'
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 function onScroll() {
   drawGraph()
@@ -161,9 +211,38 @@ function selectRow(r: GraphRow) {
 
 <template>
   <div class="flex h-full flex-col">
-    <header class="flex items-center justify-between border-b border-border px-4 py-2">
+    <header class="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
       <h2 class="text-sm font-semibold">커밋 그래프</h2>
-      <span v-if="isFetching" class="text-xs text-muted-foreground">불러오는 중...</span>
+      <div class="flex flex-1 items-center justify-end gap-2">
+        <div v-if="searchOpen" class="flex items-center gap-1">
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            placeholder="검색: subject / 작성자 / SHA / ref (esc 닫기)"
+            class="w-72 rounded-md border border-input bg-background px-2 py-1 text-xs"
+          />
+          <span class="text-[10px] text-muted-foreground">
+            {{ searchQuery ? `${matchCount} / ${rows.length}` : `${rows.length}` }}
+          </span>
+          <button
+            type="button"
+            class="text-xs text-muted-foreground hover:text-foreground"
+            @click="closeSearch"
+          >
+            ✕
+          </button>
+        </div>
+        <button
+          v-else
+          type="button"
+          class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent"
+          title="⌘F / Ctrl+F"
+          @click="openSearch"
+        >
+          🔍
+        </button>
+        <span v-if="isFetching" class="text-xs text-muted-foreground">불러오는 중...</span>
+      </div>
     </header>
 
     <div
@@ -197,12 +276,15 @@ function selectRow(r: GraphRow) {
             right: 0,
             height: ROW_H + 'px',
           }"
-          class="flex cursor-pointer items-center gap-2 px-2 text-sm hover:bg-accent/40"
-          :class="
+          class="flex cursor-pointer items-center gap-2 px-2 text-sm hover:bg-accent/40 transition-opacity"
+          :class="[
             selectedSha === rows[v.index]?.commit.sha
               ? 'bg-accent text-accent-foreground'
-              : ''
-          "
+              : '',
+            searchQuery && rows[v.index] && !isMatch(rows[v.index], searchQuery)
+              ? 'opacity-25'
+              : '',
+          ]"
           @click="selectRow(rows[v.index])"
         >
           <span class="w-16 shrink-0 truncate font-mono text-xs text-muted-foreground">
