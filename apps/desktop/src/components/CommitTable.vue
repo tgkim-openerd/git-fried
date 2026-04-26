@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getLog } from '@/api/git'
+import { describeError } from '@/api/errors'
 import type { CommitSummary } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -39,8 +40,8 @@ function refsLabel(c: CommitSummary): string | null {
       <span v-if="isFetching" class="text-xs text-muted-foreground">불러오는 중...</span>
     </header>
 
-    <div v-if="error" class="m-4 rounded border border-destructive bg-destructive/10 p-3 text-sm">
-      에러: {{ String(error) }}
+    <div v-if="error" class="m-4 rounded border border-destructive bg-destructive/10 p-3 text-sm whitespace-pre-wrap">
+      {{ describeError(error) }}
     </div>
 
     <div v-else-if="repoId == null" class="flex flex-1 items-center justify-center text-sm text-muted-foreground">

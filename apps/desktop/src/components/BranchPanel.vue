@@ -10,6 +10,7 @@ import {
   deleteBranch,
   switchBranch,
 } from '@/api/git'
+import { describeError } from '@/api/errors'
 import type { BranchInfo } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -29,7 +30,7 @@ const switchMut = useMutation({
   mutationFn: ({ id, name }: { id: number; name: string }) =>
     switchBranch(id, name, false),
   onSuccess: () => invalidate(props.repoId),
-  onError: (e) => alert(`switch 실패: ${String(e)}`),
+  onError: (e) => alert(`switch 실패: ${describeError(e)}`),
 })
 
 const createMut = useMutation({
@@ -39,14 +40,14 @@ const createMut = useMutation({
     newBranchName.value = ''
     invalidate(props.repoId)
   },
-  onError: (e) => alert(`create 실패: ${String(e)}`),
+  onError: (e) => alert(`create 실패: ${describeError(e)}`),
 })
 
 const deleteMut = useMutation({
   mutationFn: ({ id, name, force }: { id: number; name: string; force: boolean }) =>
     deleteBranch(id, name, force),
   onSuccess: () => invalidate(props.repoId),
-  onError: (e) => alert(`delete 실패: ${String(e)}`),
+  onError: (e) => alert(`delete 실패: ${describeError(e)}`),
 })
 
 function onSwitch(b: BranchInfo) {

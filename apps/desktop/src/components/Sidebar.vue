@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { open } from '@tauri-apps/plugin-dialog'
 import { addRepo, bulkFetch, listRepos, listWorkspaces } from '@/api/git'
+import { humanizeGitError } from '@/api/errors'
 import { useReposStore } from '@/stores/repos'
 import type { Repo } from '@/types/git'
 
@@ -41,7 +42,10 @@ const bulkFetchMut = useMutation({
         `일괄 fetch 일부 실패 (${failed.length}/${results.length}):\n` +
           failed
             .slice(0, 5)
-            .map((f) => `- ${f.repoName}: ${(f.error || '').split('\n')[0]}`)
+            .map(
+              (f) =>
+                `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`,
+            )
             .join('\n'),
       )
     }

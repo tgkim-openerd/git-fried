@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { usePullRequests } from '@/composables/usePullRequests'
 import { getPullRequest } from '@/api/git'
+import { describeError } from '@/api/errors'
 import type { PrState, PullRequest } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -75,8 +76,8 @@ function isBot(pr: PullRequest): boolean {
       </div>
     </header>
 
-    <div v-if="error" class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs">
-      {{ String(error) }}
+    <div v-if="error" class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs whitespace-pre-wrap">
+      {{ describeError(error) }}
     </div>
 
     <div class="flex-1 overflow-auto px-2 py-1 text-sm">

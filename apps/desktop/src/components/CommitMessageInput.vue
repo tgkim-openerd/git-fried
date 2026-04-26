@@ -7,6 +7,7 @@
 import { computed, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { aiCommitMessage, aiDetectClis, commit as ipcCommit } from '@/api/git'
+import { describeError } from '@/api/errors'
 import type { AiCli } from '@/api/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import {
@@ -71,7 +72,7 @@ const commitMut = useMutation({
       alert(`commit 실패 (exit ${res.exitCode}):\n${res.stderr}`)
     }
   },
-  onError: (e) => alert(`에러: ${String(e)}`),
+  onError: (e) => alert(`커밋 에러:\n${describeError(e)}`),
 })
 
 function canCommit(): boolean {
@@ -130,8 +131,9 @@ const aiMut = useMutation({
     }
   },
   onError: (e) => {
-    if (String(e).includes('cancelled')) return
-    alert(`AI 호출 실패: ${String(e)}`)
+    const msg = describeError(e)
+    if (msg.includes('cancelled')) return
+    alert(`AI 호출 실패:\n${msg}`)
   },
 })
 </script>

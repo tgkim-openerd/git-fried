@@ -9,6 +9,7 @@ import {
   forgeSaveToken,
   forgeWhoami,
 } from '@/api/git'
+import { describeError } from '@/api/errors'
 import type { ForgeAccount, ForgeAuthor } from '@/api/git'
 
 const qc = useQueryClient()
@@ -38,7 +39,7 @@ const verifyMut = useMutation({
   },
   onError: (e) => {
     verified.value = null
-    verifyError.value = String(e)
+    verifyError.value = describeError(e)
   },
 })
 
@@ -56,7 +57,7 @@ const saveMut = useMutation({
     verified.value = null
     alert('계정 등록 완료')
   },
-  onError: (e) => alert(`등록 실패: ${String(e)}`),
+  onError: (e) => alert(`등록 실패: ${describeError(e)}`),
 })
 
 const deleteMut = useMutation({

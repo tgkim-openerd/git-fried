@@ -2,6 +2,7 @@
 // Push / Pull / Fetch + ahead/behind 표시.
 import { useMutation } from '@tanstack/vue-query'
 import { fetchAll, pull, push } from '@/api/git'
+import { describeError, humanizeGitError } from '@/api/errors'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 
 const props = defineProps<{
@@ -16,14 +17,25 @@ const invalidate = useInvalidateRepoQueries()
 
 const fetchMut = useMutation({
   mutationFn: (id: number) => fetchAll(id),
-  onSuccess: () => invalidate(props.repoId),
+  onSuccess: (res) => {
+    invalidate(props.repoId)
+    if (!res.success)
+      alert(
+        `fetch 실패 (exit ${res.exitCode}):\n${humanizeGitError(res.stderr)}`,
+      )
+  },
+  onError: (e) => alert(`fetch 호출 실패:\n${describeError(e)}`),
 })
 const pullMut = useMutation({
   mutationFn: (id: number) => pull({ repoId: id }),
   onSuccess: (res) => {
     invalidate(props.repoId)
-    if (!res.success) alert(`pull 실패 (exit ${res.exitCode}):\n${res.stderr}`)
+    if (!res.success)
+      alert(
+        `pull 실패 (exit ${res.exitCode}):\n${humanizeGitError(res.stderr)}`,
+      )
   },
+  onError: (e) => alert(`pull 호출 실패:\n${describeError(e)}`),
 })
 const pushMut = useMutation({
   mutationFn: (id: number) =>
@@ -33,8 +45,12 @@ const pushMut = useMutation({
     }),
   onSuccess: (res) => {
     invalidate(props.repoId)
-    if (!res.success) alert(`push 실패 (exit ${res.exitCode}):\n${res.stderr}`)
+    if (!res.success)
+      alert(
+        `push 실패 (exit ${res.exitCode}):\n${humanizeGitError(res.stderr)}`,
+      )
   },
+  onError: (e) => alert(`push 호출 실패:\n${describeError(e)}`),
 })
 
 function onFetch() {
