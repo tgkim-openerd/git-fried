@@ -61,6 +61,14 @@ useShortcut('terminal', () => (terminalOpen.value = !terminalOpen.value))
 const ui = useUiState()
 useShortcut('toggleDetail', ui.toggleDetail)
 
+// Sprint C3 — Section header 더블클릭 maximize.
+// 우측 탭 nav 더블클릭 시 좌측 그래프 일시 숨김 → 그 탭만 fullscreen.
+// 영속화 안 함 (transient — 세션 메모리만).
+const focusMode = ref(false)
+function toggleFocusMode() {
+  focusMode.value = !focusMode.value
+}
+
 // Sprint B5 — ⌘D = 선택 commit 의 diff modal.
 const selectedSha = ref<string | null>(null)
 const diffModalOpen = ref(false)
@@ -101,17 +109,32 @@ onUnmounted(() => {
 
     <div
       class="grid min-h-0 overflow-hidden"
-      :class="ui.detailVisible.value ? 'grid-cols-[1fr_360px]' : 'grid-cols-[1fr_0]'"
+      :class="
+        focusMode
+          ? 'grid-cols-[0_1fr]'
+          : ui.detailVisible.value
+          ? 'grid-cols-[1fr_360px]'
+          : 'grid-cols-[1fr_0]'
+      "
     >
-      <!-- 좌측: 커밋 그래프 + 로그 -->
-      <CommitGraph :repo-id="store.activeRepoId" @select-commit="onSelectCommit" />
+      <!-- 좌측: 커밋 그래프 + 로그 (focusMode 시 숨김) -->
+      <CommitGraph
+        v-if="!focusMode"
+        :repo-id="store.activeRepoId"
+        @select-commit="onSelectCommit"
+      />
+      <div v-else />
 
       <!-- 우측: 탭 (Status / Branches / Stash) + 하단 commit input -->
       <div
-        v-if="ui.detailVisible.value"
+        v-if="ui.detailVisible.value || focusMode"
         class="grid grid-rows-[auto_1fr_auto] overflow-hidden border-l border-border"
       >
-        <nav class="flex border-b border-border bg-card text-xs">
+        <nav
+          class="flex border-b border-border bg-card text-xs"
+          title="더블클릭 = 좌측 그래프 숨김 / 복원"
+          @dblclick="toggleFocusMode"
+        >
           <button
             v-for="t in [
               'status',
@@ -147,6 +170,15 @@ onUnmounted(() => {
                 ? 'PR'
                 : 'WT'
             }}
+          </button>
+          <button
+            v-if="focusMode"
+            type="button"
+            class="px-2 py-1.5 text-amber-500"
+            title="Focus mode 해제 (또는 nav 더블클릭)"
+            @click="toggleFocusMode"
+          >
+            ⛶
           </button>
         </nav>
 
