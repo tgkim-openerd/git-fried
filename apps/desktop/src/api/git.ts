@@ -233,6 +233,43 @@ export const getFileHistory = (
 export const getFileBlame = (repoId: number, path: string): Promise<BlameLine[]> =>
   invoke('get_file_blame', { args: { repoId, path } })
 
+// === Bisect ===
+export type BisectMark = 'good' | 'bad' | 'skip'
+export interface BisectStatus {
+  inProgress: boolean
+  currentSha: string | null
+  good: string[]
+  bad: string[]
+  lastOutput: string
+}
+export const getBisectStatus = (repoId: number): Promise<BisectStatus> =>
+  invoke('bisect_status', { repoId })
+export const bisectStart = (repoId: number): Promise<string> =>
+  invoke('bisect_start', { repoId })
+export const bisectMark = (
+  repoId: number,
+  mark: BisectMark,
+  sha?: string,
+): Promise<string> => invoke('bisect_mark', { args: { repoId, mark, sha } })
+export const bisectReset = (repoId: number): Promise<void> =>
+  invoke('bisect_reset', { repoId })
+
+// === Reflog ===
+export interface ReflogEntry {
+  sha: string
+  shortSha: string
+  refLabel: string
+  action: string
+  subject: string
+  at: number
+}
+export const listReflog = (
+  repoId: number,
+  refName?: string,
+  limit?: number,
+): Promise<ReflogEntry[]> =>
+  invoke('list_reflog', { args: { repoId, refName, limit } })
+
 // === Profiles (개인 ↔ 회사 1-click 토글) ===
 export interface Profile {
   id: number

@@ -4,6 +4,7 @@
 //   - read path: git2-rs (in-process, 빠름) → repository.rs
 //   - heavy/write path: git CLI shell-out (정확함) → runner.rs
 //   - 모든 child process 는 한글 안전 spawn 함수 (runner::git_run) 통과
+pub mod bisect;
 pub mod branch;
 pub mod bulk;
 pub mod cherry_pick;
@@ -12,6 +13,7 @@ pub mod diff;
 pub mod file_history;
 pub mod graph;
 pub mod merge;
+pub mod reflog;
 pub mod repository;
 pub mod reset;
 pub mod runner;

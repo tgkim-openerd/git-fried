@@ -5,6 +5,8 @@ import Sidebar from './components/Sidebar.vue'
 import CommandPalette from './components/CommandPalette.vue'
 import ProfileSwitcher from './components/ProfileSwitcher.vue'
 import SyncTemplateModal from './components/SyncTemplateModal.vue'
+import BisectModal from './components/BisectModal.vue'
+import ReflogModal from './components/ReflogModal.vue'
 import { useTheme } from '@/composables/useTheme'
 import { RouterLink } from 'vue-router'
 
@@ -17,9 +19,18 @@ function openSyncTemplate(sha?: string) {
   syncTemplateInitialSha.value = sha ?? null
   syncTemplateOpen.value = true
 }
-;(
-  window as unknown as { gitFriedOpenSyncTemplate?: typeof openSyncTemplate }
-).gitFriedOpenSyncTemplate = openSyncTemplate
+const bisectOpen = ref(false)
+const reflogOpen = ref(false)
+
+interface GlobalHandles {
+  gitFriedOpenSyncTemplate?: typeof openSyncTemplate
+  gitFriedOpenBisect?: () => void
+  gitFriedOpenReflog?: () => void
+}
+const w = window as unknown as GlobalHandles
+w.gitFriedOpenSyncTemplate = openSyncTemplate
+w.gitFriedOpenBisect = () => (bisectOpen.value = true)
+w.gitFriedOpenReflog = () => (reflogOpen.value = true)
 </script>
 
 <template>
@@ -70,5 +81,7 @@ function openSyncTemplate(sha?: string) {
       :initial-sha="syncTemplateInitialSha"
       @close="syncTemplateOpen = false"
     />
+    <BisectModal :open="bisectOpen" @close="bisectOpen = false" />
+    <ReflogModal :open="reflogOpen" @close="reflogOpen = false" />
   </div>
 </template>

@@ -76,6 +76,26 @@ const allCommands = computed<Cmd[]>(() => {
         if (fn) fn()
       },
     },
+    {
+      id: 'bisect',
+      label: 'Bisect — 잘못된 commit 찾기',
+      hint: 'binary search',
+      action: () => {
+        const fn = (window as unknown as { gitFriedOpenBisect?: () => void })
+          .gitFriedOpenBisect
+        if (fn) fn()
+      },
+    },
+    {
+      id: 'reflog',
+      label: 'Reflog (HEAD) — 잃은 commit 복구',
+      hint: 'reflog viewer',
+      action: () => {
+        const fn = (window as unknown as { gitFriedOpenReflog?: () => void })
+          .gitFriedOpenReflog
+        if (fn) fn()
+      },
+    },
   ]
   return list
 })

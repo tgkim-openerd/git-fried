@@ -3,7 +3,8 @@
 use crate::ai;
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    cherry_pick as git_cp, file_history as git_fh, merge as git_merge, worktree as git_wt,
+    bisect as git_bisect, cherry_pick as git_cp, file_history as git_fh, merge as git_merge,
+    reflog as git_reflog, worktree as git_wt,
 };
 use crate::AppState;
 use serde::Deserialize;
@@ -161,6 +162,73 @@ pub async fn take_side(
 ) -> AppResult<()> {
     let path = repo_path(&state, args.repo_id).await?;
     git_merge::take_side(&path, &args.path, args.side).await
+}
+
+// ====== Bisect ======
+
+#[tauri::command]
+pub async fn bisect_status(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_bisect::BisectStatus> {
+    let path = repo_path(&state, repo_id).await?;
+    git_bisect::status(&path).await
+}
+
+#[tauri::command]
+pub async fn bisect_start(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<String> {
+    let path = repo_path(&state, repo_id).await?;
+    git_bisect::start(&path).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BisectMarkArgs {
+    pub repo_id: i64,
+    pub mark: git_bisect::BisectMark,
+    pub sha: Option<String>,
+}
+
+#[tauri::command]
+pub async fn bisect_mark(
+    args: BisectMarkArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<String> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_bisect::mark(&path, args.mark, args.sha.as_deref()).await
+}
+
+#[tauri::command]
+pub async fn bisect_reset(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_bisect::reset(&path).await
+}
+
+// ====== Reflog ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReflogArgs {
+    pub repo_id: i64,
+    pub ref_name: Option<String>,
+    pub limit: Option<usize>,
+}
+
+#[tauri::command]
+pub async fn list_reflog(
+    args: ReflogArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_reflog::ReflogEntry>> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let ref_name = args.ref_name.as_deref().unwrap_or("HEAD");
+    let limit = args.limit.unwrap_or(200).min(1000);
+    git_reflog::list_reflog(&path, ref_name, limit).await
 }
 
 // ====== File history / Blame ======
