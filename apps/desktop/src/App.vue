@@ -9,10 +9,15 @@ import BisectModal from './components/BisectModal.vue'
 import ReflogModal from './components/ReflogModal.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import RepoSwitcherModal from './components/RepoSwitcherModal.vue'
+import CreatePrModal from './components/CreatePrModal.vue'
+import HelpModal from './components/HelpModal.vue'
 import { useTheme } from '@/composables/useTheme'
+import { useShortcut } from '@/composables/useShortcuts'
+import { useReposStore } from '@/stores/repos'
 import { RouterLink } from 'vue-router'
 
 const { theme, toggle } = useTheme()
+const reposStore = useReposStore()
 
 // Sync-template Modal — Command Palette / 추후 우클릭 메뉴에서 trigger.
 const syncTemplateOpen = ref(false)
@@ -24,6 +29,8 @@ function openSyncTemplate(sha?: string) {
 const bisectOpen = ref(false)
 const reflogOpen = ref(false)
 const repoSwitcherOpen = ref(false)
+const createPrOpen = ref(false)
+const helpOpen = ref(false)
 
 // ⌘⇧P 빠른 레포 전환 단축키 (Command Palette ⌘P 와 다름).
 function onKeydown(e: KeyboardEvent) {
@@ -34,6 +41,12 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 window.addEventListener('keydown', onKeydown)
+
+// 추가 단축키
+useShortcut('newPr', () => {
+  if (reposStore.activeRepoId != null) createPrOpen.value = true
+})
+useShortcut('help', () => (helpOpen.value = true))
 
 interface GlobalHandles {
   gitFriedOpenSyncTemplate?: typeof openSyncTemplate
@@ -100,6 +113,13 @@ w.gitFriedOpenReflog = () => (reflogOpen.value = true)
       :open="repoSwitcherOpen"
       @close="repoSwitcherOpen = false"
     />
+    <CreatePrModal
+      :repo-id="reposStore.activeRepoId"
+      :open="createPrOpen"
+      initial-base="main"
+      @close="createPrOpen = false"
+    />
+    <HelpModal :open="helpOpen" @close="helpOpen = false" />
     <ToastContainer />
   </div>
 </template>

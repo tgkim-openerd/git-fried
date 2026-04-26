@@ -14,7 +14,9 @@ export type ShortcutAction =
   | 'pull'
   | 'push'
   | 'newBranch'
+  | 'newPr'
   | 'commit'
+  | 'help'
   | 'tab1'
   | 'tab2'
   | 'tab3'
@@ -33,11 +35,45 @@ const bus: Bus = {
   handlers: new Map(),
 }
 
+function isInputFocused(): boolean {
+  const el = document.activeElement
+  if (!el) return false
+  const tag = el.tagName.toLowerCase()
+  return (
+    tag === 'input' ||
+    tag === 'textarea' ||
+    tag === 'select' ||
+    (el as HTMLElement).isContentEditable === true
+  )
+}
+
 let installed = false
 function installGlobal() {
   if (installed) return
   installed = true
   window.addEventListener('keydown', (e) => {
+    // `?` 단독 키 — 도움말. input focus 안 됐을 때만.
+    if (
+      e.key === '?' &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !isInputFocused()
+    ) {
+      const set = bus.handlers.get('help')
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      return
+    }
+
     const meta = e.metaKey || e.ctrlKey
     if (!meta) return
     const k = e.key.toLowerCase()
@@ -47,6 +83,7 @@ function installGlobal() {
     else if (k === 'l' && e.shiftKey) action = 'pull'
     else if (k === 'k' && e.shiftKey) action = 'push'
     else if (k === 'b' && !e.shiftKey) action = 'newBranch'
+    else if (k === 'n' && !e.shiftKey) action = 'newPr'
     else if (k === 'enter') action = 'commit'
     else if (e.key === '1') action = 'tab1'
     else if (e.key === '2') action = 'tab2'

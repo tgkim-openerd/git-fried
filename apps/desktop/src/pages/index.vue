@@ -41,6 +41,9 @@ useShortcut('tab4', () => (tab.value = 'submodule'))
 useShortcut('tab5', () => (tab.value = 'lfs'))
 useShortcut('tab6', () => (tab.value = 'pr'))
 useShortcut('tab7', () => (tab.value = 'worktree'))
+
+// ⌘B → 브랜치 탭 (BranchPanel 의 새 브랜치 input 으로 자동 focus 가능)
+useShortcut('newBranch', () => (tab.value = 'branches'))
 </script>
 
 <template>
