@@ -9,6 +9,12 @@ import { useReposStore } from '@/stores/repos'
 import { useQueryClient } from '@tanstack/vue-query'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
+import {
+  useGeneralSettings,
+  useUiSettingsStore,
+} from '@/composables/useUserSettings'
+import { useCustomTheme } from '@/composables/useCustomTheme'
+import { useToast } from '@/composables/useToast'
 
 type Category =
   | 'repo'
@@ -32,6 +38,73 @@ const router = useRouter()
 const store = useReposStore()
 const qc = useQueryClient()
 const ui = useUiState()
+const general = useGeneralSettings()
+const uiSettings = useUiSettingsStore()
+const customTheme = useCustomTheme()
+const toast = useToast()
+
+const AUTO_FETCH_CYCLE = [0, 1, 5, 15] as const
+function cycleAutoFetch() {
+  const cur = general.value.autoFetchIntervalMin
+  const idx = AUTO_FETCH_CYCLE.findIndex((m) => m === cur)
+  const next = AUTO_FETCH_CYCLE[(idx + 1) % AUTO_FETCH_CYCLE.length]
+  general.value = { ...general.value, autoFetchIntervalMin: next }
+  toast.info('Auto-Fetch', next === 0 ? '비활성화' : `${next}분 마다 fetch`)
+}
+
+const DATE_LOCALE_CYCLE = ['auto', 'ko-KR', 'en-US'] as const
+function cycleDateLocale() {
+  const cur = uiSettings.value.dateLocale
+  const idx = DATE_LOCALE_CYCLE.findIndex((m) => m === cur)
+  const next = DATE_LOCALE_CYCLE[(idx + 1) % DATE_LOCALE_CYCLE.length]
+  uiSettings.value = { ...uiSettings.value, dateLocale: next }
+  toast.info('날짜 형식', next === 'auto' ? 'OS 기본' : next)
+}
+
+function toggleAvatarStyle() {
+  const next = uiSettings.value.avatarStyle === 'initial' ? 'gravatar' : 'initial'
+  uiSettings.value = { ...uiSettings.value, avatarStyle: next }
+  toast.info('아바타 스타일', next === 'gravatar' ? 'Gravatar (이메일 md5)' : '이니셜')
+}
+
+function toggleHideLaunchpad() {
+  const next = !uiSettings.value.hideLaunchpad
+  uiSettings.value = { ...uiSettings.value, hideLaunchpad: next }
+  toast.info('Launchpad 메뉴', next ? '숨김' : '표시')
+}
+
+function toggleConflictDetection() {
+  const next = !general.value.conflictDetection
+  general.value = { ...general.value, conflictDetection: next }
+  toast.info('Conflict 예측', next ? '활성' : '비활성')
+}
+
+function toggleAutoUpdateSubmodules() {
+  const next = !general.value.autoUpdateSubmodules
+  general.value = { ...general.value, autoUpdateSubmodules: next }
+  toast.info('Submodule 자동 update', next ? '활성' : '비활성')
+}
+
+function toggleAutoPruneOnFetch() {
+  const next = !general.value.autoPruneOnFetch
+  general.value = { ...general.value, autoPruneOnFetch: next }
+  toast.info('Auto-Prune', next ? 'Fetch 시 함께' : '비활성')
+}
+
+async function copyCustomThemeJson() {
+  const json = customTheme.exportJson()
+  try {
+    await navigator.clipboard.writeText(json)
+    toast.success('Custom theme JSON', '클립보드 복사')
+  } catch {
+    toast.error('복사 실패', '권한 또는 컨텍스트 문제')
+  }
+}
+
+function resetCustomTheme() {
+  customTheme.reset()
+  toast.success('Custom theme', '기본 테마로 복원')
+}
 
 const open = ref(false)
 const filter = ref('')
@@ -121,6 +194,24 @@ const allCommands = computed<Cmd[]>(() => {
       hint: 'navigate /settings',
       action: () => router.push('/settings'),
     },
+    {
+      id: 'repo.auto-fetch',
+      category: 'repo',
+      label: `Auto-Fetch 주기 순환 (현재: ${
+        general.value.autoFetchIntervalMin === 0
+          ? '비활성'
+          : `${general.value.autoFetchIntervalMin}분`
+      })`,
+      hint: 'off → 1m → 5m → 15m',
+      action: cycleAutoFetch,
+    },
+    {
+      id: 'repo.auto-prune',
+      category: 'repo',
+      label: `Auto-Prune ${general.value.autoPruneOnFetch ? '비활성' : '활성'} (Fetch 시 prune)`,
+      hint: 'toggle prune-on-fetch',
+      action: toggleAutoPruneOnFetch,
+    },
 
     // ===== Branch (5) =====
     {
@@ -157,6 +248,20 @@ const allCommands = computed<Cmd[]>(() => {
       label: 'Bisect — 잘못된 commit 찾기',
       hint: 'binary search',
       action: callWindow('gitFriedOpenBisect'),
+    },
+    {
+      id: 'branch.conflict-detection',
+      category: 'branch',
+      label: `Conflict 예측 ${general.value.conflictDetection ? '비활성' : '활성'}`,
+      hint: 'StatusBar ⚠ toggle',
+      action: toggleConflictDetection,
+    },
+    {
+      id: 'branch.submodule-auto-update',
+      category: 'branch',
+      label: `Submodule 자동 update ${general.value.autoUpdateSubmodules ? '비활성' : '활성'}`,
+      hint: 'pull 후 자동 update',
+      action: toggleAutoUpdateSubmodules,
     },
 
     // ===== File / Stage (5) =====
@@ -258,6 +363,47 @@ const allCommands = computed<Cmd[]>(() => {
       label: '선택 commit diff 모달',
       hint: '⌘D',
       action: trigger('showDiff'),
+    },
+    {
+      id: 'view.date-locale',
+      category: 'view',
+      label: `날짜 형식 순환 (현재: ${
+        uiSettings.value.dateLocale === 'auto'
+          ? 'OS 기본'
+          : uiSettings.value.dateLocale
+      })`,
+      hint: 'auto → ko-KR → en-US',
+      action: cycleDateLocale,
+    },
+    {
+      id: 'view.avatar-style',
+      category: 'view',
+      label: `아바타 스타일 토글 (현재: ${
+        uiSettings.value.avatarStyle === 'initial' ? '이니셜' : 'Gravatar'
+      })`,
+      hint: 'initial ↔ gravatar',
+      action: toggleAvatarStyle,
+    },
+    {
+      id: 'view.hide-launchpad',
+      category: 'view',
+      label: `Launchpad 메뉴 ${uiSettings.value.hideLaunchpad ? '표시' : '숨김'}`,
+      hint: 'hide-launchpad toggle',
+      action: toggleHideLaunchpad,
+    },
+    {
+      id: 'view.theme.copy-json',
+      category: 'view',
+      label: 'Custom theme JSON 복사 (현재 vars)',
+      hint: 'clipboard.writeText',
+      action: copyCustomThemeJson,
+    },
+    {
+      id: 'view.theme.reset',
+      category: 'view',
+      label: 'Custom theme 초기화 (기본 테마 복원)',
+      hint: 'reset',
+      action: resetCustomTheme,
     },
 
     // ===== Stash (1) =====
