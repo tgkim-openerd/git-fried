@@ -19,6 +19,12 @@ import { useToast } from '@/composables/useToast'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
 import HunkStageModal from './HunkStageModal.vue'
+import { useSectionCollapse } from '@/composables/useSectionCollapse'
+
+const collapsedStaged = useSectionCollapse('status.staged')
+const collapsedUnstaged = useSectionCollapse('status.unstaged')
+const collapsedUntracked = useSectionCollapse('status.untracked')
+const collapsedConflicted = useSectionCollapse('status.conflicted')
 import type { ChangeStatus, FileChange } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -248,12 +254,17 @@ const isSelected = computed(
     <div v-else class="flex-1 overflow-auto px-2 py-2 text-sm">
       <!-- Staged -->
       <div v-if="status && status.staged.length > 0" class="mb-3">
-        <div class="mb-1 flex items-center justify-between">
+        <div
+          class="mb-1 flex cursor-pointer select-none items-center justify-between"
+          title="우클릭 = 섹션 접기/펴기"
+          @contextmenu.prevent="collapsedStaged = !collapsedStaged"
+          @click="collapsedStaged = !collapsedStaged"
+        >
           <span class="text-xs uppercase tracking-wider text-muted-foreground">
-            Staged ({{ status.staged.length }})
+            {{ collapsedStaged ? '▶' : '▼' }} Staged ({{ status.staged.length }})
           </span>
         </div>
-        <ul>
+        <ul v-if="!collapsedStaged">
           <FileRow
             v-for="f in status.staged"
             :key="`s-${f.path}`"
@@ -282,19 +293,26 @@ const isSelected = computed(
 
       <!-- Unstaged -->
       <div v-if="status && status.unstaged.length > 0" class="mb-3">
-        <div class="mb-1 flex items-center justify-between">
-          <span class="text-xs uppercase tracking-wider text-muted-foreground">
-            Modified ({{ status.unstaged.length }})
+        <div
+          class="mb-1 flex cursor-pointer select-none items-center justify-between"
+          title="우클릭 = 섹션 접기/펴기"
+          @contextmenu.prevent="collapsedUnstaged = !collapsedUnstaged"
+        >
+          <span
+            class="text-xs uppercase tracking-wider text-muted-foreground"
+            @click="collapsedUnstaged = !collapsedUnstaged"
+          >
+            {{ collapsedUnstaged ? '▶' : '▼' }} Modified ({{ status.unstaged.length }})
           </span>
           <button
             type="button"
             class="text-xs text-muted-foreground hover:text-foreground"
-            @click="onStageAll"
+            @click.stop="onStageAll"
           >
             모두 stage
           </button>
         </div>
-        <ul>
+        <ul v-if="!collapsedUnstaged">
           <li
             v-for="f in status.unstaged"
             :key="`u-${f.path}`"
@@ -344,12 +362,17 @@ const isSelected = computed(
 
       <!-- Untracked -->
       <div v-if="status && status.untracked.length > 0" class="mb-3">
-        <div class="mb-1 flex items-center justify-between">
+        <div
+          class="mb-1 flex cursor-pointer select-none items-center justify-between"
+          title="우클릭 = 섹션 접기/펴기"
+          @contextmenu.prevent="collapsedUntracked = !collapsedUntracked"
+          @click="collapsedUntracked = !collapsedUntracked"
+        >
           <span class="text-xs uppercase tracking-wider text-muted-foreground">
-            Untracked ({{ status.untracked.length }})
+            {{ collapsedUntracked ? '▶' : '▼' }} Untracked ({{ status.untracked.length }})
           </span>
         </div>
-        <ul>
+        <ul v-if="!collapsedUntracked">
           <li
             v-for="p in status.untracked"
             :key="`n-${p}`"
@@ -374,10 +397,15 @@ const isSelected = computed(
 
       <!-- Conflicted -->
       <div v-if="status && status.conflicted.length > 0" class="mb-3">
-        <div class="mb-1 text-xs uppercase tracking-wider text-destructive">
-          Conflicted ({{ status.conflicted.length }})
+        <div
+          class="mb-1 cursor-pointer select-none text-xs uppercase tracking-wider text-destructive"
+          title="우클릭 = 섹션 접기/펴기"
+          @contextmenu.prevent="collapsedConflicted = !collapsedConflicted"
+          @click="collapsedConflicted = !collapsedConflicted"
+        >
+          {{ collapsedConflicted ? '▶' : '▼' }} Conflicted ({{ status.conflicted.length }})
         </div>
-        <ul>
+        <ul v-if="!collapsedConflicted">
           <li
             v-for="p in status.conflicted"
             :key="`c-${p}`"

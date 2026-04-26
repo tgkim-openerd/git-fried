@@ -5,6 +5,9 @@ import { useMutation } from '@tanstack/vue-query'
 import { useStash } from '@/composables/useStash'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { clearWipNote, useWipNote } from '@/composables/useWipNote'
+import { useSectionCollapse } from '@/composables/useSectionCollapse'
+
+const collapsedNew = useSectionCollapse('stash.new')
 import {
   aiStashMessage,
   applyStash,
@@ -116,12 +119,27 @@ const aiMut = useMutation({
 
 <template>
   <section class="flex h-full flex-col border-l border-border bg-card">
-    <header class="border-b border-border px-3 py-2">
-      <h3 class="text-sm font-semibold">Stash</h3>
+    <header
+      class="cursor-pointer select-none border-b border-border px-3 py-2"
+      title="우클릭 = 새 stash 폼 접기/펴기"
+      @contextmenu.prevent="collapsedNew = !collapsedNew"
+    >
+      <h3 class="text-sm font-semibold">
+        Stash
+        <span
+          v-if="collapsedNew"
+          class="ml-1 text-[10px] font-normal text-muted-foreground"
+        >
+          (새 stash 폼 접힘 — 우클릭으로 펴기)
+        </span>
+      </h3>
     </header>
 
     <!-- 새 stash -->
-    <div class="flex flex-col gap-1 border-b border-border px-3 py-2">
+    <div
+      v-if="!collapsedNew"
+      class="flex flex-col gap-1 border-b border-border px-3 py-2"
+    >
       <div class="flex gap-1">
         <input
           v-model="newMessage"
