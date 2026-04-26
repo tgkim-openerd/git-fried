@@ -10,7 +10,7 @@ import CommitMessageInput from '@/components/CommitMessageInput.vue'
 import BranchPanel from '@/components/BranchPanel.vue'
 import StashPanel from '@/components/StashPanel.vue'
 import SubmodulePanel from '@/components/SubmodulePanel.vue'
-import PrPanel from '@/components/PrPanel.vue'
+import ForgePanel from '@/components/ForgePanel.vue'
 import WorktreePanel from '@/components/WorktreePanel.vue'
 
 const store = useReposStore()
@@ -82,7 +82,7 @@ const tab = ref<Tab>('status')
           <BranchPanel v-else-if="tab === 'branches'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
           <StashPanel v-else-if="tab === 'stash'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
           <SubmodulePanel v-else-if="tab === 'submodule'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
-          <PrPanel v-else-if="tab === 'pr'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
+          <ForgePanel v-else-if="tab === 'pr'" :repo-id="store.activeRepoId" class="h-full" />
           <WorktreePanel v-else :repo-id="store.activeRepoId" class="h-full border-l-0" />
         </div>
 

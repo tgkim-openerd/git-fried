@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // PR 패널 — 현재 레포의 PR 목록 (Gitea / GitHub) + 상세 read-only.
-// v0.1 S5: list + detail. PR 코멘트 / 리뷰는 v1.0.
+// v0.3 단계: 봇 PR 그룹핑 (release-please / dependabot / renovate) — collapsible.
 import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { usePullRequests } from '@/composables/usePullRequests'
@@ -47,13 +47,36 @@ function isBot(pr: PullRequest): boolean {
     u.endsWith('[bot]') ||
     u === 'release-please' ||
     u === 'dependabot' ||
-    u === 'renovate'
+    u === 'renovate' ||
+    u === 'github-actions' ||
+    u.includes('bot')
   )
+}
+
+// 사용자 vs 봇 분리
+const humanPrs = computed(() => (prs.value ?? []).filter((p) => !isBot(p)))
+const botPrs = computed(() => (prs.value ?? []).filter((p) => isBot(p)))
+
+// 봇 PR 별 그룹 (author 기준)
+const botGroups = computed(() => {
+  const groups = new Map<string, PullRequest[]>()
+  for (const p of botPrs.value) {
+    const key = p.author.username
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key)!.push(p)
+  }
+  return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+})
+
+// 그룹별 펼침 상태
+const expandedBots = ref<Record<string, boolean>>({})
+function toggleBot(name: string) {
+  expandedBots.value[name] = !expandedBots.value[name]
 }
 </script>
 
 <template>
-  <section class="flex h-full flex-col border-l border-border bg-card">
+  <div class="flex h-full flex-col">
     <header class="border-b border-border px-3 py-2">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-semibold">Pull Requests</h3>
@@ -76,16 +99,20 @@ function isBot(pr: PullRequest): boolean {
       </div>
     </header>
 
-    <div v-if="error" class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs whitespace-pre-wrap">
+    <div
+      v-if="error"
+      class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs whitespace-pre-wrap"
+    >
       {{ describeError(error) }}
     </div>
 
     <div class="flex-1 overflow-auto px-2 py-1 text-sm">
       <div v-if="isFetching" class="px-2 py-3 text-xs text-muted-foreground">불러오는 중...</div>
 
-      <ul>
+      <!-- 사람이 만든 PR -->
+      <ul v-if="humanPrs.length">
         <li
-          v-for="pr in prs"
+          v-for="pr in humanPrs"
           :key="pr.number"
           class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
           :class="selectedNumber === pr.number ? 'bg-accent' : ''"
@@ -93,14 +120,9 @@ function isBot(pr: PullRequest): boolean {
         >
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs text-muted-foreground">#{{ pr.number }}</span>
-            <span :class="['text-[10px] uppercase', stateColor(pr.state)]">
-              {{ pr.state }}
-            </span>
+            <span :class="['text-[10px] uppercase', stateColor(pr.state)]">{{ pr.state }}</span>
           </div>
-          <div class="truncate text-sm">
-            <span v-if="isBot(pr)" class="text-[10px] text-muted-foreground">🤖 </span>
-            {{ pr.title }}
-          </div>
+          <div class="truncate text-sm">{{ pr.title }}</div>
           <div class="flex items-center justify-between text-[11px] text-muted-foreground">
             <span>{{ pr.author.username }}</span>
             <span>{{ pr.headBranch }} → {{ pr.baseBranch }}</span>
@@ -110,25 +132,55 @@ function isBot(pr: PullRequest): boolean {
               v-for="l in pr.labels"
               :key="l.name"
               class="rounded px-1 py-0.5 text-[10px]"
-              :style="{
-                backgroundColor: l.color + '33',
-                color: l.color,
-              }"
+              :style="{ backgroundColor: l.color + '33', color: l.color }"
             >
               {{ l.name }}
             </span>
           </div>
         </li>
-        <li
-          v-if="prs && prs.length === 0 && !isFetching"
-          class="px-2 py-3 text-center text-xs text-muted-foreground"
-        >
-          PR 없음
-        </li>
       </ul>
+
+      <!-- 봇 PR 그룹 -->
+      <div v-if="botGroups.length" class="mt-2">
+        <div
+          v-for="[name, list] in botGroups"
+          :key="name"
+          class="border-t border-border/50"
+        >
+          <button
+            type="button"
+            class="flex w-full items-center justify-between px-2 py-1 text-xs text-muted-foreground hover:bg-accent/40"
+            @click="toggleBot(name)"
+          >
+            <span>
+              <span class="mr-1">{{ expandedBots[name] ? '▾' : '▸' }}</span>
+              🤖 {{ name }} <span class="text-[10px]">({{ list.length }})</span>
+            </span>
+          </button>
+          <ul v-if="expandedBots[name]">
+            <li
+              v-for="pr in list"
+              :key="pr.number"
+              class="cursor-pointer rounded px-4 py-1 text-xs hover:bg-accent/40"
+              :class="selectedNumber === pr.number ? 'bg-accent' : ''"
+              @click="selectedNumber = pr.number"
+            >
+              <span class="font-mono text-[10px] text-muted-foreground">#{{ pr.number }}</span>
+              <span class="ml-2 truncate">{{ pr.title }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div
+        v-if="prs && prs.length === 0 && !isFetching"
+        class="px-2 py-3 text-center text-xs text-muted-foreground"
+      >
+        PR 없음
+      </div>
     </div>
 
-    <!-- 상세 (선택 시) -->
+    <!-- 상세 -->
     <div
       v-if="detail"
       class="max-h-72 overflow-auto border-t border-border bg-muted/20 p-3 text-xs"
@@ -146,5 +198,5 @@ function isBot(pr: PullRequest): boolean {
       </div>
       <pre class="whitespace-pre-wrap font-mono text-[11px]">{{ detail.bodyMd || '(본문 없음)' }}</pre>
     </div>
-  </section>
+  </div>
 </template>
