@@ -16,6 +16,7 @@ import WorktreePanel from '@/components/WorktreePanel.vue'
 import InteractiveRebaseModal from '@/components/InteractiveRebaseModal.vue'
 import TerminalPanel from '@/components/TerminalPanel.vue'
 import CommitDiffModal from '@/components/CommitDiffModal.vue'
+import WipBanner from '@/components/WipBanner.vue'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
 import { useTabPerProfile } from '@/composables/useTabPerProfile'
@@ -97,7 +98,7 @@ onUnmounted(() => {
 <template>
   <div
     class="grid h-full overflow-hidden"
-    :class="terminalOpen ? 'grid-rows-[auto_minmax(0,1fr)_minmax(140px,30%)]' : 'grid-rows-[auto_1fr]'"
+    :class="terminalOpen ? 'grid-rows-[auto_auto_minmax(0,1fr)_minmax(140px,30%)]' : 'grid-rows-[auto_auto_1fr]'"
   >
     <SyncBar
       :repo-id="store.activeRepoId"
@@ -106,6 +107,7 @@ onUnmounted(() => {
       :ahead="ahead"
       :behind="behind"
     />
+    <WipBanner :repo-id="store.activeRepoId" />
 
     <div
       class="grid min-h-0 overflow-hidden"

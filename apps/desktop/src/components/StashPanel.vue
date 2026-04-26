@@ -1,9 +1,10 @@
 <script setup lang="ts">
 // Stash 매니저 — list / push / apply / pop / drop / show diff.
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useStash } from '@/composables/useStash'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { clearWipNote, useWipNote } from '@/composables/useWipNote'
 import {
   aiStashMessage,
   applyStash,
@@ -28,6 +29,17 @@ const includeUntracked = ref(false)
 const previewText = ref<string | null>(null)
 const previewIndex = ref<number | null>(null)
 
+// Sprint J — WIP 노트 prefill: 빈 입력 + repo 변경 시 wipNote 값으로 채움.
+watch(
+  () => props.repoId,
+  (id) => {
+    if (id == null) return
+    const wip = useWipNote(id)
+    if (!newMessage.value && wip.value) newMessage.value = wip.value
+  },
+  { immediate: true },
+)
+
 const pushMut = useMutation({
   mutationFn: () => {
     if (props.repoId == null) return Promise.reject(new Error('no repo'))
@@ -39,6 +51,8 @@ const pushMut = useMutation({
   },
   onSuccess: () => {
     newMessage.value = ''
+    // Sprint J — stash 로 옮겨진 WIP 의도 → 그래프 상단 노트 클리어.
+    if (props.repoId != null) clearWipNote(props.repoId)
     invalidate(props.repoId)
   },
   onError: (e) => toast.error('Stash push 실패', describeError(e)),
