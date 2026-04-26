@@ -206,3 +206,20 @@ export function useShortcut(action: ShortcutAction, handler: Handler) {
     if (set) set.delete(handler)
   })
 }
+
+/**
+ * 등록된 모든 핸들러 즉시 호출 (Command Palette 가 사용).
+ * 키보드 이벤트 우회 — 등록된 핸들러가 0 개면 no-op.
+ */
+export function dispatchShortcut(action: ShortcutAction): boolean {
+  const set = bus.handlers.get(action)
+  if (!set || set.size === 0) return false
+  for (const fn of set) {
+    try {
+      fn()
+    } catch {
+      /* ignore */
+    }
+  }
+  return true
+}
