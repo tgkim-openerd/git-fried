@@ -6,9 +6,15 @@
 // → 디폴트 빌더 모드, 자유 입력 토글 가능.
 import { computed, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { aiCommitMessage, aiDetectClis, commit as ipcCommit } from '@/api/git'
+import {
+  aiCommitMessage,
+  aiDetectClis,
+  commit as ipcCommit,
+  stageAll as apiStageAll,
+} from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { useShortcut } from '@/composables/useShortcuts'
 import type { AiCli } from '@/api/git'
 import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -158,6 +164,33 @@ const aiMut = useMutation({
     toast.error('AI 호출 실패', msg)
   },
 })
+
+// Sprint B5 — ⌘⇧Enter (stage all + commit) / ⌘⇧M (focus message).
+const subjectRef = ref<HTMLInputElement | null>(null)
+const freeRef = ref<HTMLTextAreaElement | null>(null)
+
+useShortcut('focusMessage', () => {
+  if (mode.value === 'free') {
+    freeRef.value?.focus()
+  } else {
+    subjectRef.value?.focus()
+  }
+})
+
+useShortcut('stageAndCommit', async () => {
+  if (props.repoId == null) return
+  if (!canCommit()) {
+    toast.error('커밋 불가', '메시지가 비어있거나 레포 미선택')
+    return
+  }
+  try {
+    await apiStageAll(props.repoId)
+    invalidate(props.repoId)
+    commitMut.mutate({ noVerify: noVerify.value })
+  } catch (e) {
+    toast.error('Stage all 실패', describeError(e))
+  }
+})
 </script>
 
 <template>
@@ -206,6 +239,7 @@ const aiMut = useMutation({
         </label>
       </div>
       <input
+        ref="subjectRef"
         v-model="subject"
         placeholder="subject (한글 OK)"
         class="rounded-md border border-input bg-background px-2 py-1 text-sm"
@@ -232,6 +266,7 @@ const aiMut = useMutation({
     <!-- Free 모드 -->
     <template v-else>
       <textarea
+        ref="freeRef"
         v-model="freeMessage"
         placeholder="커밋 메시지 (자유 형식)"
         rows="6"

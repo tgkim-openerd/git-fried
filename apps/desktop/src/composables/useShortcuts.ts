@@ -33,6 +33,20 @@ export type ShortcutAction =
   | 'vimLeft' // H — Escape (선택 해제)
   | 'stageCurrent' // S — StatusPanel 의 selected 파일 stage
   | 'unstageCurrent' // U — selected 파일 unstage
+  // Sprint B5 — 단축키 12+ (`docs/plan/11 §27`).
+  | 'stageAllExplicit' // ⌘⇧S
+  | 'unstageAll' // ⌘⇧U
+  | 'stageAndCommit' // ⌘⇧Enter
+  | 'focusMessage' // ⌘⇧M
+  | 'showDiff' // ⌘D — 선택 commit diff
+  | 'closeModal' // ⌘W — 활성 모달 닫기
+  | 'zoomIn' // ⌘=
+  | 'zoomOut' // ⌘-
+  | 'zoomReset' // ⌘0
+  | 'toggleSidebar' // ⌘J
+  | 'toggleDetail' // ⌘K
+  | 'fileHistorySearch' // ⌘⇧H
+  | 'newTab' // ⌘T — Repo Switcher (⌘⇧P alias)
 
 type Handler = () => void
 
@@ -139,6 +153,7 @@ function installGlobal() {
     else if (k === 'k' && e.shiftKey) action = 'push'
     else if (k === 'b' && !e.shiftKey) action = 'newBranch'
     else if (k === 'n' && !e.shiftKey) action = 'newPr'
+    else if (k === 'enter' && e.shiftKey) action = 'stageAndCommit'
     else if (k === 'enter') action = 'commit'
     else if (e.key === '`' || e.code === 'Backquote') action = 'terminal'
     else if (e.key === '1') action = 'tab1'
@@ -148,6 +163,19 @@ function installGlobal() {
     else if (e.key === '5') action = 'tab5'
     else if (e.key === '6') action = 'tab6'
     else if (e.key === '7') action = 'tab7'
+    // Sprint B5 — 단축키 12+
+    else if (k === 's' && e.shiftKey) action = 'stageAllExplicit'
+    else if (k === 'u' && e.shiftKey) action = 'unstageAll'
+    else if (k === 'm' && e.shiftKey) action = 'focusMessage'
+    else if (k === 'h' && e.shiftKey) action = 'fileHistorySearch'
+    else if (k === 'd' && !e.shiftKey) action = 'showDiff'
+    else if (k === 'w' && !e.shiftKey) action = 'closeModal'
+    else if (k === 'j' && !e.shiftKey) action = 'toggleSidebar'
+    else if (k === 'k' && !e.shiftKey) action = 'toggleDetail'
+    else if (k === 't' && !e.shiftKey) action = 'newTab'
+    else if ((e.key === '=' || e.key === '+') && !e.altKey) action = 'zoomIn'
+    else if (e.key === '-' && !e.altKey) action = 'zoomOut'
+    else if (e.key === '0' && !e.altKey) action = 'zoomReset'
 
     if (!action) return
     const set = bus.handlers.get(action)

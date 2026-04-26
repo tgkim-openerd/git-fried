@@ -160,6 +160,28 @@ useShortcut('unstageCurrent', () => {
   unstageMut.mutate({ id: props.repoId, paths: [target] })
 })
 
+// Sprint B5 — ⌘⇧S / ⌘⇧U 일괄, ⌘⇧H 첫 unstaged 의 file history.
+useShortcut('stageAllExplicit', () => {
+  if (props.repoId != null) stageAllMut.mutate(props.repoId)
+})
+
+useShortcut('unstageAll', () => {
+  if (props.repoId == null) return
+  const paths = (status.value?.staged ?? []).map((f) => f.path)
+  if (paths.length === 0) return
+  unstageMut.mutate({ id: props.repoId, paths })
+})
+
+useShortcut('fileHistorySearch', () => {
+  // 현재 selected 또는 첫 번째 unstaged/staged 의 history.
+  const target =
+    selectedPath.value ??
+    status.value?.unstaged[0]?.path ??
+    status.value?.staged[0]?.path ??
+    null
+  if (target) openHistory(target)
+})
+
 function selectPath(path: string) {
   selectedPath.value = selectedPath.value === path ? null : path
 }

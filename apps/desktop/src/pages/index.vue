@@ -15,7 +15,9 @@ import ForgePanel from '@/components/ForgePanel.vue'
 import WorktreePanel from '@/components/WorktreePanel.vue'
 import InteractiveRebaseModal from '@/components/InteractiveRebaseModal.vue'
 import TerminalPanel from '@/components/TerminalPanel.vue'
+import CommitDiffModal from '@/components/CommitDiffModal.vue'
 import { useShortcut } from '@/composables/useShortcuts'
+import { useUiState } from '@/composables/useUiState'
 
 const store = useReposStore()
 const { data: status } = useStatus(() => store.activeRepoId)
@@ -51,6 +53,20 @@ useShortcut('tab7', () => (tab.value = 'worktree'))
 useShortcut('newBranch', () => (tab.value = 'branches'))
 useShortcut('terminal', () => (terminalOpen.value = !terminalOpen.value))
 
+// Sprint B5 — ⌘K = 우측 detail 패널 토글
+const ui = useUiState()
+useShortcut('toggleDetail', ui.toggleDetail)
+
+// Sprint B5 — ⌘D = 선택 commit 의 diff modal.
+const selectedSha = ref<string | null>(null)
+const diffModalOpen = ref(false)
+function onSelectCommit(sha: string) {
+  selectedSha.value = sha
+}
+useShortcut('showDiff', () => {
+  if (selectedSha.value) diffModalOpen.value = true
+})
+
 // CommandPalette 에서 호출되는 외부 트리거.
 function externalToggleTerminal() {
   terminalOpen.value = !terminalOpen.value
@@ -79,12 +95,18 @@ onUnmounted(() => {
       :behind="behind"
     />
 
-    <div class="grid min-h-0 grid-cols-[1fr_360px] overflow-hidden">
+    <div
+      class="grid min-h-0 overflow-hidden"
+      :class="ui.detailVisible.value ? 'grid-cols-[1fr_360px]' : 'grid-cols-[1fr_0]'"
+    >
       <!-- 좌측: 커밋 그래프 + 로그 -->
-      <CommitGraph :repo-id="store.activeRepoId" />
+      <CommitGraph :repo-id="store.activeRepoId" @select-commit="onSelectCommit" />
 
       <!-- 우측: 탭 (Status / Branches / Stash) + 하단 commit input -->
-      <div class="grid grid-rows-[auto_1fr_auto] overflow-hidden border-l border-border">
+      <div
+        v-if="ui.detailVisible.value"
+        class="grid grid-rows-[auto_1fr_auto] overflow-hidden border-l border-border"
+      >
         <nav class="flex border-b border-border bg-card text-xs">
           <button
             v-for="t in [
@@ -150,5 +172,11 @@ onUnmounted(() => {
     />
 
     <InteractiveRebaseModal />
+    <CommitDiffModal
+      :repo-id="store.activeRepoId"
+      :sha="selectedSha"
+      :open="diffModalOpen"
+      @close="diffModalOpen = false"
+    />
   </div>
 </template>

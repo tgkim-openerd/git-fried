@@ -35,8 +35,26 @@ const groups: Group[] = [
     title: '편집',
     items: [
       { keys: '⌘Enter', desc: 'Commit (입력창에서)' },
+      { keys: '⌘⇧Enter', desc: 'Stage all + Commit' },
+      { keys: '⌘⇧S', desc: '모두 stage' },
+      { keys: '⌘⇧U', desc: '모두 unstage' },
+      { keys: '⌘⇧M', desc: '메시지 입력창 focus' },
       { keys: '⌘N', desc: '새 PR 모달' },
       { keys: '⌘B', desc: 'Branch 탭으로 이동' },
+      { keys: '⌘D', desc: '선택 commit diff 모달' },
+      { keys: '⌘⇧H', desc: 'File history (현재 파일)' },
+    ],
+  },
+  {
+    title: '레이아웃 / Zoom',
+    items: [
+      { keys: '⌘J', desc: '좌측 사이드바 토글' },
+      { keys: '⌘K', desc: '우측 패널 (변경/브랜치/...) 토글' },
+      { keys: '⌘=', desc: 'Zoom in' },
+      { keys: '⌘-', desc: 'Zoom out' },
+      { keys: '⌘0', desc: 'Zoom reset' },
+      { keys: '⌘W', desc: '활성 모달 닫기' },
+      { keys: '⌘T', desc: 'Repo 빠른 전환 (⌘⇧P alias)' },
     ],
   },
   {

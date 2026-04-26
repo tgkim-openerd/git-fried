@@ -9,8 +9,11 @@
 
 - [docs/plan/09-interactive-rebase.md](docs/plan/09-interactive-rebase.md) — 3개 기술 옵션 + sprint 4개 + 사용자 결정 4가지
 - [docs/plan/10-integrated-terminal.md](docs/plan/10-integrated-terminal.md) — 2개 기술 옵션 + sprint 4개 + 사용자 결정 4가지
+- [docs/plan/11-gitkraken-benchmark.md](docs/plan/11-gitkraken-benchmark.md) — **GitKraken 12.0 UI/UX 완전 분해 + 흡수 catalog (P0/P1/P2 우선순위 + 거부 항목)**
+- [docs/plan/12-ui-improvement-plan.md](docs/plan/12-ui-improvement-plan.md) — **Sprint A (P0 4개) + Sprint B (P1 10개) 의 정밀 diff + 시간 단위 작업계획 + IPC 33개 + migration 5~7개 + 의존성 그래프 + 진입 시퀀스 옵션 1/2/3** (★ patch v2 2026-04-26 — A1 backend 다른 세션 완료 반영. 실제 테이블 `repo_ref_hidden`, Solo=메모리, IPC 6개 in `hide_commands.rs`, migration 번호 -3 shift)
 
-다음 세션 시작 시 위 두 문서 읽고 결정 답변 주시면 즉시 sprint 1 자동 진입.
+다음 세션 시작 시 위 네 문서 읽고 결정 답변 주시면 즉시 sprint 1 자동 진입.
+권장: `12-ui-improvement-plan.md §12` 의 **옵션 2 (Sprint A P0 3개, 3일) + 09 sprint 1 병행** — 사용자 매일 체감 + Interactive rebase MVP 동시 진행.
 
 **시작 메시지 형식**:
 ```text

@@ -13,11 +13,13 @@ import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useShortcut } from '@/composables/useShortcuts'
+import { useUiState } from '@/composables/useUiState'
 import { useReposStore } from '@/stores/repos'
 import { RouterLink } from 'vue-router'
 
 const { theme, toggle } = useTheme()
 const reposStore = useReposStore()
+const ui = useUiState()
 
 // Sync-template Modal — Command Palette / 추후 우클릭 메뉴에서 trigger.
 const syncTemplateOpen = ref(false)
@@ -48,6 +50,29 @@ useShortcut('newPr', () => {
 })
 useShortcut('help', () => (helpOpen.value = true))
 
+// Sprint B5 — UI 단축키
+useShortcut('zoomIn', ui.zoomIn)
+useShortcut('zoomOut', ui.zoomOut)
+useShortcut('zoomReset', ui.zoomReset)
+useShortcut('toggleSidebar', ui.toggleSidebar)
+useShortcut('newTab', () => {
+  // ⌘T = Repo Switcher (⌘⇧P alias)
+  repoSwitcherOpen.value = !repoSwitcherOpen.value
+})
+
+// 활성 모달들 — ⌘W 로 일괄 닫기.
+function closeAllModals() {
+  syncTemplateOpen.value = false
+  bisectOpen.value = false
+  reflogOpen.value = false
+  repoSwitcherOpen.value = false
+  createPrOpen.value = false
+  helpOpen.value = false
+  // 외부 등록된 modal trigger 들도 close — 각자 자체 ESC 핸들링.
+  // 여기서는 우리가 관리하는 6개만 처리.
+}
+useShortcut('closeModal', closeAllModals)
+
 interface GlobalHandles {
   gitFriedOpenSyncTemplate?: typeof openSyncTemplate
   gitFriedOpenBisect?: () => void
@@ -60,8 +85,12 @@ w.gitFriedOpenReflog = () => (reflogOpen.value = true)
 </script>
 
 <template>
-  <div class="grid h-screen grid-cols-[280px_1fr] overflow-hidden">
-    <Sidebar />
+  <div
+    class="grid h-screen overflow-hidden"
+    :class="ui.sidebarVisible.value ? 'grid-cols-[280px_1fr]' : 'grid-cols-[0_1fr]'"
+  >
+    <Sidebar v-if="ui.sidebarVisible.value" />
+    <div v-else />
     <main class="flex flex-col overflow-hidden">
       <!-- 상단 헤더 — Profiles / Home / Settings / Theme -->
       <div
