@@ -1,7 +1,22 @@
 # REVIEW — git-fried 진행 현황
 
-작성: 2026-04-26 (단일 세션, 누적 **32 commits**, ~20,400 lines)
+작성: 2026-04-26 (단일 세션, 누적 **34 commits**, ~21,200 lines)
 대상: tgkim — 시간 될 때 dogfood + 다음 sprint 결정
+
+---
+
+## 다음 세션 준비 문서 (★)
+
+- [docs/plan/09-interactive-rebase.md](docs/plan/09-interactive-rebase.md) — 3개 기술 옵션 + sprint 4개 + 사용자 결정 4가지
+- [docs/plan/10-integrated-terminal.md](docs/plan/10-integrated-terminal.md) — 2개 기술 옵션 + sprint 4개 + 사용자 결정 4가지
+
+다음 세션 시작 시 위 두 문서 읽고 결정 답변 주시면 즉시 sprint 1 자동 진입.
+
+**시작 메시지 형식**:
+```text
+"docs/plan/09 의 옵션 A 로 진행. MVP=drop+reword+squash. drag-drop=vue-draggable-plus."
+"docs/plan/10 의 옵션 A 로 진행. shell=pwsh.exe, 위치=하단 split, ⌘\` 단축키."
+```
 
 ---
 
