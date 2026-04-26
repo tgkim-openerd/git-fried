@@ -12,6 +12,7 @@ import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import { useDiffMode, DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import AiResultModal from './AiResultModal.vue'
 import DiffViewer from './DiffViewer.vue'
+import DiffSplitView from './DiffSplitView.vue'
 
 const props = defineProps<{
   repoId: number | null
@@ -87,7 +88,7 @@ function explain() {
   explainMut.mutate()
 }
 
-const MODES: DiffMode[] = ['compact', 'default', 'context']
+const MODES: DiffMode[] = ['compact', 'default', 'context', 'split']
 </script>
 
 <template>
@@ -124,7 +125,9 @@ const MODES: DiffMode[] = ['compact', 'default', 'context']
                     ? '변경 라인만 (-U0)'
                     : m === 'default'
                     ? '기본 컨텍스트 3 라인 (-U3)'
-                    : '확장 컨텍스트 25 라인 (-U25)'
+                    : m === 'context'
+                    ? '확장 컨텍스트 25 라인 (-U25)'
+                    : 'Split — side-by-side (첫 파일만, v1)'
                 "
                 @click="diffMode.setMode(m)"
               >
@@ -163,6 +166,11 @@ const MODES: DiffMode[] = ['compact', 'default', 'context']
           >
             먼저 그래프에서 commit 을 선택하세요. (J/K 또는 클릭)
           </p>
+          <DiffSplitView
+            v-else-if="data && diffMode.mode.value === 'split'"
+            :patch="data"
+            class="h-full"
+          />
           <DiffViewer v-else-if="data" :patch="data" class="h-full" />
         </div>
       </div>
