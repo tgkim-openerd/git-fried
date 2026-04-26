@@ -78,8 +78,12 @@ export const applyPatch = (
 export const getDiff = (args: DiffArgs): Promise<string> =>
   invoke('get_diff', { args })
 
-export const getCommitDiff = (repoId: number, sha: string): Promise<string> =>
-  invoke('get_commit_diff', { args: { repoId, sha } })
+export const getCommitDiff = (
+  repoId: number,
+  sha: string,
+  context?: number | null,
+): Promise<string> =>
+  invoke('get_commit_diff', { args: { repoId, sha, context } })
 
 // --- Commit ---
 export const commit = (args: CommitArgs): Promise<CommitResult> =>

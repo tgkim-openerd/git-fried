@@ -305,6 +305,8 @@ pub async fn get_diff(
 pub struct DiffCommitArgs {
     pub repo_id: i64,
     pub sha: String,
+    /// Sprint B1 — 3-mode 토글 (compact=0 / default=None / context=25).
+    pub context: Option<u32>,
 }
 
 #[tauri::command]
@@ -313,7 +315,7 @@ pub async fn get_commit_diff(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<String> {
     let path = repo_path(&state, args.repo_id).await?;
-    git_diff::diff_commit(&path, &args.sha).await
+    git_diff::diff_commit(&path, &args.sha, args.context).await
 }
 
 // ====== Commit ======
