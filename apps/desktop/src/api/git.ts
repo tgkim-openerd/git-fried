@@ -277,6 +277,17 @@ export const lfsPull = (repoId: number): Promise<void> =>
 export const lfsPrune = (repoId: number): Promise<void> =>
   invoke('lfs_prune', { repoId })
 
+// Sprint C2 — pre-push size estimation
+export interface LfsPushSize {
+  commitCount: number
+  fileCount: number
+  totalBytes: number
+  note: string | null
+}
+
+export const lfsPushSize = (repoId: number): Promise<LfsPushSize> =>
+  invoke('lfs_push_size', { repoId })
+
 // === Bisect ===
 export type BisectMark = 'good' | 'bad' | 'skip'
 export interface BisectStatus {

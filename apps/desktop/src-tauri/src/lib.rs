@@ -153,6 +153,7 @@ pub fn run() {
             ipc::v02_commands::lfs_fetch,
             ipc::v02_commands::lfs_pull,
             ipc::v02_commands::lfs_prune,
+            ipc::v02_commands::lfs_push_size,
             ipc::v02_commands::get_file_history,
             ipc::v02_commands::get_file_blame,
             ipc::v02_commands::ai_detect_clis,

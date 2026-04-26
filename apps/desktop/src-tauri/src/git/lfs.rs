@@ -126,3 +126,150 @@ pub async fn prune(repo: &Path) -> AppResult<()> {
         .into_ok()?;
     Ok(())
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LfsPushSize {
+    /// 업스트림 대비 push 대상 commit 갯수 (`HEAD ^@{u}` 범위).
+    pub commit_count: usize,
+    /// 그 범위 안에서 신규/수정된 LFS 파일 갯수.
+    pub file_count: usize,
+    /// 합계 바이트 (LFS pointer 가 가리키는 실제 LFS object 크기).
+    pub total_bytes: u64,
+    /// upstream 미설정 등으로 측정 불가 시.
+    pub note: Option<String>,
+}
+
+/// 업스트림 대비 push 시 보낼 LFS 객체의 총 크기 (Sprint C2).
+///
+/// GitKraken 미구현 (community 요청 미해결, `docs/plan/11 §12`). git-fried
+/// 가 흡수 — 회사 LFS 6/6 사용자 시나리오 직격.
+///
+/// 알고리즘:
+///   1. `git rev-list HEAD ^@{u}` → push 대상 commit 목록.
+///   2. `git lfs ls-files --long --size --debug=false` 가 안전하지 않아
+///      `git diff --name-only @{u}..HEAD` 로 변경 파일 추출.
+///   3. 그 중 `git check-attr filter` 가 `lfs` 인 파일만 LFS 후보.
+///   4. 각 파일의 `git cat-file blob :<path>` (HEAD 기준) → pointer 의 size 값.
+///
+/// upstream 미설정 시 ok=note 처리.
+pub async fn push_size(repo: &Path) -> AppResult<LfsPushSize> {
+    // 1. upstream 존재 확인.
+    let upstream = git_run(
+        repo,
+        &["rev-parse", "--abbrev-ref", "@{u}"],
+        &GitRunOpts::default(),
+    )
+    .await?;
+    if upstream.exit_code != Some(0) {
+        return Ok(LfsPushSize {
+            commit_count: 0,
+            file_count: 0,
+            total_bytes: 0,
+            note: Some("upstream 미설정 (브랜치 새로 생성됨)".into()),
+        });
+    }
+
+    // 2. push 대상 commit 갯수.
+    let count_out = git_run(
+        repo,
+        &["rev-list", "--count", "@{u}..HEAD"],
+        &GitRunOpts::default(),
+    )
+    .await?;
+    let commit_count: usize = count_out
+        .into_ok()
+        .ok()
+        .and_then(|s| s.trim().parse::<usize>().ok())
+        .unwrap_or(0);
+    if commit_count == 0 {
+        return Ok(LfsPushSize {
+            commit_count: 0,
+            file_count: 0,
+            total_bytes: 0,
+            note: Some("push 대상 commit 없음 (이미 동기화)".into()),
+        });
+    }
+
+    // 3. 변경된 파일 목록 (added or modified, deleted 제외).
+    let changed = git_run(
+        repo,
+        &["diff", "--name-only", "--diff-filter=AM", "@{u}..HEAD"],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()
+    .unwrap_or_default();
+    let files: Vec<String> = changed
+        .lines()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.to_string())
+        .collect();
+    if files.is_empty() {
+        return Ok(LfsPushSize {
+            commit_count,
+            file_count: 0,
+            total_bytes: 0,
+            note: None,
+        });
+    }
+
+    // 4. LFS 추적 파일만 필터 — `git check-attr filter <files>` 결과의 'lfs'.
+    let mut check_args: Vec<String> = vec!["check-attr".into(), "filter".into(), "--".into()];
+    for f in &files {
+        check_args.push(f.clone());
+    }
+    let check_refs: Vec<&str> = check_args.iter().map(|s| s.as_str()).collect();
+    let attr_out = git_run(repo, &check_refs, &GitRunOpts::default()).await?;
+    let attr_text = attr_out.into_ok().unwrap_or_default();
+
+    let mut lfs_files: Vec<String> = Vec::new();
+    for line in attr_text.lines() {
+        // "<path>: filter: lfs"
+        if line.contains(": filter: lfs") {
+            if let Some(idx) = line.rfind(": filter: lfs") {
+                let p = &line[..idx];
+                lfs_files.push(p.to_string());
+            }
+        }
+    }
+    if lfs_files.is_empty() {
+        return Ok(LfsPushSize {
+            commit_count,
+            file_count: 0,
+            total_bytes: 0,
+            note: None,
+        });
+    }
+
+    // 5. 각 LFS 파일의 pointer 에서 size 값 추출.
+    //    pointer 형식: "version https://...\noid sha256:abc...\nsize 12345\n"
+    let mut total: u64 = 0;
+    for f in &lfs_files {
+        // `git show :<file>` 가 staged 또는 HEAD 의 blob 출력. HEAD 가 우선.
+        let blob = git_run(
+            repo,
+            &["show", &format!("HEAD:{f}")],
+            &GitRunOpts::default(),
+        )
+        .await
+        .ok()
+        .and_then(|o| o.into_ok().ok())
+        .unwrap_or_default();
+        for line in blob.lines() {
+            if let Some(rest) = line.strip_prefix("size ") {
+                if let Ok(n) = rest.trim().parse::<u64>() {
+                    total += n;
+                    break;
+                }
+            }
+        }
+    }
+
+    Ok(LfsPushSize {
+        commit_count,
+        file_count: lfs_files.len(),
+        total_bytes: total,
+        note: None,
+    })
+}

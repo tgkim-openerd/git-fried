@@ -337,6 +337,15 @@ pub async fn lfs_prune(
     git_lfs::prune(&path).await
 }
 
+#[tauri::command]
+pub async fn lfs_push_size(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_lfs::LfsPushSize> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::push_size(&path).await
+}
+
 // ====== File history / Blame ======
 
 #[derive(Debug, Deserialize)]

@@ -8,6 +8,7 @@ import {
   lfsListFiles,
   lfsPrune,
   lfsPull,
+  lfsPushSize,
   lfsStatus,
   lfsTrack,
   lfsUntrack,
@@ -36,6 +37,25 @@ const filesQuery = useQuery({
     return lfsListFiles(props.repoId)
   },
   enabled: computed(() => props.repoId != null && statusQuery.data.value?.installed === true),
+})
+
+// Sprint C2 — pre-push size estimation
+const pushSizeQuery = useQuery({
+  queryKey: computed(() => ['lfs-push-size', props.repoId]),
+  queryFn: () => {
+    if (props.repoId == null) {
+      return Promise.resolve({
+        commitCount: 0,
+        fileCount: 0,
+        totalBytes: 0,
+        note: null,
+      })
+    }
+    return lfsPushSize(props.repoId)
+  },
+  enabled: computed(() => props.repoId != null && statusQuery.data.value?.installed === true),
+  staleTime: 30_000,
+  refetchInterval: 60_000,
 })
 
 const newPattern = ref('')
@@ -191,6 +211,26 @@ function fmtSize(b: number | null): string {
           track
         </button>
       </div>
+    </section>
+
+    <!-- Sprint C2 — pre-push size 인디케이터 -->
+    <section
+      v-if="pushSizeQuery.data.value && pushSizeQuery.data.value.commitCount > 0"
+      class="border-b border-border bg-muted/30 px-3 py-1.5 text-[11px]"
+    >
+      <span class="font-medium">Pre-push:</span>
+      {{ pushSizeQuery.data.value.commitCount }} commit
+      <span v-if="pushSizeQuery.data.value.fileCount > 0" class="text-amber-500">
+        · LFS {{ pushSizeQuery.data.value.fileCount }}개
+        ({{ fmtSize(pushSizeQuery.data.value.totalBytes) }})
+      </span>
+      <span v-else class="text-muted-foreground">· LFS 변경 없음</span>
+    </section>
+    <section
+      v-else-if="pushSizeQuery.data.value?.note"
+      class="border-b border-border bg-muted/20 px-3 py-1 text-[10px] text-muted-foreground"
+    >
+      {{ pushSizeQuery.data.value.note }}
     </section>
 
     <!-- LFS 파일 -->
