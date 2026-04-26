@@ -11,7 +11,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
-import { useRefVisibility } from '@/composables/useHiddenRefs'
+import { useHiddenRefMutations, useRefVisibility } from '@/composables/useHiddenRefs'
+import type { HiddenRefKind } from '@/api/git'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
 import { formatDateLocalized } from '@/composables/useUserSettings'
@@ -20,6 +21,22 @@ import type { GraphRow } from '@/api/git'
 const props = defineProps<{ repoId: number | null }>()
 const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
 const { visibleFn: visibleRef, soloRef } = useRefVisibility(() => props.repoId)
+const { hide: hideMut } = useHiddenRefMutations(() => props.repoId)
+
+// Sprint K — branch ref hover → 🙈 클릭 시 즉시 숨김.
+function refKindOf(name: string): HiddenRefKind {
+  if (name.startsWith('refs/tags/') || name.startsWith('tag: ')) return 'tag'
+  if (name.startsWith('stash@') || name === 'stash') return 'stash'
+  // origin/main, upstream/feature 등 = remote
+  if (name.includes('/') && !name.startsWith('refs/heads/')) return 'remote'
+  return 'branch'
+}
+
+function hideRefByName(name: string) {
+  // "HEAD -> main" 같이 표시 prefix 가 있을 수 있음 → tail 만 추출.
+  const trimmed = name.replace(/^HEAD ->\s*/, '').trim()
+  hideMut.mutate({ refName: trimmed, refKind: refKindOf(trimmed) })
+}
 
 // === 검색 (in-memory) ===
 // v0.x 단계: 현재 그래프 (최대 500 commits) 내에서 subject / author / sha 부분일치.
@@ -527,14 +544,22 @@ onUnmounted(() => {
               <template v-for="r in rows[v.index]?.commit.refs ?? []" :key="r">
                 <span
                   v-if="visibleRef(r)"
-                  class="ml-1.5 rounded px-1.5 py-0.5 text-[10px]"
+                  class="ref-pill ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
                   :class="
                     soloRef === r
                       ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
                       : 'bg-muted text-muted-foreground'
                   "
                 >
-                  {{ r }}
+                  <span>{{ r }}</span>
+                  <button
+                    type="button"
+                    class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
+                    :title="`그래프에서 숨김: ${r}`"
+                    @click.stop="hideRefByName(r)"
+                  >
+                    🙈
+                  </button>
                 </span>
               </template>
             </span>
@@ -566,3 +591,10 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Sprint K — branch ref hover 시에만 🙈 노출. */
+.ref-pill:hover .ref-pill-hide {
+  opacity: 1;
+}
+</style>
