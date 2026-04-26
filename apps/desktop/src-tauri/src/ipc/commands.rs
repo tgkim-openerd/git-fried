@@ -87,6 +87,65 @@ pub async fn delete_workspace(
     state.db.delete_workspace(id).await
 }
 
+// ====== Sprint B8 — Branch / Commit drag-drop ops ======
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MergeBranchArgs {
+    pub repo_id: i64,
+    /// 머지 source (현재 HEAD 에 합쳐질 ref).
+    pub source: String,
+    #[serde(default)]
+    pub no_ff: bool,
+    #[serde(default)]
+    pub no_commit: bool,
+}
+
+#[tauri::command]
+pub async fn merge_branch(
+    args: MergeBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<crate::git::branch::MergeResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    crate::git::branch::merge_into_head(&path, &args.source, args.no_ff, args.no_commit)
+        .await
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RebaseBranchArgs {
+    pub repo_id: i64,
+    pub upstream: String,
+}
+
+#[tauri::command]
+pub async fn rebase_branch(
+    args: RebaseBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<crate::git::branch::MergeResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    crate::git::branch::rebase_onto(&path, &args.upstream).await
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CherryPickShaArgs {
+    pub repo_id: i64,
+    pub sha: String,
+    /// 지정 시 그 브랜치로 switch 후 cherry-pick → 복귀. 없으면 현재 HEAD 에.
+    pub target_branch: Option<String>,
+}
+
+#[tauri::command]
+pub async fn cherry_pick_sha(
+    args: CherryPickShaArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<crate::git::branch::MergeResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    crate::git::branch::cherry_pick_sha(&path, &args.sha, args.target_branch.as_deref())
+        .await
+}
+
 // ====== Repos ======
 
 #[tauri::command]

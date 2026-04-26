@@ -617,6 +617,35 @@ export function inferBaseUrl(forgeKind: string): string {
   return forgeKind === 'gitea' ? 'gitea-default' : 'github.com'
 }
 
+// === Sprint B8 — Branch / Commit drag-drop ops ===
+export interface MergeOpResult {
+  success: boolean
+  conflicted: boolean
+  stdout: string
+  stderr: string
+}
+
+export const mergeBranch = (
+  repoId: number,
+  source: string,
+  noFf: boolean = true,
+  noCommit: boolean = false,
+): Promise<MergeOpResult> =>
+  invoke('merge_branch', { args: { repoId, source, noFf, noCommit } })
+
+export const rebaseBranch = (
+  repoId: number,
+  upstream: string,
+): Promise<MergeOpResult> =>
+  invoke('rebase_branch', { args: { repoId, upstream } })
+
+export const cherryPickSha = (
+  repoId: number,
+  sha: string,
+  targetBranch?: string | null,
+): Promise<MergeOpResult> =>
+  invoke('cherry_pick_sha', { args: { repoId, sha, targetBranch } })
+
 // === Conflict Prediction (Sprint B2 / docs/plan/11 §20) ===
 export interface ConflictPrediction {
   ok: boolean

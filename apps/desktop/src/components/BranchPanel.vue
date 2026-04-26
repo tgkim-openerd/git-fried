@@ -18,7 +18,12 @@ import {
   useSoloRef,
 } from '@/composables/useHiddenRefs'
 import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
-import { aiExplainBranch } from '@/api/git'
+import {
+  aiExplainBranch,
+  cherryPickSha,
+  mergeBranch,
+  rebaseBranch,
+} from '@/api/git'
 import AiResultModal from './AiResultModal.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
@@ -155,6 +160,120 @@ const explainContent = ref('')
 const explainError = ref<string | null>(null)
 const explainPending = ref(false)
 
+// === Sprint B8 — drag-drop ===
+const dragOverIdx = ref<number | null>(null)
+const DT_BRANCH = 'application/x-git-fried-branch'
+const DT_COMMIT = 'application/x-git-fried-commit'
+
+function onDragStartBranch(b: BranchInfo, ev: DragEvent) {
+  if (!ev.dataTransfer) return
+  ev.dataTransfer.setData(DT_BRANCH, b.name)
+  ev.dataTransfer.effectAllowed = 'move'
+}
+
+function onDragOverRow(idx: number, ev: DragEvent) {
+  if (!ev.dataTransfer) return
+  const types = ev.dataTransfer.types
+  if (types.includes(DT_BRANCH) || types.includes(DT_COMMIT)) {
+    ev.preventDefault()
+    dragOverIdx.value = idx
+  }
+}
+
+function onDragLeaveRow(idx: number) {
+  if (dragOverIdx.value === idx) dragOverIdx.value = null
+}
+
+async function onDropOnBranch(target: BranchInfo, ev: DragEvent) {
+  ev.preventDefault()
+  dragOverIdx.value = null
+  if (!ev.dataTransfer || props.repoId == null) return
+  const branchName = ev.dataTransfer.getData(DT_BRANCH)
+  const commitSha = ev.dataTransfer.getData(DT_COMMIT)
+
+  if (commitSha) {
+    // commit → branch (cherry-pick onto branch).
+    if (
+      !confirm(`commit ${commitSha.slice(0, 7)} 를 '${target.name}' 에 cherry-pick?`)
+    ) {
+      return
+    }
+    try {
+      const r = await cherryPickSha(
+        props.repoId,
+        commitSha,
+        localName(target.name),
+      )
+      if (r.success) {
+        toast.success('Cherry-pick 완료', target.name)
+        invalidate(props.repoId)
+      } else if (r.conflicted) {
+        toast.error('충돌 발생', '변경 패널에서 해결')
+        invalidate(props.repoId)
+      } else {
+        toast.error('Cherry-pick 실패', r.stderr.slice(0, 200))
+      }
+    } catch (e) {
+      toast.error('Cherry-pick 호출 실패', describeError(e))
+    }
+    return
+  }
+
+  if (branchName && branchName !== target.name) {
+    // branch (source) → branch (target). HEAD 가 어느 쪽인지 확인 → 의미 결정.
+    // GitKraken UX: "drop A onto B" = A 가 B 위로 (A 가 source, B 가 target/HEAD).
+    // 즉 우리는 target 으로 switch 후 source 머지 또는 target 위로 source rebase.
+    const action = window.prompt(
+      `${branchName} → ${target.name} : 어떤 작업?\n  m = merge (target 으로 switch + source 머지)\n  r = rebase (source 를 target 위로 rebase)\n  cancel = 취소`,
+      'm',
+    )
+    if (!action) return
+    const a = action.trim().toLowerCase()
+    try {
+      if (a === 'm' || a === 'merge') {
+        // 1. target 으로 switch.
+        await switchMut.mutateAsync({
+          id: props.repoId,
+          name: localName(target.name),
+        })
+        // 2. source 를 머지.
+        const r = await mergeBranch(
+          props.repoId,
+          localName(branchName),
+          true,
+          false,
+        )
+        if (r.success) {
+          toast.success('Merge 완료', `${branchName} → ${target.name}`)
+        } else if (r.conflicted) {
+          toast.error('Merge 충돌', '변경 패널에서 해결')
+        } else {
+          toast.error('Merge 실패', r.stderr.slice(0, 200))
+        }
+        invalidate(props.repoId)
+      } else if (a === 'r' || a === 'rebase') {
+        // 1. source 로 switch.
+        await switchMut.mutateAsync({
+          id: props.repoId,
+          name: localName(branchName),
+        })
+        // 2. target 위로 rebase.
+        const r = await rebaseBranch(props.repoId, localName(target.name))
+        if (r.success) {
+          toast.success('Rebase 완료', `${branchName} onto ${target.name}`)
+        } else if (r.conflicted) {
+          toast.error('Rebase 충돌', '변경 패널에서 해결 후 --continue')
+        } else {
+          toast.error('Rebase 실패', r.stderr.slice(0, 200))
+        }
+        invalidate(props.repoId)
+      }
+    } catch (e) {
+      toast.error('호출 실패', describeError(e))
+    }
+  }
+}
+
 async function onExplainBranch(b: BranchInfo) {
   if (props.repoId == null || ai.available.value == null) {
     toast.error('AI 사용 불가', 'Claude/Codex CLI 미설치')
@@ -290,15 +409,21 @@ async function onExplainBranch(b: BranchInfo) {
     <div class="flex-1 overflow-auto px-1 py-2">
       <ul>
         <li
-          v-for="b in filtered"
+          v-for="(b, idx) in filtered"
           :key="`${b.kind}-${b.name}`"
           class="group flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent/40"
           :class="[
             b.isHead ? 'bg-accent/60 font-semibold' : '',
             isHidden(b.name) ? 'opacity-40 line-through' : '',
             soloRef === b.name ? 'bg-orange-500/10 ring-1 ring-orange-500/40' : '',
+            dragOverIdx === idx ? 'ring-2 ring-primary/60 bg-primary/10' : '',
           ]"
+          draggable="true"
           @dblclick="onSwitch(b)"
+          @dragstart="onDragStartBranch(b, $event)"
+          @dragover="onDragOverRow(idx, $event)"
+          @dragleave="onDragLeaveRow(idx)"
+          @drop="onDropOnBranch(b, $event)"
         >
           <span class="w-3 text-[10px]">{{ b.isHead ? '●' : '' }}</span>
           <span class="flex-1 truncate font-mono text-xs">{{ b.name }}</span>

@@ -425,6 +425,16 @@ function colDef(id: CommitColumnId) {
               ? 'opacity-25'
               : '',
           ]"
+          draggable="true"
+          @dragstart="
+            (ev: DragEvent) => {
+              const sha = rows[v.index]?.commit.sha
+              if (sha && ev.dataTransfer) {
+                ev.dataTransfer.setData('application/x-git-fried-commit', sha)
+                ev.dataTransfer.effectAllowed = 'copy'
+              }
+            }
+          "
           @click="selectRow(rows[v.index])"
         >
           <template v-for="col in cols.visibleColumns.value" :key="col.id">
