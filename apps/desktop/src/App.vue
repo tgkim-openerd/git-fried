@@ -7,6 +7,7 @@ import ProfileSwitcher from './components/ProfileSwitcher.vue'
 import SyncTemplateModal from './components/SyncTemplateModal.vue'
 import BisectModal from './components/BisectModal.vue'
 import ReflogModal from './components/ReflogModal.vue'
+import ToastContainer from './components/ToastContainer.vue'
 import { useTheme } from '@/composables/useTheme'
 import { RouterLink } from 'vue-router'
 
@@ -83,5 +84,6 @@ w.gitFriedOpenReflog = () => (reflogOpen.value = true)
     />
     <BisectModal :open="bisectOpen" @close="bisectOpen = false" />
     <ReflogModal :open="reflogOpen" @close="reflogOpen = false" />
+    <ToastContainer />
   </div>
 </template>

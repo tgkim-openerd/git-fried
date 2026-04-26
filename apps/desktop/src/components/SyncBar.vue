@@ -4,6 +4,9 @@ import { useMutation } from '@tanstack/vue-query'
 import { fetchAll, pull, push } from '@/api/git'
 import { describeError, humanizeGitError } from '@/api/errors'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps<{
   repoId: number | null
@@ -19,23 +22,31 @@ const fetchMut = useMutation({
   mutationFn: (id: number) => fetchAll(id),
   onSuccess: (res) => {
     invalidate(props.repoId)
-    if (!res.success)
-      alert(
-        `fetch 실패 (exit ${res.exitCode}):\n${humanizeGitError(res.stderr)}`,
+    if (res.success) {
+      toast.success('Fetch 완료')
+    } else {
+      toast.error(
+        `Fetch 실패 (exit ${res.exitCode})`,
+        humanizeGitError(res.stderr),
       )
+    }
   },
-  onError: (e) => alert(`fetch 호출 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('Fetch 호출 실패', describeError(e)),
 })
 const pullMut = useMutation({
   mutationFn: (id: number) => pull({ repoId: id }),
   onSuccess: (res) => {
     invalidate(props.repoId)
-    if (!res.success)
-      alert(
-        `pull 실패 (exit ${res.exitCode}):\n${humanizeGitError(res.stderr)}`,
+    if (res.success) {
+      toast.success('Pull 완료')
+    } else {
+      toast.error(
+        `Pull 실패 (exit ${res.exitCode})`,
+        humanizeGitError(res.stderr),
       )
+    }
   },
-  onError: (e) => alert(`pull 호출 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('Pull 호출 실패', describeError(e)),
 })
 const pushMut = useMutation({
   mutationFn: (id: number) =>
@@ -45,12 +56,16 @@ const pushMut = useMutation({
     }),
   onSuccess: (res) => {
     invalidate(props.repoId)
-    if (!res.success)
-      alert(
-        `push 실패 (exit ${res.exitCode}):\n${humanizeGitError(res.stderr)}`,
+    if (res.success) {
+      toast.success('Push 완료')
+    } else {
+      toast.error(
+        `Push 실패 (exit ${res.exitCode})`,
+        humanizeGitError(res.stderr),
       )
+    }
   },
-  onError: (e) => alert(`push 호출 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('Push 호출 실패', describeError(e)),
 })
 
 function onFetch() {

@@ -8,9 +8,12 @@ import { computed, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { aiCommitMessage, aiDetectClis, commit as ipcCommit } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 import type { AiCli } from '@/api/git'
 import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+
+const toast = useToast()
 import {
   buildConventional,
   CONVENTIONAL_TYPES,
@@ -83,7 +86,7 @@ const commitMut = useMutation({
       lastResult.value = res
     }
   },
-  onError: (e) => alert(`커밋 호출 실패:\n${describeError(e)}`),
+  onError: (e) => toast.error('커밋 호출 실패', describeError(e)),
 })
 
 function canCommit(): boolean {
@@ -146,13 +149,13 @@ const aiMut = useMutation({
         mode.value = 'conventional'
       }
     } else {
-      alert(`AI 실패:\n${out.stderr || out.text}`)
+      toast.error('AI 응답 실패', out.stderr || out.text)
     }
   },
   onError: (e) => {
     const msg = describeError(e)
     if (msg.includes('cancelled')) return
-    alert(`AI 호출 실패:\n${msg}`)
+    toast.error('AI 호출 실패', msg)
   },
 })
 </script>
