@@ -1,24 +1,31 @@
 <script setup lang="ts">
-// Diff Split (side-by-side) view — Sprint E3.
+// Diff Split (side-by-side) view — Sprint E3 + F3 (다중 파일 picker).
 //
-// CodeMirror 6 의 @codemirror/merge MergeView 사용. patch 의 첫 file 만 v1.
-// 다중 파일은 v1.x — 별도 file picker.
+// CodeMirror 6 의 @codemirror/merge MergeView 사용. patch 의 모든 파일 파싱 →
+// 좌측 file picker 로 전환.
 //
-// 한계 (parseDiffFirstFile 참조):
+// 한계 (parseDiffAllFiles 참조):
 //   - hunk 사이 unchanged 영역은 모름 → MergeView 가 hunk 만 비교 가능.
 //   - 정확한 split 은 backend 가 두 blob 직접 fetch 해야 (별 endpoint).
-import { onBeforeUnmount, ref, watch, useTemplateRef } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useTemplateRef,
+  watch,
+} from 'vue'
 import { MergeView } from '@codemirror/merge'
-import { EditorState } from '@codemirror/state'
 import { EditorView, lineNumbers } from '@codemirror/view'
 import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { parseDiffFirstFile } from '@/utils/parseDiff'
+import { parseDiffAllFiles, type DiffFile } from '@/utils/parseDiff'
 
 const props = defineProps<{ patch: string }>()
 
 const containerRef = useTemplateRef<HTMLDivElement>('container')
-const fileName = ref<string>('')
+const files = ref<DiffFile[]>([])
+const activeIdx = ref(0)
 let mergeView: MergeView | null = null
 
 const baseTheme = EditorView.baseTheme({
@@ -26,6 +33,10 @@ const baseTheme = EditorView.baseTheme({
   '.cm-content': { fontFamily: 'JetBrains Mono, D2Coding, Consolas, monospace' },
   '.cm-mergeView': { height: '100%' },
 })
+
+const activeFile = computed<DiffFile | null>(
+  () => files.value[activeIdx.value] ?? null,
+)
 
 function destroy() {
   if (mergeView) {
@@ -37,12 +48,8 @@ function destroy() {
 function build() {
   destroy()
   if (!containerRef.value) return
-  const parsed = parseDiffFirstFile(props.patch || '')
-  if (!parsed) {
-    fileName.value = ''
-    return
-  }
-  fileName.value = parsed.fileName
+  const f = activeFile.value
+  if (!f) return
 
   const extensions = [
     lineNumbers(),
@@ -55,45 +62,62 @@ function build() {
 
   mergeView = new MergeView({
     parent: containerRef.value,
-    a: {
-      doc: parsed.before,
-      extensions,
-    },
-    b: {
-      doc: parsed.after,
-      extensions,
-    },
+    a: { doc: f.before, extensions },
+    b: { doc: f.after, extensions },
     revertControls: undefined,
     highlightChanges: true,
     gutter: true,
   })
 }
 
-watch(
-  () => props.patch,
-  () => build(),
-  { immediate: false },
-)
+function refreshFromPatch() {
+  files.value = parseDiffAllFiles(props.patch || '')
+  // 파일 list 가 줄어들 때 idx 보정.
+  if (activeIdx.value >= files.value.length) activeIdx.value = 0
+  build()
+}
 
-// container ref 가 mount 후에만 build (mounted 상태 보장).
-import { onMounted } from 'vue'
-onMounted(() => build())
+watch(() => props.patch, refreshFromPatch, { immediate: false })
+watch(activeIdx, () => build())
+
+onMounted(() => refreshFromPatch())
 onBeforeUnmount(() => destroy())
 </script>
 
 <template>
   <div class="flex h-full flex-col">
+    <!-- 다중 파일 picker (Sprint F3). 1 파일이면 단순 라벨. -->
     <div
-      v-if="fileName"
+      v-if="files.length > 1"
+      class="flex items-center gap-1 overflow-x-auto border-b border-border bg-muted/30 px-2 py-1"
+    >
+      <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
+        {{ files.length }} 파일
+      </span>
+      <button
+        v-for="(f, idx) in files"
+        :key="`${idx}:${f.fileName}`"
+        type="button"
+        class="shrink-0 rounded border border-border px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent/40"
+        :class="
+          idx === activeIdx
+            ? 'bg-accent text-accent-foreground'
+            : 'text-muted-foreground'
+        "
+        :title="f.fileName"
+        @click="activeIdx = idx"
+      >
+        {{ f.fileName.split('/').pop() }}
+      </button>
+    </div>
+    <div
+      v-else-if="activeFile"
       class="border-b border-border bg-muted/30 px-3 py-1 font-mono text-[11px] text-muted-foreground"
     >
-      {{ fileName }} <span class="ml-2 text-[10px]">(첫 파일만 — v1)</span>
+      {{ activeFile.fileName }}
     </div>
     <div ref="container" class="min-h-0 flex-1 overflow-auto" />
-    <div
-      v-if="!fileName"
-      class="p-6 text-center text-sm text-muted-foreground"
-    >
+    <div v-if="!activeFile" class="p-6 text-center text-sm text-muted-foreground">
       Split 모드로 표시할 변경 없음.
     </div>
   </div>

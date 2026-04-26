@@ -127,7 +127,7 @@ const MODES: DiffMode[] = ['compact', 'default', 'context', 'split']
                     ? '기본 컨텍스트 3 라인 (-U3)'
                     : m === 'context'
                     ? '확장 컨텍스트 25 라인 (-U25)'
-                    : 'Split — side-by-side (첫 파일만, v1)'
+                    : 'Split — side-by-side (다중 파일 picker)'
                 "
                 @click="diffMode.setMode(m)"
               >
