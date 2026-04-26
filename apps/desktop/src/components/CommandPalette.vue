@@ -65,6 +65,17 @@ const allCommands = computed<Cmd[]>(() => {
         )
       },
     },
+    {
+      id: 'sync.template',
+      label: 'Sync template — 다중 레포 cherry-pick',
+      hint: 'bulk cherry-pick',
+      action: () => {
+        const fn = (window as unknown as {
+          gitFriedOpenSyncTemplate?: (sha?: string) => void
+        }).gitFriedOpenSyncTemplate
+        if (fn) fn()
+      },
+    },
   ]
   return list
 })
