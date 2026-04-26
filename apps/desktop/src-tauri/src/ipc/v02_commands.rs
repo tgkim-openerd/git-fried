@@ -265,6 +265,45 @@ pub async fn ai_commit_message(
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AiResolveConflictArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    pub path: String,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_resolve_conflict(
+    args: AiResolveConflictArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    // 충돌 파일 read (sync — git2)
+    let cf = {
+        let p = path.clone();
+        let f = args.path.clone();
+        tokio::task::spawn_blocking(move || git_merge::read_conflicted(&p, &f))
+            .await
+            .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))??
+    };
+
+    let prompt = ai::merge_resolution_prompt(
+        &args.path,
+        cf.working.as_deref().unwrap_or(""),
+        cf.ours.as_deref().unwrap_or(""),
+        cf.theirs.as_deref().unwrap_or(""),
+        cf.base.as_deref(),
+    );
+    ai::ai_run(args.cli, &prompt).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AiPrBodyArgs {
     pub repo_id: i64,
     pub cli: ai::AiCli,

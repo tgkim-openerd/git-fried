@@ -9,7 +9,14 @@
 // 추후 v1.x 에서 @codemirror/merge 의 MergeView 적용.
 import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { readConflicted, takeSide, writeResolved } from '@/api/git'
+import {
+  aiDetectClis,
+  aiResolveConflict,
+  readConflicted,
+  takeSide,
+  writeResolved,
+} from '@/api/git'
+import type { AiCli } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 
@@ -104,6 +111,48 @@ function takeFullSide(side: 'ours' | 'theirs') {
     return
   sideMut.mutate(side)
 }
+
+// === AI merge resolve (Claude / Codex CLI) ===
+const { data: aiProbes } = useQuery({
+  queryKey: ['aiProbes'],
+  queryFn: aiDetectClis,
+  staleTime: 60_000,
+})
+const availableCli = computed<AiCli | null>(() => {
+  const p = aiProbes.value
+  if (!p) return null
+  if (p.find((x) => x.cli === 'claude' && x.installed)) return 'claude'
+  if (p.find((x) => x.cli === 'codex' && x.installed)) return 'codex'
+  return null
+})
+
+const aiMut = useMutation({
+  mutationFn: () => {
+    if (props.repoId == null || !props.path || !availableCli.value)
+      return Promise.reject(new Error('AI 사용 불가'))
+    if (
+      !window.confirm(
+        '⚠ 충돌 파일 (ours/theirs/base) 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?',
+      )
+    ) {
+      return Promise.reject(new Error('cancelled'))
+    }
+    return aiResolveConflict(props.repoId, availableCli.value, props.path, true)
+  },
+  onSuccess: (out) => {
+    if (out.success) {
+      // result textarea 에 자동 채움 — 사용자 검토 후 저장
+      resolved.value = out.text.trim()
+    } else {
+      alert(`AI 응답 실패:\n${out.stderr || out.text}`)
+    }
+  },
+  onError: (e) => {
+    const msg = describeError(e)
+    if (msg.includes('cancelled')) return
+    alert(`AI 호출 실패:\n${msg}`)
+  },
+})
 </script>
 
 <template>
@@ -136,6 +185,15 @@ function takeFullSide(side: 'ours' | 'theirs') {
             @click="takeFullSide('theirs')"
           >
             🟪 theirs 전부
+          </button>
+          <button
+            v-if="availableCli"
+            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+            :disabled="aiMut.isPending.value"
+            :title="`${availableCli} CLI 가 ours/theirs/base 분석 후 result 추천`"
+            @click="aiMut.mutate()"
+          >
+            {{ aiMut.isPending.value ? '✨ 분석 중...' : '✨ AI 추천' }}
           </button>
           <span class="ml-auto text-muted-foreground">또는 아래에서 직접 수정 →</span>
         </div>

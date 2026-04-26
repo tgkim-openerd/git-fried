@@ -110,9 +110,80 @@ pub fn pr_body_prompt(commits: &[String], diff_stat: &str, head_branch: &str, ba
     )
 }
 
+/// 3-way merge 충돌 해결 prompt.
+///
+/// 사용자 워크플로우 — 회사 traditional merge 비율 높음 (`docs/plan/02 §3 W1`).
+/// 충돌 마커 파일 + ours/theirs/base 를 함께 보내서 해결안 추천.
+pub fn merge_resolution_prompt(
+    file_path: &str,
+    working: &str,
+    ours: &str,
+    theirs: &str,
+    base: Option<&str>,
+) -> String {
+    let masked_w = mask_secrets(working);
+    let masked_o = mask_secrets(ours);
+    let masked_t = mask_secrets(theirs);
+    let base_block = match base {
+        Some(b) => format!(
+            "\n**BASE (공통 조상)**:\n```\n{}\n```\n",
+            mask_secrets(b)
+        ),
+        None => String::new(),
+    };
+    format!(
+        r#"다음 3-way 머지 충돌을 해결해주세요. 한국어 사고, **결과 파일 본문만** 출력.
+
+**파일**: `{file_path}`
+
+**OURS (현재 브랜치)**:
+```
+{masked_o}
+```
+
+**THEIRS (들어오는)**:
+```
+{masked_t}
+```
+{base_block}
+**WORKING (conflict marker 포함)**:
+```
+{masked_w}
+```
+
+**규칙**:
+- conflict marker (<<<<<<< ======= >>>>>>>) 모두 제거
+- 양쪽 의도 가능한 한 모두 보존 (semantic merge)
+- 명확히 하나만 선택해야 하면 OURS 우선 (현재 브랜치)
+- 코드 스타일 / indentation 보존
+- 마크다운 코드블록 백틱 출력 금지 — 파일 내용만
+
+응답: 결과 파일 본문 그대로 (설명 없이).
+"#
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_merge_resolution_prompt_includes_all_sides() {
+        let p = merge_resolution_prompt(
+            "src/foo.rs",
+            "<<<<<<< HEAD\n안녕 1\n=======\n안녕 2\n>>>>>>> feat",
+            "안녕 1",
+            "안녕 2",
+            Some("안녕 0"),
+        );
+        assert!(p.contains("OURS"));
+        assert!(p.contains("THEIRS"));
+        assert!(p.contains("BASE"));
+        assert!(p.contains("안녕 1"));
+        assert!(p.contains("안녕 2"));
+        assert!(p.contains("안녕 0"));
+        assert!(p.contains("src/foo.rs"));
+    }
 
     #[test]
     fn test_mask_github_pat() {

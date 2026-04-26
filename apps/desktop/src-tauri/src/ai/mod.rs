@@ -11,4 +11,6 @@ pub mod runner;
 pub mod prompts;
 
 pub use runner::{ai_run, detect_clis, AiCli, AiOutput, AiProbe};
-pub use prompts::{commit_message_prompt, pr_body_prompt, mask_secrets};
+pub use prompts::{
+    commit_message_prompt, mask_secrets, merge_resolution_prompt, pr_body_prompt,
+};
