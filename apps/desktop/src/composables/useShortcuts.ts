@@ -47,6 +47,7 @@ export type ShortcutAction =
   | 'toggleDetail' // ⌘K
   | 'fileHistorySearch' // ⌘⇧H
   | 'newTab' // ⌘T — Repo Switcher (⌘⇧P alias)
+  | 'openInExplorer' // ⌥O — OS 파일 매니저 (Sprint F4)
 
 type Handler = () => void
 
@@ -140,6 +141,22 @@ function installGlobal() {
           }
           return
         }
+      }
+    }
+
+    // Alt+O — OS 파일 매니저 (Sprint F4). modifier=alt 단독.
+    if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'o') {
+      const set = bus.handlers.get('openInExplorer')
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+        return
       }
     }
 

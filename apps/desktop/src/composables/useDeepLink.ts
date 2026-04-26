@@ -37,6 +37,7 @@ const COMMAND_ALIASES: Record<string, ShortcutAction> = {
   'zoom-reset': 'zoomReset',
   'file-history': 'fileHistorySearch',
   'close-modal': 'closeModal',
+  'open-in-explorer': 'openInExplorer',
 }
 
 interface UnlistenFn {

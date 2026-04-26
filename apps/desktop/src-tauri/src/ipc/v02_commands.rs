@@ -17,6 +17,44 @@ async fn repo_path(state: &Arc<AppState>, repo_id: i64) -> AppResult<PathBuf> {
     Ok(PathBuf::from(state.db.get_repo(repo_id).await?.local_path))
 }
 
+// ====== Open repo path in OS file manager (Sprint F4) ======
+
+#[tauri::command]
+pub async fn open_in_explorer(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    open_path_in_os(&path)
+}
+
+#[cfg(target_os = "windows")]
+fn open_path_in_os(path: &std::path::Path) -> AppResult<()> {
+    std::process::Command::new("explorer.exe")
+        .arg(path)
+        .spawn()
+        .map_err(|e| AppError::Internal(format!("explorer.exe spawn 실패: {e}")))?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn open_path_in_os(path: &std::path::Path) -> AppResult<()> {
+    std::process::Command::new("open")
+        .arg(path)
+        .spawn()
+        .map_err(|e| AppError::Internal(format!("open spawn 실패: {e}")))?;
+    Ok(())
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_path_in_os(path: &std::path::Path) -> AppResult<()> {
+    std::process::Command::new("xdg-open")
+        .arg(path)
+        .spawn()
+        .map_err(|e| AppError::Internal(format!("xdg-open spawn 실패: {e}")))?;
+    Ok(())
+}
+
 // ====== Worktree ======
 
 #[tauri::command]

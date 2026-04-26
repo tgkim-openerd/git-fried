@@ -19,6 +19,9 @@ import { useDeepLink } from '@/composables/useDeepLink'
 import { useUiSettingsStore } from '@/composables/useUserSettings'
 import { useAutoFetch } from '@/composables/useAutoFetch'
 import { useReposStore } from '@/stores/repos'
+import { openInExplorer } from '@/api/git'
+import { useToast } from '@/composables/useToast'
+import { describeError } from '@/api/errors'
 import { RouterLink, useRouter } from 'vue-router'
 
 const { theme, toggle } = useTheme()
@@ -80,6 +83,18 @@ function closeAllModals() {
   // 여기서는 우리가 관리하는 6개만 처리.
 }
 useShortcut('closeModal', closeAllModals)
+
+// Sprint F4 — ⌥O OS 파일 매니저로 활성 레포 열기.
+const toast = useToast()
+useShortcut('openInExplorer', () => {
+  if (reposStore.activeRepoId == null) {
+    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    return
+  }
+  void openInExplorer(reposStore.activeRepoId).catch((e) => {
+    toast.error('파일 매니저 열기 실패', describeError(e))
+  })
+})
 
 interface GlobalHandles {
   gitFriedOpenSyncTemplate?: typeof openSyncTemplate

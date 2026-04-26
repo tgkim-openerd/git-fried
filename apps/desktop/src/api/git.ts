@@ -47,6 +47,10 @@ export const removeRepo = (id: number): Promise<void> =>
 export const setRepoPinned = (id: number, pinned: boolean): Promise<Repo> =>
   invoke('set_repo_pinned', { args: { id, pinned } })
 
+/** Sprint F4 — OS 파일 매니저로 레포 경로 열기 (⌥O). */
+export const openInExplorer = (repoId: number): Promise<void> =>
+  invoke('open_in_explorer', { repoId })
+
 // --- Git read ---
 export const getLog = (args: GetLogArgs): Promise<CommitSummary[]> =>
   invoke('get_log', { args })

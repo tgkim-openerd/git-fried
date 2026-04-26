@@ -195,6 +195,13 @@ const allCommands = computed<Cmd[]>(() => {
       action: () => router.push('/settings'),
     },
     {
+      id: 'repo.open-in-explorer',
+      category: 'repo',
+      label: '레포 폴더 열기 (OS 파일 매니저)',
+      hint: '⌥O',
+      action: trigger('openInExplorer'),
+    },
+    {
       id: 'repo.auto-fetch',
       category: 'repo',
       label: `Auto-Fetch 주기 순환 (현재: ${
