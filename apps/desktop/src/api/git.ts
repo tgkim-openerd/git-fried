@@ -409,6 +409,16 @@ export const aiResolveConflict = (
 ): Promise<AiOutput> =>
   invoke('ai_resolve_conflict', { args: { repoId, cli, path, userApproved } })
 
+export const aiCodeReview = (args: {
+  repoId: number
+  cli: AiCli
+  headBranch: string
+  baseBranch: string
+  prTitle: string
+  prBody: string
+  userApproved: boolean
+}): Promise<AiOutput> => invoke('ai_code_review', { args })
+
 // === Forge (Gitea + GitHub) ===
 export type PrState = 'open' | 'closed' | 'merged' | 'draft'
 export type IssueState = 'open' | 'closed'

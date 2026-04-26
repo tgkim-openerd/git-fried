@@ -163,6 +163,69 @@ pub fn merge_resolution_prompt(
     )
 }
 
+/// PR 코드 리뷰 prompt — branch diff + commit 메시지 → 한국어 리뷰.
+///
+/// 출력 섹션:
+///   - 요약 (1~3줄)
+///   - 보안/성능/한글 처리/에러 처리 관점 issue
+///   - 잘 된 점
+///   - 사소한 nit
+pub fn code_review_prompt(
+    pr_title: &str,
+    pr_body: &str,
+    commits: &[String],
+    diff: &str,
+) -> String {
+    let masked_diff = mask_secrets(diff);
+    let masked_body = mask_secrets(pr_body);
+    let cs = if commits.is_empty() {
+        String::from("(없음)")
+    } else {
+        commits
+            .iter()
+            .take(20)
+            .map(|s| format!("  - {s}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    format!(
+        r#"다음 PR 을 리뷰해주세요. 한국어, 마크다운 출력.
+
+**PR 제목**: {pr_title}
+
+**PR 본문**:
+{masked_body}
+
+**커밋 (시간순)**:
+{cs}
+
+**diff**:
+```diff
+{masked_diff}
+```
+
+**리뷰 형식 (반드시 4 섹션)**:
+## 요약
+2~3 문장으로 PR 의 의도와 변경 범위.
+
+## ⚠ 우려 사항
+- 보안 (입력 검증 / 권한 / secret 노출)
+- 성능 (N+1 / 큰 loop / 동기 IO)
+- 한글/UTF-8 안전 (Windows CP949, conflict marker, NFC)
+- 에러 처리 / panic / unwrap
+
+## ✓ 잘 된 점
+- 1~3 가지 칭찬
+
+## 💡 사소한 nit (선택)
+- 1~5 가지 (라벨링: nit:, optional:)
+
+**금지**: `Co-Authored-By: Claude` / "Generated with Claude" 푸터.
+응답은 위 4 섹션만, 그대로.
+"#
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

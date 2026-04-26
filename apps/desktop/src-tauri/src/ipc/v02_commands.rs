@@ -444,6 +444,66 @@ pub async fn ai_resolve_conflict(
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AiCodeReviewArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    pub head_branch: String,
+    pub base_branch: String,
+    pub pr_title: String,
+    pub pr_body: String,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_code_review(
+    args: AiCodeReviewArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    // base..head commits + diff
+    let log_arg = format!("{}..{}", args.base_branch, args.head_branch);
+    let log = crate::git::runner::git_run(
+        &path,
+        &["log", &log_arg, "--pretty=%s", "--reverse"],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await
+    .ok()
+    .and_then(|o| o.into_ok().ok())
+    .unwrap_or_default();
+    let commits: Vec<String> = log
+        .lines()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.to_string())
+        .collect();
+
+    let diff = crate::git::runner::git_run(
+        &path,
+        &["diff", "--no-color", &log_arg],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await
+    .ok()
+    .and_then(|o| o.into_ok().ok())
+    .unwrap_or_default();
+
+    if diff.trim().is_empty() {
+        return Err(AppError::validation(
+            "diff 가 비었습니다. branch 범위를 확인.",
+        ));
+    }
+
+    let prompt = ai::code_review_prompt(&args.pr_title, &args.pr_body, &commits, &diff);
+    ai::ai_run(args.cli, &prompt).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AiPrBodyArgs {
     pub repo_id: i64,
     pub cli: ai::AiCli,

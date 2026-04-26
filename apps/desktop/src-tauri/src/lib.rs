@@ -143,6 +143,7 @@ pub fn run() {
             ipc::v02_commands::ai_commit_message,
             ipc::v02_commands::ai_pr_body,
             ipc::v02_commands::ai_resolve_conflict,
+            ipc::v02_commands::ai_code_review,
             ipc::profile_commands::list_profiles,
             ipc::profile_commands::create_profile,
             ipc::profile_commands::update_profile,

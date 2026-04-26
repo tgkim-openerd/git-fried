@@ -7,6 +7,8 @@ import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   addPrComment,
+  aiCodeReview,
+  aiDetectClis,
   closePr,
   getPullRequest,
   listPrComments,
@@ -15,7 +17,12 @@ import {
   submitPrReview,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
-import type { MergeMethod, PullRequest, ReviewVerdict } from '@/api/git'
+import type {
+  AiCli,
+  MergeMethod,
+  PullRequest,
+  ReviewVerdict,
+} from '@/api/git'
 
 const props = defineProps<{
   repoId: number | null
@@ -173,6 +180,57 @@ function onClose() {
   if (!window.confirm(`PR #${props.number} 을 닫으시겠습니까?`)) return
   closeMut.mutate()
 }
+
+// === AI 코드 리뷰 ===
+const { data: aiProbes } = useQuery({
+  queryKey: ['aiProbes'],
+  queryFn: aiDetectClis,
+  staleTime: 60_000,
+})
+const availableCli = computed<AiCli | null>(() => {
+  const p = aiProbes.value
+  if (!p) return null
+  if (p.find((x) => x.cli === 'claude' && x.installed)) return 'claude'
+  if (p.find((x) => x.cli === 'codex' && x.installed)) return 'codex'
+  return null
+})
+
+const aiReviewMut = useMutation({
+  mutationFn: () => {
+    const d = detailQuery.data.value
+    if (props.repoId == null || props.number == null || !d || !availableCli.value)
+      return Promise.reject(new Error('AI 사용 불가'))
+    if (
+      !window.confirm(
+        '⚠ PR diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?',
+      )
+    ) {
+      return Promise.reject(new Error('cancelled'))
+    }
+    return aiCodeReview({
+      repoId: props.repoId,
+      cli: availableCli.value,
+      headBranch: d.headBranch,
+      baseBranch: d.baseBranch,
+      prTitle: d.title,
+      prBody: d.bodyMd,
+      userApproved: true,
+    })
+  },
+  onSuccess: (out) => {
+    if (out.success) {
+      // 리뷰 본문 textarea 에 자동 채움 → 사용자가 verdict 선택 후 제출
+      reviewBody.value = out.text.trim()
+    } else {
+      alert(`AI 리뷰 실패:\n${out.stderr || out.text}`)
+    }
+  },
+  onError: (e) => {
+    const msg = describeError(e)
+    if (msg.includes('cancelled')) return
+    alert(`AI 호출 실패:\n${msg}`)
+  },
+})
 </script>
 
 <template>
@@ -261,7 +319,19 @@ function onClose() {
 
           <!-- 리뷰 제출 -->
           <section class="rounded-md border border-border p-3">
-            <h3 class="mb-2 text-xs font-semibold">리뷰 제출</h3>
+            <div class="mb-2 flex items-center justify-between">
+              <h3 class="text-xs font-semibold">리뷰 제출</h3>
+              <button
+                v-if="availableCli"
+                type="button"
+                class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+                :disabled="aiReviewMut.isPending.value"
+                :title="`${availableCli} CLI 가 PR diff 분석 후 리뷰 추천`"
+                @click="aiReviewMut.mutate()"
+              >
+                {{ aiReviewMut.isPending.value ? '✨ 분석 중...' : '✨ AI 리뷰' }}
+              </button>
+            </div>
             <div class="mb-2 flex gap-1 text-xs">
               <button
                 v-for="v in ['comment', 'approve', 'request_changes'] as ReviewVerdict[]"
