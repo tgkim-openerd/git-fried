@@ -50,7 +50,12 @@ pub struct GraphResult {
 pub fn compute_graph(path: &Path, limit: usize) -> AppResult<GraphResult> {
     let repo = Repository::open(path).map_err(AppError::Git)?;
     let mut walker = repo.revwalk().map_err(AppError::Git)?;
-    walker.set_sorting(Sort::TIME).map_err(AppError::Git)?;
+    // TIME 만 쓰면 동시 timestamp commits 의 순서가 비결정적 (테스트 fixture 처럼
+    // 빠르게 생성된 commits 는 같은 초). TOPOLOGICAL 도 결합해서 children-before-
+    // parents 순서를 강제 → lane 알고리즘 invariant 보장.
+    walker
+        .set_sorting(Sort::TIME | Sort::TOPOLOGICAL)
+        .map_err(AppError::Git)?;
     if walker.push_head().is_err() {
         return Ok(GraphResult {
             rows: vec![],

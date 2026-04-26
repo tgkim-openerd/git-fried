@@ -430,3 +430,147 @@ async fn test_diff_returns_text() {
     assert!(d.contains("hello world"), "diff 에 변경 라인이 포함");
     assert!(d.contains("--- a/a.txt"), "표준 diff 헤더");
 }
+
+// ===== Sprint A1 (D 라운드 보강) — Hide / Solo refs =====
+
+#[tokio::test]
+async fn test_hide_unhide_ref_round_trip() {
+    use crate::git::hide::{hide, list_hidden, unhide, HiddenRefKind};
+    use crate::git::ForgeKindLite;
+    use crate::storage::{Db, DbExt};
+
+    // Db::open 이 마이그레이션을 자동 실행하므로 repo_ref_hidden 테이블 생성됨.
+    let db_tmp = TempDir::new().unwrap();
+    let db_path = db_tmp.path().join("test.sqlite");
+    let db = Db::open(&db_path).await.unwrap();
+
+    // FK constraint 충족용 — 실제 repo 한 건 등록.
+    let repo_tmp = TempDir::new().unwrap();
+    let repo = db
+        .add_repo(
+            &repo_tmp.path().to_string_lossy(),
+            None,
+            Some("test"),
+            None,
+            None,
+            ForgeKindLite::Unknown,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+
+    hide(&db, repo.id, "feature/foo", HiddenRefKind::Branch)
+        .await
+        .unwrap();
+    hide(&db, repo.id, "v1.0.0", HiddenRefKind::Tag)
+        .await
+        .unwrap();
+
+    let listed = list_hidden(&db, repo.id).await.unwrap();
+    assert_eq!(listed.len(), 2, "두 항목이 영속 + 조회됨");
+    let names: Vec<_> = listed.iter().map(|h| h.ref_name.clone()).collect();
+    assert!(names.contains(&"feature/foo".to_string()));
+    assert!(names.contains(&"v1.0.0".to_string()));
+
+    unhide(&db, repo.id, "feature/foo").await.unwrap();
+    let after = list_hidden(&db, repo.id).await.unwrap();
+    assert_eq!(after.len(), 1);
+    assert_eq!(after[0].ref_name, "v1.0.0");
+}
+
+// ===== Sprint C1 — Worktree lock / unlock =====
+
+#[tokio::test]
+async fn test_worktree_lock_unlock_round_trip() {
+    let (_tmp, path) = init_test_repo().await;
+    std::fs::write(path.join("a.txt"), "v1\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+    super::commit::commit_simple(&path, "init").await.unwrap();
+
+    // 새 worktree 생성 (별도 임시 폴더 안)
+    let wt_tmp = TempDir::new().unwrap();
+    let wt_path = wt_tmp.path().join("wt-test");
+    let wt_str = wt_path.to_string_lossy().to_string();
+    super::worktree::add_worktree(
+        &path,
+        &super::worktree::AddWorktreeOpts {
+            path: wt_str.clone(),
+            create_branch: Some("wt-branch".into()),
+            branch: None,
+            start_point: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    // lock with reason
+    super::worktree::lock_worktree(&path, &wt_str, Some("작업 중"))
+        .await
+        .unwrap();
+
+    // list → 해당 worktree 가 locked 상태
+    let entries = super::worktree::list_worktrees(&path).await.unwrap();
+    let me = entries
+        .iter()
+        .find(|e| e.path.replace('\\', "/").ends_with("wt-test"))
+        .expect("새 worktree 가 list 에 보임");
+    assert!(me.is_locked, "lock 후 is_locked=true");
+
+    // unlock
+    super::worktree::unlock_worktree(&path, &wt_str).await.unwrap();
+    let entries2 = super::worktree::list_worktrees(&path).await.unwrap();
+    let me2 = entries2
+        .iter()
+        .find(|e| e.path.replace('\\', "/").ends_with("wt-test"))
+        .expect("worktree 그대로 존재");
+    assert!(!me2.is_locked, "unlock 후 is_locked=false");
+}
+
+// ===== Sprint C2 — LFS push_size (upstream 미설정 시 note) =====
+
+#[tokio::test]
+async fn test_lfs_push_size_no_upstream() {
+    let (_tmp, path) = init_test_repo().await;
+    std::fs::write(path.join("a.txt"), "v1\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+    super::commit::commit_simple(&path, "init").await.unwrap();
+
+    // upstream 미설정 — push_size 는 note 와 0 카운트.
+    let r = super::lfs::push_size(&path).await.unwrap();
+    assert_eq!(r.commit_count, 0);
+    assert_eq!(r.file_count, 0);
+    assert_eq!(r.total_bytes, 0);
+    assert!(
+        r.note.as_ref().map(|s| s.contains("upstream")).unwrap_or(false),
+        "upstream 미설정 안내",
+    );
+}
+
+// ===== Sprint H — Hunk-level stage (apply_patch round-trip) =====
+
+#[tokio::test]
+async fn test_stage_patch_partial_apply() {
+    let (_tmp, path) = init_test_repo().await;
+    std::fs::write(path.join("a.txt"), "line1\nline2\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+    super::commit::commit_simple(&path, "init").await.unwrap();
+
+    // 두 라인 추가 (일반 modify).
+    std::fs::write(path.join("a.txt"), "line1\nline2\nadded3\nadded4\n").unwrap();
+
+    // 단일 hunk 의 일부만 stage 하는 patch 직접 작성.
+    // index abc..def 부분은 git apply 가 복원 가능 (--recount 없이도 OK).
+    let patch = "diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -2,1 +2,2 @@\n line2\n+added3\n";
+    super::stage::stage_patch(&path, patch).await.unwrap();
+
+    // staged 에 a.txt 가 modified 로 들어가야 함.
+    let st = super::status::read_status(&path).unwrap();
+    assert!(
+        st.staged.iter().any(|f| f.path == "a.txt"),
+        "stage_patch 가 a.txt 를 staged 에 넣음",
+    );
+    // working tree 는 added4 도 그대로 남아있어야 (나머지 stage 안 됨).
+    let wt = std::fs::read_to_string(path.join("a.txt")).unwrap();
+    assert!(wt.contains("added4"), "stage 안 한 부분은 working 에 잔존");
+}

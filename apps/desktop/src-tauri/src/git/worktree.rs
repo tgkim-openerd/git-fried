@@ -66,9 +66,11 @@ pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
             current.head_sha = Some(s.to_string());
         } else if let Some(b) = line.strip_prefix("branch refs/heads/") {
             current.branch = Some(b.to_string());
-        } else if line == "locked" {
+        } else if line == "locked" || line.starts_with("locked ") {
+            // `locked` 단독 또는 `locked <reason>` (Sprint C1 lock_worktree 가 reason
+            // 지정 시 후자) — 둘 다 locked 상태.
             current.is_locked = true;
-        } else if line == "prunable" {
+        } else if line == "prunable" || line.starts_with("prunable ") {
             current.is_prunable = true;
         }
     }
