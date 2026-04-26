@@ -1,21 +1,39 @@
 # REVIEW — git-fried 진행 현황
 
-작성: 2026-04-26 (단일 세션, 누적 25 commits)
+작성: 2026-04-26 (단일 세션, 누적 **32 commits**, ~20,400 lines)
 대상: tgkim — 시간 될 때 dogfood + 다음 sprint 결정
 
 ---
 
 ## 30초 요약
 
-**v0.0 → v1.0 거의 전부** (Interactive rebase / 통합 터미널 / EV 서명 / macOS+Linux 외) 완료. 모든 빌드/테스트는 Claude 직접 검증.
+**v0.0 → v1.0 거의 전부 + UX 완성** (Interactive rebase / 통합 터미널 / EV 서명 / macOS+Linux 외) 완료.
+모든 빌드/테스트는 Claude 직접 검증.
 
 ```text
-25 commits 누적
-~19,500 라인 추가
-99 파일 변경
-70+ IPC 명령어
+32 commits 누적
+~20,400 라인 추가
+106 파일 변경
+75+ IPC 명령어
 Rust 단위 테스트: 32+ (한글 round-trip / 회귀 차단 모두 ✅)
+- 0 alert (모두 toast)
+- 25개 단축키 (? 도움말)
+- 7개 우측 탭 + 5개 모달 + 3개 페이지
 ```
+
+## 이번 세션 후반에 추가된 v1.0+ 기능 (8개)
+
+마지막 1/3 sprint 에서 dogfood 친화 polish 완성:
+
+1. **PR 리뷰** — Approve / Request changes / Comment / 머지 / 닫기 (e2de2dd)
+2. **Pre-commit hook 결과 패널** — alert→inline + no-verify 재시도 (add5f75)
+3. **3-way merge editor** — 3 패널 + ✨ AI 추천 (281138b + f6d539b)
+4. **Bisect + Reflog** — ⌘P 호출 (0c48f45)
+5. **Git LFS 패널** — 사용자 회사 6/6 사용 (05ac6cc)
+6. **AI 코드 리뷰** — PR detail 의 ✨ AI 리뷰 (395bedf)
+7. **PR 생성 모달 + AI body** — 매번 PR 만들 때 ✨ AI 한 번 (70f1360)
+8. **UX polish 4종** — Toast (9c7e872+f551b47) / 단축키 (7cb73f3+57e582f) /
+   Pin+빠른전환 ⌘⇧P (81cb12a) / 도움말 ?
 
 ---
 
