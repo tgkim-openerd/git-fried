@@ -15,6 +15,7 @@ pub mod error;
 pub mod forge;
 pub mod git;
 pub mod ipc;
+pub mod profiles;
 pub mod storage;
 
 use std::sync::Arc;
@@ -117,6 +118,11 @@ pub fn run() {
             ipc::v02_commands::ai_detect_clis,
             ipc::v02_commands::ai_commit_message,
             ipc::v02_commands::ai_pr_body,
+            ipc::profile_commands::list_profiles,
+            ipc::profile_commands::create_profile,
+            ipc::profile_commands::update_profile,
+            ipc::profile_commands::delete_profile,
+            ipc::profile_commands::activate_profile,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

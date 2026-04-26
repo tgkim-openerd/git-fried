@@ -185,6 +185,35 @@ export const reset = (repoId: number, mode: ResetMode, target: string): Promise<
 export const revert = (repoId: number, sha: string, noCommit = false): Promise<void> =>
   invoke('revert', { args: { repoId, sha, noCommit } })
 
+// === Profiles (개인 ↔ 회사 1-click 토글) ===
+export interface Profile {
+  id: number
+  name: string
+  gitUserName: string | null
+  gitUserEmail: string | null
+  signingKey: string | null
+  sshKeyPath: string | null
+  defaultForgeAccountId: number | null
+  isActive: boolean
+}
+export interface ProfileInput {
+  name: string
+  gitUserName?: string | null
+  gitUserEmail?: string | null
+  signingKey?: string | null
+  sshKeyPath?: string | null
+  defaultForgeAccountId?: number | null
+}
+export const listProfiles = (): Promise<Profile[]> => invoke('list_profiles')
+export const createProfile = (input: ProfileInput): Promise<Profile> =>
+  invoke('create_profile', { input })
+export const updateProfile = (id: number, input: ProfileInput): Promise<Profile> =>
+  invoke('update_profile', { args: { id, input } })
+export const deleteProfile = (id: number): Promise<void> =>
+  invoke('delete_profile', { id })
+export const activateProfile = (id: number): Promise<Profile> =>
+  invoke('activate_profile', { id })
+
 // === Worktree ===
 export interface WorktreeEntry {
   path: string

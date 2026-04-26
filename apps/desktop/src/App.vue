@@ -1,7 +1,8 @@
 <script setup lang="ts">
-// 최상위 레이아웃: 사이드바(좌) + 본문(우, file-routing 페이지) + 헤더 (Theme / Settings).
+// 최상위 레이아웃: 사이드바(좌) + 본문(우, file-routing 페이지) + 헤더 (Profiles / Theme / Settings).
 import Sidebar from './components/Sidebar.vue'
 import CommandPalette from './components/CommandPalette.vue'
+import ProfileSwitcher from './components/ProfileSwitcher.vue'
 import { useTheme } from '@/composables/useTheme'
 import { RouterLink } from 'vue-router'
 
@@ -12,10 +13,12 @@ const { theme, toggle } = useTheme()
   <div class="grid h-screen grid-cols-[280px_1fr] overflow-hidden">
     <Sidebar />
     <main class="flex flex-col overflow-hidden">
-      <!-- 상단 헤더 (간단 — Theme / Settings) -->
+      <!-- 상단 헤더 — Profiles / Home / Settings / Theme -->
       <div
-        class="flex h-9 items-center justify-end gap-2 border-b border-border bg-card px-3 text-xs"
+        class="relative flex h-9 items-center justify-end gap-2 border-b border-border bg-card px-3 text-xs"
       >
+        <ProfileSwitcher />
+        <span class="mx-1 text-muted-foreground">·</span>
         <RouterLink
           to="/"
           class="text-muted-foreground hover:text-foreground"

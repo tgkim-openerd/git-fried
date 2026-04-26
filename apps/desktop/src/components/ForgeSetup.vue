@@ -76,7 +76,7 @@ function onDelete(a: ForgeAccount) {
 </script>
 
 <template>
-  <div class="flex h-full flex-col gap-4 p-6">
+  <div class="flex flex-col gap-4">
     <h2 class="text-lg font-semibold">Forge 계정</h2>
 
     <!-- 등록된 계정 -->
