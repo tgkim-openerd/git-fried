@@ -12,6 +12,7 @@ pub mod commit;
 pub mod diff;
 pub mod file_history;
 pub mod graph;
+pub mod lfs;
 pub mod merge;
 pub mod reflog;
 pub mod repository;

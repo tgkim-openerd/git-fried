@@ -233,6 +233,33 @@ export const getFileHistory = (
 export const getFileBlame = (repoId: number, path: string): Promise<BlameLine[]> =>
   invoke('get_file_blame', { args: { repoId, path } })
 
+// === LFS ===
+export interface LfsStatus {
+  installed: boolean
+  version: string | null
+  trackedPatterns: string[]
+}
+export interface LfsFile {
+  path: string
+  oid: string
+  downloaded: boolean
+  size: number | null
+}
+export const lfsStatus = (repoId: number): Promise<LfsStatus> =>
+  invoke('lfs_status', { repoId })
+export const lfsListFiles = (repoId: number): Promise<LfsFile[]> =>
+  invoke('lfs_list_files', { repoId })
+export const lfsTrack = (repoId: number, pattern: string): Promise<void> =>
+  invoke('lfs_track', { args: { repoId, pattern } })
+export const lfsUntrack = (repoId: number, pattern: string): Promise<void> =>
+  invoke('lfs_untrack', { args: { repoId, pattern } })
+export const lfsFetch = (repoId: number): Promise<void> =>
+  invoke('lfs_fetch', { repoId })
+export const lfsPull = (repoId: number): Promise<void> =>
+  invoke('lfs_pull', { repoId })
+export const lfsPrune = (repoId: number): Promise<void> =>
+  invoke('lfs_prune', { repoId })
+
 // === Bisect ===
 export type BisectMark = 'good' | 'bad' | 'skip'
 export interface BisectStatus {

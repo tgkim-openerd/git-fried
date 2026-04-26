@@ -10,6 +10,7 @@ import CommitMessageInput from '@/components/CommitMessageInput.vue'
 import BranchPanel from '@/components/BranchPanel.vue'
 import StashPanel from '@/components/StashPanel.vue'
 import SubmodulePanel from '@/components/SubmodulePanel.vue'
+import LfsPanel from '@/components/LfsPanel.vue'
 import ForgePanel from '@/components/ForgePanel.vue'
 import WorktreePanel from '@/components/WorktreePanel.vue'
 
@@ -21,7 +22,14 @@ const upstream = computed(() => status.value?.upstream ?? null)
 const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
-type Tab = 'status' | 'branches' | 'stash' | 'submodule' | 'pr' | 'worktree'
+type Tab =
+  | 'status'
+  | 'branches'
+  | 'stash'
+  | 'submodule'
+  | 'lfs'
+  | 'pr'
+  | 'worktree'
 const tab = ref<Tab>('status')
 </script>
 
@@ -48,12 +56,13 @@ const tab = ref<Tab>('status')
               'branches',
               'stash',
               'submodule',
+              'lfs',
               'pr',
               'worktree',
             ] as Tab[]"
             :key="t"
             type="button"
-            class="flex-1 px-2 py-1.5 capitalize"
+            class="flex-1 px-1.5 py-1.5 capitalize"
             :class="
               tab === t
                 ? 'bg-accent text-accent-foreground font-semibold'
@@ -70,6 +79,8 @@ const tab = ref<Tab>('status')
                 ? 'Stash'
                 : t === 'submodule'
                 ? 'Sub'
+                : t === 'lfs'
+                ? 'LFS'
                 : t === 'pr'
                 ? 'PR'
                 : 'WT'
@@ -82,6 +93,7 @@ const tab = ref<Tab>('status')
           <BranchPanel v-else-if="tab === 'branches'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
           <StashPanel v-else-if="tab === 'stash'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
           <SubmodulePanel v-else-if="tab === 'submodule'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
+          <LfsPanel v-else-if="tab === 'lfs'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
           <ForgePanel v-else-if="tab === 'pr'" :repo-id="store.activeRepoId" class="h-full" />
           <WorktreePanel v-else :repo-id="store.activeRepoId" class="h-full border-l-0" />
         </div>

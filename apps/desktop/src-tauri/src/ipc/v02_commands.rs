@@ -3,8 +3,8 @@
 use crate::ai;
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    bisect as git_bisect, cherry_pick as git_cp, file_history as git_fh, merge as git_merge,
-    reflog as git_reflog, worktree as git_wt,
+    bisect as git_bisect, cherry_pick as git_cp, file_history as git_fh, lfs as git_lfs,
+    merge as git_merge, reflog as git_reflog, worktree as git_wt,
 };
 use crate::AppState;
 use serde::Deserialize;
@@ -229,6 +229,78 @@ pub async fn list_reflog(
     let ref_name = args.ref_name.as_deref().unwrap_or("HEAD");
     let limit = args.limit.unwrap_or(200).min(1000);
     git_reflog::list_reflog(&path, ref_name, limit).await
+}
+
+// ====== LFS ======
+
+#[tauri::command]
+pub async fn lfs_status(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_lfs::LfsStatus> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::status(&path).await
+}
+
+#[tauri::command]
+pub async fn lfs_list_files(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_lfs::LfsFile>> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::list_files(&path).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LfsPatternArgs {
+    pub repo_id: i64,
+    pub pattern: String,
+}
+
+#[tauri::command]
+pub async fn lfs_track(
+    args: LfsPatternArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_lfs::track(&path, &args.pattern).await
+}
+
+#[tauri::command]
+pub async fn lfs_untrack(
+    args: LfsPatternArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_lfs::untrack(&path, &args.pattern).await
+}
+
+#[tauri::command]
+pub async fn lfs_fetch(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::fetch(&path).await
+}
+
+#[tauri::command]
+pub async fn lfs_pull(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::pull(&path).await
+}
+
+#[tauri::command]
+pub async fn lfs_prune(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::prune(&path).await
 }
 
 // ====== File history / Blame ======
