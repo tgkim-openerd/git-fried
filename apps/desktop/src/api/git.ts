@@ -474,6 +474,96 @@ export const rebaseAbort = (repoId: number): Promise<void> =>
 export const rebaseSkip = (repoId: number): Promise<RebaseRunResult> =>
   invoke('rebase_skip', { repoId })
 
+// === Launchpad PR meta + Saved Views (docs/plan/11 §14 / Sprint A4) ===
+export interface PrIdentifier {
+  forgeKind: string
+  baseUrl: string
+  owner: string
+  repo: string
+  number: number
+}
+
+export interface PrMeta {
+  id: number
+  forgeKind: string
+  baseUrl: string
+  owner: string
+  repo: string
+  number: number
+  pinned: boolean
+  /** unix ts; null = active. 만료된 시각이면 클라이언트가 active 로 처리. */
+  snoozedUntil: number | null
+  updatedAt: number
+}
+
+export interface SavedView {
+  id: number
+  viewKind: string
+  name: string
+  filterJson: string
+  sortJson: string | null
+  createdAt: number
+  updatedAt: number
+}
+
+export const launchpadListActive = (): Promise<PrMeta[]> =>
+  invoke('launchpad_list_active')
+
+export const launchpadListForRepo = (
+  forgeKind: string,
+  baseUrl: string,
+  owner: string,
+  repo: string,
+): Promise<PrMeta[]> =>
+  invoke('launchpad_list_for_repo', {
+    args: { forgeKind, baseUrl, owner, repo },
+  })
+
+export const launchpadSetPinned = (
+  id: PrIdentifier,
+  pinned: boolean,
+): Promise<PrMeta> =>
+  invoke('launchpad_set_pinned', { args: { ...id, pinned } })
+
+export const launchpadSetSnooze = (
+  id: PrIdentifier,
+  snoozedUntil: number | null,
+): Promise<PrMeta> =>
+  invoke('launchpad_set_snooze', { args: { ...id, snoozedUntil } })
+
+export const launchpadCleanupDefaults = (): Promise<number> =>
+  invoke('launchpad_cleanup_defaults')
+
+export const launchpadListViews = (viewKind: string): Promise<SavedView[]> =>
+  invoke('launchpad_list_views', { args: { viewKind } })
+
+export const launchpadSaveView = (args: {
+  viewKind: string
+  name: string
+  filterJson: string
+  sortJson?: string | null
+}): Promise<SavedView> =>
+  invoke('launchpad_save_view', {
+    args: {
+      viewKind: args.viewKind,
+      name: args.name,
+      filterJson: args.filterJson,
+      sortJson: args.sortJson ?? null,
+    },
+  })
+
+export const launchpadDeleteView = (id: number): Promise<void> =>
+  invoke('launchpad_delete_view', { id })
+
+/**
+ * v1 단순화 — `(forgeKind, baseUrl, owner, repo, number)` 5-tuple 의 baseUrl
+ * 채움. PullRequest 응답에 baseUrl 이 없으므로 forge_kind 별 단일 instance 가정.
+ * 다중 instance 지원은 v1.x.
+ */
+export function inferBaseUrl(forgeKind: string): string {
+  return forgeKind === 'gitea' ? 'gitea-default' : 'github.com'
+}
+
 // === Hide branches (docs/plan/11 §5d / Sprint A1) ===
 export type HiddenRefKind = 'branch' | 'remote' | 'tag' | 'stash'
 

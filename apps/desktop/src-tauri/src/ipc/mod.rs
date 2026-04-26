@@ -6,6 +6,7 @@
 pub mod commands;
 pub mod forge_commands;
 pub mod hide_commands;
+pub mod launchpad_commands;
 pub mod profile_commands;
 pub mod pty_commands;
 pub mod v02_commands;
@@ -13,6 +14,7 @@ pub mod v02_commands;
 pub use commands::*;
 pub use forge_commands::*;
 pub use hide_commands::*;
+pub use launchpad_commands::*;
 pub use profile_commands::*;
 pub use pty_commands::*;
 pub use v02_commands::*;

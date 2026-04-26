@@ -15,6 +15,7 @@ pub mod error;
 pub mod forge;
 pub mod git;
 pub mod ipc;
+pub mod launchpad;
 pub mod profiles;
 pub mod pty;
 pub mod storage;
@@ -167,6 +168,14 @@ pub fn run() {
             ipc::hide_commands::hide_refs_bulk,
             ipc::hide_commands::unhide_refs_by_kind,
             ipc::hide_commands::unhide_all_refs,
+            ipc::launchpad_commands::launchpad_list_active,
+            ipc::launchpad_commands::launchpad_list_for_repo,
+            ipc::launchpad_commands::launchpad_set_pinned,
+            ipc::launchpad_commands::launchpad_set_snooze,
+            ipc::launchpad_commands::launchpad_cleanup_defaults,
+            ipc::launchpad_commands::launchpad_list_views,
+            ipc::launchpad_commands::launchpad_save_view,
+            ipc::launchpad_commands::launchpad_delete_view,
             ipc::profile_commands::list_profiles,
             ipc::profile_commands::create_profile,
             ipc::profile_commands::update_profile,
