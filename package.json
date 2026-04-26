@@ -1,0 +1,29 @@
+{
+  "name": "git-fried",
+  "version": "0.0.0",
+  "private": true,
+  "description": "GitKraken alternative desktop git client. Gitea first-class, Korean-safe, Tauri-light, multi-repo native.",
+  "license": "MIT",
+  "author": "tgkim",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --cwd apps/desktop dev",
+    "build": "bun run --cwd apps/desktop build",
+    "tauri": "bun run --cwd apps/desktop tauri",
+    "tauri:dev": "bun run --cwd apps/desktop tauri dev",
+    "tauri:build": "bun run --cwd apps/desktop tauri build",
+    "test": "bun run --cwd apps/desktop test && cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "test:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "test:web": "bun run --cwd apps/desktop test",
+    "lint": "bun run --cwd apps/desktop lint",
+    "typecheck": "bun run --cwd apps/desktop typecheck",
+    "fmt": "bun run --cwd apps/desktop fmt && cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "packageManager": "bun@1.1.0"
+}

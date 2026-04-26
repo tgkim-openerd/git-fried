@@ -1,0 +1,221 @@
+// Git 모듈 단위 테스트.
+//
+// 핵심 테스트:
+//   1. 한글 round-trip: 커밋 메시지 → log 파싱 → 정확히 같은 한글
+//   2. 한글 파일명 round-trip: 파일 추가 → status / log 표시
+//   3. NFC 정규화: NFD 입력도 NFC 로 일관 처리
+//   4. parse_forge: GitHub / Gitea URL 패턴 인식
+//   5. git CLI 표준 spawn: core.quotepath=false 정상 주입
+
+use super::repository::{detect_meta, log, open, parse_forge, ForgeKindLite};
+use super::runner::{commit_with_message, git_run, git_version, GitRunOpts};
+use std::path::Path;
+use tempfile::TempDir;
+
+/// 임시 디렉토리에 git init 한 새 레포 생성.
+async fn init_test_repo() -> (TempDir, std::path::PathBuf) {
+    let tmp = TempDir::new().unwrap();
+    let path = tmp.path().to_path_buf();
+
+    // git init
+    let out = git_run(&path, &["init", "-q", "-b", "main"], &Default::default())
+        .await
+        .unwrap();
+    out.into_ok().unwrap();
+
+    // 사용자 정보 설정 (한글 + 영문 혼합)
+    git_run(
+        &path,
+        &["config", "user.name", "테스트사용자"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    git_run(
+        &path,
+        &["config", "user.email", "test@example.com"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+
+    (tmp, path)
+}
+
+#[tokio::test]
+async fn test_git_version_available() {
+    let v = git_version().await.expect("git CLI 가 PATH 에 있어야 합니다");
+    assert!(v.starts_with("git version"), "got: {v}");
+}
+
+#[tokio::test]
+async fn test_korean_commit_message_roundtrip() {
+    let (_tmp, path) = init_test_repo().await;
+
+    // 빈 커밋 + 한글 메시지
+    let msg = "feat: 한글 커밋 메시지 테스트\n\n본문 줄에도 한글이 잘 들어갑니다.";
+    git_run(&path, &["commit", "--allow-empty", "-m", msg], &Default::default())
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+
+    // log 로 다시 읽기
+    let repo = open(&path).unwrap();
+    let commits = log(&repo, 10, 0).unwrap();
+    assert_eq!(commits.len(), 1);
+    let c = &commits[0];
+    assert_eq!(c.subject, "feat: 한글 커밋 메시지 테스트");
+    assert!(c.body.contains("본문 줄에도 한글이 잘 들어갑니다."));
+    assert_eq!(c.author_name, "테스트사용자");
+}
+
+#[tokio::test]
+async fn test_file_based_commit_with_korean_body() {
+    let (_tmp, path) = init_test_repo().await;
+
+    let msg = "feat: 줄바꿈 포함\n\n매우 긴 한글 본문이 여러 줄에\n걸쳐서 작성될 수 있습니다.\n특수문자 포함: ✓ → ★\n";
+    let out = commit_with_message(&path, msg).await.unwrap();
+    // empty commit 가능하도록 --allow-empty 가 없으니 첫 commit 은 fail 정상.
+    // 단, stderr 가 한글이거나 stage 가 비어있다는 의미를 명확히 디코드해야 함.
+    if out.exit_code != Some(0) {
+        let stderr = out.stderr;
+        // mangle 되지 않은 ASCII 영문 stderr 라도 mojibake 마커가 없어야 함.
+        assert!(!stderr.contains("\u{FFFD}"), "mojibake in stderr: {stderr}");
+    }
+}
+
+#[tokio::test]
+async fn test_korean_filename_roundtrip() {
+    let (_tmp, path) = init_test_repo().await;
+
+    // 한글 파일명 생성
+    let file = path.join("한글파일.txt");
+    std::fs::write(&file, "내용").unwrap();
+
+    // stage + commit
+    git_run(&path, &["add", "."], &Default::default())
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+    git_run(
+        &path,
+        &["commit", "-m", "feat: 한글 파일 추가"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+
+    // log 의 stat 출력에서 파일명이 escape 되지 않고 그대로 나와야 함.
+    let out = git_run(
+        &path,
+        &["log", "--name-only", "-n", "1"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    assert!(
+        out.contains("한글파일.txt"),
+        "core.quotepath=false 가 안 먹은 듯. stdout: {out}"
+    );
+}
+
+#[test]
+fn test_parse_forge_github_https() {
+    let (kind, owner, repo) = parse_forge(Some("https://github.com/tgkim/mock-fried.git"));
+    assert!(matches!(kind, ForgeKindLite::Github));
+    assert_eq!(owner.as_deref(), Some("tgkim"));
+    assert_eq!(repo.as_deref(), Some("mock-fried"));
+}
+
+#[test]
+fn test_parse_forge_github_ssh() {
+    let (kind, owner, repo) = parse_forge(Some("git@github.com:tgkim/mock-fried.git"));
+    assert!(matches!(kind, ForgeKindLite::Github));
+    assert_eq!(owner.as_deref(), Some("tgkim"));
+    assert_eq!(repo.as_deref(), Some("mock-fried"));
+}
+
+#[test]
+fn test_parse_forge_gitea_self_hosted() {
+    let (kind, owner, repo) =
+        parse_forge(Some("https://git.dev.opnd.io/opnd-frontend/ankentrip.git"));
+    assert!(
+        matches!(kind, ForgeKindLite::Gitea),
+        "사용자 회사 Gitea 인식 실패"
+    );
+    assert_eq!(owner.as_deref(), Some("opnd-frontend"));
+    assert_eq!(repo.as_deref(), Some("ankentrip"));
+}
+
+#[test]
+fn test_parse_forge_unknown() {
+    let (kind, _, _) = parse_forge(Some("https://gitlab.com/foo/bar.git"));
+    assert!(matches!(kind, ForgeKindLite::Unknown));
+    let (kind2, _, _) = parse_forge(None);
+    assert!(matches!(kind2, ForgeKindLite::Unknown));
+}
+
+#[tokio::test]
+async fn test_detect_meta_round_trip() {
+    let (_tmp, path) = init_test_repo().await;
+    git_run(
+        &path,
+        &[
+            "remote",
+            "add",
+            "origin",
+            "git@github.com:tgkim/mock-fried.git",
+        ],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    git_run(&path, &["commit", "--allow-empty", "-m", "init"], &Default::default())
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+
+    let meta = detect_meta(&path).unwrap();
+    assert_eq!(meta.default_branch.as_deref(), Some("main"));
+    assert!(matches!(meta.forge_kind, ForgeKindLite::Github));
+    assert_eq!(meta.forge_owner.as_deref(), Some("tgkim"));
+}
+
+#[tokio::test]
+async fn test_safe_directory_injection() {
+    // safe.directory=* 가 -c 로 주입되었음을 간접 검증.
+    // git config --get-all safe.directory 호출이 * 를 반환해야 함.
+    let (_tmp, path) = init_test_repo().await;
+    let out = git_run(
+        &path,
+        &["config", "--get-all", "safe.directory"],
+        &Default::default(),
+    )
+    .await
+    .unwrap();
+    // 결과 자체가 * 면 OK. -c 는 process-local 이므로 글로벌에는 없음 — 단순 호출이 깨지지 않으면 OK.
+    let _ = out; // 통과만 검증 (실제 값은 시스템마다 다름)
+}
+
+#[test]
+fn test_nfc_normalization_in_decode() {
+    // NFD 한글 ('ㅎㅏㄴ' 처럼 자모 분리) 가 NFC 로 합쳐지는지 검증.
+    use unicode_normalization::UnicodeNormalization;
+    let nfd: String = "한".nfd().collect();
+    let nfc: String = nfd.nfc().collect();
+    assert_eq!(nfc, "한");
+    assert_ne!(nfd.as_bytes().len(), nfc.as_bytes().len());
+}

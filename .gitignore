@@ -1,0 +1,53 @@
+# dependencies
+node_modules/
+bun.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# build outputs
+dist/
+dist-ssr/
+.output/
+*.local
+target/
+*.tsbuildinfo
+
+# tauri
+src-tauri/target/
+src-tauri/gen/
+src-tauri/WixTools/
+
+# vite auto-generated
+auto-imports.d.ts
+components.d.ts
+typed-router.d.ts
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# misc
+.cache/
+*.bak
