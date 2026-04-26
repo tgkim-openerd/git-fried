@@ -96,6 +96,20 @@ useShortcut('openInExplorer', () => {
   })
 })
 
+// Sprint F5 — F11 / ⌃⌘F Fullscreen 토글.
+useShortcut('toggleFullscreen', () => {
+  void (async () => {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window')
+      const w = getCurrentWindow()
+      const next = !(await w.isFullscreen())
+      await w.setFullscreen(next)
+    } catch (e) {
+      toast.error('전체화면 토글 실패', describeError(e))
+    }
+  })()
+})
+
 interface GlobalHandles {
   gitFriedOpenSyncTemplate?: typeof openSyncTemplate
   gitFriedOpenBisect?: () => void

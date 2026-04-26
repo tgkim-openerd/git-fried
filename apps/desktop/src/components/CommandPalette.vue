@@ -412,6 +412,13 @@ const allCommands = computed<Cmd[]>(() => {
       hint: 'reset',
       action: resetCustomTheme,
     },
+    {
+      id: 'view.fullscreen',
+      category: 'view',
+      label: '전체화면 토글',
+      hint: 'F11 / ⌃⌘F',
+      action: trigger('toggleFullscreen'),
+    },
 
     // ===== Stash (1) =====
     {

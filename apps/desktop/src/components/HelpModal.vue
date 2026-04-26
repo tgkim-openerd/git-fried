@@ -56,6 +56,7 @@ const groups: Group[] = [
       { keys: '⌘W', desc: '활성 모달 닫기' },
       { keys: '⌘T', desc: 'Repo 빠른 전환 (⌘⇧P alias)' },
       { keys: '⌥O / Alt+O', desc: '레포 폴더 열기 (OS 파일 매니저)' },
+      { keys: 'F11 / ⌃⌘F', desc: '전체화면 토글' },
     ],
   },
   {

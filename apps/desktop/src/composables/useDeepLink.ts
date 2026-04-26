@@ -38,6 +38,7 @@ const COMMAND_ALIASES: Record<string, ShortcutAction> = {
   'file-history': 'fileHistorySearch',
   'close-modal': 'closeModal',
   'open-in-explorer': 'openInExplorer',
+  fullscreen: 'toggleFullscreen',
 }
 
 interface UnlistenFn {

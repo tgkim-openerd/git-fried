@@ -48,6 +48,7 @@ export type ShortcutAction =
   | 'fileHistorySearch' // ⌘⇧H
   | 'newTab' // ⌘T — Repo Switcher (⌘⇧P alias)
   | 'openInExplorer' // ⌥O — OS 파일 매니저 (Sprint F4)
+  | 'toggleFullscreen' // F11 — 전체화면 토글 (Sprint F5)
 
 type Handler = () => void
 
@@ -147,6 +148,25 @@ function installGlobal() {
     // Alt+O — OS 파일 매니저 (Sprint F4). modifier=alt 단독.
     if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'o') {
       const set = bus.handlers.get('openInExplorer')
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+        return
+      }
+    }
+
+    // F11 (또는 ⌃⌘F) — Fullscreen 토글 (Sprint F5).
+    if (
+      (e.key === 'F11' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) ||
+      (e.metaKey && e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f')
+    ) {
+      const set = bus.handlers.get('toggleFullscreen')
       if (set && set.size > 0) {
         e.preventDefault()
         for (const fn of set) {
