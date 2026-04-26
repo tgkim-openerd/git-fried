@@ -32,6 +32,7 @@
     "@tanstack/vue-query": "^5.59.0",
     "@tanstack/vue-virtual": "^3.10.0",
     "@tauri-apps/api": "^2.1.0",
+    "@tauri-apps/plugin-deep-link": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",
     "@tauri-apps/plugin-notification": "^2.0.0",

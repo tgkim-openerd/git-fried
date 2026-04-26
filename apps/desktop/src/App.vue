@@ -15,12 +15,15 @@ import StatusBar from './components/StatusBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
+import { useDeepLink } from '@/composables/useDeepLink'
 import { useReposStore } from '@/stores/repos'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
 const { theme, toggle } = useTheme()
 const reposStore = useReposStore()
 const ui = useUiState()
+const router = useRouter()
+useDeepLink(router)
 
 // Sync-template Modal — Command Palette / 추후 우클릭 메뉴에서 trigger.
 const syncTemplateOpen = ref(false)
