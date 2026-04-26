@@ -187,3 +187,92 @@ export function buildHunkPatch(
   // file header + hunk header + body. 끝 newline 보장 (git apply 요구).
   return `${file.fileHeader}\n${hunk.header}\n${tail}${tail.endsWith('\n') ? '' : '\n'}`
 }
+
+/**
+ * 라인 단위 partial stage / unstage patch — Sprint N (`docs/plan/11 §7`).
+ *
+ * 알고리즘:
+ *   - 선택 `-` 라인: 그대로 `-` (해당 deletion 만 stage)
+ *   - 미선택 `-` 라인: ` ` context 로 변환 (deletion 안 함, source 에 그대로 존재)
+ *   - 선택 `+` 라인: 그대로 `+` (해당 addition 만 stage)
+ *   - 미선택 `+` 라인: drop (addition 발생 안 함)
+ *   - context (` `) / `\ No newline ...`: 보존
+ *   - 빈 줄 (parseDiffWithHunks 가 hunk 사이 분리용 삽입): drop
+ *
+ * hunk header `@@ -A,B +C,D @@ ctx` 의 B (oldCount) / D (newCount) 재계산:
+ *   - oldCount = context + `-` (선택/미선택 모두 source 에 존재)
+ *   - newCount = context + 선택 `+` + 미선택 `-` (context 로 변환되어 target 에 존재)
+ *
+ * 라인 변경이 0 (선택된 ± 라인 없음) → null 반환 → UI 가 안내.
+ *
+ * @param selectedSet hunk.bodyLines index 기준의 선택 인덱스 집합. context 인덱스는 무시됨.
+ */
+export function buildLinePatch(
+  file: Pick<DiffFileWithHunks, 'fileHeader'>,
+  hunk: DiffHunk,
+  selectedSet: Set<number>,
+): string | null {
+  const newBody: string[] = []
+  let oldCount = 0
+  let newCount = 0
+  let containsChange = false
+
+  for (let i = 0; i < hunk.bodyLines.length; i++) {
+    const line = hunk.bodyLines[i]
+    if (line === '') continue // hunk 사이 시각적 분리 라인 — drop
+    if (line === '\\ No newline at end of file') {
+      newBody.push(line)
+      continue
+    }
+    const ch = line.charAt(0)
+    const rest = line.slice(1)
+    if (ch === ' ') {
+      newBody.push(line)
+      oldCount++
+      newCount++
+    } else if (ch === '-') {
+      if (selectedSet.has(i)) {
+        newBody.push(line)
+        oldCount++
+        containsChange = true
+      } else {
+        // 미선택 deletion → context 로 보존.
+        newBody.push(' ' + rest)
+        oldCount++
+        newCount++
+      }
+    } else if (ch === '+') {
+      if (selectedSet.has(i)) {
+        newBody.push(line)
+        newCount++
+        containsChange = true
+      }
+      // 미선택 addition → drop.
+    } else {
+      // 기타 prefix — 안전하게 context 로 처리.
+      newBody.push(' ' + line)
+      oldCount++
+      newCount++
+    }
+  }
+
+  if (!containsChange) return null
+
+  const m = hunk.header.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)$/)
+  if (!m) return null
+  const oldStart = m[1]
+  const newStart = m[2]
+  const tail = m[3] ?? ''
+  const newHeader = `@@ -${oldStart},${oldCount} +${newStart},${newCount} @@${tail}`
+  const body = newBody.join('\n')
+  return `${file.fileHeader}\n${newHeader}\n${body}${body.endsWith('\n') ? '' : '\n'}`
+}
+
+/**
+ * hunk body 의 한 라인이 "변경 가능" (= +/- 로 시작하는 stage 후보) 인지.
+ * UI 에서 checkbox 노출 결정용.
+ */
+export function isStageableLine(line: string): boolean {
+  const ch = line.charAt(0)
+  return ch === '+' || ch === '-'
+}
