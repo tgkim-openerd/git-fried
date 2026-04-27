@@ -1,8 +1,16 @@
 # 16. Line-level stage v2 — Sprint H 후속 작업 plan
 
-작성: 2026-04-27 / 트리거: Sprint H (`a0dd950` Hunk-level stage) 후속 — `parseDiff.ts` modified 상태로 작업 진행 중
+작성: 2026-04-27 / 트리거: Sprint H (`a0dd950` Hunk-level stage) 후속
 
-> **목적**: 12 plan v3 §15.A 의 Line-level stage 를 정밀 spec 으로 구체화. CodeMirror selection 또는 라인 옆 checkbox 로 라인 선택 → 선택 라인만 추출 → minimal patch 재조립 → `git apply --cached`.
+> **🎉 v2 완료 확인 (2026-04-27)**: 본 plan 의 모든 잔여 작업이 **이미 다른 세션에서 완료**된 상태로 확인됨.
+> - `parseDiff.ts` 의 `buildLinePatch` 함수 = ✅ 정확한 patch math 구현 (선택 `+` 그대로 / 미선택 `+` drop / 선택 `-` 그대로 / 미선택 `-` context 변환 / `@@ -A,B +C,D @@` count 재계산)
+> - `HunkStageModal.vue` = ✅ Hunk + Line 통합 UI (라인별 checkbox, shift-click range, 전체 선택, 선택 해제, stage/unstage 양방향)
+> - Backend = ✅ `apply_patch(repoId, patch, staged)` IPC 재사용 + `cargo test test_stage_patch_partial_apply` round-trip 검증 (commit `5abfc4b`)
+> - Vitest = ✅ `src/utils/parseDiff.test.ts` 8 tests pass (선택 0/context only/첫 + 라인/단일 - 라인/전체 선택 등)
+>
+> 본 plan 은 **완료 reference** 로 보존. 잔여 = 0.
+
+> **목적 (원본)**: 12 plan v3 §15.A 의 Line-level stage 를 정밀 spec 으로 구체화. CodeMirror selection 또는 라인 옆 checkbox 로 라인 선택 → 선택 라인만 추출 → minimal patch 재조립 → `git apply --cached`.
 >
 > **연계**: Sprint H 의 [`HunkStageModal.vue`](apps/desktop/src/components/HunkStageModal.vue), [`parseDiff.ts`](apps/desktop/src/utils/parseDiff.ts), [`buildHunkPatch`](apps/desktop/src/utils/parseDiff.ts), 12 plan v3 §15.A.
 
