@@ -193,11 +193,11 @@
 
 ## 12. 우선순위 정리 + 권장 sprint 진입
 
-### Sprint A14 (P0 — 즉시 진입 가치 있음, ~반나절)
+### Sprint A14 (P0) ✅ 완료 (2026-04-27)
 
-1. **H1 `⌘⇧H` File history search 단축키** (~30분)
-2. **D1 Stash 부분 apply** (~2h)
-3. **A1 Compare branches / commits** (~6h)
+1. ✅ **H1 `⌘⇧H` File history search** — StatusPanel 의 `useShortcut('fileHistorySearch')` 가 selected file 또는 첫 unstaged/staged 의 history modal 자동 진입 (이미 구현됨, 검증만)
+2. ✅ **D1 Stash 부분 apply** — commit `f6e05c8`. backend `git/stash.rs::apply_stash_file` (`git checkout stash@{n} -- <path>` 단순 전략) + IPC + `applyStashFile` wrapper + `StashPanel.vue` 미리보기에 파일별 row + "이 파일만 apply" 버튼
+3. ✅ **A1 Compare branches/commits** — commit `(C3)`. backend `git/compare.rs::compare_refs` (commits + diff + leftCount/rightCount via `rev-list --left-right --count`) + `CompareModal.vue` (ref1 ⇄ ref2 picker + commit list + diff text) + CommandPalette "Compare — 두 ref 비교" 명령
 
 ### Sprint B14 (P1 — 다음 sprint, ~1.5일)
 
