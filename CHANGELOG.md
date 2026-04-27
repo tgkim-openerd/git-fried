@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-4 — P1 ContextMenu 6 + P1 viewer 3 (`docs/plan/22 §22-4`, V-5 이월):
+  - **CM-6 Sidebar repo row** — Open in Explorer / Copy path / Set as active / Fetch only this / Pin / Set alias / Run gc (submenu: gc, gc --aggressive ⚠) / Remove from workspace (destructive)
+  - **CM-7 RepoTabBar tab** — Close / Close others / Close all (destructive) / Move left / Move right (`store.reorderTabs` 활용)
+  - **CM-8 TagPanel tag row** — Push to origin / Checkout (detached HEAD) / Create branch from / Copy commit SHA / Delete local / Delete remote (destructive)
+  - **CM-9 PrPanel PR row** — Open detail / Open in browser / Pin (useLaunchpadMeta) / Snooze submenu (1h/1d/1w/1m, 또는 해제) / Copy URL / Copy PR # / Copy branch
+  - **CM-10 ReflogModal entry** — Show diff (emit) / Restore HEAD here (reset --mixed, destructive) / Copy SHA / Create branch here
+  - **CM-11 WorktreePanel row** — Open in Explorer / Switch / Lock·Unlock toggle / Remove (destructive, main 불가)
+  - **V-3 CommitDiffModal header action group** — 🍒 Cherry-pick / ↩ Revert / Reset (mode dropdown soft·mixed·hard ⚠), `useCommitActions` 재사용
+  - **V-4 TagPanel tag click → inline annotated viewer** — row click 으로 expand 영역 (annotated/lightweight 뱃지 + full SHA + subject `<pre>` + 우클릭 안내)
+  - **V-6 ReflogModal row click + dblclick + 우클릭** — selectedSha highlight + `emit('showDiff', sha)` (App.vue listen 은 차후) + CM-10 메뉴
+  - V-5 (StatusPanel file detail side-panel) 은 22-7 또는 별도 sprint 로 이월 — 우측 detail 영역 점유 정책 결정 필요 (focusMode 와 충돌 가능성)
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
 - Sprint 22-3 — UI Polish v2 깊은 메뉴 + Viewer (`docs/plan/22 §22-3` ✅):
   - **CM-5 BranchPanel 우클릭 11 액션** — Checkout / Create from / Rename / Delete (destructive) / Merge into HEAD / Rebase HEAD onto / Hide / Solo / Compare / Push / Set upstream
     - 신규 `apps/desktop/src/composables/useBranchActions.ts` (`useCommitActions` 패턴 + `localBranchName` helper export)
@@ -21,20 +33,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 검증: typecheck 0 / lint 0 / vitest 13 pass (cargo check 는 환경 base64ct edition 2024 이슈로 보류 — CI 검증 권장)
 - Sprint 23 — Design System Extraction (`docs/plan/23` + `docs/design-context/` + Playwright 자동 캡처):
   - `docs/plan/23-design-system-extraction.md` 신규 — Phase 1 (4 병렬 에이전트: Token/Component/Flow/Codex Intent) → Phase 2 (6 문서 통합) → Phase 3 (Handoff A/B/C 옵션) 절차서
-  - **Phase 3 옵션 B 완료** — Playwright 자동 캡처 12 화면 (`docs/design-context/screenshots/*.png`):
+  - **Phase 3 옵션 B 완료** — Playwright 자동 캡처 36 화면 (`docs/design-context/screenshots/*.png`):
     - `apps/desktop/src/api/devMock.ts` 신규 — 25+ command fixture (한글 commit, 듀얼 워크스페이스, ahead-behind, conflict). `import.meta.env.DEV` AND `window.__TAURI_INTERNALS__` 부재 시만 활성 (production / 실 Tauri 자동 우회)
     - `apps/desktop/src/api/invokeWithTimeout.ts` 에 `isMockEnabled()` 가드 dev-only mock branch 추가
     - `bun add -D playwright` + Chromium 설치
-    - `scripts/capture-screens.ts` 신규 — 1440×900 ko-KR, light/dark, sidebar 첫 레포 자동 활성, 단축키 dispatch (⌘P / ? / ⌘D / ⌘B / ⌘3) 로 모달·패널 자동 열기
-    - 12 PNG: 메인(L+D) / launchpad(L+D) / settings(L+D) / CommandPalette / HelpModal / CommitDiffModal / BranchPanel / StashPanel / PR panel
-    - `03-screens-and-flows.md` § 0 스크린샷 인덱스 + § 1·2·3 인라인 임베드 / `README.md` 캡처 환경 + 12 화면 인덱스 추가
-  - `docs/design-context/` 신규 6 문서 패키지:
+    - `scripts/capture-screens.ts` 신규 — 1440×900 ko-KR, light/dark, sidebar 첫 레포 자동 활성, 단축키 dispatch (⌘P / ⌘N / ⌘⇧H / ⌘⇧P / ⌘D / ⌘B / ⌘3 / ?) + palette fuzzy search (bisect / 비교 / reflog / rebase / template) + 탭 클릭 (Sub / LFS / WT / Tag / Issue / Release) + Settings nav 8 카테고리
+    - **36 PNG** 카테고리:
+      - 페이지 3 × light/dark = 6장 (메인 / launchpad / settings)
+      - 우측 메인 탭 패널 6장 (BranchPanel / StashPanel / PR / Submodule / LFS / Worktree)
+      - ForgePanel sub-tab 3장 (Tag / Issue / Release)
+      - Settings 카테고리 8장 light (Profiles 외 forge / general / ui / editor / repo-specific / 유지보수 / 마이그레이션 / about)
+      - Modal 11장 (CommandPalette / HelpModal / CommitDiffModal Inline + Split / CreatePr / FileHistory / RepoSwitcher / Bisect / Compare / Reflog / Rebase / SyncTemplate / CloneRepo)
+    - `03-screens-and-flows.md` § 0 스크린샷 인덱스 + § 1·2·3 인라인 임베드 / `README.md` 캡처 환경 + 36 화면 인덱스 추가
+  - `docs/design-context/` 신규 7 문서 패키지:
     - `00-product-brief.md` — 제품 정체성 / 페르소나 (회사 Gitea + 개인 GitHub 듀얼 포지) / 톤앤매너 (dense·calm·professional·instrumented)
     - `01-design-tokens.md` — `tailwind.config.ts` + `src/styles/main.css` 1:1 추출 + W3C Design Tokens JSON + secondary/muted/accent 동일 HSL 결함 식별
     - `02-component-inventory.md` — 48 컴포넌트 + 18 모달 카탈로그 + BaseModal/useFocusTrap/aria-modal/reka-ui Dialog 부재 5필드 검증
     - `03-screens-and-flows.md` — 3 페이지 layout + 18 모달 entry/state/exit + 37 CommandPalette + 17 ContextMenu (P0 5/P1 6/P2 3) + 15 Click→Detail
     - `04-interaction-patterns.md` — 키보드 modifier 표기 / 한글 visual width (CJK=2, 36자=72) / drag&drop / skeleton / a11y / IPC 5min progress
-    - `05-figma-handoff-brief.md` — Claude Design 작업 의뢰 prompt + 5 sprint × 24 deliverable + 8 결정 필요 Q&A
+    - `05-figma-handoff-brief.md` — Claude Design 작업 의뢰 prompt + 5 sprint × 27 deliverable (D25~D27 추가: Layout extensibility audit / Plugin slot / 미구현 placeholder) + 8 결정 필요 Q&A
+    - `06-gitkraken-feature-parity.md` — GitKraken 기능 ≈87 catalog (✅52 구현 / ⚠️10 부분 / 🔜15 v0.4~v1.0 예정 / ❌10 의도적 skip) + 4 design hard constraint (Layout extensibility / Density 강제 / Plugin slot / 미구현 placeholder 정책). plan/03 + plan/14 + plan/22 합본
+    - `00-product-brief.md` § 4-2 "Feature Parity Ambition" + § 8 Anti-Goals 보강 (minimal-leaning / GitKraken visual 모방 / 고정 카운트 가정)
     - `README.md` — 인덱스 + 권장 읽기 순서 + Handoff 옵션 (A 문서만 / B 스크린샷 / C Figma MCP)
 - Sprint A14 (`docs/plan/14`):
   - `⌘⇧H` File history search 단축키 (StatusPanel)

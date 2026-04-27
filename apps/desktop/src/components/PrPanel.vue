@@ -1,13 +1,16 @@
 <script setup lang="ts">
 // PR 패널 — 현재 레포의 PR 목록 (Gitea / GitHub) + 상세 read-only.
 // v0.3 단계: 봇 PR 그룹핑 (release-please / dependabot / renovate) — collapsible.
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { usePullRequests } from '@/composables/usePullRequests'
 import { describeError } from '@/api/errors'
 import { useStatus } from '@/composables/useStatus'
+import { useToast } from '@/composables/useToast'
+import { useLaunchpadMeta } from '@/composables/useLaunchpadMeta'
 import PrDetailModal from './PrDetailModal.vue'
 import CreatePrModal from './CreatePrModal.vue'
 import UserAvatar from './UserAvatar.vue'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import type { PrState, PullRequest } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -70,6 +73,83 @@ const expandedBots = ref<Record<string, boolean>>({})
 function toggleBot(name: string) {
   expandedBots.value[name] = !expandedBots.value[name]
 }
+
+// === Sprint 22-4 CM-9: PR row 우클릭 (7 액션) ===
+const prCtxMenu = useTemplateRef<ContextMenuExpose>('prCtxMenu')
+const toast = useToast()
+const meta = useLaunchpadMeta()
+
+async function copyText(text: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success('복사', label)
+  } catch (e) {
+    toast.error('복사 실패', describeError(e))
+  }
+}
+
+function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const isPinned = meta.isPinned(pr)
+  const remaining = meta.snoozeRemaining(pr)
+  const items: ContextMenuItem[] = [
+    {
+      label: 'Open detail',
+      icon: '📋',
+      action: () => (selectedNumber.value = pr.number),
+    },
+    {
+      label: 'Open in browser',
+      icon: '🔗',
+      action: () => window.open(pr.htmlUrl, '_blank', 'noopener'),
+    },
+    { divider: true },
+    {
+      label: isPinned ? 'Unpin' : 'Pin',
+      icon: isPinned ? '⭐' : '☆',
+      action: () => meta.pinMut.mutate({ pr, pinned: !isPinned }),
+    },
+    {
+      label:
+        remaining != null
+          ? `Snoozed (남은 ${Math.ceil(remaining / 60)}분) — 클릭 시 해제 메뉴`
+          : 'Snooze',
+      icon: '💤',
+      submenu:
+        remaining != null
+          ? [
+              {
+                label: 'Snooze 해제',
+                action: () => meta.clearSnooze(pr),
+              },
+            ]
+          : [
+              { label: '1시간', action: () => meta.snoozeFor(pr, 3600) },
+              { label: '1일', action: () => meta.snoozeFor(pr, 86400) },
+              { label: '1주', action: () => meta.snoozeFor(pr, 86400 * 7) },
+              { label: '1달 (30일)', action: () => meta.snoozeFor(pr, 86400 * 30) },
+            ],
+    },
+    { divider: true },
+    {
+      label: 'Copy URL',
+      icon: '📋',
+      action: () => void copyText(pr.htmlUrl, pr.htmlUrl),
+    },
+    {
+      label: 'Copy PR number',
+      icon: '#',
+      action: () => void copyText(`#${pr.number}`, `#${pr.number}`),
+    },
+    {
+      label: 'Copy branch name',
+      icon: '🌿',
+      action: () => void copyText(pr.headBranch, pr.headBranch),
+    },
+  ]
+  prCtxMenu.value?.openAt(ev, items)
+}
 </script>
 
 <template>
@@ -124,6 +204,7 @@ function toggleBot(name: string) {
           class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
           :class="selectedNumber === pr.number ? 'bg-accent' : ''"
           @click="selectedNumber = pr.number"
+          @contextmenu="onPrContextMenu($event, pr)"
         >
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs text-muted-foreground">#{{ pr.number }}</span>
@@ -210,5 +291,6 @@ function toggleBot(name: string) {
       @close="createOpen = false"
       @created="(n: number) => { createOpen = false; selectedNumber = n }"
     />
+    <ContextMenu ref="prCtxMenu" />
   </div>
 </template>

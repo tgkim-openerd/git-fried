@@ -2,18 +2,23 @@
 // Worktree 패널 — list / add / remove / prune.
 // 사용자 8개 동시 사용 패턴 (`docs/plan/02 §3 W2`).
 // AI 에이전트 자동 worktree (`worktree-agent-*`) 식별 가능.
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useWorktrees } from '@/composables/useWorktrees'
 import {
   addWorktree,
   lockWorktree,
+  openInExplorer,
   pruneWorktrees,
   removeWorktree,
   unlockWorktree,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { useReposStore } from '@/stores/repos'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+
+const reposStore = useReposStore()
 
 const toast = useToast()
 
@@ -108,6 +113,52 @@ function onUnlock(path: string) {
   if (props.repoId == null) return
   unlockMut.mutate(path)
 }
+
+// === Sprint 22-4 CM-11: worktree row 우클릭 (5 액션) ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+type WorktreeItem = NonNullable<typeof trees.value>[number]
+
+function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const items: ContextMenuItem[] = [
+    {
+      label: 'Open in Explorer',
+      icon: '📂',
+      action: () => {
+        // openInExplorer 는 repoId 단위 — worktree 의 경로는 직접 열 수 없으므로
+        // 일단 main repo 위치를 열고, 사용자에게 안내.
+        if (props.repoId != null) void openInExplorer(props.repoId)
+        toast.success('Explorer 열림 (main repo)', t.path)
+      },
+    },
+    {
+      label: t.isMain ? 'Switch (이미 main repo)' : 'Switch — main repo 활성화',
+      icon: '⊙',
+      disabled: t.isMain,
+      action: () => {
+        // worktree 별 repo_id 가 별도가 아니므로 단순히 active 로 set (한 worktree = 한 repoId 가정).
+        if (props.repoId != null) reposStore.setActiveRepo(props.repoId)
+        toast.success('활성화', t.path)
+      },
+    },
+    { divider: true },
+    {
+      label: t.isLocked ? 'Unlock' : 'Lock',
+      icon: t.isLocked ? '🔓' : '🔒',
+      action: () => (t.isLocked ? onUnlock(t.path) : onLock(t.path)),
+    },
+    { divider: true },
+    {
+      label: t.isMain ? 'Remove (main 불가)' : 'Remove',
+      icon: '🗑',
+      destructive: true,
+      disabled: t.isMain || t.isLocked,
+      action: () => confirmRemove(t.path),
+    },
+  ]
+  ctxMenu.value?.openAt(ev, items)
+}
 </script>
 
 <template>
@@ -156,6 +207,7 @@ function onUnlock(path: string) {
           v-for="t in trees"
           :key="t.path"
           class="rounded px-2 py-1.5 hover:bg-accent/40"
+          @contextmenu="onWorktreeContextMenu($event, t)"
         >
           <div class="flex items-center justify-between">
             <span class="truncate text-xs">
@@ -200,5 +252,6 @@ function onUnlock(path: string) {
         </li>
       </ul>
     </div>
+    <ContextMenu ref="ctxMenu" />
   </section>
 </template>

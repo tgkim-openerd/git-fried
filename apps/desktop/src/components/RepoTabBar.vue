@@ -3,10 +3,10 @@
 //
 // 상단에 가로로 열린 레포 탭 strip 표시. drag-drop 으로 재정렬, ✕ 로 닫기.
 // + 버튼 → RepoSwitcherModal 열어 새 탭 추가.
-// 우클릭 메뉴: Close / Close others / Close all / Pin (다음 sprint).
+// 우클릭 메뉴 (Sprint 22-4 CM-7): Close / Close others / Close all / Move left / Move right.
 //
 // store.tabs ↔ Repo[] 매핑은 listRepos(null) 에서 (모든 workspace 통합).
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { VueDraggable } from 'vue-draggable-plus'
 import { listRepos } from '@/api/git'
@@ -14,6 +14,7 @@ import { STALE_TIME } from '@/api/queryClient'
 import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 
 const store = useReposStore()
 const aliases = useRepoAliases()
@@ -68,6 +69,57 @@ function onMiddleClick(id: number, e: MouseEvent) {
     store.closeTab(id)
   }
 }
+
+// === Sprint 22-4 CM-7: tab 우클릭 메뉴 ===
+const tabCtxMenu = useTemplateRef<ContextMenuExpose>('tabCtxMenu')
+
+function moveTab(id: number, delta: -1 | 1) {
+  const idx = store.tabs.indexOf(id)
+  if (idx < 0) return
+  const target = idx + delta
+  if (target < 0 || target >= store.tabs.length) return
+  const next = [...store.tabs]
+  ;[next[idx], next[target]] = [next[target], next[idx]]
+  store.reorderTabs(next)
+}
+
+function onTabContextMenu(ev: MouseEvent, id: number) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const idx = store.tabs.indexOf(id)
+  const total = store.tabs.length
+  const items: ContextMenuItem[] = [
+    { label: 'Close', icon: '✕', shortcut: 'Mid', action: () => store.closeTab(id) },
+    {
+      label: 'Close others',
+      icon: '⊘',
+      disabled: total <= 1,
+      action: () => store.closeOthers(id),
+    },
+    {
+      label: 'Close all',
+      icon: '✕✕',
+      destructive: true,
+      action: () => {
+        if (window.confirm(`${total}개 탭 모두 닫기?`)) store.closeAll()
+      },
+    },
+    { divider: true },
+    {
+      label: 'Move left',
+      icon: '←',
+      disabled: idx <= 0,
+      action: () => moveTab(id, -1),
+    },
+    {
+      label: 'Move right',
+      icon: '→',
+      disabled: idx < 0 || idx >= total - 1,
+      action: () => moveTab(id, 1),
+    },
+  ]
+  tabCtxMenu.value?.openAt(ev, items)
+}
 </script>
 
 <template>
@@ -93,6 +145,7 @@ function onMiddleClick(id: number, e: MouseEvent) {
         :title="tabSubtitle(id)"
         @click="activate(id)"
         @mousedown="onMiddleClick(id, $event)"
+        @contextmenu="onTabContextMenu($event, id)"
       >
         <span class="max-w-[180px] truncate">{{ tabLabel(id) }}</span>
         <button
@@ -113,5 +166,6 @@ function onMiddleClick(id: number, e: MouseEvent) {
     >
       +
     </button>
+    <ContextMenu ref="tabCtxMenu" />
   </div>
 </template>

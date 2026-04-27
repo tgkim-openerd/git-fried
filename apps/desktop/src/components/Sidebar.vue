@@ -11,8 +11,12 @@ import {
   bulkFetch,
   createWorkspace,
   deleteWorkspace,
+  fetchAll,
   listRepos,
   listWorkspaces,
+  maintenanceGc,
+  openInExplorer,
+  removeRepo,
   setRepoPinned,
   updateWorkspace,
 } from '@/api/git'
@@ -25,6 +29,7 @@ import { useShortcut } from '@/composables/useShortcuts'
 import { useNotification } from '@/composables/useNotification'
 import BulkFetchResultModal from './BulkFetchResultModal.vue'
 import CloneRepoModal from './CloneRepoModal.vue'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 import type { Repo } from '@/types/git'
 
@@ -330,6 +335,116 @@ function commitEditAlias() {
 function cancelEditAlias() {
   editingAliasRepoId.value = null
 }
+
+// === Sprint 22-4 CM-6: Sidebar repo row 우클릭 (8 액션) ===
+const repoCtxMenu = useTemplateRef<ContextMenuExpose>('repoCtxMenu')
+
+const removeRepoMut = useMutation({
+  mutationFn: (id: number) => removeRepo(id),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ['repos'] })
+    qc.invalidateQueries({ queryKey: ['repos-all-for-tabs'] })
+  },
+  onError: (e) => toast.error('레포 제거 실패', describeError(e)),
+})
+
+const fetchOneMut = useMutation({
+  mutationFn: (id: number) => fetchAll(id),
+  onSuccess: (_r, id) => {
+    qc.invalidateQueries({ queryKey: ['status'] })
+    qc.invalidateQueries({ queryKey: ['log'] })
+    qc.invalidateQueries({ queryKey: ['graph'] })
+    qc.invalidateQueries({ queryKey: ['branches'] })
+    toast.success('Fetch 완료', `repo:${id}`)
+  },
+  onError: (e) => toast.error('Fetch 실패', describeError(e)),
+})
+
+const gcMut = useMutation({
+  mutationFn: ({ id, aggressive }: { id: number; aggressive: boolean }) =>
+    maintenanceGc(id, aggressive),
+  onSuccess: () => toast.success('git gc 완료', ''),
+  onError: (e) => toast.error('git gc 실패', describeError(e)),
+})
+
+async function copyRepoPath(p: string) {
+  try {
+    await navigator.clipboard.writeText(p)
+    toast.success('경로 복사', p)
+  } catch (e) {
+    toast.error('복사 실패', describeError(e))
+  }
+}
+
+function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const isActive = store.activeRepoId === repo.id
+  const items: ContextMenuItem[] = [
+    {
+      label: 'Open in Explorer',
+      icon: '📂',
+      action: () => void openInExplorer(repo.id),
+    },
+    {
+      label: 'Copy path',
+      icon: '📋',
+      action: () => void copyRepoPath(repo.localPath),
+    },
+    { divider: true },
+    {
+      label: isActive ? 'Set as active (이미 활성)' : 'Set as active',
+      icon: '⊙',
+      disabled: isActive,
+      action: () => selectRepo(repo.id),
+    },
+    {
+      label: 'Fetch only this',
+      icon: '⬇',
+      action: () => fetchOneMut.mutate(repo.id),
+    },
+    { divider: true },
+    {
+      label: repo.isPinned ? 'Unpin ★' : 'Pin ☆',
+      icon: repo.isPinned ? '⭐' : '☆',
+      action: () => pinMut.mutate({ id: repo.id, pinned: !repo.isPinned }),
+    },
+    {
+      label: 'Set alias / Rename',
+      icon: '✏',
+      action: () => startEditAlias(repo),
+    },
+    { divider: true },
+    {
+      label: 'Run gc (housekeeping)',
+      icon: '🧹',
+      submenu: [
+        { label: 'gc', action: () => gcMut.mutate({ id: repo.id, aggressive: false }) },
+        {
+          label: 'gc --aggressive (오래 걸림)',
+          destructive: true,
+          action: () => {
+            if (window.confirm(`'${repo.name}' aggressive gc — 수 분 소요. 진행?`)) {
+              gcMut.mutate({ id: repo.id, aggressive: true })
+            }
+          },
+        },
+      ],
+    },
+    { divider: true },
+    {
+      label: 'Remove from workspace',
+      icon: '🗑',
+      destructive: true,
+      action: () => {
+        if (window.confirm(`레포 '${repo.name}' 를 워크스페이스에서 제거? (디스크 파일은 보존)`)) {
+          removeRepoMut.mutate(repo.id)
+        }
+      },
+    },
+  ]
+  repoCtxMenu.value?.openAt(ev, items)
+}
 </script>
 
 <template>
@@ -573,6 +688,7 @@ function cancelEditAlias() {
               store.activeRepoId === repo.id ? 'bg-accent text-accent-foreground' : '',
             ]"
             @click="selectRepo(repo.id)"
+            @contextmenu="onRepoContextMenu($event, repo)"
           >
             <div class="flex items-center justify-between gap-1">
               <span class="flex flex-1 items-center gap-1 truncate">
@@ -672,5 +788,6 @@ function cancelEditAlias() {
       :open="bulkResultOpen"
       @close="bulkResultOpen = false"
     />
+    <ContextMenu ref="repoCtxMenu" />
   </aside>
 </template>

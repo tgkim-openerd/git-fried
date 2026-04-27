@@ -227,9 +227,21 @@ CM-5 BranchPanel 11 액션 (1h) + V-1 commit dblclick → diff (1h) + V-2 PrDeta
   - IPC: `list_pr_files` command (lib.rs invoke_handler 등록)
   - Frontend: `listPrFiles` API, PrDetailModal 에 Conversation/Files tab + 파일별 status 뱃지 (A/M/D/R/C) + +/- 카운트 + DiffViewer (CodeMirror) per-file expand/collapse + Expand all / Collapse all + binary/large file 안내
 
-### Sprint 22-4 — P1 ContextMenu 6 + P1 viewer 4 (~7h)
+### Sprint 22-4 — P1 ContextMenu 6 + P1 viewer 3 (~6h) ✅ 부분완료 (V-5 다음 sprint 이월)
 
-CM-6 ~ CM-11 (~4h) + V-3 ~ V-6 (~3h).
+CM-6 ~ CM-11 (~4h) + V-3 / V-4 / V-6 (~2h). **V-5 StatusPanel side-panel 은 신규 패널 디자인 비용으로 22-7 또는 별도 sprint 로 이월.**
+
+- ✅ **CM-6 Sidebar repo row** — Open in Explorer / Copy path / Set as active / Fetch only this / Pin / Set alias / Run gc (submenu: gc, gc --aggressive ⚠) / Remove from workspace (destructive)
+- ✅ **CM-7 RepoTabBar tab** — Close / Close others / Close all (destructive) / Move left / Move right
+- ✅ **CM-8 TagPanel tag row** — Push to origin / Checkout / Create branch from / Copy SHA / Delete local (destructive) / Delete remote (destructive)
+- ✅ **CM-9 PrPanel PR row** — Open detail / Open in browser / Pin (useLaunchpadMeta.pinMut) / Snooze (submenu 1h/1d/1w/1m, 또는 해제) / Copy URL / Copy PR # / Copy branch
+- ✅ **CM-10 ReflogModal entry** — Show diff / Restore HEAD here (reset --mixed, destructive) / Copy SHA / Create branch here
+- ✅ **CM-11 WorktreePanel row** — Open in Explorer / Switch / Lock·Unlock toggle / Remove (destructive, main 불가)
+- ✅ **V-3 CommitDiffModal header action button group** — 🍒 Cherry-pick / ↩ Revert / Reset (mode dropdown soft·mixed·hard ⚠) — `useCommitActions` 재사용
+- ✅ **V-4 TagPanel tag click → inline annotated viewer** — row click 으로 expand 영역 (annotated/lightweight 뱃지 + full SHA + subject `<pre>` + 우클릭 안내)
+- ✅ **V-6 ReflogModal row click + dblclick + 우클릭** — selectedSha highlight + dblclick `emit('showDiff', sha)` + CM-10 메뉴 (App.vue 에서 부모 listen 추가는 차후)
+- ⏸ **V-5 StatusPanel file detail side-panel** — 신규 패널 + status/size/diff preview + quick stage·discard. 이월 사유: 패널 layout / 우측 detail 영역 점유 정책 결정 필요 (focusMode 와 충돌 가능성)
+- 검증: typecheck 0 / lint 0 / vitest 13 pass
 
 ### Sprint 22-5 — plan/15 Sprint 3 흡수 + 신규 UI 시스템 (~6h)
 

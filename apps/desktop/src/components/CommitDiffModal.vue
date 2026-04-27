@@ -6,10 +6,11 @@
 // CodeMirror 의 mode 가 아니라 patch 자체가 변함.
 import { computed, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { aiExplainCommit, getCommitDiff } from '@/api/git'
+import { aiExplainCommit, getCommitDiff, type ResetMode } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
+import { useCommitActions } from '@/composables/useCommitActions'
 import { useDiffMode, DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import AiResultModal from './AiResultModal.vue'
 import DiffViewer from './DiffViewer.vue'
@@ -90,6 +91,20 @@ function explain() {
 }
 
 const MODES: DiffMode[] = ['compact', 'default', 'context', 'split']
+
+// === Sprint 22-4 V-3: header action buttons (cherry-pick / revert / reset) ===
+const commitActions = useCommitActions(() => props.repoId)
+const resetMode = ref<ResetMode>('mixed')
+
+function onCherryPick() {
+  if (props.sha) void commitActions.cherryPick(props.sha)
+}
+function onRevert() {
+  if (props.sha) void commitActions.revert(props.sha)
+}
+function onReset() {
+  if (props.sha) void commitActions.reset(props.sha, resetMode.value)
+}
 </script>
 
 <template>
@@ -134,6 +149,48 @@ const MODES: DiffMode[] = ['compact', 'default', 'context', 'split']
               >
                 {{ DIFF_MODE_LABELS[m] }}
               </button>
+            </div>
+            <!-- Sprint 22-4 V-3: action button group -->
+            <div
+              v-if="sha"
+              class="flex items-center gap-1 border-l border-border pl-2"
+            >
+              <button
+                type="button"
+                class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40"
+                title="현재 HEAD 에 cherry-pick"
+                @click="onCherryPick"
+              >
+                🍒 Cherry-pick
+              </button>
+              <button
+                type="button"
+                class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40"
+                title="이 commit 을 revert (새 commit 생성)"
+                @click="onRevert"
+              >
+                ↩ Revert
+              </button>
+              <div class="flex items-center gap-0.5 rounded border border-border bg-muted/40 p-0.5">
+                <select
+                  v-model="resetMode"
+                  class="rounded bg-transparent px-1 text-[10px] text-muted-foreground focus:outline-none"
+                  title="Reset 모드 선택"
+                >
+                  <option value="soft">soft</option>
+                  <option value="mixed">mixed</option>
+                  <option value="hard">hard ⚠</option>
+                </select>
+                <button
+                  type="button"
+                  class="rounded px-1.5 py-0.5 text-[11px] hover:bg-accent/40"
+                  :class="resetMode === 'hard' ? 'text-destructive' : ''"
+                  title="HEAD reset to this commit"
+                  @click="onReset"
+                >
+                  ⏮ Reset
+                </button>
+              </div>
             </div>
             <button
               v-if="sha && ai.available.value"
