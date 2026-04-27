@@ -20,6 +20,7 @@ import {
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
+import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -135,28 +136,14 @@ watch(
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
-      @click.self="close"
-    >
-      <div
-        class="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-border bg-card shadow-xl"
-      >
-        <header
-          class="flex items-center justify-between border-b border-border px-4 py-2"
-        >
-          <h2 class="text-sm font-semibold">📦 GitKraken 가져오기</h2>
-          <button
-            class="text-muted-foreground hover:text-foreground"
-            @click="close"
-          >
-            ✕
-          </button>
-        </header>
-
-        <div class="flex-1 overflow-auto p-4 text-sm">
+  <BaseModal
+    :open="open"
+    max-width="2xl"
+    title="📦 GitKraken 가져오기"
+    panel-class="max-h-[85vh]"
+    @close="close"
+  >
+    <div class="p-4 text-sm">
           <!-- detecting -->
           <div v-if="phase === 'detecting'" class="text-muted-foreground">
             GitKraken 데이터 탐지 중...
@@ -254,35 +241,33 @@ watch(
             <p class="mb-2 font-semibold">❌ 실패</p>
             <pre class="whitespace-pre-wrap text-xs">{{ errorMessage }}</pre>
           </div>
-        </div>
-
-        <footer
-          class="flex justify-end gap-2 border-t border-border px-4 py-2 text-xs"
-        >
-          <button
-            v-if="phase === 'preview'"
-            class="rounded border border-border px-3 py-1 hover:bg-muted/40"
-            @click="close"
-          >
-            취소
-          </button>
-          <button
-            v-if="phase === 'preview' && plan"
-            class="rounded bg-primary px-3 py-1 text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            :disabled="plan.reposToAdd === 0 && plan.workspacesToCreate.length === 0"
-            @click="confirm"
-          >
-            {{ plan.reposToAdd }}개 가져오기
-          </button>
-          <button
-            v-if="phase === 'done' || phase === 'error'"
-            class="rounded border border-border px-3 py-1 hover:bg-muted/40"
-            @click="close"
-          >
-            닫기
-          </button>
-        </footer>
-      </div>
     </div>
-  </Teleport>
+
+    <template #footer>
+      <div class="flex justify-end gap-2 text-xs">
+        <button
+          v-if="phase === 'preview'"
+          class="rounded border border-border px-3 py-1 hover:bg-muted/40"
+          @click="close"
+        >
+          취소
+        </button>
+        <button
+          v-if="phase === 'preview' && plan"
+          class="rounded bg-primary px-3 py-1 text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          :disabled="plan.reposToAdd === 0 && plan.workspacesToCreate.length === 0"
+          @click="confirm"
+        >
+          {{ plan.reposToAdd }}개 가져오기
+        </button>
+        <button
+          v-if="phase === 'done' || phase === 'error'"
+          class="rounded border border-border px-3 py-1 hover:bg-muted/40"
+          @click="close"
+        >
+          닫기
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>

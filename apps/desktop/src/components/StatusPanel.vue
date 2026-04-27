@@ -4,11 +4,13 @@
 // - 파일 클릭 시 stage / unstage 토글
 // - "+ 모두 stage" / "− 모두 unstage" 단축
 import { computed, ref, useTemplateRef } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import DiffViewer from './DiffViewer.vue'
 import {
   discardPaths,
+  getDiff,
   launchMergetool,
   stageAll,
   stagePaths,
@@ -17,6 +19,7 @@ import {
 import { describeError } from '@/api/errors'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useToast } from '@/composables/useToast'
+import { STALE_TIME } from '@/api/queryClient'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
 import HunkStageModal from './HunkStageModal.vue'
@@ -289,6 +292,54 @@ function selectPath(path: string) {
   selectedPath.value = selectedPath.value === path ? null : path
 }
 
+// === Sprint 22-6 F-I1: 파일 필터 (50+ 파일 환경) ===
+const fileFilter = ref('')
+
+function matchFilter(path: string): boolean {
+  const q = fileFilter.value.trim().toLowerCase()
+  if (!q) return true
+  return path.toLowerCase().includes(q)
+}
+
+const filteredStaged = computed(() =>
+  (status.value?.staged ?? []).filter((f) => matchFilter(f.path)),
+)
+const filteredUnstaged = computed(() =>
+  (status.value?.unstaged ?? []).filter((f) => matchFilter(f.path)),
+)
+const filteredUntracked = computed(() =>
+  (status.value?.untracked ?? []).filter((p) => matchFilter(p)),
+)
+const filteredConflicted = computed(() =>
+  (status.value?.conflicted ?? []).filter((p) => matchFilter(p)),
+)
+
+// === Sprint 22-7 V-5: 선택 파일 inline diff preview ===
+const selectedIsStaged = computed<boolean>(() => {
+  if (!selectedPath.value) return false
+  return status.value?.staged.some((f) => f.path === selectedPath.value) ?? false
+})
+
+const detailDiffQuery = useQuery({
+  queryKey: computed(() => [
+    'file-diff',
+    props.repoId,
+    selectedPath.value,
+    selectedIsStaged.value,
+  ] as const),
+  queryFn: () => {
+    if (props.repoId == null || !selectedPath.value) return Promise.resolve('')
+    return getDiff({
+      repoId: props.repoId,
+      staged: selectedIsStaged.value,
+      path: selectedPath.value,
+      context: 3,
+    })
+  },
+  enabled: computed(() => props.repoId != null && !!selectedPath.value),
+  staleTime: STALE_TIME.REALTIME,
+})
+
 const isSelected = computed(
   () => (path: string) => selectedPath.value === path,
 )
@@ -309,7 +360,31 @@ const isSelected = computed(
       변경사항 없음 ✓
     </div>
 
-    <div v-else class="flex-1 overflow-auto px-2 py-2 text-sm">
+    <template v-else>
+      <!-- Sprint 22-6 F-I1: 파일 필터 (50+ 파일 환경) -->
+      <div class="border-b border-border px-3 py-1.5">
+        <div class="relative">
+          <input
+            v-model="fileFilter"
+            type="text"
+            placeholder="🔍 파일 경로 필터 (부분 매칭)"
+            class="w-full rounded border border-input bg-background px-2 py-1 text-[11px]"
+            aria-label="변경 파일 경로 필터"
+          />
+          <button
+            v-if="fileFilter"
+            type="button"
+            class="absolute right-1 top-1/2 -translate-y-1/2 px-1 text-xs text-muted-foreground hover:text-foreground"
+            aria-label="필터 초기화"
+            title="필터 초기화"
+            @click="fileFilter = ''"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+    <div class="flex-1 overflow-auto px-2 py-2 text-sm">
       <!-- Staged -->
       <div v-if="status && status.staged.length > 0" class="mb-3">
         <div
@@ -324,7 +399,7 @@ const isSelected = computed(
         </div>
         <ul v-if="!collapsedStaged">
           <FileRow
-            v-for="f in status.staged"
+            v-for="f in filteredStaged"
             :key="`s-${f.path}`"
             :file="f"
             :label="statusLabel(f.status)"
@@ -373,7 +448,7 @@ const isSelected = computed(
         </div>
         <ul v-if="!collapsedUnstaged">
           <li
-            v-for="f in status.unstaged"
+            v-for="f in filteredUnstaged"
             :key="`u-${f.path}`"
             class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
             :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
@@ -436,7 +511,7 @@ const isSelected = computed(
         </div>
         <ul v-if="!collapsedUntracked">
           <li
-            v-for="p in status.untracked"
+            v-for="p in filteredUntracked"
             :key="`n-${p}`"
             class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
             :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
@@ -471,7 +546,7 @@ const isSelected = computed(
         </div>
         <ul v-if="!collapsedConflicted">
           <li
-            v-for="p in status.conflicted"
+            v-for="p in filteredConflicted"
             :key="`c-${p}`"
             class="group flex items-center gap-2 rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
           >
@@ -496,6 +571,97 @@ const isSelected = computed(
         </ul>
       </div>
     </div>
+
+      <!-- Sprint 22-7 V-5: 선택 파일 inline diff preview (하단 fixed 30%) -->
+      <div
+        v-if="selectedPath"
+        class="flex shrink-0 flex-col border-t border-border bg-muted/10"
+        style="height: 30%; min-height: 140px"
+      >
+        <div class="flex items-center justify-between border-b border-border bg-card px-3 py-1.5">
+          <div class="flex min-w-0 items-center gap-2 text-xs">
+            <span
+              class="shrink-0 rounded px-1.5 text-[10px] font-bold"
+              :class="selectedIsStaged ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/20 text-amber-500'"
+            >
+              {{ selectedIsStaged ? 'STAGED' : 'WORKDIR' }}
+            </span>
+            <span class="truncate font-mono">{{ selectedPath }}</span>
+          </div>
+          <div class="flex shrink-0 items-center gap-1 text-[11px]">
+            <button
+              v-if="!selectedIsStaged"
+              type="button"
+              class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
+              title="이 파일 stage"
+              @click="onStageOne(selectedPath)"
+            >
+              + stage
+            </button>
+            <button
+              v-else
+              type="button"
+              class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
+              title="이 파일 unstage"
+              @click="onUnstageOne(selectedPath)"
+            >
+              − unstage
+            </button>
+            <button
+              type="button"
+              class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
+              title="Hunk-level"
+              @click="openHunk(selectedPath, selectedIsStaged)"
+            >
+              ✂ hunk
+            </button>
+            <button
+              v-if="!selectedIsStaged"
+              type="button"
+              class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
+              title="discard"
+              @click="onDiscardOne(selectedPath)"
+            >
+              ⤺ discard
+            </button>
+            <button
+              type="button"
+              class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
+              aria-label="diff preview 닫기"
+              title="닫기"
+              @click="selectedPath = null"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div class="flex-1 overflow-hidden">
+          <div
+            v-if="detailDiffQuery.isFetching.value && !detailDiffQuery.data.value"
+            class="p-4 text-center text-xs text-muted-foreground"
+          >
+            diff 불러오는 중...
+          </div>
+          <div
+            v-else-if="detailDiffQuery.error.value"
+            class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs"
+          >
+            {{ describeError(detailDiffQuery.error.value) }}
+          </div>
+          <div
+            v-else-if="!detailDiffQuery.data.value"
+            class="p-4 text-center text-xs text-muted-foreground"
+          >
+            (변경 없음 — binary 파일이거나 untracked)
+          </div>
+          <DiffViewer
+            v-else
+            :patch="detailDiffQuery.data.value"
+            class="h-full"
+          />
+        </div>
+      </div>
+    </template>
 
     <FileHistoryModal
       :repo-id="repoId"

@@ -11,6 +11,8 @@ import PrDetailModal from './PrDetailModal.vue'
 import CreatePrModal from './CreatePrModal.vue'
 import UserAvatar from './UserAvatar.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import LoadingSpinner from './LoadingSpinner.vue'
+import EmptyState from './EmptyState.vue'
 import type { PrState, PullRequest } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -194,7 +196,7 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
     </div>
 
     <div class="flex-1 overflow-auto px-2 py-1 text-sm">
-      <div v-if="isFetching" class="px-2 py-3 text-xs text-muted-foreground">불러오는 중...</div>
+      <LoadingSpinner v-if="isFetching && !prs" label="PR 목록 불러오는 중..." size="sm" />
 
       <!-- 사람이 만든 PR -->
       <ul v-if="humanPrs.length">
@@ -267,12 +269,13 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
         </div>
       </div>
 
-      <div
+      <EmptyState
         v-if="prs && prs.length === 0 && !isFetching"
-        class="px-2 py-3 text-center text-xs text-muted-foreground"
-      >
-        PR 없음
-      </div>
+        icon="📭"
+        :title="stateFilter === 'open' ? '열린 PR 없음' : 'PR 없음'"
+        :description="stateFilter === 'open' ? '필터를 closed / all 로 바꾸거나 새 PR 을 만들어보세요.' : ''"
+        size="sm"
+      />
     </div>
 
     <!-- 상세 모달 -->

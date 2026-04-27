@@ -16,6 +16,7 @@ import {
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
+import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{ open: boolean; repoId: number | null }>()
 const emit = defineEmits<{ close: [] }>()
@@ -132,28 +133,14 @@ function close() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
-      @click.self="close"
-    >
-      <div
-        class="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg border border-border bg-card shadow-xl"
-      >
-        <header
-          class="flex items-center justify-between border-b border-border px-4 py-2"
-        >
-          <h2 class="text-sm font-semibold">🔗 Remote 관리</h2>
-          <button
-            class="text-muted-foreground hover:text-foreground"
-            @click="close"
-          >
-            ✕
-          </button>
-        </header>
-
-        <div class="flex-1 overflow-auto p-4 text-sm">
+  <BaseModal
+    :open="open"
+    max-width="2xl"
+    title="🔗 Remote 관리"
+    panel-class="max-h-[85vh]"
+    @close="close"
+  >
+    <div class="p-4 text-sm">
           <!-- list -->
           <div v-if="remotesQuery.isFetching.value" class="text-muted-foreground">
             불러오는 중...
@@ -285,20 +272,18 @@ function close() {
               </button>
             </form>
           </div>
-        </div>
-
-        <footer
-          class="flex justify-end border-t border-border px-4 py-2 text-xs"
-        >
-          <button
-            type="button"
-            class="rounded border border-border px-3 py-1 hover:bg-muted/40"
-            @click="close"
-          >
-            닫기
-          </button>
-        </footer>
-      </div>
     </div>
-  </Teleport>
+
+    <template #footer>
+      <div class="flex justify-end text-xs">
+        <button
+          type="button"
+          class="rounded border border-border px-3 py-1 hover:bg-muted/40"
+          @click="close"
+        >
+          닫기
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>

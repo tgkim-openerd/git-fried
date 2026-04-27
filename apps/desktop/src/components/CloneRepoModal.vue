@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { cloneRepo, type CloneOptions } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{ open: boolean; workspaceId: number | null }>()
 const emit = defineEmits<{ close: [] }>()
@@ -106,28 +107,14 @@ const canSubmit = computed(
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
-      @click.self="close"
-    >
-      <div
-        class="flex max-h-[85vh] w-full max-w-xl flex-col rounded-lg border border-border bg-card shadow-xl"
-      >
-        <header
-          class="flex items-center justify-between border-b border-border px-4 py-2"
-        >
-          <h2 class="text-sm font-semibold">⬇ 레포 clone</h2>
-          <button
-            class="text-muted-foreground hover:text-foreground"
-            @click="close"
-          >
-            ✕
-          </button>
-        </header>
-
-        <form class="flex-1 overflow-auto p-4 text-sm" @submit.prevent="cloneMut.mutate()">
+  <BaseModal
+    :open="open"
+    max-width="xl"
+    title="⬇ 레포 clone"
+    panel-class="max-h-[85vh]"
+    @close="close"
+  >
+    <form class="p-4 text-sm" @submit.prevent="cloneMut.mutate()">
           <label class="block">
             <span class="text-xs font-medium">URL</span>
             <input
@@ -227,28 +214,26 @@ const canSubmit = computed(
               <span>Bare clone (--bare, 작업 트리 없음)</span>
             </label>
           </div>
-        </form>
+    </form>
 
-        <footer
-          class="flex justify-end gap-2 border-t border-border px-4 py-2 text-xs"
+    <template #footer>
+      <div class="flex justify-end gap-2 text-xs">
+        <button
+          type="button"
+          class="rounded border border-border px-3 py-1 hover:bg-muted/40"
+          @click="close"
         >
-          <button
-            type="button"
-            class="rounded border border-border px-3 py-1 hover:bg-muted/40"
-            @click="close"
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            class="rounded bg-primary px-3 py-1 text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            :disabled="!canSubmit"
-            @click="cloneMut.mutate()"
-          >
-            {{ cloneMut.isPending.value ? '클론 중...' : 'Clone' }}
-          </button>
-        </footer>
+          취소
+        </button>
+        <button
+          type="button"
+          class="rounded bg-primary px-3 py-1 text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          :disabled="!canSubmit"
+          @click="cloneMut.mutate()"
+        >
+          {{ cloneMut.isPending.value ? '클론 중...' : 'Clone' }}
+        </button>
       </div>
-    </div>
-  </Teleport>
+    </template>
+  </BaseModal>
 </template>

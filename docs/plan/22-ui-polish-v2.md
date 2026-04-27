@@ -253,9 +253,18 @@ Q-1 BaseModal (3h) + Q-2 useFocusTrap (2h) + S-1 aria-label (1h).
 - ✅ **V-6 보강** — `pages/index.vue::onShowDiff` 를 `window.gitFriedShowDiff` 에 onMounted 등록 + App.vue 의 ReflogModal `@show-diff` → `onReflogShowDiff(sha)` → `window.gitFriedShowDiff?.(sha)` 호출. ReflogModal dblclick / 우클릭 Show diff 가 CommitDiffModal 트리거.
 - 검증: typecheck 0 / lint 0 / vitest 13 pass
 
-### Sprint 22-6 — Polish + Dogfood Friction IMPORTANT (~6h)
+### Sprint 22-6 — Polish + Dogfood Friction IMPORTANT (~6h) ✅ 부분완료 (Q-3 다음 sprint)
 
 Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 token 만료 (1h).
+
+- ✅ **Q-4 LoadingSpinner + EmptyState** — 신규 `components/LoadingSpinner.vue` (size sm/md/lg + label + inline 모드 + role="status" + animate-spin) + 신규 `components/EmptyState.vue` (icon + title + description + action slot + size sm/md). PrPanel 시범 적용 (불러오는 중 spinner / "PR 없음" empty state with stateFilter 안내).
+- ✅ **F-I1 StatusPanel file filter** — 변경 파일 50+ 환경용 부분 매칭 input (filteredStaged/filteredUnstaged/filteredUntracked/filteredConflicted computed). ✕ 클리어 버튼 + aria-label.
+- ✅ **F-I2 Forge 401/403 token UX** — `humanizeGitError` 에 HTTP 401 (Bad credentials / token expired / invalid token) 패턴 + 403 Forbidden 패턴 + 각각 한국어 가이드 (PAT 재발급 위치 / scope 안내, GitHub vs Gitea 구분). 모든 forge IPC 실패 toast 가 자동 적용 (describeError chain).
+- ⏸ **Q-3 한글 너비 / ellipsis** — `--korean-char-width: 1.3em` CSS var + BranchPanel/CommitTable/PrPanel 재계산. CJK=2 cell 가정 vs 실제 폰트 width 차이. Sprint 22-7 또는 별도 sprint 로.
+
+### V-5 ✅ 부분완료 (22-4 이월분 처리)
+
+- ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
 ### Sprint 22-7 (선택) — Polish 잔여 (~5h)
 
