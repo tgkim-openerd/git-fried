@@ -60,6 +60,15 @@ jobs:
                 $_.FullName
             }
 
+      # === Performance bench (`docs/plan/20 §4-2`) — optional ===
+      # BENCH_REPO secret 등록 후 활성화. baseline 채워진 시점에 활성화 권장.
+      # 현재는 secret 없으면 자동 skip — release flow 중단 안 함.
+      - name: cargo bench (perf regression) — optional
+        if: env.BENCH_REPO != ''
+        env:
+          BENCH_REPO: ${{ secrets.BENCH_REPO }}
+        run: cargo bench --bench git_perf --manifest-path apps/desktop/src-tauri/Cargo.toml
+
       - name: Compute SHA256 checksums
         shell: pwsh
         run: |

@@ -137,7 +137,10 @@ GitKraken 비교: 200~300MB idle (plan §2-④). git-fried 목표 = **1/3 ~ 1/4*
 
 ---
 
-## 3. Bench 도구 작성
+## 3. Bench 도구 작성 ✅ 완료 (2026-04-27)
+
+도구 구성 commit: `apps/desktop/src-tauri/benches/git_perf.rs` + `bench/memory.ps1` + `bench/baseline.json` (null placeholder) + `bench/README.md` + `release.yml` optional step.
+실측 (null → 실제 값) 은 v0.3.0 cut 직전 사용자 본인 환경 dogfood 단계로 분리.
 
 ### 3-1. Rust bench (`apps/desktop/src-tauri/benches/`)
 

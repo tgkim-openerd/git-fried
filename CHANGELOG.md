@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 11 mutation 에 `onError → toast.error + describeError` 통합 (useHiddenRefs 5 / useLaunchpadMeta 2 / useSavedViews 2 / useRepoAliases 2)
   - `src/types/window.d.ts` 신규 — `window.gitFried*` augmentation, 8건의 `as unknown as` 제거 (App / Sidebar / CommandPalette / InteractiveRebaseModal / pages/index)
   - `tsconfig.json` `noUnusedLocals / noUnusedParameters` true 활성화 + 위반 3건 정리
+- Performance bench 도구 (`docs/plan/20 §3`):
+  - `apps/desktop/src-tauri/benches/git_perf.rs` — criterion bench (read_status / list_branches / compute_graph 1k+10k), `BENCH_REPO` 환경변수로 대상 repo 지정
+  - Cargo.toml `[dev-dependencies] criterion 0.5` + `[[bench]] name = "git_perf"`
+  - `bench/memory.ps1` — Windows RSS / Private / Handles 6 시나리오 snapshot
+  - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
+  - `bench/README.md` — 도구 사용법
+  - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
 
 ### Changed
 - ESLint v9 flat config 마이그레이션 (`.eslintrc.cjs` → `eslint.config.js`)
