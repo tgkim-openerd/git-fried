@@ -18,6 +18,9 @@ import {
   type HiddenRef,
   type HiddenRefKind,
 } from '@/api/git'
+import { STALE_TIME } from '@/api/queryClient'
+import { useToast } from '@/composables/useToast'
+import { describeError } from '@/api/errors'
 
 export function hiddenRefsKey(repoId: number | null): readonly unknown[] {
   return ['hiddenRefs', repoId] as const
@@ -32,17 +35,22 @@ export function useHiddenRefs(repoIdRef: MaybeRefOrGetter<number | null>) {
       return listHiddenRefs(repoId.value)
     },
     enabled: computed(() => repoId.value != null),
-    staleTime: 30_000, // 30s — hide 빈도 낮음
+    staleTime: STALE_TIME.STATIC, // hide 빈도 낮음
   })
 }
 
 export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>) {
   const qc = useQueryClient()
+  const toast = useToast()
   const repoId = toRef(repoIdRef)
 
   function invalidate() {
     qc.invalidateQueries({ queryKey: ['hiddenRefs'] })
     qc.invalidateQueries({ queryKey: ['graph'] })
+  }
+
+  function onError(title: string) {
+    return (e: unknown) => toast.error(title, describeError(e))
   }
 
   const hide = useMutation({
@@ -51,6 +59,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
       return apiHideRef(repoId.value, refName, refKind)
     },
     onSuccess: () => invalidate(),
+    onError: onError('Ref 숨김 실패'),
   })
 
   const unhide = useMutation({
@@ -59,6 +68,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
       return apiUnhideRef(repoId.value, refName)
     },
     onSuccess: () => invalidate(),
+    onError: onError('Ref 표시 복원 실패'),
   })
 
   const bulkHide = useMutation({
@@ -67,6 +77,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
       return hideRefsBulk(repoId.value, refs)
     },
     onSuccess: () => invalidate(),
+    onError: onError('Ref 일괄 숨김 실패'),
   })
 
   const unhideKind = useMutation({
@@ -75,6 +86,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
       return unhideRefsByKind(repoId.value, kind)
     },
     onSuccess: () => invalidate(),
+    onError: onError('종류별 표시 복원 실패'),
   })
 
   const unhideAll = useMutation({
@@ -83,6 +95,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
       return unhideAllRefs(repoId.value)
     },
     onSuccess: () => invalidate(),
+    onError: onError('전체 표시 복원 실패'),
   })
 
   return { hide, unhide, bulkHide, unhideKind, unhideAll }

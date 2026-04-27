@@ -266,13 +266,10 @@ function externalOpen() {
 }
 
 onMounted(() => {
-  ;(window as unknown as {
-    gitFriedOpenRebase?: () => void
-  }).gitFriedOpenRebase = externalOpen
+  window.gitFriedOpenRebase = externalOpen
 })
 onUnmounted(() => {
-  delete (window as unknown as { gitFriedOpenRebase?: () => void })
-    .gitFriedOpenRebase
+  delete window.gitFriedOpenRebase
 })
 </script>
 

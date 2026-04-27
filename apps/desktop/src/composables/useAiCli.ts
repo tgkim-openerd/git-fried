@@ -5,13 +5,14 @@
 import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { aiDetectClis, type AiCli, type AiProbe } from '@/api/git'
+import { STALE_TIME } from '@/api/queryClient'
 import { useNotification } from '@/composables/useNotification'
 
 export function useAiCli() {
   const { data: probes, isFetching, refetch } = useQuery<AiProbe[]>({
     queryKey: ['aiProbes'],
     queryFn: aiDetectClis,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.STATIC,
   })
 
   const available = computed<AiCli | null>(() => {

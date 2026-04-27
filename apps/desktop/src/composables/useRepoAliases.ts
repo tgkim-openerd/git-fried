@@ -11,19 +11,23 @@ import {
   unsetRepoAlias as apiUnsetAlias,
   type RepoAlias,
 } from '@/api/git'
+import { STALE_TIME } from '@/api/queryClient'
 import { useProfiles } from '@/composables/useProfiles'
+import { useToast } from '@/composables/useToast'
+import { describeError } from '@/api/errors'
 
 const KEY = ['repo-aliases-all'] as const
 
 export function useRepoAliases() {
   const qc = useQueryClient()
+  const toast = useToast()
   const { active: activeProfile } = useProfiles()
   const activeProfileId = computed(() => activeProfile.value?.id ?? null)
 
   const listQuery = useQuery({
     queryKey: KEY,
     queryFn: listAllRepoAliases,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.STATIC,
   })
 
   // Map<repoId, { profileId|null → alias }>
@@ -74,12 +78,14 @@ export function useRepoAliases() {
       alias: string
     }) => apiSetAlias(args.repoId, args.profileId, args.alias),
     onSuccess: () => invalidate(),
+    onError: (e) => toast.error('Alias 저장 실패', describeError(e)),
   })
 
   const unsetMut = useMutation({
     mutationFn: (args: { repoId: number; profileId: number | null }) =>
       apiUnsetAlias(args.repoId, args.profileId),
     onSuccess: () => invalidate(),
+    onError: (e) => toast.error('Alias 제거 실패', describeError(e)),
   })
 
   return {

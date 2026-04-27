@@ -10,7 +10,7 @@
 //   - About — 단순 텍스트
 //
 // 영속화: localStorage (DB 통합은 v1.x). Cloud / Org / Marketing 항목은 거부.
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import ForgeSetup from '@/components/ForgeSetup.vue'
 import ProfilesSection from '@/components/ProfilesSection.vue'
 import { useUiState } from '@/composables/useUiState'

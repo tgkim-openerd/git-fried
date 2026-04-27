@@ -122,9 +122,7 @@ useShortcut('filterRepos', () => {
     ui.sidebarVisible.value = true
     // 다음 tick 후 Sidebar mount 완료 대기.
     setTimeout(() => {
-      const fn = (window as unknown as { gitFriedFocusRepoFilter?: () => void })
-        .gitFriedFocusRepoFilter
-      fn?.()
+      window.gitFriedFocusRepoFilter?.()
     }, 80)
   }
   // visible 일 때는 Sidebar 가 자체적으로 focusRepoFilter 처리.
@@ -144,17 +142,11 @@ useShortcut('toggleFullscreen', () => {
   })()
 })
 
-interface GlobalHandles {
-  gitFriedOpenSyncTemplate?: typeof openSyncTemplate
-  gitFriedOpenBisect?: () => void
-  gitFriedOpenReflog?: () => void
-  gitFriedOpenCompare?: typeof openCompare
-}
-const w = window as unknown as GlobalHandles
-w.gitFriedOpenSyncTemplate = openSyncTemplate
-w.gitFriedOpenBisect = () => (bisectOpen.value = true)
-w.gitFriedOpenReflog = () => (reflogOpen.value = true)
-w.gitFriedOpenCompare = openCompare
+// Window 트리거 등록 — `src/types/window.d.ts` 의 augmentation 으로 타입 안전.
+window.gitFriedOpenSyncTemplate = openSyncTemplate
+window.gitFriedOpenBisect = () => (bisectOpen.value = true)
+window.gitFriedOpenReflog = () => (reflogOpen.value = true)
+window.gitFriedOpenCompare = openCompare
 </script>
 
 <template>

@@ -18,6 +18,9 @@ import {
   type PullRequest,
   type SavedView,
 } from '@/api/git'
+import { STALE_TIME } from '@/api/queryClient'
+import { useToast } from '@/composables/useToast'
+import { describeError } from '@/api/errors'
 
 export const LAUNCHPAD_VIEW_KIND = 'launchpad_pr'
 
@@ -44,11 +47,12 @@ function idKey(id: PrIdentifier): string {
  */
 export function useLaunchpadMeta() {
   const qc = useQueryClient()
+  const toast = useToast()
 
   const activeQuery = useQuery({
     queryKey: ['launchpad-meta-active'],
     queryFn: () => launchpadListActive(),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.STATIC,
   })
 
   const metaMap = computed(() => {
@@ -82,6 +86,7 @@ export function useLaunchpadMeta() {
     mutationFn: ({ pr, pinned }: { pr: PullRequest; pinned: boolean }) =>
       launchpadSetPinned(prIdFromPr(pr), pinned),
     onSuccess: () => invalidate(),
+    onError: (e) => toast.error('Pin 토글 실패', describeError(e)),
   })
 
   const snoozeMut = useMutation({
@@ -93,6 +98,7 @@ export function useLaunchpadMeta() {
       snoozedUntil: number | null
     }) => launchpadSetSnooze(prIdFromPr(pr), snoozedUntil),
     onSuccess: () => invalidate(),
+    onError: (e) => toast.error('Snooze 설정 실패', describeError(e)),
   })
 
   function snoozeFor(pr: PullRequest, deltaSec: number) {
@@ -121,10 +127,11 @@ export function useLaunchpadMeta() {
 
 export function useSavedViews(viewKind: string) {
   const qc = useQueryClient()
+  const toast = useToast()
   const listQuery = useQuery({
     queryKey: ['saved-views', viewKind],
     queryFn: () => launchpadListViews(viewKind),
-    staleTime: 60_000,
+    staleTime: STALE_TIME.STATIC,
   })
 
   function invalidate() {
@@ -144,11 +151,13 @@ export function useSavedViews(viewKind: string) {
         sortJson: args.sortJson,
       }),
     onSuccess: () => invalidate(),
+    onError: (e) => toast.error('Saved view 저장 실패', describeError(e)),
   })
 
   const deleteMut = useMutation({
     mutationFn: (id: number) => launchpadDeleteView(id),
     onSuccess: () => invalidate(),
+    onError: (e) => toast.error('Saved view 삭제 실패', describeError(e)),
   })
 
   return {

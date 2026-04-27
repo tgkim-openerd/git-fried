@@ -85,13 +85,10 @@ function externalToggleTerminal() {
   terminalOpen.value = !terminalOpen.value
 }
 onMounted(() => {
-  ;(window as unknown as {
-    gitFriedToggleTerminal?: () => void
-  }).gitFriedToggleTerminal = externalToggleTerminal
+  window.gitFriedToggleTerminal = externalToggleTerminal
 })
 onUnmounted(() => {
-  delete (window as unknown as { gitFriedToggleTerminal?: () => void })
-    .gitFriedToggleTerminal
+  delete window.gitFriedToggleTerminal
 })
 </script>
 

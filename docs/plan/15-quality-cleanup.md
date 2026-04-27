@@ -261,15 +261,18 @@
 
 → 1 PR (Sprint 1 통합 commit).
 
-### Sprint 2 (P1 코드 품질, ~4h)
+### Sprint 2 (P1 코드 품질, ~4h) ✅ 완료 (2026-04-27)
 
-1. **Vue composable enabled guard 16개** (~1h)
-2. **queryKey 표준화 + staleTime 3 tier 정책** (~2h)
-3. **onError → toast 11곳 통합** (~1h)
-4. **unsafe `as` 7건 + tsconfig noUnusedLocals/Parameters** (~30분, 필요 시 Sprint 3 으로)
-5. **IPC wrapper 5건 표준화** (~30분)
+1. ✅ **Vue composable enabled guard** — 사전 audit 결과 Sprint A14 시점에 이미 모두 추가됨 (16개 누락 주장 REJECTED). 모든 repoId 의존 query 에 `enabled: computed(() => repoId.value != null)` 적용 확인
+2. ✅ **staleTime 3 tier 정책** — `api/queryClient.ts::STALE_TIME` 상수 (REALTIME=2s / NORMAL=30s / STATIC=60s) + 6 composable 명시 (useStatus → REALTIME, useAiCli/useHiddenRefs/useLaunchpadMeta(2)/useProfiles/useRepoAliases → STATIC). 기본값을 NORMAL 로 승격 → 명시 staleTime 없는 9개 query 도 정책 일관 흡수
+3. ✅ **onError → toast 11/11 mutation 통합** — useHiddenRefs (5: hide/unhide/bulkHide/unhideKind/unhideAll) + useLaunchpadMeta (2: pinMut/snoozeMut) + useSavedViews (2: saveMut/deleteMut) + useRepoAliases (2: setMut/unsetMut). 모두 `describeError` 통과
+4. ✅ **unsafe `as unknown as` 8건 제거** — `src/types/window.d.ts` 신규 (`window.gitFried*` 7개 키 augmentation) + App / Sidebar / CommandPalette / InteractiveRebaseModal / pages/index 의 캐스트 모두 직접 `window.gitFriedXxx` 호출로 전환. CommandPalette 의 동적 dispatch 는 `Extract<keyof Window, \`gitFried${string}\`>` 키 제약으로 type 안전 확보. (잔여 1건 = `useDeepLink.ts:111` Tauri plugin UnlistenFn 타입 불일치, scope 밖)
+5. ✅ **tsconfig noUnusedLocals/Parameters = true** — 활성화 후 위반 3건 정리 (BranchPanel.vue:92 dead `unhideKind` 함수 제거 / StatusPanel.vue:28 unused `FileChange` import / settings.vue:13 unused `watch` import)
+6. ⏭ **IPC wrapper 5건 표준화** — defer. `{ args: { ... } }` vs 직접 전달은 Rust `#[tauri::command]` 함수 시그니처에 결정됨 (FE 단독 표준화 불가). v0.4 maintenance sprint 로 이월
 
-→ 2 PR (composable refactor / type tighten).
+**검증 결과**: `bun run typecheck` 0 / `bun run lint` 0 / `bunx vitest run` 13 pass / `cargo test` env 이슈 (pre-existing, FE-only 변경이라 스킵)
+
+→ 1 PR (Sprint 2 통합 commit).
 
 ### Sprint 3 (P1 UI 일관성, ~6h)
 

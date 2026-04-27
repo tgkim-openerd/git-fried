@@ -25,7 +25,7 @@ const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
 const collapsedUntracked = useSectionCollapse('status.untracked')
 const collapsedConflicted = useSectionCollapse('status.conflicted')
-import type { ChangeStatus, FileChange } from '@/types/git'
+import type { ChangeStatus } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
 const toast = useToast()

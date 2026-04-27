@@ -172,8 +172,7 @@ function focusRepoFilter() {
   filterInputRef.value?.focus()
   filterInputRef.value?.select()
 }
-;(window as unknown as { gitFriedFocusRepoFilter?: () => void }).gitFriedFocusRepoFilter =
-  focusRepoFilter
+window.gitFriedFocusRepoFilter = focusRepoFilter
 
 useShortcut('filterRepos', focusRepoFilter)
 

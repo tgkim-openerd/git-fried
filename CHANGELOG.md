@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `⌘⇧H` File history search 단축키 (StatusPanel)
   - Stash 단일 파일 apply (`git/stash.rs::apply_stash_file` + `StashPanel.vue` 미리보기에 파일별 row + "이 파일만 apply")
   - Compare branches/commits (`git/compare.rs` + `CompareModal.vue` + Command Palette "Compare — 두 ref 비교")
+- Sprint 2 quality (`docs/plan/15 §5`):
+  - `STALE_TIME` 3-tier 정책 (REALTIME 2s / NORMAL 30s / STATIC 60s) — `api/queryClient.ts` 상수 + 6 composable 명시 적용 + 기본값 NORMAL
+  - 11 mutation 에 `onError → toast.error + describeError` 통합 (useHiddenRefs 5 / useLaunchpadMeta 2 / useSavedViews 2 / useRepoAliases 2)
+  - `src/types/window.d.ts` 신규 — `window.gitFried*` augmentation, 8건의 `as unknown as` 제거 (App / Sidebar / CommandPalette / InteractiveRebaseModal / pages/index)
+  - `tsconfig.json` `noUnusedLocals / noUnusedParameters` true 활성화 + 위반 3건 정리
 
 ### Changed
 - ESLint v9 flat config 마이그레이션 (`.eslintrc.cjs` → `eslint.config.js`)

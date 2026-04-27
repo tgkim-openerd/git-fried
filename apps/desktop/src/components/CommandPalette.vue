@@ -116,10 +116,14 @@ function trigger(action: Parameters<typeof dispatchShortcut>[0]) {
   }
 }
 
-function callWindow<K extends string>(key: K) {
+// Window 트리거 호출 — `src/types/window.d.ts` 의 augmentation 기준.
+// gitFried* 진입점 키만 허용 (오타 방지).
+type WindowTriggerKey = Extract<keyof Window, `gitFried${string}`>
+
+function callWindow(key: WindowTriggerKey) {
   return () => {
-    const fn = (window as unknown as Record<K, undefined | (() => void)>)[key]
-    if (typeof fn === 'function') fn()
+    const fn = window[key]
+    if (typeof fn === 'function') (fn as () => void)()
   }
 }
 

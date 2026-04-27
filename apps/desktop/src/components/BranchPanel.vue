@@ -89,13 +89,6 @@ function bulkHideKind(kind: HiddenRefKind) {
   })
 }
 
-function unhideKind(kind: HiddenRefKind) {
-  hiddenMut.unhideKind.mutate(kind, {
-    onSuccess: (n) => toast.success(`${n}개 복원`, kind),
-    onError: (e) => toast.error('복원 실패', describeError(e)),
-  })
-}
-
 const switchMut = useMutation({
   mutationFn: ({ id, name }: { id: number; name: string }) =>
     switchBranch(id, name, false),
