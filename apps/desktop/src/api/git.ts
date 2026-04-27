@@ -966,6 +966,22 @@ export const addPrComment = (
   body: string,
 ): Promise<PrComment> => invoke('add_pr_comment', { args: { repoId, number, body } })
 
+/** PR diff line-level suggestion 코멘트 (`docs/plan/14 §7 F1`).
+ *  - body 는 호출자가 ```suggestion wrap 까지 포함해서 전달.
+ *  - line 은 RIGHT side (PR 새 코드) 의 1-based file line 번호.
+ *  - commitId=null 이면 GitHub 가 PR head SHA 자동 조회. */
+export const addReviewComment = (
+  repoId: number,
+  number: number,
+  path: string,
+  line: number,
+  body: string,
+  commitId: string | null = null,
+): Promise<void> =>
+  invoke('add_review_comment', {
+    args: { repoId, number, commitId, path, line, body },
+  })
+
 export const submitPrReview = (
   repoId: number,
   number: number,

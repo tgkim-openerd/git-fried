@@ -227,9 +227,11 @@
 8. ✅ **E1~E2 Clone 옵션** — `git/clone.rs` (sparse cone + depth + shallow-since + single-branch + bare) + `clone_repo` IPC (auto-register=true 면 add_repo 자동) + `CloneRepoModal.vue` + Sidebar "⬇ Clone" 버튼
 10. ✅ **F2 PR Filter syntax** — Launchpad 검색 input + helper 버튼 (`+author:` `+state:open` `+repo:` `+is:pinned/snoozed/bot`). syntax: `key:val` + free-text title 매칭, 모든 token AND
 
-#### C14-3 (대기) — 가장 큼
+#### C14-3 ✅ 완료 (2026-04-27) — plan/14 22 항목 100%
 
-9. **F1 PR Code Suggestions** (~8h, GitHub + Gitea 양쪽 endpoint)
+9. ✅ **F1 PR Code Suggestions** — `ForgeClient::add_review_comment` trait + GitHub (`POST /pulls/{n}/comments` with commit_id+path+line+side=RIGHT, head SHA 자동 조회) + Gitea (`POST /pulls/{n}/reviews` event=COMMENT + comments=[{path, body, new_position}]) + IPC + PrDetailModal "+ Code suggestion" 토글 form (path / line / 새 코드 / 컨텍스트, ` ```suggestion ` 자동 wrap)
+
+> **plan/14 진행도: 22/22 = 100%** (A14 3 + B14 7 + C14 6 + 거부 4 + 통합 2)
 
 **합계 22 항목** = 약 **3~5일** (AI pair 가속 기준).
 

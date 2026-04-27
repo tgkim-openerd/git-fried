@@ -343,6 +343,41 @@ pub async fn add_pr_comment(
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AddReviewCommentArgs {
+    pub repo_id: i64,
+    pub number: u64,
+    /// PR head SHA. None 이면 GitHub 가 PR detail 에서 자동 조회.
+    #[serde(default)]
+    pub commit_id: Option<String>,
+    pub path: String,
+    /// 1-based file line 번호 (RIGHT side).
+    pub line: u32,
+    /// 호출자가 ` ```suggestion `wrap 까지 포함해서 보낼 것.
+    pub body: String,
+}
+
+/// PR diff line-level suggestion 코멘트 추가 (`docs/plan/14 §7 F1`).
+#[tauri::command]
+pub async fn add_review_comment(
+    args: AddReviewCommentArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client
+        .add_review_comment(
+            &owner,
+            &repo,
+            args.number,
+            args.commit_id.as_deref(),
+            &args.path,
+            args.line,
+            &args.body,
+        )
+        .await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SubmitReviewArgs {
     pub repo_id: i64,
     pub number: u64,

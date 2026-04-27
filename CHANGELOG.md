@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- Sprint C14-3 (P2 마지막, `docs/plan/14 §7 F1`): PR Code Suggestions
+  - `ForgeClient::add_review_comment` trait 추가 — GitHub + Gitea 양쪽 impl
+    - GitHub: `POST /pulls/{n}/comments` with `commit_id`+`path`+`line`+`side=RIGHT`. commit_id 미지정 시 PR detail 에서 head SHA 자동 조회
+    - Gitea: `POST /pulls/{n}/reviews` with `event=COMMENT` + `comments=[{path, body, new_position}]` (single-comment review)
+  - `add_review_comment` IPC + FE wrapper `addReviewComment`
+  - PrDetailModal 에 "+ Code suggestion" 토글 + form (path / line / 새 코드 / 선택 컨텍스트). 등록 시 ` ```suggestion ` markdown 자동 wrap
+  - **plan/14 22 항목 모두 ✅ (100%)**
 - Sprint C14-2 (P2, `docs/plan/14 §6 + §7`): Clone with options + PR Filter syntax
   - **E1+E2 Clone with options** — `git/clone.rs` 신규 (sparse-checkout cone + `--depth` + `--shallow-since` + `--single-branch` + `--bare`) + `clone_repo` IPC (auto-register=true 면 detect_meta 후 db.add_repo 자동) + `CloneRepoModal.vue` (URL + 부모 폴더 + 폴더명 + 고급 옵션 expand) + Sidebar 의 "⬇ Clone" 버튼
   - **F2 PR Filter syntax** — Launchpad 에 검색 input + prefix helper 버튼 (`+author:` `+state:open` `+repo:` `+is:pinned` `+is:snoozed` `+is:bot`). syntax: `author:<sub>` / `state:<v>` / `repo:<sub>` / `is:<pinned|snoozed|bot>` + free-text title 매칭. 모든 token AND

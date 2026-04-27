@@ -222,6 +222,40 @@ impl ForgeClient for GiteaClient {
         Ok(r.into_comment())
     }
 
+    async fn add_review_comment(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        commit_id: Option<&str>,
+        path: &str,
+        line: u32,
+        body: &str,
+    ) -> AppResult<()> {
+        // Gitea: line-level comment 는 single-comment review 로 POST.
+        // POST /repos/{o}/{r}/pulls/{n}/reviews
+        // body: { event: "COMMENT", commit_id?, comments: [{ path, body, new_position }] }
+        let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}/reviews"));
+        let mut payload = serde_json::json!({
+            "event": "COMMENT",
+            "comments": [{
+                "path": path,
+                "body": body,
+                "new_position": line,
+            }]
+        });
+        if let Some(c) = commit_id {
+            payload["commit_id"] = serde_json::Value::String(c.to_string());
+        }
+        self.http
+            .post(&url)
+            .json(&payload)
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+
     async fn submit_pr_review(
         &self,
         owner: &str,

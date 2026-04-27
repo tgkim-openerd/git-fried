@@ -65,6 +65,21 @@ pub trait ForgeClient: Send + Sync {
         body: &str,
     ) -> AppResult<PrComment>;
 
+    /// PR diff 의 특정 라인에 review-comment 추가 (`docs/plan/14 §7 F1`).
+    /// - `body` 는 호출자가 ` ```suggestion ` wrap 까지 완성해서 전달.
+    /// - `commit_id` 는 PR head SHA. None 이면 forge 가 자동 (GitHub 는 필수).
+    /// - `line` 은 RIGHT side (PR 의 새 코드) 의 1-based file line 번호.
+    async fn add_review_comment(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        commit_id: Option<&str>,
+        path: &str,
+        line: u32,
+        body: &str,
+    ) -> AppResult<()>;
+
     /// PR review 제출 (Approve / RequestChanges / Comment + 본문).
     async fn submit_pr_review(
         &self,

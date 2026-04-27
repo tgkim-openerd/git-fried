@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   addPrComment,
+  addReviewComment,
   aiCodeReview,
   aiDetectClis,
   closePr,
@@ -77,9 +78,59 @@ watch(
       newComment.value = ''
       reviewBody.value = ''
       verdict.value = 'comment'
+      // suggestion form 도 초기화
+      suggestionOpen.value = false
+      sugPath.value = ''
+      sugLine.value = null
+      sugNewCode.value = ''
+      sugContext.value = ''
     }
   },
 )
+
+// === Sprint C14-3 F1 (`docs/plan/14 §7 F1`): Code suggestion ===
+const suggestionOpen = ref(false)
+const sugPath = ref('')
+const sugLine = ref<number | null>(null)
+const sugNewCode = ref('')
+const sugContext = ref('') // optional 추가 설명
+
+const suggestionMut = useMutation({
+  mutationFn: () => {
+    if (props.repoId == null || props.number == null)
+      return Promise.reject(new Error('no selection'))
+    if (!sugPath.value.trim() || sugLine.value == null || sugLine.value < 1) {
+      return Promise.reject(new Error('path / line 입력 필요'))
+    }
+    if (!sugNewCode.value.trim()) {
+      return Promise.reject(new Error('새 코드 입력 필요'))
+    }
+    // ```suggestion wrap (GitHub + Gitea 공통 markdown 패턴)
+    const ctx = sugContext.value.trim()
+    const body =
+      (ctx ? `${ctx}\n\n` : '') +
+      '```suggestion\n' +
+      sugNewCode.value.replace(/\n+$/, '') +
+      '\n```'
+    return addReviewComment(
+      props.repoId,
+      props.number,
+      sugPath.value.trim(),
+      sugLine.value,
+      body,
+    )
+  },
+  onSuccess: () => {
+    toast.success('Suggestion 등록', `${sugPath.value}:${sugLine.value}`)
+    suggestionOpen.value = false
+    sugPath.value = ''
+    sugLine.value = null
+    sugNewCode.value = ''
+    sugContext.value = ''
+    qc.invalidateQueries({ queryKey: ['pr-comments', props.repoId, props.number] })
+  },
+  onError: (e) => toast.error('Suggestion 등록 실패', describeError(e)),
+})
 
 const addCommentMut = useMutation({
   mutationFn: () => {
@@ -329,7 +380,15 @@ const aiReviewMut = useMutation({
               rows="3"
               class="w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
             />
-            <div class="mt-1 flex justify-end">
+            <div class="mt-1 flex justify-end gap-2">
+              <button
+                type="button"
+                class="rounded-md border border-input px-3 py-1 text-xs hover:bg-accent"
+                title="코드 라인 변경 제안 (`docs/plan/14 §7 F1`)"
+                @click="suggestionOpen = !suggestionOpen"
+              >
+                {{ suggestionOpen ? '✕ Suggestion' : '+ Code suggestion' }}
+              </button>
               <button
                 class="rounded-md border border-input px-3 py-1 text-xs hover:bg-accent disabled:opacity-50"
                 :disabled="!newComment.trim() || addCommentMut.isPending.value"
@@ -339,6 +398,69 @@ const aiReviewMut = useMutation({
               </button>
             </div>
           </div>
+
+          <!-- Code suggestion form (Sprint C14-3 F1) -->
+          <section
+            v-if="suggestionOpen"
+            class="mb-4 rounded-md border border-violet-500/40 bg-violet-500/5 p-3"
+          >
+            <h3 class="mb-2 text-xs font-semibold text-violet-500">
+              💡 Code suggestion — diff 의 특정 라인을 새 코드로 제안
+            </h3>
+            <div class="mb-2 grid grid-cols-[1fr_120px] gap-2">
+              <input
+                v-model="sugPath"
+                placeholder="path/to/file.ts"
+                class="rounded border border-input bg-background px-2 py-1 font-mono text-xs"
+              />
+              <input
+                v-model.number="sugLine"
+                type="number"
+                min="1"
+                placeholder="line (1-base)"
+                class="rounded border border-input bg-background px-2 py-1 text-xs"
+              />
+            </div>
+            <textarea
+              v-model="sugNewCode"
+              placeholder="새 코드 (해당 line 을 이 내용으로 대체) — multi-line OK"
+              rows="3"
+              class="w-full rounded border border-input bg-background px-2 py-1 font-mono text-xs"
+            />
+            <textarea
+              v-model="sugContext"
+              placeholder="(선택) 변경 이유 / 추가 설명"
+              rows="2"
+              class="mt-2 w-full rounded border border-input bg-background px-2 py-1 text-xs"
+            />
+            <p class="mt-1 text-[10px] text-muted-foreground">
+              GitHub 와 Gitea 모두
+              <code class="rounded bg-muted/40 px-1">```suggestion</code>
+              형식으로 자동 wrap. PR diff 의 RIGHT side (새 코드) 기준 line.
+            </p>
+            <div class="mt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                class="rounded border border-border px-2 py-1 text-xs hover:bg-muted/40"
+                @click="suggestionOpen = false"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                class="rounded bg-violet-500 px-3 py-1 text-xs text-white hover:opacity-90 disabled:opacity-50"
+                :disabled="
+                  !sugPath.trim() ||
+                  sugLine == null ||
+                  !sugNewCode.trim() ||
+                  suggestionMut.isPending.value
+                "
+                @click="suggestionMut.mutate()"
+              >
+                {{ suggestionMut.isPending.value ? '등록 중...' : '제안 등록' }}
+              </button>
+            </div>
+          </section>
 
           <!-- 리뷰 제출 -->
           <section class="rounded-md border border-border p-3">

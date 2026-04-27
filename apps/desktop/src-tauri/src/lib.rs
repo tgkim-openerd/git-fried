@@ -151,6 +151,7 @@ pub fn run() {
             ipc::forge_commands::list_releases,
             ipc::forge_commands::list_pr_comments,
             ipc::forge_commands::add_pr_comment,
+            ipc::forge_commands::add_review_comment,
             ipc::forge_commands::submit_pr_review,
             ipc::forge_commands::merge_pr,
             ipc::forge_commands::close_pr,

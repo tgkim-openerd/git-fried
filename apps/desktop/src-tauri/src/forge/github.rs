@@ -230,6 +230,43 @@ impl ForgeClient for GithubClient {
         Ok(r.into_comment())
     }
 
+    async fn add_review_comment(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        commit_id: Option<&str>,
+        path: &str,
+        line: u32,
+        body: &str,
+    ) -> AppResult<()> {
+        // GitHub: POST /repos/{o}/{r}/pulls/{n}/comments
+        // body / commit_id / path / line / side=RIGHT (PR 새 코드 기준)
+        // commit_id 가 None 이면 PR head SHA 자동 lookup.
+        let resolved_commit_id = if let Some(c) = commit_id {
+            c.to_string()
+        } else {
+            let pr = self.get_pull_request(owner, repo, number).await?;
+            pr.head_sha.ok_or_else(|| {
+                crate::error::AppError::validation("PR head SHA 추출 실패")
+            })?
+        };
+        let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}/comments"));
+        self.http
+            .post(&url)
+            .json(&serde_json::json!({
+                "body": body,
+                "commit_id": resolved_commit_id,
+                "path": path,
+                "line": line,
+                "side": "RIGHT",
+            }))
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
+
     async fn submit_pr_review(
         &self,
         owner: &str,
