@@ -12,6 +12,7 @@ import ToastContainer from './components/ToastContainer.vue'
 import RepoSwitcherModal from './components/RepoSwitcherModal.vue'
 import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
+import CompareModal from './components/CompareModal.vue'
 import StatusBar from './components/StatusBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useShortcut } from '@/composables/useShortcuts'
@@ -45,6 +46,15 @@ const reflogOpen = ref(false)
 const repoSwitcherOpen = ref(false)
 const createPrOpen = ref(false)
 const helpOpen = ref(false)
+// Sprint C3 — Compare modal
+const compareOpen = ref(false)
+const compareInitialRef1 = ref<string | null>(null)
+const compareInitialRef2 = ref<string | null>(null)
+function openCompare(ref1?: string | null, ref2?: string | null) {
+  compareInitialRef1.value = ref1 ?? null
+  compareInitialRef2.value = ref2 ?? null
+  compareOpen.value = true
+}
 
 // ⌘⇧P 빠른 레포 전환 단축키 (Command Palette ⌘P 와 다름).
 function onKeydown(e: KeyboardEvent) {
@@ -138,11 +148,13 @@ interface GlobalHandles {
   gitFriedOpenSyncTemplate?: typeof openSyncTemplate
   gitFriedOpenBisect?: () => void
   gitFriedOpenReflog?: () => void
+  gitFriedOpenCompare?: typeof openCompare
 }
 const w = window as unknown as GlobalHandles
 w.gitFriedOpenSyncTemplate = openSyncTemplate
 w.gitFriedOpenBisect = () => (bisectOpen.value = true)
 w.gitFriedOpenReflog = () => (reflogOpen.value = true)
+w.gitFriedOpenCompare = openCompare
 </script>
 
 <template>
@@ -202,6 +214,13 @@ w.gitFriedOpenReflog = () => (reflogOpen.value = true)
     />
     <BisectModal :open="bisectOpen" @close="bisectOpen = false" />
     <ReflogModal :open="reflogOpen" @close="reflogOpen = false" />
+    <CompareModal
+      :open="compareOpen"
+      :repo-id="reposStore.activeRepoId"
+      :initial-ref1="compareInitialRef1"
+      :initial-ref2="compareInitialRef2"
+      @close="compareOpen = false"
+    />
     <RepoSwitcherModal
       :open="repoSwitcherOpen"
       @close="repoSwitcherOpen = false"

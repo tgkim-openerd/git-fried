@@ -660,6 +660,26 @@ pub async fn apply_stash_file(
     git_stash::apply_stash_file(&path, args.index, &args.path).await
 }
 
+// ====== Compare (`docs/plan/14 §2 A1`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompareRefsArgs {
+    pub repo_id: i64,
+    pub ref1: String,
+    pub ref2: String,
+}
+
+/// 두 ref 비교 — commits + diff + ahead/behind.
+#[tauri::command]
+pub async fn compare_refs(
+    args: CompareRefsArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<crate::git::compare::CompareResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    crate::git::compare::compare_refs(&path, &args.ref1, &args.ref2).await
+}
+
 // ====== Reset / Revert ======
 
 #[derive(Debug, Deserialize)]

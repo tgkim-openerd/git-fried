@@ -175,6 +175,26 @@ export const applyStashFile = (
 ): Promise<void> =>
   invoke('apply_stash_file', { args: { repoId, index, path } })
 
+// --- Compare (`docs/plan/14 §2 A1`) ---
+export interface CompareCommit {
+  sha: string
+  author: string
+  authorAt: number
+  summary: string
+}
+export interface CompareResult {
+  commits: CompareCommit[]
+  diff: string
+  leftCount: number
+  rightCount: number
+}
+export const compareRefs = (
+  repoId: number,
+  ref1: string,
+  ref2: string,
+): Promise<CompareResult> =>
+  invoke('compare_refs', { args: { repoId, ref1, ref2 } })
+
 // --- Submodule ---
 export interface SubmoduleEntry {
   path: string

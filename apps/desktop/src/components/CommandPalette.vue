@@ -301,6 +301,13 @@ const allCommands = computed<Cmd[]>(() => {
       action: callWindow('gitFriedOpenBisect'),
     },
     {
+      id: 'branch.compare',
+      category: 'branch',
+      label: 'Compare — 두 ref 비교',
+      hint: 'ahead/behind + commits + diff',
+      action: callWindow('gitFriedOpenCompare'),
+    },
+    {
       id: 'branch.conflict-detection',
       category: 'branch',
       label: `Conflict 예측 ${general.value.conflictDetection ? '비활성' : '활성'}`,
