@@ -12,10 +12,10 @@
 use crate::auth;
 use crate::error::{AppError, AppResult};
 use crate::forge::{
-    gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, ForgeKind, Issue,
-    MergeMethod, PrComment, PrState, PullRequest, Release, ReviewVerdict,
+    gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, Issue, MergeMethod,
+    PrComment, PrState, PullRequest, Release, ReviewVerdict,
 };
-use crate::storage::{Db, DbExt};
+use crate::storage::DbExt;
 use crate::AppState;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -398,7 +398,3 @@ pub async fn reopen_pr(args: GetPrArgs, state: tauri::State<'_, Arc<AppState>>) 
     client.reopen_pr(&owner, &repo, args.number).await
 }
 
-#[allow(dead_code)]
-fn _kind_marker(_: ForgeKind) {}
-#[allow(dead_code)]
-fn _db_marker(_: &Db) {}

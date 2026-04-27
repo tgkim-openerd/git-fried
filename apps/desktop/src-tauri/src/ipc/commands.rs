@@ -13,7 +13,7 @@ use crate::git::{
     graph as git_graph, repository as repo, reset as git_reset, runner, stage, stash as git_stash,
     status as git_status, submodule as git_sub, sync as git_sync,
 };
-use crate::storage::{Db, DbExt, Repo, Workspace};
+use crate::storage::{DbExt, Repo, Workspace};
 use crate::AppState;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -752,5 +752,3 @@ pub async fn bulk_list_prs(
     git_bulk::bulk_list_prs(&state.db, args.workspace_id, args.state_filter).await
 }
 
-#[allow(dead_code)]
-fn _db_marker(_: &Db) {}

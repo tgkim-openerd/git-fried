@@ -134,7 +134,8 @@ fn parse_blame_porcelain(input: &str) -> AppResult<Vec<BlameLine>> {
                             if next.starts_with('\t') {
                                 break;
                             }
-                            let h = lines.next().unwrap();
+                            // peek 직후 next 라 항상 Some — 안전 contract.
+                            let Some(h) = lines.next() else { break };
                             if let Some(rest) = h.strip_prefix("author ") {
                                 current_author = rest.to_string();
                             } else if let Some(rest) = h.strip_prefix("author-time ") {

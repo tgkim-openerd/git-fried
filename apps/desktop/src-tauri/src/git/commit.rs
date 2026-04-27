@@ -5,7 +5,7 @@
 // 최종 메시지를 그대로 받는다. 본 모듈은 git 호출만 담당.
 
 use crate::error::{AppError, AppResult};
-use crate::git::runner::{git_run, GitOutput, GitRunOpts};
+use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::path::Path;
@@ -103,5 +103,3 @@ pub async fn last_commit_message(repo: &Path) -> AppResult<String> {
     Ok(out.trim_end().to_string())
 }
 
-#[allow(dead_code)]
-fn _gitoutput_marker(_: &GitOutput) {}

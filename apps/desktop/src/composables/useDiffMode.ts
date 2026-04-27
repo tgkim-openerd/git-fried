@@ -55,6 +55,8 @@ export function useDiffMode() {
         return null
       case 'context':
         return 25
+      default:
+        return null
     }
   })
 

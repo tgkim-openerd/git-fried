@@ -250,14 +250,16 @@
 
 ## 5. Sprint 분해
 
-### Sprint 1 (P0 + 즉시 수정, ~3h) ★ 다음 세션 진입 즉시
+### Sprint 1 (P0 + 즉시 수정) ✅ 완료 (2026-04-27)
 
-1. **ESLint v9 마이그레이션** (~30분) — `.eslintrc.cjs` → `eslint.config.js` flat config
-2. **Rust unwrap() hot path 80개** (~1.5h) — `conflict_prediction.rs` + `rebase.rs` 우선
-3. **commits INDEX 추가** (~30분) — migration `0005_commits_lookup_index.sql`
-4. **`#[allow(dead_code)]` 4건 검토** (~30분)
+1. ✅ **ESLint v9 마이그레이션** — `.eslintrc.cjs` 삭제 + `eslint.config.js` flat config 신규 (`flat/essential` + parserVue + parserTs + globals 명시) + `useDiffMode.ts` 의 1건 error (`vue/return-in-computed-property`) 수정
+2. ✅ **Rust unwrap audit 정정** — agent 의 "285개 hot path 80" 추정은 **REJECTED**. 실제 production unwrap = `git/file_history.rs:137` **1건만** (`peek + next` 안전 contract 였으나 `let-else` 로 명시화). 나머지 6건 = `ai/prompts.rs` 의 `Regex::new()` (compile-time 검증, 정당)
+3. ✅ **commits INDEX** — migration `0005_commits_lookup_index.sql` (`idx_commits_lookup ON commits(repo_id, author_at DESC)`)
+4. ✅ **`#[allow(dead_code)]` 4건 + unused import 4건 제거** — `git/commit.rs` (GitOutput marker + import) / `ipc/commands.rs` (Db marker + import) / `ipc/forge_commands.rs` (ForgeKind + Db marker + import 2건)
 
-→ 1 PR. cargo test 74 + 신규 후 통과 / `npm run lint` 통과 / `cargo clippy -- -D warnings` 통과.
+**검증 결과**: `bun run typecheck` 0 / `bun run lint` 0 / `cargo check` 0 warning / `cargo clippy --all-targets -- -D warnings` 0 / **`cargo test --lib` 77 pass** (이전 74 → +3, 환경 차이).
+
+→ 1 PR (Sprint 1 통합 commit).
 
 ### Sprint 2 (P1 코드 품질, ~4h)
 
