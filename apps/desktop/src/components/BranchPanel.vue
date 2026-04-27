@@ -25,6 +25,7 @@ import {
   rebaseBranch,
 } from '@/api/git'
 import AiResultModal from './AiResultModal.vue'
+import RemoteManageModal from './RemoteManageModal.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
 const toast = useToast()
@@ -35,6 +36,7 @@ const invalidate = useInvalidateRepoQueries()
 
 const newBranchName = ref('')
 const filterKind = ref<'all' | 'local' | 'remote'>('local')
+const remoteManageOpen = ref(false)
 
 // Hide/Solo state
 const { data: hiddenList } = useHiddenRefs(() => props.repoId)
@@ -328,8 +330,22 @@ async function onExplainBranch(b: BranchInfo) {
         >
           {{ k }}
         </button>
+        <button
+          type="button"
+          class="rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
+          title="Remote 관리 (add / remove / rename / URL 변경)"
+          @click="remoteManageOpen = true"
+        >
+          🔗
+        </button>
       </div>
     </header>
+
+    <RemoteManageModal
+      :open="remoteManageOpen"
+      :repo-id="props.repoId"
+      @close="remoteManageOpen = false"
+    />
 
     <!-- Hide/Solo 컨트롤 (필터 별 일괄) -->
     <div

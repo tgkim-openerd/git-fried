@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- Sprint B14-1: Remote 관리 GUI (`docs/plan/14 §4` C1+C2+C3):
+  - `git/remote.rs` 신규 — `git remote -v` 파싱 + add / remove / rename / set-url (모두 git CLI shell-out, runner::git_run 통과 = 한글 안전)
+  - 5 IPC: `list_remotes` / `add_remote` / `remove_remote` / `rename_remote` / `set_remote_url`
+  - FE: `RemoteManageModal.vue` (list + add form + 각 항목 inline rename / URL 변경 / 제거 confirm) + BranchPanel 헤더에 🔗 진입 버튼
+  - Vue Query `['remotes', repoId]` (NORMAL staleTime), 모든 mutation 후 `branches` + `remotes` invalidate
+  - Rust unit test 3개 (parse_remote_v: 일반 / empty / 깨진 형식)
 - GitKraken importer fix-up (`docs/plan/21` M14 후속):
   - `apply()` 가 `add_repo` 직전에 `repo::detect_meta(path)` 호출 → forge_kind / forge_owner / forge_repo / default_branch / default_remote 자동 백필
   - detect_meta 실패 시 graceful degradation (Unknown + warning, import 자체는 계속)

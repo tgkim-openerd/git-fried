@@ -199,12 +199,21 @@
 2. ✅ **D1 Stash 부분 apply** — commit `f6e05c8`. backend `git/stash.rs::apply_stash_file` (`git checkout stash@{n} -- <path>` 단순 전략) + IPC + `applyStashFile` wrapper + `StashPanel.vue` 미리보기에 파일별 row + "이 파일만 apply" 버튼
 3. ✅ **A1 Compare branches/commits** — commit `(C3)`. backend `git/compare.rs::compare_refs` (commits + diff + leftCount/rightCount via `rev-list --left-right --count`) + `CompareModal.vue` (ref1 ⇄ ref2 picker + commit list + diff text) + CommandPalette "Compare — 두 ref 비교" 명령
 
-### Sprint B14 (P1 — 다음 sprint, ~1.5일)
+### Sprint B14 (P1 — 다음 sprint, ~1.5일) — 3 sub-sprint 분할
+
+#### B14-1 ✅ 완료 (2026-04-27)
+
+5. ✅ **C1~C3 Remote 관리 GUI** — `git/remote.rs` (list/add/remove/rename/set-url) + 5 IPC + `RemoteManageModal.vue` + BranchPanel 헤더 🔗 진입 버튼. Rust unit test 3개
+
+#### B14-2 (대기)
+
+6. **A2 Repo Maintenance** (~3h)
+7. **A5 LFS init** (~1h)
+
+#### B14-3 (대기)
 
 4. **B1~B4 Preferences Repository-Specific 4섹션** (~6~8h)
-5. **C1~C3 Remote 관리 GUI** (~4h)
-6. **A2 Repo Maintenance** (~3h)
-7. **A4 GPG init / A5 LFS init / A3 Git Flow init** (B 와 통합, ~3h)
+8. **A4 GPG init / A3 Git Flow init** (B 와 통합, ~3h)
 
 ### Sprint C14 (P2 — 여유 시, ~2일)
 

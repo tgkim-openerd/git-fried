@@ -989,6 +989,39 @@ export interface AppInfo {
 }
 export const getAppInfo = (): Promise<AppInfo> => invoke('get_app_info')
 
+// --- Remote 관리 (`docs/plan/14 §4` Sprint B14-1) ---
+
+export interface RemoteInfo {
+  name: string
+  fetchUrl: string | null
+  pushUrl: string | null
+}
+
+export const listRemotes = (repoId: number): Promise<RemoteInfo[]> =>
+  invoke('list_remotes', { repoId })
+
+export const addRemote = (
+  repoId: number,
+  name: string,
+  url: string,
+): Promise<void> => invoke('add_remote', { args: { repoId, name, url } })
+
+export const removeRemote = (repoId: number, name: string): Promise<void> =>
+  invoke('remove_remote', { args: { repoId, name } })
+
+export const renameRemote = (
+  repoId: number,
+  oldName: string,
+  newName: string,
+): Promise<void> =>
+  invoke('rename_remote', { args: { repoId, oldName, newName } })
+
+export const setRemoteUrl = (
+  repoId: number,
+  name: string,
+  url: string,
+): Promise<void> => invoke('set_remote_url', { args: { repoId, name, url } })
+
 // --- GitKraken importer (`docs/plan/21`) ---
 
 export interface GitKrakenDetect {

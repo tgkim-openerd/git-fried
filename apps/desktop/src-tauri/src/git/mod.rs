@@ -19,6 +19,7 @@ pub mod lfs;
 pub mod merge;
 pub mod rebase;
 pub mod reflog;
+pub mod remote;
 pub mod repository;
 pub mod reset;
 pub mod runner;
