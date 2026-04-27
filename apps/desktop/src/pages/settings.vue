@@ -12,6 +12,7 @@
 // 영속화: localStorage (DB 통합은 v1.x). Cloud / Org / Marketing 항목은 거부.
 import { computed, ref } from 'vue'
 import ForgeSetup from '@/components/ForgeSetup.vue'
+import GitKrakenImportModal from '@/components/GitKrakenImportModal.vue'
 import ProfilesSection from '@/components/ProfilesSection.vue'
 import { useUiState } from '@/composables/useUiState'
 import { useCustomTheme } from '@/composables/useCustomTheme'
@@ -27,6 +28,7 @@ type Category =
   | 'general'
   | 'ui'
   | 'editor'
+  | 'migrate'
   | 'about'
 
 const CATEGORIES: { id: Category; label: string }[] = [
@@ -35,9 +37,13 @@ const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'ui', label: 'UI Customization' },
   { id: 'editor', label: 'Editor / Terminal' },
+  { id: 'migrate', label: '마이그레이션' },
   { id: 'about', label: 'About' },
 ]
 const active = ref<Category>('profiles')
+
+// ===== GitKraken 마이그레이션 =====
+const importGkOpen = ref(false)
 
 // ===== General + UI settings — Sprint D1 공용 store 로 추출 =====
 const general = useGeneralSettings()
@@ -303,6 +309,37 @@ const buildInfo = computed(() => ({
         </p>
       </div>
 
+      <!-- 마이그레이션 -->
+      <div
+        v-else-if="active === 'migrate'"
+        class="flex max-w-2xl flex-col gap-4"
+      >
+        <h2 class="text-lg font-semibold">마이그레이션</h2>
+        <p class="text-xs text-muted-foreground">
+          기존 git client 의 로컬 데이터 (레포 / 워크스페이스 / 즐겨찾기 / 활성 탭) 를
+          git-fried 로 가져옵니다. PAT (토큰) 은 보안상 별도 재입력이 필요합니다.
+        </p>
+
+        <div class="rounded border border-border bg-muted/20 p-4 text-sm">
+          <h3 class="font-semibold">📦 GitKraken</h3>
+          <p class="mt-1 text-xs text-muted-foreground">
+            <code>%APPDATA%/.gitkraken/</code> 에서 자동 탐지 →
+            로컬 레포 path / Workspace / 즐겨찾기 / 활성 탭 import.
+          </p>
+          <button
+            type="button"
+            class="mt-3 rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:opacity-90"
+            @click="importGkOpen = true"
+          >
+            GitKraken 가져오기
+          </button>
+        </div>
+
+        <p class="text-[10px] text-muted-foreground">
+          v1.x 추가 후보: Sourcetree / Fork / GitUp / SmartGit.
+        </p>
+      </div>
+
       <!-- About -->
       <div v-else-if="active === 'about'" class="flex max-w-2xl flex-col gap-4">
         <h2 class="text-lg font-semibold">About git-fried</h2>
@@ -321,5 +358,10 @@ const buildInfo = computed(() => ({
         </p>
       </div>
     </section>
+
+    <GitKrakenImportModal
+      :open="importGkOpen"
+      @close="importGkOpen = false"
+    />
   </div>
 </template>

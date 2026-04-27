@@ -15,6 +15,7 @@ pub mod auth;
 pub mod error;
 pub mod forge;
 pub mod git;
+pub mod importer;
 pub mod ipc;
 pub mod launchpad;
 pub mod profiles;
@@ -120,6 +121,9 @@ pub fn run() {
             ipc::commands::bulk_fetch,
             ipc::commands::bulk_status,
             ipc::commands::bulk_list_prs,
+            ipc::commands::import_gitkraken_detect,
+            ipc::commands::import_gitkraken_dry_run,
+            ipc::commands::import_gitkraken_apply,
             ipc::forge_commands::forge_save_token,
             ipc::forge_commands::forge_list_accounts,
             ipc::forge_commands::forge_delete_account,

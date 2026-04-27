@@ -24,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- GitKraken importer (`docs/plan/21` — Sprint M14):
+  - `src-tauri/src/importer/gitkraken.rs` — `%APPDATA%/.gitkraken/profiles/` 자동 탐지 + 3 JSON parse (localRepoCache / profile / projectCache) + dry-run + apply
+  - 매핑: 로컬 레포 159 path → `add_repo` (idempotent), Workspace `type=local` → `create_workspace` (이름 충돌 시 `(GitKraken)` suffix), 즐겨찾기 → `set_repo_pinned`, 활성 탭 → FE 측 `useReposStore.openTab`
+  - syncPath prefix 매칭 = 더 긴 prefix 우선 (중첩 워크스페이스 안전)
+  - PAT (httpCreds.secFile) 은 GitKraken 자체 암호화로 마이그 불가 — 사용자 재입력 안내
+  - SSH/GPG 는 OS 표준이라 자동 동작
+  - 3 IPC commands: `import_gitkraken_detect` / `_dry_run` / `_apply`
+  - FE: `GitKrakenImportModal.vue` (탐지 → preview 4-카드 → confirm → 결과 + 탭 복원) + Settings → "마이그레이션" 카테고리 신규
+  - Rust unit tests 5개 (canonical path / longest-prefix / name conflict / JSON parse 2개)
 
 ### Changed
 - ESLint v9 flat config 마이그레이션 (`.eslintrc.cjs` → `eslint.config.js`)

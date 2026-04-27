@@ -13,6 +13,7 @@ use crate::git::{
     graph as git_graph, repository as repo, reset as git_reset, runner, stage, stash as git_stash,
     status as git_status, submodule as git_sub, sync as git_sync,
 };
+use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
 use crate::AppState;
 use serde::{Deserialize, Serialize};
@@ -788,5 +789,36 @@ pub async fn bulk_list_prs(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Vec<git_bulk::BulkResult<Vec<crate::forge::PullRequest>>>> {
     git_bulk::bulk_list_prs(&state.db, args.workspace_id, args.state_filter).await
+}
+
+// ====== GitKraken importer (`docs/plan/21`) ======
+
+#[tauri::command]
+pub async fn import_gitkraken_detect() -> AppResult<Option<gitkraken::DetectResult>> {
+    gitkraken::detect_summary()
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitKrakenImportArgs {
+    pub profile_dir: String,
+}
+
+#[tauri::command]
+pub async fn import_gitkraken_dry_run(
+    args: GitKrakenImportArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<gitkraken::ImportPlan> {
+    let payload = gitkraken::read_payload(Path::new(&args.profile_dir))?;
+    gitkraken::dry_run(&state.db, &payload).await
+}
+
+#[tauri::command]
+pub async fn import_gitkraken_apply(
+    args: GitKrakenImportArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<gitkraken::ApplyResult> {
+    let payload = gitkraken::read_payload(Path::new(&args.profile_dir))?;
+    gitkraken::apply(&state.db, &payload).await
 }
 

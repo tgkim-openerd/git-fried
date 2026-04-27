@@ -988,3 +988,43 @@ export interface AppInfo {
   platform: string
 }
 export const getAppInfo = (): Promise<AppInfo> => invoke('get_app_info')
+
+// --- GitKraken importer (`docs/plan/21`) ---
+
+export interface GitKrakenDetect {
+  profileDir: string
+  repoCount: number
+  workspaceCount: number
+  favoriteCount: number
+  tabCount: number
+}
+
+export interface GitKrakenImportPlan {
+  workspacesToCreate: string[]
+  reposToAdd: number
+  reposToPin: string[]
+  tabsToOpen: string[]
+  skippedPaths: string[]
+}
+
+export interface GitKrakenApplyResult {
+  workspacesCreated: number
+  reposAdded: number
+  reposPinned: number
+  tabsToOpen: string[]
+  skippedPaths: string[]
+  warnings: string[]
+}
+
+export const importGitKrakenDetect = (): Promise<GitKrakenDetect | null> =>
+  invoke('import_gitkraken_detect')
+
+export const importGitKrakenDryRun = (
+  profileDir: string,
+): Promise<GitKrakenImportPlan> =>
+  invoke('import_gitkraken_dry_run', { args: { profileDir } })
+
+export const importGitKrakenApply = (
+  profileDir: string,
+): Promise<GitKrakenApplyResult> =>
+  invoke('import_gitkraken_apply', { args: { profileDir } })
