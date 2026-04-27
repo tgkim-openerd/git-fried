@@ -128,6 +128,8 @@ pub fn run() {
             ipc::commands::set_remote_url,
             ipc::commands::maintenance_gc,
             ipc::commands::maintenance_fsck,
+            ipc::commands::read_repo_config,
+            ipc::commands::apply_repo_config,
             ipc::commands::import_gitkraken_detect,
             ipc::commands::import_gitkraken_dry_run,
             ipc::commands::import_gitkraken_apply,

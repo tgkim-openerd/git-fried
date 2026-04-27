@@ -15,6 +15,7 @@ import { useMutation } from '@tanstack/vue-query'
 import ForgeSetup from '@/components/ForgeSetup.vue'
 import GitKrakenImportModal from '@/components/GitKrakenImportModal.vue'
 import ProfilesSection from '@/components/ProfilesSection.vue'
+import RepoSpecificForm from '@/components/RepoSpecificForm.vue'
 import { useUiState } from '@/composables/useUiState'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
@@ -37,6 +38,7 @@ type Category =
   | 'general'
   | 'ui'
   | 'editor'
+  | 'repoSpecific'
   | 'maintenance'
   | 'migrate'
   | 'about'
@@ -47,6 +49,7 @@ const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'ui', label: 'UI Customization' },
   { id: 'editor', label: 'Editor / Terminal' },
+  { id: 'repoSpecific', label: 'Repository-Specific' },
   { id: 'maintenance', label: '유지보수' },
   { id: 'migrate', label: '마이그레이션' },
   { id: 'about', label: 'About' },
@@ -377,6 +380,9 @@ const buildInfo = computed(() => ({
           v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정.
         </p>
       </div>
+
+      <!-- Repository-Specific -->
+      <RepoSpecificForm v-else-if="active === 'repoSpecific'" />
 
       <!-- 유지보수 -->
       <div

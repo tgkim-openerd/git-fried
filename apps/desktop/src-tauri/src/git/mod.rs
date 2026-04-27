@@ -10,6 +10,7 @@ pub mod bulk;
 pub mod cherry_pick;
 pub mod commit;
 pub mod compare;
+pub mod config_local;
 pub mod conflict_prediction;
 pub mod diff;
 pub mod file_history;

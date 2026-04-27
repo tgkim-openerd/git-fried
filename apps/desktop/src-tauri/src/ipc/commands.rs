@@ -9,10 +9,10 @@
 
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    branch as git_branch, bulk as git_bulk, commit as git_commit, diff as git_diff,
-    graph as git_graph, maintenance as git_maint, remote as git_remote, repository as repo,
-    reset as git_reset, runner, stage, stash as git_stash, status as git_status,
-    submodule as git_sub, sync as git_sync,
+    branch as git_branch, bulk as git_bulk, commit as git_commit, config_local as git_cfg_local,
+    diff as git_diff, graph as git_graph, maintenance as git_maint, remote as git_remote,
+    repository as repo, reset as git_reset, runner, stage, stash as git_stash,
+    status as git_status, submodule as git_sub, sync as git_sync,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -896,6 +896,33 @@ pub async fn maintenance_fsck(
 ) -> AppResult<git_maint::MaintenanceResult> {
     let r = state.db.get_repo(repo_id).await?;
     git_maint::fsck(Path::new(&r.local_path)).await
+}
+
+// ====== Repository-Specific Preferences (`docs/plan/14 §3` Sprint B14-3) ======
+
+#[tauri::command]
+pub async fn read_repo_config(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_cfg_local::RepoConfigSnapshot> {
+    let r = state.db.get_repo(repo_id).await?;
+    git_cfg_local::read_snapshot(Path::new(&r.local_path)).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApplyRepoConfigArgs {
+    pub repo_id: i64,
+    pub snapshot: git_cfg_local::RepoConfigSnapshot,
+}
+
+#[tauri::command]
+pub async fn apply_repo_config(
+    args: ApplyRepoConfigArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let r = state.db.get_repo(args.repo_id).await?;
+    git_cfg_local::apply_snapshot(Path::new(&r.local_path), &args.snapshot).await
 }
 
 // ====== GitKraken importer (`docs/plan/21`) ======

@@ -989,6 +989,33 @@ export interface AppInfo {
 }
 export const getAppInfo = (): Promise<AppInfo> => invoke('get_app_info')
 
+// --- Repository-Specific Preferences (`docs/plan/14 §3` Sprint B14-3) ---
+
+export interface RepoConfigSnapshot {
+  hooksPath: string | null
+  commitEncoding: string | null
+  logOutputEncoding: string | null
+  gitflowBranchMaster: string | null
+  gitflowBranchDevelop: string | null
+  gitflowPrefixFeature: string | null
+  gitflowPrefixRelease: string | null
+  gitflowPrefixHotfix: string | null
+  commitGpgsign: string | null
+  userSigningkey: string | null
+  gpgFormat: string | null
+  userName: string | null
+  userEmail: string | null
+}
+
+export const readRepoConfig = (repoId: number): Promise<RepoConfigSnapshot> =>
+  invoke('read_repo_config', { repoId })
+
+export const applyRepoConfig = (
+  repoId: number,
+  snapshot: RepoConfigSnapshot,
+): Promise<void> =>
+  invoke('apply_repo_config', { args: { repoId, snapshot } })
+
 // --- Repo Maintenance (`docs/plan/14 §2 A2` Sprint B14-2) ---
 
 export interface MaintenanceResult {

@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- Sprint B14-3: Repository-Specific Preferences (`docs/plan/14 §3` B1~B4 + A3 + A4):
+  - `git/config_local.rs` 신규 — 13 키 (B1 hooksPath / B2 i18n.commitEncoding+logOutputEncoding / B3 gitflow 5키 / B4 commit.gpgsign+user.signingkey+gpg.format / per-repo user.name+email) read/write via `git config --local`
+  - 신규 SQLite migration **불필요** — `.git/config` 이 source of truth, 직접 read/write 가 더 단순 + 외부 git 도구와 자연 호환
+  - 2 IPC: `read_repo_config` / `apply_repo_config` (snapshot 일괄)
+  - FE: `useRepoConfig` composable (Vue Query NORMAL staleTime + apply mutation) + `RepoSpecificForm.vue` (4 fieldset + per-repo identity + dirty 추적 + 빈 값=unset 정규화) + Settings → "Repository-Specific" 카테고리
 - Sprint B14-2: Repo Maintenance + LFS init (`docs/plan/14 §2 A2 + A5`):
   - `git/maintenance.rs` 신규 — `gc(aggressive)` + `fsck` (모두 git CLI shell-out)
   - `git/lfs.rs::install()` 추가 — `git lfs install` 호출

@@ -210,10 +210,9 @@
 6. ✅ **A2 Repo Maintenance** — `git/maintenance.rs` (gc + fsck) + 2 IPC + Settings "유지보수" 카테고리 (gc / aggressive gc with confirm / fsck / lfs install 4 버튼 + 결과 stdout/stderr 표시)
 7. ✅ **A5 LFS init** — `git/lfs.rs::install()` + `lfs_install` IPC + Settings "유지보수" 의 `git lfs install` 버튼
 
-#### B14-3 (대기)
+#### B14-3 ✅ 완료 (2026-04-27)
 
-4. **B1~B4 Preferences Repository-Specific 4섹션** (~6~8h)
-8. **A4 GPG init / A3 Git Flow init** (B 와 통합, ~3h)
+4. ✅ **B1~B4 Preferences Repository-Specific** + **A3 Git Flow** + **A4 GPG init** — `git/config_local.rs` (13 키 read/write via `git config --local`) + 2 IPC + `useRepoConfig` composable + `RepoSpecificForm.vue` + Settings → "Repository-Specific" 카테고리. **신규 SQLite migration 불필요** (`.git/config` 이 source of truth, 직접 read/write 가 더 단순 + 외부 git 도구와 자연 호환)
 
 ### Sprint C14 (P2 — 여유 시, ~2일)
 
