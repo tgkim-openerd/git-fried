@@ -13,7 +13,7 @@
 // SSH / GPG 는 OS 표준이라 마이그 무관.
 
 use crate::error::{AppError, AppResult};
-use crate::git::repository::ForgeKindLite;
+use crate::git::repository::{self as repo, ForgeKindLite};
 use crate::storage::{Db, DbExt};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -387,21 +387,38 @@ pub async fn apply(db: &Db, payload: &Payload) -> AppResult<ApplyResult> {
             .max_by_key(|(sync, _)| sync.to_string_lossy().len())
             .map(|(_, id)| *id);
 
-        let name = last_path_component(repo_path);
+        let fallback_name = last_path_component(repo_path);
 
-        // forge 추론은 add_repo IPC 가 detect_meta 로 하지만, importer 는 DB 직접
-        // 사용해야 빠르므로 forge_kind=Unknown 으로 둔다. 첫 fetch 시 .git/config
-        // 에서 자동 추론되도록 후속 enhance — 본 sprint scope 밖.
+        // forge 메타 추론 (`docs/plan/21` M14 fix-up):
+        //   - `.git/config` 의 origin URL 에서 forge_kind / owner / repo 추출
+        //   - 실패 시 Unknown + warning 후 진행 (단일 레포 실패가 159 import 막지
+        //     않도록 graceful degradation)
+        let (name, default_branch, default_remote, forge_kind, forge_owner, forge_repo) =
+            match repo::detect_meta(repo_path) {
+                Ok(m) => (
+                    m.name,
+                    m.default_branch,
+                    m.default_remote,
+                    m.forge_kind,
+                    m.forge_owner,
+                    m.forge_repo,
+                ),
+                Err(e) => {
+                    warnings.push(format!("detect_meta 실패 ({path_str}): {e}"));
+                    (fallback_name, None, None, ForgeKindLite::Unknown, None, None)
+                }
+            };
+
         match db
             .add_repo(
                 &path_str,
                 ws_id,
                 Some(&name),
-                None, // default_branch
-                None, // default_remote
-                ForgeKindLite::Unknown,
-                None, // forge_owner
-                None, // forge_repo
+                default_branch.as_deref(),
+                default_remote.as_deref(),
+                forge_kind,
+                forge_owner.as_deref(),
+                forge_repo.as_deref(),
             )
             .await
         {

@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- GitKraken importer fix-up (`docs/plan/21` M14 후속):
+  - `apply()` 가 `add_repo` 직전에 `repo::detect_meta(path)` 호출 → forge_kind / forge_owner / forge_repo / default_branch / default_remote 자동 백필
+  - detect_meta 실패 시 graceful degradation (Unknown + warning, import 자체는 계속)
+  - `ON CONFLICT(local_path) DO UPDATE` 덕에 사용자가 modal "가져오기" 재실행 시 기존 159 레포 forge_kind 도 일괄 백필됨
 - GitKraken importer (`docs/plan/21` — Sprint M14):
   - `src-tauri/src/importer/gitkraken.rs` — `%APPDATA%/.gitkraken/profiles/` 자동 탐지 + 3 JSON parse (localRepoCache / profile / projectCache) + dry-run + apply
   - 매핑: 로컬 레포 159 path → `add_repo` (idempotent), Workspace `type=local` → `create_workspace` (이름 충돌 시 `(GitKraken)` suffix), 즐겨찾기 → `set_repo_pinned`, 활성 탭 → FE 측 `useReposStore.openTab`
