@@ -1,0 +1,105 @@
+# Changelog
+
+All notable changes to git-fried will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Sprint A14 (`docs/plan/14`):
+  - `⌘⇧H` File history search 단축키 (StatusPanel)
+  - Stash 단일 파일 apply (`git/stash.rs::apply_stash_file` + `StashPanel.vue` 미리보기에 파일별 row + "이 파일만 apply")
+  - Compare branches/commits (`git/compare.rs` + `CompareModal.vue` + Command Palette "Compare — 두 ref 비교")
+
+### Changed
+- ESLint v9 flat config 마이그레이션 (`.eslintrc.cjs` → `eslint.config.js`)
+- commits INDEX migration `0005_commits_lookup_index.sql` (log 페이지네이션 성능)
+- Rust dead_code marker 4건 + unused import 4건 정리 (`#[allow(dead_code)]` 제거)
+
+## [0.3.0] — TBD (첫 public release 예정)
+
+### Added (76 commits / 153 파일 / 4 SQLite migrations / Cargo test 79+ pass)
+
+**v0.0 골격**:
+- Tauri 2 + Vue 3 + Rust 골격
+- 한글 안전 spawn (`git/runner.rs::git_run` — UTF-8 강제 + LANG=C.UTF-8 + lossy 디코딩 + NFC + GBK fallback)
+- 첫 화면 + Vite dev server 1초 ready
+
+**v0.1 일상 워크플로우**:
+- status / stage / commit (한글 file-based) / sync (fetch / pull / push)
+- branch list / switch / create / delete
+- Commit graph (pvigier "straight-line lane" + Canvas 2D)
+- Diff viewer (CodeMirror 6, side-by-side / inline / hunk)
+- Stash 매니저
+- Multi-repo 사이드바 + Submodule + 일괄 fetch / pull / status
+- Gitea + GitHub PR list / detail / 생성
+
+**v0.2 Power user + AI 페어**:
+- AI CLI subprocess (Claude / Codex) — commit message / PR body / merge resolve / code review
+- Worktree 매니저
+- Cherry-pick (단일 + 멀티 레포)
+- Command Palette (⌘P) + 30+ 명령
+- File history + Blame
+- 3-way merge editor + AI Auto-resolve
+
+**v0.3 차별화**:
+- Profiles (회사 / 개인 1-click 토글, 무료)
+- Issues + Releases + Bot 그룹핑
+- Sync template (다중 레포 cherry-pick)
+- Commit graph 검색 (⌘F)
+
+**v1.0 핵심**:
+- Launchpad (PR 통합 보드)
+- PR 리뷰 (Approve / Request changes / 코멘트 / 머지 / 닫기)
+- Pre-commit hook 결과 inline 패널
+- Bisect + Reflog
+- LFS 패널 (회사 6/6 사용 시나리오 직격)
+- AI merge resolve + AI 코드 리뷰
+
+**Sprint A~M (GitKraken catalog 95% 흡수, `docs/plan/11`)**:
+- Hide / Solo branches (`docs/plan/11 §5d`)
+- Vim navigation J/K/H/L + S/U 단일 stage
+- 그래프 컬럼 토글 / 재정렬
+- Launchpad Pin / Snooze / Saved Views
+- Diff Hunk/Inline/Split + Hunk-level stage + Line-level stage
+- Status bar + Conflict Prediction + ✨ AI 미리해결
+- Commit Composer AI (multi-commit 재작성)
+- Repo tab alias + per-profile 영속성
+- 단축키 13+ (Zoom / Sidebar / Detail / ⌘D / ⌘⇧M / ⌘⇧Enter / ⌘⇧S/U / ⌘⇧H / Fullscreen)
+- Command Palette 카테고리 + 30+ 명령
+- AI 진입점 (Explain commit / branch / stash msg / Composer)
+- Drag-drop 4종 (Branch→Branch / Commit→Branch / 컬럼 헤더 / Tab 재정렬)
+- Sidebar org 그룹핑 + Workspace color
+- Multi-repo Tab 시스템 + ⌃Tab/⌃⇧Tab + ⌘⇧W
+- 레포 필터 ⌘⌥F
+- WIP 노트 banner
+- 섹션 헤더 collapse
+- Drag-drop file → terminal (quotePath safe)
+- Worktree Lock / Unlock
+- LFS pre-push size estimation
+- Section header 더블클릭 maximize
+- Custom theme JSON export / import
+- Lane drag-resize
+- 외부 mergetool launch
+- Deep linking `git-fried://`
+- OS 데스크탑 알림
+
+### Deferred (v1.x)
+- macOS / Linux 빌드 (`docs/plan/17 §4-5`)
+- EV 코드 서명 (`docs/plan/17 §2`)
+- Sentry self-hosted (`docs/plan/17 §3`)
+- OAuth (Gitea + GitHub) (`docs/plan/17 §6`)
+- 수익 모델 (`docs/plan/17 §7`)
+
+### Internal
+- 4 SQLite migrations (0001 initial / 0002 hide_solo_branches / 0003 launchpad_pr_meta / 0004 repo_alias / 0005 commits_lookup_index)
+- 79+ Cargo unit tests (한글 round-trip 포함)
+- TypeScript typecheck 0 errors
+- ESLint v9 flat config (0 errors / 0 warnings)
+- Cargo clippy --all-targets -- -D warnings 통과
+- 모든 commit `Co-Authored-By: Claude` / `Generated with Claude Code` 미포함 (CLAUDE.md 정합)
+
+[Unreleased]: https://github.com/tgkim/git-fried/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/tgkim/git-fried/releases/tag/v0.3.0

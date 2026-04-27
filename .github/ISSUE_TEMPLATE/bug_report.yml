@@ -1,0 +1,82 @@
+name: 🐛 Bug report
+description: 버그 또는 회귀 보고 (재현 가능)
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        보안 취약점은 [SECURITY.md](https://github.com/tgkim/git-fried/blob/main/SECURITY.md) 참조 — 공개 issue 금지.
+
+  - type: input
+    id: version
+    attributes:
+      label: git-fried 버전
+      placeholder: v0.3.0 (Help → About 또는 ⌘P → version)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS (v1.x 출시 후)
+        - Linux (v1.x 출시 후)
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 재현 단계
+      description: 1, 2, 3, ... 단계별로
+      placeholder: |
+        1. ⌘P → "Compare" 클릭
+        2. ref1 = "main", ref2 = "feature/한글" 입력
+        3. "비교" 클릭
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 동작 (에러 메시지 / 스크린샷 포함)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: forge
+    attributes:
+      label: 영향받는 forge (선택)
+      multiple: true
+      options:
+        - GitHub
+        - Gitea
+        - 해당 없음 (로컬 git 만)
+
+  - type: dropdown
+    id: ai_provider
+    attributes:
+      label: AI provider (AI 기능 관련 시)
+      options:
+        - 해당 없음
+        - Claude CLI
+        - Codex CLI
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 / 추가 컨텍스트 (선택)
+      description: |
+        - DevTools console (`Help → Toggle Developer Tools`)
+        - tracing log (`%LOCALAPPDATA%\git-fried\logs\` — v1.x 추가 예정)
+      render: text

@@ -65,6 +65,10 @@ jobs:
         working-directory: apps/desktop
         run: bun run typecheck
 
+      - name: ESLint
+        working-directory: apps/desktop
+        run: bun run lint
+
       - name: Vitest
         working-directory: apps/desktop
         run: bun run test

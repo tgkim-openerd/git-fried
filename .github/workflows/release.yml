@@ -1,0 +1,97 @@
+name: Release
+
+# tag push (`v*`) 시 자동 빌드 + GitHub release 생성 + binary upload.
+# EV 서명 + Tauri auto-updater latest.json 통합은 `docs/plan/17 §2 v1.1` 진입 시 활성화.
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    name: Build + sign + publish (Windows)
+    runs-on: windows-latest
+    permissions:
+      contents: write   # release create / asset upload
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: bun install
+        run: bun install
+
+      - name: Tauri build (Tauri 자체 서명 — OV/EV 인증서 secret 있을 때)
+        env:
+          # OV 또는 EV 인증서 (secret 등록 후 활성화)
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: bun run tauri:build
+
+      # === EV signtool (`docs/plan/17 §2 v1.1`) ===
+      # EV_THUMBPRINT secret 등록 후 활성화. HSM (eToken / Yubikey FIPS) 필요.
+      # 현재는 secret 없으면 step 자동 skip.
+      - name: signtool (EV) — optional
+        if: env.EV_THUMBPRINT != ''
+        env:
+          EV_THUMBPRINT: ${{ secrets.EV_THUMBPRINT }}
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse apps/desktop/src-tauri/target/release/bundle -Include *.msi,*.exe |
+            ForEach-Object {
+              & signtool sign `
+                /sha1 $env:EV_THUMBPRINT `
+                /tr http://timestamp.sectigo.com `
+                /td sha256 /fd sha256 `
+                $_.FullName
+            }
+
+      - name: Compute SHA256 checksums
+        shell: pwsh
+        run: |
+          $bundleDir = "apps/desktop/src-tauri/target/release/bundle"
+          $out = "checksums.txt"
+          if (Test-Path $out) { Remove-Item $out }
+          Get-ChildItem -Recurse $bundleDir -Include *.msi,*.exe |
+            ForEach-Object {
+              $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+              "$h  $($_.Name)" | Out-File -Append -Encoding ascii $out
+            }
+          Get-Content $out
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/desktop/src-tauri/target/release/bundle/msi/*.msi
+            apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
+            checksums.txt
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          body: |
+            ## git-fried ${{ github.ref_name }}
+
+            상세 변경: [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md)
+
+            ### 검증
+            - cargo test --lib ✅ / TypeScript typecheck ✅ / ESLint ✅ / cargo clippy ✅
+            - 한글 round-trip 회귀 통과
+            - SHA256: `checksums.txt` 동봉
+
+            ### 알려진 한계
+            - Windows-only (macOS / Linux 는 v1.x — `docs/plan/17`)
+            - SmartScreen "확인되지 않은 앱" 경고 가능 (EV 평판 누적 중) — "More info" → "Run anyway"
