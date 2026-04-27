@@ -30,6 +30,8 @@ import { useNotification } from '@/composables/useNotification'
 import BulkFetchResultModal from './BulkFetchResultModal.vue'
 import CloneRepoModal from './CloneRepoModal.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import LoadingSpinner from './LoadingSpinner.vue'
+import EmptyState from './EmptyState.vue'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 import type { Repo } from '@/types/git'
 
@@ -491,6 +493,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
           type="button"
           class="rounded-md border border-input px-1.5 py-1 text-xs hover:bg-accent"
           title="워크스페이스 편집"
+          :aria-label="`'${activeWorkspace.name}' 워크스페이스 편집`"
           @click="editingWorkspaceId = activeWorkspace.id"
         >
           ⚙
@@ -500,6 +503,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
           class="rounded-md border border-input px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
           :disabled="bulkFetchMut.isPending.value || !repos || repos.length === 0"
           :title="`현재 ${repos?.length ?? 0}개 레포 일괄 fetch`"
+          :aria-label="`현재 ${repos?.length ?? 0}개 레포 일괄 fetch`"
           @click="bulkFetchMut.mutate()"
         >
           {{ bulkFetchMut.isPending.value ? '⟳' : '⤓' }}
@@ -511,6 +515,11 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
           :title="
             bulkResultFailedCount > 0
               ? `최근 일괄 fetch: ${bulkResultFailedCount}개 실패 — 자세히 보기`
+              : '최근 일괄 fetch 결과'
+          "
+          :aria-label="
+            bulkResultFailedCount > 0
+              ? `최근 일괄 fetch — ${bulkResultFailedCount}개 실패, 자세히 보기`
               : '최근 일괄 fetch 결과'
           "
           @click="bulkResultOpen = true"
@@ -766,11 +775,18 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
           </li>
         </template>
 
-        <li
-          v-if="!isFetching && (!repos || repos.length === 0)"
-          class="px-2 py-3 text-xs text-muted-foreground"
-        >
-          레포가 없습니다. 우측 상단 [+ 추가] 로 시작.
+        <!-- F-P1: 첫 로딩 시 spinner (150 레포 환경 3s+ 대기 안내) -->
+        <li v-if="isFetching && (!repos || repos.length === 0)" class="px-2">
+          <LoadingSpinner label="레포 목록 로딩 중..." size="sm" />
+        </li>
+
+        <li v-if="!isFetching && (!repos || repos.length === 0)">
+          <EmptyState
+            icon="📁"
+            title="레포 없음"
+            description="우측 상단 [+ 추가] 또는 [⬇ Clone] 으로 시작하세요."
+            size="sm"
+          />
         </li>
       </ul>
     </section>

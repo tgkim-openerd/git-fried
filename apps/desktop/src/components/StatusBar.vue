@@ -159,6 +159,7 @@ function suggestResolution() {
       class="rounded border border-border px-1.5 py-0.5 text-[10px] text-amber-500 hover:bg-accent/40 disabled:opacity-50"
       :disabled="explainMut.isPending.value"
       :title="`✨ ${ai.available.value} — 충돌 예상 영역 분석 (${status.data.value.branch} vs ${prediction.target})`"
+      :aria-label="`AI (${ai.available.value}) — 충돌 예상 분석`"
       @click="suggestResolution"
     >
       ✨ {{ explainMut.isPending.value ? '...' : 'AI' }}
@@ -170,6 +171,7 @@ function suggestResolution() {
       to="/launchpad"
       class="ml-auto rounded border border-border px-1.5 py-0.5 hover:bg-accent/40"
       title="Launchpad — pinned + 활성 snooze"
+      :aria-label="`Launchpad — ${launchpadCount}개 pinned + 활성 snooze PR`"
     >
       ⭐💤 {{ launchpadCount }}
     </RouterLink>

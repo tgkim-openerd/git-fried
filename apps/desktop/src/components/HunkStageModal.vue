@@ -15,6 +15,7 @@ import { describeError } from '@/api/errors'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import BaseModal from './BaseModal.vue'
 import {
   buildHunkPatch,
   buildLinePatch,
@@ -211,44 +212,46 @@ function toggleExpanded(idx: number) {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      @click.self="$emit('close')"
-    >
-      <div
-        class="flex max-h-[90vh] w-[1000px] max-w-full flex-col rounded-lg border border-border bg-card shadow-xl"
-      >
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <h2 class="font-mono text-sm">
-            {{ staged ? 'Hunk / Line Unstage' : 'Hunk / Line Stage' }}
-            <span class="ml-2 text-muted-foreground">{{ path }}</span>
-            <span v-if="hunks.length" class="ml-2 text-xs text-muted-foreground">
-              ({{ hunks.length }} hunks · 선택 {{ totalSelected }} 라인)
-            </span>
-          </h2>
-          <div class="flex items-center gap-2">
-            <button
-              v-if="hunks.length > 1"
-              type="button"
-              class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40 disabled:opacity-50"
-              :disabled="applyMut.isPending.value"
-              :title="staged ? '모든 hunk unstage' : '모든 hunk stage'"
-              @click="applyAllHunks"
-            >
-              {{ staged ? '모두 ✕' : '모두 ✓' }}
-            </button>
-            <button
-              type="button"
-              class="text-muted-foreground hover:text-foreground"
-              @click="$emit('close')"
-            >
-              ✕
-            </button>
-          </div>
-        </header>
-        <div class="flex-1 overflow-auto p-2 font-mono text-xs">
+  <BaseModal
+    :open="open"
+    panel-class="max-h-[90vh] w-[1000px]"
+    max-width="full"
+    :show-close-button="false"
+    @close="$emit('close')"
+  >
+    <template #header>
+      <div class="flex w-full items-center justify-between gap-2">
+        <h2 class="font-mono text-sm">
+          {{ staged ? 'Hunk / Line Unstage' : 'Hunk / Line Stage' }}
+          <span class="ml-2 text-muted-foreground">{{ path }}</span>
+          <span v-if="hunks.length" class="ml-2 text-xs text-muted-foreground">
+            ({{ hunks.length }} hunks · 선택 {{ totalSelected }} 라인)
+          </span>
+        </h2>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="hunks.length > 1"
+            type="button"
+            class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40 disabled:opacity-50"
+            :disabled="applyMut.isPending.value"
+            :title="staged ? '모든 hunk unstage' : '모든 hunk stage'"
+            :aria-label="staged ? '모든 hunk unstage' : '모든 hunk stage'"
+            @click="applyAllHunks"
+          >
+            {{ staged ? '모두 ✕' : '모두 ✓' }}
+          </button>
+          <button
+            type="button"
+            class="text-muted-foreground hover:text-foreground"
+            aria-label="닫기"
+            @click="$emit('close')"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    </template>
+    <div class="p-2 font-mono text-xs">
           <p
             v-if="diffQuery.isFetching.value && !file"
             class="p-6 text-center text-muted-foreground"
@@ -352,9 +355,7 @@ function toggleExpanded(idx: number) {
               </div>
             </div>
           </div>
-        </div>
-      </div>
     </div>
     <ContextMenu ref="ctxMenu" />
-  </Teleport>
+  </BaseModal>
 </template>

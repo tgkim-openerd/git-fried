@@ -8,6 +8,7 @@ import { STALE_TIME } from '@/api/queryClient'
 import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
+import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -105,21 +106,23 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-32"
-      @click.self="emit('close')"
-      @keydown="onKeydown"
-    >
-      <div class="w-[640px] max-w-[90vw] rounded-lg border border-border bg-card shadow-xl">
-        <input
-          ref="inputRef"
-          v-model="filter"
-          placeholder="레포 검색... (이름 / 경로 / owner) — Esc 닫기"
-          class="w-full rounded-t-lg border-b border-border bg-transparent px-3 py-2 text-sm outline-none"
-          @keydown="onKeydown"
-        />
+  <BaseModal
+    :open="open"
+    align="top"
+    :show-close-button="false"
+    panel-class="w-[640px] max-w-[90vw]"
+    max-width="full"
+    @close="emit('close')"
+  >
+    <div @keydown="onKeydown">
+      <input
+        ref="inputRef"
+        v-model="filter"
+        placeholder="레포 검색... (이름 / 경로 / owner) — Esc 닫기"
+        class="w-full rounded-t-lg border-b border-border bg-transparent px-3 py-2 text-sm outline-none"
+        aria-label="레포 검색"
+        @keydown="onKeydown"
+      />
         <ul class="max-h-96 overflow-auto py-1">
           <li
             v-for="(r, i) in filtered"
@@ -167,10 +170,9 @@ function onKeydown(e: KeyboardEvent) {
             결과 없음
           </li>
         </ul>
-        <div class="border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
-          ↑↓ 탐색 · Enter 선택 · Esc 닫기 · ⭐ pinned 우선
-        </div>
+      <div class="border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+        ↑↓ 탐색 · Enter 선택 · Esc 닫기 · ⭐ pinned 우선
       </div>
     </div>
-  </Teleport>
+  </BaseModal>
 </template>

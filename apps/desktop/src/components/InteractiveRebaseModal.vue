@@ -28,6 +28,7 @@ import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
+import BaseModal from './BaseModal.vue'
 
 type Step = 'setup' | 'edit' | 'running' | 'result'
 
@@ -274,27 +275,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      @click.self="close"
-    >
-      <div
-        class="flex max-h-[90vh] w-[720px] max-w-full flex-col rounded-lg border border-border bg-card shadow-xl"
-      >
-        <header
-          class="flex items-center justify-between border-b border-border px-4 py-2.5"
-        >
-          <h2 class="text-sm font-semibold">Interactive rebase</h2>
-          <button
-            type="button"
-            class="text-muted-foreground hover:text-foreground"
-            @click="close"
-          >
-            ✕
-          </button>
-        </header>
+  <BaseModal
+    :open="open"
+    title="Interactive rebase"
+    panel-class="max-h-[90vh] w-[720px]"
+    max-width="full"
+    @close="close"
+  >
 
         <!-- step: setup -->
         <section v-if="step === 'setup'" class="flex flex-col gap-3 p-4">
@@ -490,7 +477,5 @@ onUnmounted(() => {
             </button>
           </footer>
         </section>
-      </div>
-    </div>
-  </Teleport>
+  </BaseModal>
 </template>

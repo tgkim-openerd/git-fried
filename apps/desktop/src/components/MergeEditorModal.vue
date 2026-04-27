@@ -22,6 +22,7 @@ import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { notifyAiDone } from '@/composables/useAiCli'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import BaseModal from './BaseModal.vue'
 
 const toast = useToast()
 
@@ -31,6 +32,8 @@ const props = defineProps<{
   open: boolean
 }>()
 const emit = defineEmits<{ close: [] }>()
+
+const isOpen = computed(() => props.open && props.path != null)
 const qc = useQueryClient()
 const invalidate = useInvalidateRepoQueries()
 
@@ -162,20 +165,18 @@ const aiMut = useMutation({
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open && path"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-6"
-      @click.self="emit('close')"
-    >
-      <div class="flex h-full w-full max-w-7xl flex-col rounded-lg border border-border bg-card shadow-xl">
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <h2 class="text-sm font-semibold">
-            <span class="text-muted-foreground">3-way merge:</span>
-            <span class="ml-2 font-mono">{{ path }}</span>
-          </h2>
-          <button class="text-muted-foreground hover:text-foreground" @click="emit('close')">✕</button>
-        </header>
+  <BaseModal
+    :open="isOpen"
+    panel-class="h-[90vh]"
+    max-width="full"
+    @close="emit('close')"
+  >
+    <template #header>
+      <h2 class="text-sm font-semibold">
+        <span class="text-muted-foreground">3-way merge:</span>
+        <span class="ml-2 font-mono">{{ path }}</span>
+      </h2>
+    </template>
 
         <!-- 단축 액션 -->
         <div class="flex items-center gap-2 border-b border-border bg-muted/20 px-4 py-2 text-xs">
@@ -258,25 +259,25 @@ const aiMut = useMutation({
           </div>
         </div>
 
-        <footer class="flex items-center justify-end gap-2 border-t border-border px-4 py-2 text-xs">
-          <span class="mr-auto text-muted-foreground">
-            💡 결과 편집기에서 conflict marker (&lt;&lt;&lt;&lt; / ==== / &gt;&gt;&gt;&gt;) 모두 제거 후 stage.
-          </span>
-          <button
-            class="rounded-md border border-input px-3 py-1.5 hover:bg-accent"
-            @click="emit('close')"
-          >
-            취소
-          </button>
-          <button
-            class="rounded-md bg-primary px-4 py-1.5 text-primary-foreground disabled:opacity-50"
-            :disabled="stageMut.isPending.value"
-            @click="stageMut.mutate()"
-          >
-            {{ stageMut.isPending.value ? '저장 중...' : '결과로 stage' }}
-          </button>
-        </footer>
+    <template #footer>
+      <div class="flex items-center justify-end gap-2 text-xs">
+        <span class="mr-auto text-muted-foreground">
+          💡 결과 편집기에서 conflict marker (&lt;&lt;&lt;&lt; / ==== / &gt;&gt;&gt;&gt;) 모두 제거 후 stage.
+        </span>
+        <button
+          class="rounded-md border border-input px-3 py-1.5 hover:bg-accent"
+          @click="emit('close')"
+        >
+          취소
+        </button>
+        <button
+          class="rounded-md bg-primary px-4 py-1.5 text-primary-foreground disabled:opacity-50"
+          :disabled="stageMut.isPending.value"
+          @click="stageMut.mutate()"
+        >
+          {{ stageMut.isPending.value ? '저장 중...' : '결과로 stage' }}
+        </button>
       </div>
-    </div>
-  </Teleport>
+    </template>
+  </BaseModal>
 </template>

@@ -266,6 +266,21 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-8 — 잔여 종료 (Modal 4 + V-11/12 + F-P1 + aria 5) ✅
+
+마지막 잔여 작업 모두 종료 — plan/22 모든 sprint 부분/완료.
+
+- ✅ **BaseModal `align` prop 추가** — `'center' (기본) | 'top'` (palette/switcher 용 `pt-24`)
+- ✅ **잔여 4 modal BaseModal 마이그레이션** — 누적 18 modal 전부 완료
+  - **RepoSwitcherModal** — `align="top"` + show-close-button=false + panel-class="w-[640px]"
+  - **HunkStageModal** — header slot (모두 ✕/✓ + 닫기) + show-close-button=false + panel-class max-h-[90vh] w-[1000px]
+  - **InteractiveRebaseModal** — title + panel-class max-h-[90vh] w-[720px] (3-step wizard 본문 그대로)
+  - **MergeEditorModal** — `isOpen = computed(open && path != null)` + header slot + footer slot (취소 / 결과로 stage)
+- ✅ **V-11 IssueDetailModal 신규** — IssuesPanel row click → 자체 modal (state 뱃지 + author + 라벨 + bodyMd + ↗ 외부 열기)
+- ✅ **V-12 ReleaseDetailModal 신규** — ReleasesPanel row click → 자체 modal (draft/pre 뱃지 + tag + name + bodyMd changelog + ↗ 외부 열기)
+- ✅ **F-P1 App 시작 spinner** — Sidebar reposQuery isFetching 시 LoadingSpinner ("레포 목록 로딩 중...") + 빈 상태 EmptyState ("레포 없음" with 안내). 사용자 첫 진입 + 150 레포 환경 3s+ 대기 친화 UX
+- ✅ **잔여 aria-label 5건** — StatusBar AI 분석 버튼 + Launchpad badge link + Sidebar (워크스페이스 ⚙ / 일괄 fetch ⤓ / 일괄 결과 📡)
+
 ### Sprint 22-7 (선택) — Polish 잔여 (~5h) ✅ 부분완료 (Q-3 + Modal 3 + aria 11건)
 
 Q-5/Q-6/Q-7 + S-2/S-3/S-4 + V-7~V-13 + F-P1~F-P5 중 ranking.

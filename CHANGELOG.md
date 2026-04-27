@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-8 — plan/22 잔여 종료 (Modal 4 + V-11/12 + F-P1 + aria 5):
+  - **BaseModal `align` prop** — `'center' (기본) | 'top'` (palette/switcher 용 `pt-24`)
+  - **잔여 4 modal BaseModal 마이그레이션** — 누적 **18 modal 전부 완료**:
+    - RepoSwitcherModal — `align="top"` + show-close-button=false + panel-class="w-[640px]"
+    - HunkStageModal — header slot (모두 ✕/✓ + 닫기) + show-close-button=false + panel-class max-h-[90vh] w-[1000px]
+    - InteractiveRebaseModal — title + panel-class max-h-[90vh] w-[720px]
+    - MergeEditorModal — `isOpen = computed(open && path != null)` + header/footer slot
+  - **V-11 IssueDetailModal 신규** — `components/IssueDetailModal.vue` — IssuesPanel row click → 자체 modal (state 뱃지 + author + 라벨 + bodyMd + ↗ 외부 열기). IssuesPanel 외부 link-only → self-modal 격상 + LoadingSpinner + EmptyState 적용
+  - **V-12 ReleaseDetailModal 신규** — `components/ReleaseDetailModal.vue` — ReleasesPanel row click → 자체 modal (draft/pre 뱃지 + tag + name + bodyMd changelog + ↗ 외부 열기). ReleasesPanel 동일 패턴 + LoadingSpinner + EmptyState
+  - **F-P1 App 시작 spinner** — Sidebar reposQuery isFetching 시 LoadingSpinner ("레포 목록 로딩 중...") + 빈 상태 EmptyState ("레포 없음" with [+ 추가] / [⬇ Clone] 안내). 첫 진입 + 150 레포 환경 3s+ 대기 친화 UX
+  - **잔여 aria-label 5건** — StatusBar (AI 분석 ✨ / Launchpad badge link) + Sidebar header (워크스페이스 ⚙ / 일괄 fetch ⤓ / 일괄 결과 📡)
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
+  - **plan/22 모든 sprint 부분/완료** (22-1 ~ 22-8)
 - Sprint 22-7 — Q-3 한글 너비 + 복잡 Modal 3건 + aria-label 11건 (`docs/plan/22 §22-7`):
   - **Q-3 visualWidth utility 추출** — 신규 `utils/visualWidth.ts` (visualWidth / visualTruncate / cjkRatio export). CommitMessageInput 의 inline 함수 → utility import (DRY)
   - **Q-3 RepoTabBar 한글 tab label 시각 보정** — visualWidth > 24 cell 시 `max-w-[180px]` → `max-w-[280px]` 동적. 한글 tab name dense 환경 (회사 50+ 한글 레포) 가독성 향상
@@ -105,6 +118,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Sprint E UX Polish (3~5일) — Skeleton 4 / Empty 4 / DnD 4 시나리오 / Long-running 30s·1m·4m / 한글 좌측 ellipsis+tooltip / a11y 47/47 / Motion 12+reduced-motion / Plugin slot 활용 / v0.4 placeholder
   - Sprint F 검증 (1~2일) — 36+ PNG 재캡처 + Figma 60+ 아트보드 visual diff audit ≥95% 일치 + Lighthouse a11y ≥90
   - 의존: plan/22 22-7 의 BaseModal 잔여 7 마이그레이션을 plan/24 Sprint D 로 이전 권장 — 코드 충돌 회피
+- **plan/24 Sprint A — Foundation 토큰 ✅ 완료** (`docs/plan/24 § 3`):
+  - Anthropic Claude Design hosting 에서 design bundle (4.3MB tar.gz) fetch → README + 8 jsx + tokens.js + 7 .md + 36 PNG 추출
+  - **A-1 Pretendard self-host** — `bun add pretendard@1.3.9` + main.css `@import 'pretendard/dist/web/variable/pretendardvariable.css'`. OS fallback 차단, font-display: swap
+  - **A-2 Color semantic 분리** (Q2): light muted 95.9%→97.5% / accent 95.9%→92% (primary 옅은 변형) / dark muted 15.9%→12% / accent 15.9%→22%
+  - **A-3 Status semantic 신규** — `--success` (emerald-700) / `--warning` (amber-600) / `--info` (blue-600) light+dark
+  - **A-4 Elevation tier 3 신규** — `--shadow-popover/modal/toast` (sm/lg/xl, dark opacity 강화)
+  - **A-5 Z-index 6 layer 신규** — 10/20/30/40/50/60 (sticky/sidebar/popover/modal-backdrop/modal-content/toast)
+  - tailwind.config.ts 확장: popover/success/warning/info colors + boxShadow + zIndex
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass / 36 PNG 재캡처 시각 확인
+  - **Sprint B~F 계획 단계 유지 결정** (사용자 판단): Sprint A 만 코드 적용, B~F (Primitives+reka-ui / Hub Screens / Modal Audit / UX Polish / 검증)는 plan/24 에 계획으로만 남김. 이유: plan/22 22-7 까지 진행되며 BaseModal 14/18·aria-label 17·ContextMenu 11/17·V-5/F-I1/F-I2/Q-3/Q-4 등 점진 적용이 이미 진행 중. plan/24 § 11 재개 조건 명시 (plan/22 정체 OR Figma↔코드 drift ≥30% OR 사용자 명시 트리거)
     - `00-product-brief.md` § 4-2 "Feature Parity Ambition" + § 8 Anti-Goals 보강 (minimal-leaning / GitKraken visual 모방 / 고정 카운트 가정)
     - `README.md` — 인덱스 + 권장 읽기 순서 + Handoff 옵션 (A 문서만 / B 스크린샷 / C Figma MCP)
 - Sprint A14 (`docs/plan/14`):

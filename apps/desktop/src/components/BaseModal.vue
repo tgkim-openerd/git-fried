@@ -55,6 +55,8 @@ const props = withDefaults(
     showCloseButton?: boolean
     /** 추가 컨테이너 클래스 (기본 layout 위에 덧붙임) */
     panelClass?: string
+    /** 정렬: 'center' (기본) | 'top' (palette/switcher 용 — pt-24) */
+    align?: 'center' | 'top'
   }>(),
   {
     maxWidth: 'lg',
@@ -62,6 +64,7 @@ const props = withDefaults(
     closeOnEsc: true,
     showCloseButton: true,
     panelClass: '',
+    align: 'center',
   },
 )
 
@@ -94,7 +97,8 @@ function onKeydown(e: KeyboardEvent) {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      class="fixed inset-0 z-50 flex justify-center bg-black/50 p-4"
+      :class="align === 'top' ? 'items-start pt-24' : 'items-center'"
       @click.self="onBackdrop"
       @keydown="onKeydown"
     >
