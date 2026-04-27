@@ -214,14 +214,19 @@
 
 4. ✅ **B1~B4 Preferences Repository-Specific** + **A3 Git Flow** + **A4 GPG init** — `git/config_local.rs` (13 키 read/write via `git config --local`) + 2 IPC + `useRepoConfig` composable + `RepoSpecificForm.vue` + Settings → "Repository-Specific" 카테고리. **신규 SQLite migration 불필요** (`.git/config` 이 source of truth, 직접 read/write 가 더 단순 + 외부 git 도구와 자연 호환)
 
-### Sprint C14 (P2 — 여유 시, ~2일)
+### Sprint C14 (P2 — 여유 시, ~2일) — 부분 진행
+
+#### C14-1 ✅ 완료 (2026-04-27) — 작은 3건
+
+11. ✅ **G1 Tag panel** — `git/tag.rs` (5 함수) + 5 IPC + `TagPanel.vue` + ForgePanel 4번째 tab "Tag"
+12. ✅ **G2 Author filter dropdown** — CommitTable header dropdown (unique authors / ko-locale 정렬, 작가 1명 이하면 hide)
+13. ✅ **D2 Edit stash message** — `git/stash.rs::edit_stash_message` (rev-parse → stash store -m → drop 원본) + IPC + StashPanel "edit msg" 버튼
+
+#### C14-2 (대기)
 
 8. **E1~E2 Clone 옵션** (~6h)
 9. **F1 PR Code Suggestions** (~8h)
 10. **F2 PR Filter syntax** (~4h)
-11. **G1 Tag panel** (~4h)
-12. **G2 Author filter dropdown** (~2h)
-13. **D2 Edit stash message** (~3h)
 
 **합계 22 항목** = 약 **3~5일** (AI pair 가속 기준).
 

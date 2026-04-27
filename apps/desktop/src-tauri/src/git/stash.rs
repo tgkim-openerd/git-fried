@@ -124,6 +124,54 @@ pub async fn show_stash(repo: &Path, index: usize) -> AppResult<String> {
     .into_ok()
 }
 
+/// stash@{n} 의 메시지 수정 (`docs/plan/14 §5 D2`, GitKraken §11 "Edit stash message").
+///
+/// git 표준 명령으로 stash 메시지를 직접 수정하는 방법이 없으므로,
+/// 다음 3 단계로 안전하게 재구성:
+///   1) 대상 stash 의 commit SHA 추출 (rev-parse stash@{n})
+///   2) `git stash store -m "<new>" <sha>` — 같은 SHA 를 새 reflog entry 로 저장 (stash@{0} 이 됨)
+///   3) 원본 `git stash drop stash@{n+1}` — drop (store 후 +1 이동)
+///
+/// 결과: 같은 commit (= 같은 변경) 을 새 메시지로 stash@{0} 에 보유. 순서 변경 발생.
+/// store 가 reflog entry 를 만든 뒤 drop 하므로 SHA unreachable 위험 없음.
+pub async fn edit_stash_message(
+    repo: &Path,
+    index: usize,
+    new_message: &str,
+) -> AppResult<()> {
+    if new_message.trim().is_empty() {
+        return Err(crate::error::AppError::validation("메시지 비어있음"));
+    }
+    // 1) commit SHA 추출
+    let r = format!("stash@{{{index}}}");
+    let sha = git_run(repo, &["rev-parse", &r], &GitRunOpts::default())
+        .await?
+        .into_ok()?
+        .trim()
+        .to_string();
+    if sha.is_empty() {
+        return Err(crate::error::AppError::validation("stash SHA 추출 실패"));
+    }
+    // 2) store with new message
+    git_run(
+        repo,
+        &["stash", "store", "-m", new_message, &sha],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+    // 3) 원본 drop — store 후 stash@{0} 이 새 entry, 원본은 +1 로 이동
+    let original = format!("stash@{{{}}}", index + 1);
+    git_run(
+        repo,
+        &["stash", "drop", &original],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+    Ok(())
+}
+
 /// stash@{n} 안의 단일 파일만 working tree 에 apply
 /// (`docs/plan/14 §5 D1`, GitKraken §11 "Apply this file").
 ///

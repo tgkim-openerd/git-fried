@@ -12,7 +12,7 @@ use crate::git::{
     branch as git_branch, bulk as git_bulk, commit as git_commit, config_local as git_cfg_local,
     diff as git_diff, graph as git_graph, maintenance as git_maint, remote as git_remote,
     repository as repo, reset as git_reset, runner, stage, stash as git_stash,
-    status as git_status, submodule as git_sub, sync as git_sync,
+    status as git_status, submodule as git_sub, sync as git_sync, tag as git_tag,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -662,6 +662,24 @@ pub async fn apply_stash_file(
     git_stash::apply_stash_file(&path, args.index, &args.path).await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EditStashMessageArgs {
+    pub repo_id: i64,
+    pub index: usize,
+    pub message: String,
+}
+
+/// stash@{n} 의 메시지 수정 (`docs/plan/14 §5 D2`).
+#[tauri::command]
+pub async fn edit_stash_message(
+    args: EditStashMessageArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::edit_stash_message(&path, args.index, &args.message).await
+}
+
 // ====== Compare (`docs/plan/14 §2 A1`) ======
 
 #[derive(Debug, Deserialize)]
@@ -923,6 +941,87 @@ pub async fn apply_repo_config(
 ) -> AppResult<()> {
     let r = state.db.get_repo(args.repo_id).await?;
     git_cfg_local::apply_snapshot(Path::new(&r.local_path), &args.snapshot).await
+}
+
+// ====== Tag panel (`docs/plan/14 §8 G1` Sprint C14) ======
+
+#[tauri::command]
+pub async fn list_tags(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_tag::TagInfo>> {
+    let r = state.db.get_repo(repo_id).await?;
+    git_tag::list_tags(Path::new(&r.local_path)).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTagArgs {
+    pub repo_id: i64,
+    pub name: String,
+    /// HEAD 외 다른 ref/SHA. None → HEAD
+    #[serde(default)]
+    pub target: Option<String>,
+    /// Some 이면 annotated, None 이면 lightweight
+    #[serde(default)]
+    pub message: Option<String>,
+}
+
+#[tauri::command]
+pub async fn create_tag(
+    args: CreateTagArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let r = state.db.get_repo(args.repo_id).await?;
+    git_tag::create_tag(
+        Path::new(&r.local_path),
+        &args.name,
+        args.target.as_deref(),
+        args.message.as_deref(),
+    )
+    .await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TagNameArgs {
+    pub repo_id: i64,
+    pub name: String,
+}
+
+#[tauri::command]
+pub async fn delete_tag(
+    args: TagNameArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let r = state.db.get_repo(args.repo_id).await?;
+    git_tag::delete_tag(Path::new(&r.local_path), &args.name).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushTagArgs {
+    pub repo_id: i64,
+    pub remote: String,
+    pub name: String,
+}
+
+#[tauri::command]
+pub async fn push_tag(
+    args: PushTagArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let r = state.db.get_repo(args.repo_id).await?;
+    git_tag::push_tag(Path::new(&r.local_path), &args.remote, &args.name).await
+}
+
+#[tauri::command]
+pub async fn delete_remote_tag(
+    args: PushTagArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let r = state.db.get_repo(args.repo_id).await?;
+    git_tag::delete_remote_tag(Path::new(&r.local_path), &args.remote, &args.name).await
 }
 
 // ====== GitKraken importer (`docs/plan/21`) ======

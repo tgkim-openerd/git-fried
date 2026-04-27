@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- Sprint C14 (P2 일부, `docs/plan/14 §5/§8`): G2 Author filter + D2 Edit stash msg + G1 Tag panel
+  - **G2 Author filter dropdown** — CommitTable header 에 unique authors dropdown (커밋 200개 기반 ko-locale 정렬). 선택 시 그 author 만 필터, "모든 작성자" 로 해제. 작가 1명 이하면 dropdown 자동 hide
+  - **D2 Edit stash message** — `git/stash.rs::edit_stash_message` (rev-parse → `stash store -m` → drop 원본, SHA unreachable 위험 없음). IPC + StashPanel 의 "edit msg" 버튼 (window.prompt). 새 entry 가 stash@{0} 으로 이동
+  - **G1 Tag panel** — `git/tag.rs` (list/create/delete/push/delete-remote 5 함수 + annotated/lightweight 구분 + tagger 정보 파싱) + 5 IPC + `TagPanel.vue` (create form lightweight/annotated 자동 + 각 tag push/del local/del remote) + ForgePanel 에 4번째 tab "Tag" 추가
 - Sprint B14-3: Repository-Specific Preferences (`docs/plan/14 §3` B1~B4 + A3 + A4):
   - `git/config_local.rs` 신규 — 13 키 (B1 hooksPath / B2 i18n.commitEncoding+logOutputEncoding / B3 gitflow 5키 / B4 commit.gpgsign+user.signingkey+gpg.format / per-repo user.name+email) read/write via `git config --local`
   - 신규 SQLite migration **불필요** — `.git/config` 이 source of truth, 직접 read/write 가 더 단순 + 외부 git 도구와 자연 호환

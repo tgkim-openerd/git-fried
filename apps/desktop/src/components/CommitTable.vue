@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+// Sprint C14 G2 — Author filter dropdown (`docs/plan/14 §8`).
+import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getLog } from '@/api/git'
 import { describeError } from '@/api/errors'
@@ -15,6 +16,23 @@ const { data: commits, isFetching, error } = useQuery({
       ? Promise.resolve([])
       : getLog({ repoId: props.repoId, limit: 200 }),
   enabled: computed(() => props.repoId != null),
+})
+
+// === Sprint C14 G2: Author filter dropdown ===
+const authorFilter = ref<string | null>(null)
+
+const uniqueAuthors = computed<string[]>(() => {
+  const set = new Set<string>()
+  for (const c of commits.value ?? []) {
+    if (c.authorName) set.add(c.authorName)
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'ko'))
+})
+
+const filteredCommits = computed<CommitSummary[]>(() => {
+  const all = commits.value ?? []
+  if (!authorFilter.value) return all
+  return all.filter((c) => c.authorName === authorFilter.value)
 })
 
 function formatDate(unix: number): string {
@@ -35,9 +53,22 @@ function refsLabel(c: CommitSummary): string | null {
 
 <template>
   <div class="flex h-full flex-col">
-    <header class="flex items-center justify-between border-b border-border px-4 py-2">
+    <header class="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
       <h2 class="text-sm font-semibold">커밋 로그</h2>
-      <span v-if="isFetching" class="text-xs text-muted-foreground">불러오는 중...</span>
+      <div class="flex items-center gap-2 text-xs text-muted-foreground">
+        <span v-if="isFetching">불러오는 중...</span>
+        <select
+          v-if="uniqueAuthors.length > 1"
+          v-model="authorFilter"
+          class="rounded border border-input bg-background px-2 py-0.5 text-[11px]"
+          :title="`작성자 필터 (${uniqueAuthors.length}명)`"
+        >
+          <option :value="null">모든 작성자</option>
+          <option v-for="a in uniqueAuthors" :key="a" :value="a">
+            {{ a }}
+          </option>
+        </select>
+      </div>
     </header>
 
     <div v-if="error" class="m-4 rounded border border-destructive bg-destructive/10 p-3 text-sm whitespace-pre-wrap">
@@ -61,7 +92,7 @@ function refsLabel(c: CommitSummary): string | null {
         </thead>
         <tbody>
           <tr
-            v-for="c in commits"
+            v-for="c in filteredCommits"
             :key="c.sha"
             class="border-t border-border hover:bg-accent/50"
           >
@@ -92,9 +123,9 @@ function refsLabel(c: CommitSummary): string | null {
               >
             </td>
           </tr>
-          <tr v-if="commits && commits.length === 0">
+          <tr v-if="filteredCommits.length === 0">
             <td colspan="5" class="px-3 py-8 text-center text-xs text-muted-foreground">
-              커밋이 없습니다.
+              {{ authorFilter ? `'${authorFilter}' 의 커밋 없음` : '커밋이 없습니다.' }}
             </td>
           </tr>
         </tbody>

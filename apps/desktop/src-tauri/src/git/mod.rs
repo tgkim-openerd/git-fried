@@ -30,6 +30,7 @@ pub mod stash;
 pub mod status;
 pub mod submodule;
 pub mod sync;
+pub mod tag;
 pub mod worktree;
 
 #[cfg(test)]

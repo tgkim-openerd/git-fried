@@ -175,6 +175,14 @@ export const applyStashFile = (
 ): Promise<void> =>
   invoke('apply_stash_file', { args: { repoId, index, path } })
 
+/** stash@{n} 메시지 수정 (`docs/plan/14 §5 D2`). 새 entry 가 stash@{0} 으로 이동. */
+export const editStashMessage = (
+  repoId: number,
+  index: number,
+  message: string,
+): Promise<void> =>
+  invoke('edit_stash_message', { args: { repoId, index, message } })
+
 // --- Compare (`docs/plan/14 §2 A1`) ---
 export interface CompareCommit {
   sha: string
@@ -988,6 +996,45 @@ export interface AppInfo {
   platform: string
 }
 export const getAppInfo = (): Promise<AppInfo> => invoke('get_app_info')
+
+// --- Tag panel (`docs/plan/14 §8 G1` Sprint C14) ---
+
+export interface TagInfo {
+  name: string
+  commitSha: string | null
+  taggerName: string | null
+  taggerAt: number | null
+  subject: string | null
+  annotated: boolean
+}
+
+export const listTags = (repoId: number): Promise<TagInfo[]> =>
+  invoke('list_tags', { repoId })
+
+export const createTag = (
+  repoId: number,
+  name: string,
+  target?: string | null,
+  message?: string | null,
+): Promise<void> =>
+  invoke('create_tag', { args: { repoId, name, target, message } })
+
+export const deleteTag = (repoId: number, name: string): Promise<void> =>
+  invoke('delete_tag', { args: { repoId, name } })
+
+export const pushTag = (
+  repoId: number,
+  remote: string,
+  name: string,
+): Promise<void> =>
+  invoke('push_tag', { args: { repoId, remote, name } })
+
+export const deleteRemoteTag = (
+  repoId: number,
+  remote: string,
+  name: string,
+): Promise<void> =>
+  invoke('delete_remote_tag', { args: { repoId, remote, name } })
 
 // --- Repository-Specific Preferences (`docs/plan/14 §3` Sprint B14-3) ---
 

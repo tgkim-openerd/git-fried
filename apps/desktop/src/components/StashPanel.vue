@@ -13,6 +13,7 @@ import {
   applyStash,
   applyStashFile,
   dropStash,
+  editStashMessage,
   popStash,
   pushStash,
   showStash,
@@ -86,6 +87,24 @@ async function onShow(idx: number) {
   if (props.repoId == null) return
   previewIndex.value = idx
   previewText.value = await showStash(props.repoId, idx).catch((e) => describeError(e))
+}
+
+// === Sprint C14 D2 (`docs/plan/14 §5 D2`) — stash 메시지 수정 ===
+async function onEditMessage(idx: number, current: string) {
+  if (props.repoId == null) return
+  const next = window.prompt(
+    `stash@{${idx}} 새 메시지\n(저장 시 새 entry 가 stash@{0} 으로 이동, 원본은 drop)`,
+    current,
+  )
+  if (next == null) return
+  const trimmed = next.trim()
+  if (!trimmed || trimmed === current) return
+  await editStashMessage(props.repoId, idx, trimmed)
+    .then(() => {
+      toast.success('Stash 메시지 변경', '새 entry 가 stash@{0} 입니다.')
+      invalidate(props.repoId)
+    })
+    .catch((e) => toast.error('메시지 변경 실패', describeError(e)))
 }
 
 // === Sprint C2 (`docs/plan/14 §5 D1`) — stash 안 단일 파일만 apply ===
@@ -209,6 +228,13 @@ const aiMut = useMutation({
             <button class="hover:underline" @click="onShow(s.index)">show</button>
             <button class="hover:underline" @click="onApply(s.index)">apply</button>
             <button class="hover:underline" @click="onPop(s.index)">pop</button>
+            <button
+              class="hover:underline"
+              title="메시지 수정 (`docs/plan/14 §5 D2`)"
+              @click="onEditMessage(s.index, s.message)"
+            >
+              edit msg
+            </button>
             <button class="hover:underline text-destructive" @click="onDrop(s.index)">
               drop
             </button>
