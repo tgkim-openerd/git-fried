@@ -116,6 +116,13 @@ useShortcut('closeTab', () => {
   }
 })
 
+// Sprint 22-4 V-6 보강: ReflogModal 의 showDiff emit → CommitDiffModal 트리거.
+// pages/index.vue 가 onMounted 시 window.gitFriedShowDiff 등록.
+function onReflogShowDiff(sha: string) {
+  reflogOpen.value = false
+  window.gitFriedShowDiff?.(sha)
+}
+
 // Sprint I — Sidebar 가 숨겨져 있을 때도 ⌘⌥F 동작하도록 wrap.
 useShortcut('filterRepos', () => {
   if (!ui.sidebarVisible.value) {
@@ -205,7 +212,11 @@ window.gitFriedOpenCompare = openCompare
       @close="syncTemplateOpen = false"
     />
     <BisectModal :open="bisectOpen" @close="bisectOpen = false" />
-    <ReflogModal :open="reflogOpen" @close="reflogOpen = false" />
+    <ReflogModal
+      :open="reflogOpen"
+      @close="reflogOpen = false"
+      @show-diff="onReflogShowDiff"
+    />
     <CompareModal
       :open="compareOpen"
       :repo-id="reposStore.activeRepoId"

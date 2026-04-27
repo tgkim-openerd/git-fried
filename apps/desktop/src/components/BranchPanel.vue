@@ -470,6 +470,7 @@ async function onExplainBranch(b: BranchInfo) {
             class="text-[11px] opacity-30 group-hover:opacity-100"
             :class="isHidden(b.name) ? 'opacity-100 text-muted-foreground' : ''"
             :title="isHidden(b.name) ? '숨김 해제' : '그래프에서 숨김'"
+            :aria-label="isHidden(b.name) ? `'${b.name}' 숨김 해제` : `'${b.name}' 그래프에서 숨김`"
             @click.stop="toggleHide(b)"
           >
             {{ isHidden(b.name) ? '🙈' : '👁' }}
@@ -480,6 +481,7 @@ async function onExplainBranch(b: BranchInfo) {
             class="text-[10px] opacity-0 group-hover:opacity-100"
             :class="soloRef === b.name ? 'opacity-100 text-orange-500' : 'text-muted-foreground'"
             :title="soloRef === b.name ? 'Solo 해제' : '이 브랜치만 표시'"
+            :aria-label="soloRef === b.name ? `'${b.name}' Solo 해제` : `'${b.name}' 만 그래프에 표시`"
             @click.stop="toggleSolo(b)"
           >
             ◉
@@ -490,6 +492,7 @@ async function onExplainBranch(b: BranchInfo) {
             type="button"
             class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
             :title="`✨ ${ai.available.value} 로 브랜치 설명`"
+            :aria-label="`'${b.name}' AI 설명 (${ai.available.value})`"
             @click.stop="onExplainBranch(b)"
           >
             ✨
@@ -499,6 +502,7 @@ async function onExplainBranch(b: BranchInfo) {
             type="button"
             class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-destructive"
             title="삭제"
+            :aria-label="`로컬 브랜치 '${b.name}' 삭제`"
             @click.stop="onDelete(b)"
           >
             ×

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 // 단축키 도움말 — `?` 키로 열림.
+// Sprint 22-5 Q-1/Q-2: BaseModal 마이그레이션 (focus trap + a11y dialog).
+import BaseModal from './BaseModal.vue'
+
 defineProps<{ open: boolean }>()
-defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>()
 
 interface Shortcut {
   keys: string
@@ -106,39 +109,27 @@ const groups: Group[] = [
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
-      @click.self="$emit('close')"
-    >
-      <div class="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-lg border border-border bg-card shadow-xl">
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <h2 class="text-sm font-semibold">⌨ 키보드 단축키</h2>
-          <button class="text-muted-foreground hover:text-foreground" @click="$emit('close')">✕</button>
-        </header>
-        <div class="flex-1 overflow-auto p-4 text-sm">
-          <section v-for="g in groups" :key="g.title" class="mb-5 last:mb-0">
-            <h3 class="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
-              {{ g.title }}
-            </h3>
-            <ul class="space-y-1">
-              <li
-                v-for="s in g.items"
-                :key="s.keys + s.desc"
-                class="grid grid-cols-[160px_1fr] items-center gap-3"
-              >
-                <kbd
-                  class="rounded-md border border-border bg-muted/40 px-2 py-0.5 text-center font-mono text-[11px]"
-                >
-                  {{ s.keys }}
-                </kbd>
-                <span class="text-xs">{{ s.desc }}</span>
-              </li>
-            </ul>
-          </section>
-        </div>
-      </div>
+  <BaseModal :open="open" max-width="2xl" title="⌨ 키보드 단축키" @close="emit('close')">
+    <div class="p-4 text-sm">
+      <section v-for="g in groups" :key="g.title" class="mb-5 last:mb-0">
+        <h3 class="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
+          {{ g.title }}
+        </h3>
+        <ul class="space-y-1">
+          <li
+            v-for="s in g.items"
+            :key="s.keys + s.desc"
+            class="grid grid-cols-[160px_1fr] items-center gap-3"
+          >
+            <kbd
+              class="rounded-md border border-border bg-muted/40 px-2 py-0.5 text-center font-mono text-[11px]"
+            >
+              {{ s.keys }}
+            </kbd>
+            <span class="text-xs">{{ s.desc }}</span>
+          </li>
+        </ul>
+      </section>
     </div>
-  </Teleport>
+  </BaseModal>
 </template>

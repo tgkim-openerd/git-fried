@@ -701,6 +701,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
                       : 'text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-amber-500'
                   "
                   :title="repo.isPinned ? 'Unpin' : 'Pin'"
+                  :aria-label="repo.isPinned ? `'${repo.name}' Unpin` : `'${repo.name}' Pin`"
                   @click="togglePin(repo, $event)"
                 >
                   {{ repo.isPinned ? '⭐' : '☆' }}
@@ -741,6 +742,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
                     type="button"
                     class="shrink-0 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
                     title="별칭 편집"
+                    :aria-label="`'${repo.name}' 별칭 편집`"
                     @click.stop="startEditAlias(repo)"
                   >
                     ✏

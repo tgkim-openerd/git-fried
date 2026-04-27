@@ -243,9 +243,15 @@ CM-6 ~ CM-11 (~4h) + V-3 / V-4 / V-6 (~2h). **V-5 StatusPanel side-panel 은 신
 - ⏸ **V-5 StatusPanel file detail side-panel** — 신규 패널 + status/size/diff preview + quick stage·discard. 이월 사유: 패널 layout / 우측 detail 영역 점유 정책 결정 필요 (focusMode 와 충돌 가능성)
 - 검증: typecheck 0 / lint 0 / vitest 13 pass
 
-### Sprint 22-5 — plan/15 Sprint 3 흡수 + 신규 UI 시스템 (~6h)
+### Sprint 22-5 — plan/15 Sprint 3 흡수 + 신규 UI 시스템 (~6h) ✅ 부분완료 (점진 마이그레이션 진행)
 
 Q-1 BaseModal (3h) + Q-2 useFocusTrap (2h) + S-1 aria-label (1h).
+
+- ✅ **Q-2 useFocusTrap composable** — 신규 `composables/useFocusTrap.ts` (open watch → first focusable focus, Tab/Shift+Tab wrap, close 시 prev focus 복원, WCAG 2.1 AA: 2.1.2 / 2.4.3). FOCUSABLE_SEL = `button:not([disabled]):not([tabindex="-1"]),[href]...,[tabindex]:not([tabindex="-1"]):not([aria-hidden="true"])`. capture phase keydown listener.
+- ✅ **Q-1 BaseModal 추출** — 신규 `components/BaseModal.vue` (Teleport + z-50 + max-w-* prop + role="dialog" + aria-modal + aria-labelledby + ESC close + backdrop click + slots: header/default/footer + 자동 useFocusTrap). 마이그레이션 3건: HelpModal / AiResultModal / BulkFetchResultModal. **잔여 15 modal** 은 점진 마이그레이션 (Sprint 22-6/22-7 흡수 — modal layout 재검토 필요한 복잡한 modal 위주: Compare / MergeEditor / PrDetail / InteractiveRebase / HunkStage / FileHistory / GitKrakenImport / RemoteManage / RepoSwitcher / Sync / Bisect / Reflog / CreatePr / Clone / CommitDiff)
+- ✅ **S-1 aria-label** — icon-only button 핵심 6건 시범 적용 (BranchPanel 의 Hide/Solo/AI Explain/Delete + Sidebar 의 Pin/별칭 편집). **잔여 ~41 button** 은 점진 적용 (StatusPanel / StatusBar / SyncBar / TagPanel del / RepoTabBar / 모달 내부 등)
+- ✅ **V-6 보강** — `pages/index.vue::onShowDiff` 를 `window.gitFriedShowDiff` 에 onMounted 등록 + App.vue 의 ReflogModal `@show-diff` → `onReflogShowDiff(sha)` → `window.gitFriedShowDiff?.(sha)` 호출. ReflogModal dblclick / 우클릭 Show diff 가 CommitDiffModal 트리거.
+- 검증: typecheck 0 / lint 0 / vitest 13 pass
 
 ### Sprint 22-6 — Polish + Dogfood Friction IMPORTANT (~6h)
 

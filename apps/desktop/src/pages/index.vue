@@ -91,9 +91,12 @@ function externalToggleTerminal() {
 }
 onMounted(() => {
   window.gitFriedToggleTerminal = externalToggleTerminal
+  // Sprint 22-4 V-6 보강: ReflogModal / 외부 트리거 → CommitDiffModal 진입.
+  window.gitFriedShowDiff = onShowDiff
 })
 onUnmounted(() => {
   delete window.gitFriedToggleTerminal
+  delete window.gitFriedShowDiff
 })
 </script>
 

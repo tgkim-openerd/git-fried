@@ -22,5 +22,7 @@ declare global {
     gitFriedToggleTerminal?: () => void
     /** Sidebar repo filter input focus (⌘⌥F). */
     gitFriedFocusRepoFilter?: () => void
+    /** pages/index.vue → CommitDiffModal trigger (Sprint 22-3 V-1 / 22-4 V-6). */
+    gitFriedShowDiff?: (sha: string) => void
   }
 }

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-5 — BaseModal + useFocusTrap + S-1 aria-label 시범 (`docs/plan/22 §22-5`, 점진 마이그레이션):
+  - **Q-2 useFocusTrap composable** — 신규 `composables/useFocusTrap.ts` — open watch → first focusable 자동 focus, Tab/Shift+Tab wrap, close 시 prev focus 복원 (WCAG 2.1 AA 2.1.2 No Keyboard Trap, 2.4.3 Focus Order). FOCUSABLE_SEL = `button:not([disabled]):not([tabindex="-1"]),[href]...,[tabindex]:not([tabindex="-1"]):not([aria-hidden="true"])`. capture phase keydown listener + watch immediate
+  - **Q-1 BaseModal 추출** — 신규 `components/BaseModal.vue` (Teleport + z-50 + max-w-* prop ('xs|sm|md|lg|xl|2xl|3xl|4xl|5xl|6xl|full') + role="dialog" + aria-modal + aria-labelledby + ESC close + backdrop click + slots: header/default/footer + 자동 useFocusTrap). 3 modal 마이그레이션: HelpModal / AiResultModal / BulkFetchResultModal. **잔여 15 modal** 점진 (Compare / MergeEditor / PrDetail / InteractiveRebase / HunkStage / FileHistory / GitKrakenImport / RemoteManage / RepoSwitcher / Sync / Bisect / Reflog / CreatePr / Clone / CommitDiff)
+  - **S-1 aria-label 시범 6건** — BranchPanel (Hide / Solo / AI Explain / Delete) + Sidebar (Pin / 별칭 편집). 동적 label (`'${b.name}' 그래프에서 숨김` 등). 잔여 ~41 button 점진
+  - **V-6 보강** — `pages/index.vue::onShowDiff` 를 `window.gitFriedShowDiff` 에 onMounted 등록 + App.vue 의 ReflogModal `@show-diff` → `onReflogShowDiff(sha)` → `window.gitFriedShowDiff?.(sha)` 호출. ReflogModal dblclick / CM-10 Show diff 메뉴가 CommitDiffModal 트리거
+  - `types/window.d.ts` 에 `gitFriedShowDiff?: (sha: string) => void` augmentation
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
 - Sprint 22-4 — P1 ContextMenu 6 + P1 viewer 3 (`docs/plan/22 §22-4`, V-5 이월):
   - **CM-6 Sidebar repo row** — Open in Explorer / Copy path / Set as active / Fetch only this / Pin / Set alias / Run gc (submenu: gc, gc --aggressive ⚠) / Remove from workspace (destructive)
   - **CM-7 RepoTabBar tab** — Close / Close others / Close all (destructive) / Move left / Move right (`store.reorderTabs` 활용)
@@ -52,7 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `03-screens-and-flows.md` — 3 페이지 layout + 18 모달 entry/state/exit + 37 CommandPalette + 17 ContextMenu (P0 5/P1 6/P2 3) + 15 Click→Detail
     - `04-interaction-patterns.md` — 키보드 modifier 표기 / 한글 visual width (CJK=2, 36자=72) / drag&drop / skeleton / a11y / IPC 5min progress
     - `05-figma-handoff-brief.md` — Claude Design 작업 의뢰 prompt + 5 sprint × 27 deliverable (D25~D27 추가: Layout extensibility audit / Plugin slot / 미구현 placeholder) + 8 결정 필요 Q&A
-    - `06-gitkraken-feature-parity.md` — GitKraken 기능 ≈87 catalog (✅52 구현 / ⚠️10 부분 / 🔜15 v0.4~v1.0 예정 / ❌10 의도적 skip) + 4 design hard constraint (Layout extensibility / Density 강제 / Plugin slot / 미구현 placeholder 정책). plan/03 + plan/14 + plan/22 합본
+    - `06-gitkraken-feature-parity.md` — GitKraken 기능 ≈87 catalog (✅52 구현 / ⚠️10 부분 / 🔜15 v0.4~v1.0 예정 / ❌10 의도적 skip) + 4 design hard constraint (Layout extensibility / Density 강제 / Plugin slot / 미구현 placeholder 정책). plan/03 + plan/14 + plan/22 합본 + § 8-5/8-6/8-7 (AI CLI 시각 / Cloud-Free / Migration UX onboarding)
+  - **Figma Make Iteration 1+2 — Sprint 1 (Foundations) 통과**: Page 01 Foundations 8 카드 (Color Q2 분리 / Pretendard / Spacing·Radius / Elevation·Z-index) + Page 01b Layout Extensibility 5 와이어프레임 (Tab overflow / Settings 2-level / Palette 60+ / Modal 5 size tier / Sidebar Integrations slot). Q1~Q8 + 5-1~5-4 self-assessment ✓
+  - **Sprint 2~5 보류 결정** (사용자 판단): plan/22 코드 작업 stabilize + dogfood friction 누적 후 visual refactor 한 번에 진행. 재개 조건은 plan/23 § 9 (3 트리거 중 2 만족). 보존 자산: 7 문서 + 36 PNG + IPC mock + 캡처 스크립트 + Figma file (Page 01·01b 잔존)
     - `00-product-brief.md` § 4-2 "Feature Parity Ambition" + § 8 Anti-Goals 보강 (minimal-leaning / GitKraken visual 모방 / 고정 카운트 가정)
     - `README.md` — 인덱스 + 권장 읽기 순서 + Handoff 옵션 (A 문서만 / B 스크린샷 / C Figma MCP)
 - Sprint A14 (`docs/plan/14`):
