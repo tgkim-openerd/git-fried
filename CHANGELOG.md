@@ -24,6 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- Sprint 22-1 R-2A (CRITICAL 5건, `docs/plan/22 §2`):
+  - **C1 bulk fetch 결과 절단** — `useBulkFetchResult` singleton + `BulkFetchResultModal.vue` 신규 + Sidebar 헤더에 📡 결과 버튼 (실패 N개 badge). 159 레포 환경에서 7+ 실패 시 toast 잘려서 어느 레포 실패한지 못 보던 friction 해소
+  - **C2 한글 commit subject visual width** — `CommitMessageInput.vue::visualWidth(s)` (ASCII=1, CJK/Hangul/emoji=2 cell). 한글 36자 = 영문 72자 기준으로 amber warning. 이전엔 한글로만 작성 시 100자+ 까지도 통과
+  - **C3 hunk-stage 진입점 visible** — StatusPanel ✂ 버튼 → "✂ hunk" 텍스트 + opacity-60 (group-hover-only 해제). 신규 사용자가 hunk-stage 기능 자체를 발견 못하던 문제 해소
+  - **C4 IPC timeout wrapper** — `api/invokeWithTimeout.ts` 신규 + `api/git.ts` 가 wrapper 사용. 일반 30s, long-running prefix (bulk_/clone_/fetch_/push/pull/ai_/maintenance_/import_gitkraken_apply) 5min. timeout 시 reject → useToast onError 자동 표시. 이전엔 IPC hang 시 UI 무응답
+  - **C5 conflict marker commit 거부 가이드** — CommitMessageInput onSuccess 에서 stderr 의 `<<<<<<< HEAD` / "needs merge" / "unmerged paths" / "conflicting files" / "you have unmerged files" 5 패턴 감지 → toast.warning 으로 StatusPanel "Conflicted" 섹션 안내
+- plan/22 신규 작성 (UI Polish v2):
+  - 우클릭 ContextMenu 17 위치 catalog (현재 row-level 메뉴 0/47, 모두 신규 구축 필요)
+  - Click → Detail viewer 15 흐름 catalog (CommitGraph row dblclick / PrDetailModal Files tab / TagPanel annotated msg / Reflog restore 등 누락 catalog)
+  - Dogfood Friction 13 항목 (CRITICAL 5 = R-2A 완료, IMPORTANT 4 + POLISH 4 대기)
+  - plan/15 Sprint 3+4+5 미완 8건 흡수 (BaseModal / useFocusTrap / 한글 너비 / Spinner / Transition / Toast dedup / Custom theme 검증)
+  - 신규 UI 시스템 4건 (aria-label / Tooltip / Color 일관성 / Micro-interaction spec)
+  - 6 sub-sprint (22-2 ~ 22-7) 작업 분해
 - Sprint C14-3 (P2 마지막, `docs/plan/14 §7 F1`): PR Code Suggestions
   - `ForgeClient::add_review_comment` trait 추가 — GitHub + Gitea 양쪽 impl
     - GitHub: `POST /pulls/{n}/comments` with `commit_id`+`path`+`line`+`side=RIGHT`. commit_id 미지정 시 PR detail 에서 head SHA 자동 조회

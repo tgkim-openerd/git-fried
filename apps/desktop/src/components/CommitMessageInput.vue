@@ -56,7 +56,20 @@ const finalMessage = computed(() => {
   })
 })
 
-const subjectLength = computed(() => subject.value.length)
+// Visual width: ASCII = 1, 한글/CJK/emoji = 2 (terminal cell 기준).
+// `docs/plan/22 §2 C2` — 한글 36자 ≈ 영문 72자.
+function visualWidth(s: string): number {
+  let w = 0
+  for (const ch of s) {
+    const code = ch.codePointAt(0) ?? 0
+    // CJK Unified, Hangul, fullwidth, emoji 등 = 2-cell
+    // 간단 heuristic: code > 255 면 2 (정밀 East Asian Width 는 over-engineering)
+    w += code > 255 ? 2 : 1
+  }
+  return w
+}
+
+const subjectLength = computed(() => visualWidth(subject.value))
 const subjectWarn = computed(() => subjectLength.value > 72)
 
 // commit 실패 결과 (hook 출력) — alert 대신 inline panel.
@@ -91,6 +104,22 @@ const commitMut = useMutation({
     } else {
       // pre-commit hook 실패 등 — inline panel 로 표시
       lastResult.value = res
+      // R-2A C5 (`docs/plan/22 §2 C5`): conflict marker 가 stderr 에 보이면
+      // 사용자에게 어디 충돌인지 안내. git 은 "<<<<<<<" 라인이 남으면 거부.
+      const merged = `${res.stdout ?? ''}\n${res.stderr ?? ''}`
+      const conflictHints = [
+        /<{4,7}\s*HEAD/, // <<<<<<< HEAD
+        /needs merge/i,
+        /unmerged paths/i,
+        /conflicting files/i,
+        /you have unmerged files/i,
+      ]
+      if (conflictHints.some((re) => re.test(merged))) {
+        toast.warning(
+          '⚠ Conflict marker 가 남아 있습니다',
+          'StatusPanel 의 "Conflicted" 섹션에서 충돌 파일을 열어 ours/theirs 를 선택하고 stage 하세요. (또는 우측 패널의 ⚔ Merge editor)',
+        )
+      }
     }
   },
   onError: (e) => toast.error('커밋 호출 실패', describeError(e)),

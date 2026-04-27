@@ -280,11 +280,11 @@ const isSelected = computed(
             <template #extra>
               <button
                 type="button"
-                class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-foreground"
-                title="Hunk-level unstage (✂)"
+                class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                title="Hunk-level unstage — 특정 라인만 골라 unstage (`docs/plan/14 §H1`)"
                 @click.stop="openHunk(f.path, true)"
               >
-                ✂
+                ✂ hunk
               </button>
             </template>
           </FileRow>
@@ -344,11 +344,11 @@ const isSelected = computed(
             </button>
             <button
               type="button"
-              class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-foreground"
-              title="Hunk-level stage (✂)"
+              class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+              title="Hunk-level stage — 특정 라인만 골라 stage (`docs/plan/14 §H1`)"
               @click.stop="openHunk(f.path, false)"
             >
-              ✂
+              ✂ hunk
             </button>
             <button
               type="button"

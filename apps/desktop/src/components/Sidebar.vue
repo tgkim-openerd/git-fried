@@ -23,11 +23,20 @@ import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useNotification } from '@/composables/useNotification'
+import BulkFetchResultModal from './BulkFetchResultModal.vue'
 import CloneRepoModal from './CloneRepoModal.vue'
+import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 import type { Repo } from '@/types/git'
 
 // Sprint C14-2 (`docs/plan/14 §6 E1+E2`): Clone with sparse/shallow options.
 const cloneOpen = ref(false)
+
+// Sprint 22-1 R-2A C1: bulk fetch 결과 5+ 실패 시 toast 절단 해소.
+const bulkResultStore = useBulkFetchResult()
+const bulkResultOpen = ref(false)
+const bulkResultFailedCount = computed(
+  () => bulkResultStore.last.value?.results.filter((r) => !r.success).length ?? 0,
+)
 
 // Sprint B9 — Sidebar 그룹핑 모드 (디렉토리 / org) + workspace color 편집.
 // localStorage 영속.
@@ -67,19 +76,24 @@ const bulkFetchMut = useMutation({
     qc.invalidateQueries({ queryKey: ['log'] })
     qc.invalidateQueries({ queryKey: ['graph'] })
     qc.invalidateQueries({ queryKey: ['branches'] })
+    // R-2A C1: 결과 전체 globalState 보관 — 사용자가 "최근 결과" 버튼으로 detail 열람.
+    bulkResultStore.set(results)
     const failed = results.filter((r) => !r.success)
     const ok = results.length - failed.length
     if (failed.length > 0) {
-      const detail = failed
-        .slice(0, 5)
+      const PREVIEW = 5
+      const lines = failed
+        .slice(0, PREVIEW)
         .map(
           (f) =>
             `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`,
         )
-        .join('\n')
+      if (failed.length > PREVIEW) {
+        lines.push(`...외 ${failed.length - PREVIEW}개 — 좌상단 📡 버튼으로 전체 보기`)
+      }
       toast.warning(
         `일괄 Fetch: ${ok}/${results.length} 성공 (${failed.length} 실패)`,
-        detail,
+        lines.join('\n'),
       )
       void notification.notify(
         `일괄 Fetch: ${ok}/${results.length}`,
@@ -375,6 +389,25 @@ function cancelEditAlias() {
         >
           {{ bulkFetchMut.isPending.value ? '⟳' : '⤓' }}
         </button>
+        <button
+          v-if="bulkResultStore.last.value"
+          type="button"
+          class="relative rounded-md border border-input px-2 py-1 text-xs hover:bg-accent"
+          :title="
+            bulkResultFailedCount > 0
+              ? `최근 일괄 fetch: ${bulkResultFailedCount}개 실패 — 자세히 보기`
+              : '최근 일괄 fetch 결과'
+          "
+          @click="bulkResultOpen = true"
+        >
+          📡
+          <span
+            v-if="bulkResultFailedCount > 0"
+            class="absolute -right-1 -top-1 rounded-full bg-amber-500 px-1 text-[9px] font-bold text-white"
+          >
+            {{ bulkResultFailedCount > 99 ? '99+' : bulkResultFailedCount }}
+          </span>
+        </button>
       </div>
 
       <!-- 워크스페이스 편집 inline (color picker + name + delete) -->
@@ -634,6 +667,10 @@ function cancelEditAlias() {
       :open="cloneOpen"
       :workspace-id="store.activeWorkspaceId"
       @close="cloneOpen = false"
+    />
+    <BulkFetchResultModal
+      :open="bulkResultOpen"
+      @close="bulkResultOpen = false"
     />
   </aside>
 </template>

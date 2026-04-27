@@ -1,6 +1,10 @@
 // Tauri IPC 래퍼. 모든 git 관련 호출은 본 모듈을 통과해야 한다.
 // Rust 측 commands.rs 의 #[tauri::command] 함수와 1:1 대응.
-import { invoke } from '@tauri-apps/api/core'
+//
+// `invoke` 는 자체 timeout wrapper 사용 (`docs/plan/22 §2 C4`):
+//   - 일반: 30s
+//   - bulk_* / clone_ / fetch_ / push / pull / ai_ / maintenance_ / import_gitkraken_apply: 5min
+import { invoke } from './invokeWithTimeout'
 import type {
   AddRepoArgs,
   CommitArgs,
