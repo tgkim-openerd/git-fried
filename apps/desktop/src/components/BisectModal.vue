@@ -9,6 +9,7 @@ import {
   getBisectStatus,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -30,7 +31,7 @@ const statusQuery = useQuery({
     return getBisectStatus(repoId.value)
   },
   enabled: computed(() => props.open && repoId.value != null),
-  staleTime: 1_000,
+  staleTime: STALE_TIME.REALTIME,
 })
 
 const startMut = useMutation({

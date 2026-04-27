@@ -18,6 +18,7 @@ import {
   submitPrReview,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useNotification } from '@/composables/useNotification'
 import { notifyAiDone } from '@/composables/useAiCli'
@@ -246,7 +247,7 @@ function onClose() {
 const { data: aiProbes } = useQuery({
   queryKey: ['aiProbes'],
   queryFn: aiDetectClis,
-  staleTime: 60_000,
+  staleTime: STALE_TIME.STATIC,
 })
 const availableCli = computed<AiCli | null>(() => {
   const p = aiProbes.value

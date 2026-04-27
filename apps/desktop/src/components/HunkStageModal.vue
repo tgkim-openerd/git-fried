@@ -51,6 +51,8 @@ const diffQuery = useQuery({
   enabled: computed(
     () => props.open && props.repoId != null && props.path != null,
   ),
+  // staleTime=0 의도적 (always-fresh): hunk-stage 모달 진입 시 항상 최신 patch 필요.
+  // 정책 STALE_TIME.REALTIME(2s) 보다 짧아 별도 처리.
   staleTime: 0,
 })
 

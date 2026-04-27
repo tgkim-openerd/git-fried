@@ -11,6 +11,7 @@ import { bulkListPrs } from '@/api/git'
 import type { BulkResult, PrState, PullRequest } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import {
   useLaunchpadMeta,
   useSavedViews,
@@ -119,7 +120,7 @@ const { data, isFetching, error, refetch } = useQuery({
     stateFilter.value,
   ]),
   queryFn: () => bulkListPrs(store.activeWorkspaceId, stateFilter.value),
-  staleTime: 30_000,
+  staleTime: STALE_TIME.NORMAL,
 })
 
 const meta = useLaunchpadMeta()

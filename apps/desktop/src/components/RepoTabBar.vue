@@ -10,6 +10,7 @@ import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { VueDraggable } from 'vue-draggable-plus'
 import { listRepos } from '@/api/git'
+import { STALE_TIME } from '@/api/queryClient'
 import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
@@ -23,7 +24,7 @@ defineEmits<{ openSwitcher: [] }>()
 const reposQuery = useQuery({
   queryKey: ['repos-all-for-tabs'],
   queryFn: () => listRepos(null),
-  staleTime: 30_000,
+  staleTime: STALE_TIME.NORMAL,
 })
 
 const repoMap = computed<Map<number, Repo>>(() => {

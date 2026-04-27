@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { compareRefs } from '@/api/git'
 import { useBranches } from '@/composables/useBranches'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 
 const props = defineProps<{
@@ -53,7 +54,7 @@ const cmpQuery = useQuery({
     return compareRefs(props.repoId, ref1.value, ref2.value)
   },
   enabled,
-  staleTime: 30_000,
+  staleTime: STALE_TIME.NORMAL,
 })
 const data = computed(() => cmpQuery.data.value ?? null)
 

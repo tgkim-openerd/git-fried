@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { aiExplainCommit, getCommitDiff } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import { useDiffMode, DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import AiResultModal from './AiResultModal.vue'
@@ -40,7 +41,7 @@ const { data, isFetching, error } = useQuery({
       props.sha != null &&
       props.sha.length > 0,
   ),
-  staleTime: 60_000,
+  staleTime: STALE_TIME.STATIC,
 })
 
 // AI Explain 진입점 (Sprint B7).

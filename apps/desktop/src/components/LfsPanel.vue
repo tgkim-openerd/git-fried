@@ -14,6 +14,7 @@ import {
   lfsUntrack,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
@@ -27,7 +28,7 @@ const statusQuery = useQuery({
     return lfsStatus(props.repoId)
   },
   enabled: computed(() => props.repoId != null),
-  staleTime: 30_000,
+  staleTime: STALE_TIME.NORMAL,
 })
 
 const filesQuery = useQuery({
@@ -54,7 +55,7 @@ const pushSizeQuery = useQuery({
     return lfsPushSize(props.repoId)
   },
   enabled: computed(() => props.repoId != null && statusQuery.data.value?.installed === true),
-  staleTime: 30_000,
+  staleTime: STALE_TIME.NORMAL,
   refetchInterval: 60_000,
 })
 

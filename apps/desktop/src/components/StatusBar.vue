@@ -11,6 +11,7 @@ import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { aiExplainBranch, predictTargetConflict } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useReposStore } from '@/stores/repos'
 import { useLaunchpadMeta } from '@/composables/useLaunchpadMeta'
 import { useGeneralSettings } from '@/composables/useUserSettings'
@@ -39,7 +40,7 @@ const predictionQuery = useQuery({
     return predictTargetConflict(store.activeRepoId, null)
   },
   enabled: predictionEnabled,
-  staleTime: 60_000,
+  staleTime: STALE_TIME.STATIC,
   // refetchInterval 도 false 가능 — 설정 disabled 시 자동 정지.
   refetchInterval: computed(() => (predictionEnabled.value ? 60_000 : false)),
 })

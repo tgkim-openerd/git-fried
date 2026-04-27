@@ -13,6 +13,7 @@ import {
   stageAll as apiStageAll,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useShortcut } from '@/composables/useShortcuts'
 import { notifyAiDone } from '@/composables/useAiCli'
@@ -141,7 +142,7 @@ function hookKind(stderr: string): string | null {
 const { data: aiProbes } = useQuery({
   queryKey: ['aiProbes'],
   queryFn: aiDetectClis,
-  staleTime: 60_000,
+  staleTime: STALE_TIME.STATIC,
 })
 const availableCli = computed<AiCli | null>(() => {
   const p = aiProbes.value
