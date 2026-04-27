@@ -642,6 +642,24 @@ pub async fn show_stash(
     git_stash::show_stash(&path, args.index).await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StashFileArgs {
+    pub repo_id: i64,
+    pub index: usize,
+    pub path: String,
+}
+
+/// stash@{n} 의 단일 파일만 working tree 에 apply (`docs/plan/14 §5 D1`).
+#[tauri::command]
+pub async fn apply_stash_file(
+    args: StashFileArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::apply_stash_file(&path, args.index, &args.path).await
+}
+
 // ====== Reset / Revert ======
 
 #[derive(Debug, Deserialize)]

@@ -11,11 +11,14 @@ const collapsedNew = useSectionCollapse('stash.new')
 import {
   aiStashMessage,
   applyStash,
+  applyStashFile,
   dropStash,
   popStash,
   pushStash,
   showStash,
 } from '@/api/git'
+import { parseDiffWithHunks } from '@/utils/parseDiff'
+import { computed } from 'vue'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
@@ -83,6 +86,21 @@ async function onShow(idx: number) {
   if (props.repoId == null) return
   previewIndex.value = idx
   previewText.value = await showStash(props.repoId, idx).catch((e) => describeError(e))
+}
+
+// === Sprint C2 (`docs/plan/14 §5 D1`) — stash 안 단일 파일만 apply ===
+const previewFiles = computed(() => {
+  if (previewText.value == null) return []
+  return parseDiffWithHunks(previewText.value)
+})
+async function onApplyFile(path: string) {
+  if (props.repoId == null || previewIndex.value == null) return
+  await applyStashFile(props.repoId, previewIndex.value, path)
+    .then(() => {
+      toast.success('파일 apply', `${path} 만 working tree 에 적용됨`)
+      invalidate(props.repoId)
+    })
+    .catch((e) => toast.error('파일 apply 실패', describeError(e)))
 }
 
 // === AI stash message (Sprint B7) ===
@@ -205,16 +223,46 @@ const aiMut = useMutation({
       </ul>
     </div>
 
-    <!-- 미리보기 (추후 DiffViewer 로 교체) -->
+    <!-- 미리보기 — 파일별 apply 가능 (Sprint C2 / `docs/plan/14 §5 D1`) -->
     <div
       v-if="previewText !== null"
-      class="max-h-60 overflow-auto border-t border-border bg-muted/30 px-2 py-1"
+      class="max-h-72 overflow-auto border-t border-border bg-muted/30 px-2 py-1"
     >
       <div class="mb-1 flex items-center justify-between">
-        <span class="text-xs text-muted-foreground">stash@{{ '{' }}{{ previewIndex }}{{ '}' }} diff</span>
+        <span class="text-xs text-muted-foreground">
+          stash@{{ '{' }}{{ previewIndex }}{{ '}' }} diff
+          <span v-if="previewFiles.length > 0">
+            ({{ previewFiles.length }} files)
+          </span>
+        </span>
         <button class="text-xs" @click="previewText = null">×</button>
       </div>
-      <pre class="font-mono text-[11px]">{{ previewText }}</pre>
+      <ul v-if="previewFiles.length > 0" class="mb-2 space-y-0.5">
+        <li
+          v-for="f in previewFiles"
+          :key="f.fileName"
+          class="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+        >
+          <span class="flex-1 truncate font-mono text-[11px]">{{ f.fileName }}</span>
+          <span class="text-[10px] text-muted-foreground">
+            {{ f.hunks.length }} hunk{{ f.hunks.length === 1 ? '' : 's' }}
+          </span>
+          <button
+            type="button"
+            class="rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-accent/60"
+            title="이 파일만 working tree 에 apply"
+            @click="onApplyFile(f.fileName)"
+          >
+            ✓ 이 파일만 apply
+          </button>
+        </li>
+      </ul>
+      <details class="text-[11px]">
+        <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
+          raw diff
+        </summary>
+        <pre class="mt-1 whitespace-pre-wrap font-mono">{{ previewText }}</pre>
+      </details>
     </div>
   </section>
 </template>

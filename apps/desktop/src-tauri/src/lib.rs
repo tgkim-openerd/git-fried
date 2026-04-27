@@ -108,6 +108,7 @@ pub fn run() {
             ipc::commands::pop_stash,
             ipc::commands::drop_stash,
             ipc::commands::show_stash,
+            ipc::commands::apply_stash_file,
             ipc::commands::reset,
             ipc::commands::revert,
             ipc::commands::get_graph,

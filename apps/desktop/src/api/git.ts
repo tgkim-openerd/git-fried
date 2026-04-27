@@ -167,6 +167,13 @@ export const dropStash = (repoId: number, index: number): Promise<void> =>
   invoke('drop_stash', { args: { repoId, index } })
 export const showStash = (repoId: number, index: number): Promise<string> =>
   invoke('show_stash', { args: { repoId, index } })
+/** stash@{n} 의 단일 파일만 working tree 에 apply (`docs/plan/14 §5 D1`). */
+export const applyStashFile = (
+  repoId: number,
+  index: number,
+  path: string,
+): Promise<void> =>
+  invoke('apply_stash_file', { args: { repoId, index, path } })
 
 // --- Submodule ---
 export interface SubmoduleEntry {
