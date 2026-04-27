@@ -91,6 +91,15 @@ pub async fn status(repo: &Path) -> AppResult<LfsStatus> {
     })
 }
 
+/// `git lfs install` — 신규 레포에 LFS hook 등록 (`docs/plan/14 §2 A5`).
+/// 시스템 git-lfs 가 PATH 에 있어야 함.
+pub async fn install(repo: &Path) -> AppResult<()> {
+    git_run(repo, &["lfs", "install"], &GitRunOpts::default())
+        .await?
+        .into_ok()?;
+    Ok(())
+}
+
 pub async fn track(repo: &Path, pattern: &str) -> AppResult<()> {
     git_run(repo, &["lfs", "track", pattern], &GitRunOpts::default())
         .await?

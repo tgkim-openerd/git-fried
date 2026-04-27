@@ -16,6 +16,7 @@ pub mod file_history;
 pub mod graph;
 pub mod hide;
 pub mod lfs;
+pub mod maintenance;
 pub mod merge;
 pub mod rebase;
 pub mod reflog;

@@ -205,10 +205,10 @@
 
 5. ✅ **C1~C3 Remote 관리 GUI** — `git/remote.rs` (list/add/remove/rename/set-url) + 5 IPC + `RemoteManageModal.vue` + BranchPanel 헤더 🔗 진입 버튼. Rust unit test 3개
 
-#### B14-2 (대기)
+#### B14-2 ✅ 완료 (2026-04-27)
 
-6. **A2 Repo Maintenance** (~3h)
-7. **A5 LFS init** (~1h)
+6. ✅ **A2 Repo Maintenance** — `git/maintenance.rs` (gc + fsck) + 2 IPC + Settings "유지보수" 카테고리 (gc / aggressive gc with confirm / fsck / lfs install 4 버튼 + 결과 stdout/stderr 표시)
+7. ✅ **A5 LFS init** — `git/lfs.rs::install()` + `lfs_install` IPC + Settings "유지보수" 의 `git lfs install` 버튼
 
 #### B14-3 (대기)
 

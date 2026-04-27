@@ -989,6 +989,27 @@ export interface AppInfo {
 }
 export const getAppInfo = (): Promise<AppInfo> => invoke('get_app_info')
 
+// --- Repo Maintenance (`docs/plan/14 §2 A2` Sprint B14-2) ---
+
+export interface MaintenanceResult {
+  success: boolean
+  stdout: string
+  stderr: string
+  exitCode: number | null
+}
+
+export const maintenanceGc = (
+  repoId: number,
+  aggressive: boolean,
+): Promise<MaintenanceResult> =>
+  invoke('maintenance_gc', { args: { repoId, aggressive } })
+
+export const maintenanceFsck = (repoId: number): Promise<MaintenanceResult> =>
+  invoke('maintenance_fsck', { repoId })
+
+export const lfsInstall = (repoId: number): Promise<void> =>
+  invoke('lfs_install', { repoId })
+
 // --- Remote 관리 (`docs/plan/14 §4` Sprint B14-1) ---
 
 export interface RemoteInfo {

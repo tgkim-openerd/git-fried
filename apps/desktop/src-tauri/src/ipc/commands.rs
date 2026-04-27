@@ -10,8 +10,9 @@
 use crate::error::{AppError, AppResult};
 use crate::git::{
     branch as git_branch, bulk as git_bulk, commit as git_commit, diff as git_diff,
-    graph as git_graph, remote as git_remote, repository as repo, reset as git_reset, runner,
-    stage, stash as git_stash, status as git_status, submodule as git_sub, sync as git_sync,
+    graph as git_graph, maintenance as git_maint, remote as git_remote, repository as repo,
+    reset as git_reset, runner, stage, stash as git_stash, status as git_status,
+    submodule as git_sub, sync as git_sync,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -867,6 +868,34 @@ pub async fn set_remote_url(
 ) -> AppResult<()> {
     let r = state.db.get_repo(args.repo_id).await?;
     git_remote::set_remote_url(Path::new(&r.local_path), &args.name, &args.url).await
+}
+
+// ====== Repo Maintenance (`docs/plan/14 §2 A2` Sprint B14-2) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MaintenanceArgs {
+    pub repo_id: i64,
+    #[serde(default)]
+    pub aggressive: bool,
+}
+
+#[tauri::command]
+pub async fn maintenance_gc(
+    args: MaintenanceArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_maint::MaintenanceResult> {
+    let r = state.db.get_repo(args.repo_id).await?;
+    git_maint::gc(Path::new(&r.local_path), args.aggressive).await
+}
+
+#[tauri::command]
+pub async fn maintenance_fsck(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_maint::MaintenanceResult> {
+    let r = state.db.get_repo(repo_id).await?;
+    git_maint::fsck(Path::new(&r.local_path)).await
 }
 
 // ====== GitKraken importer (`docs/plan/21`) ======

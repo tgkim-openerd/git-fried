@@ -11,12 +11,21 @@
 //
 // 영속화: localStorage (DB 통합은 v1.x). Cloud / Org / Marketing 항목은 거부.
 import { computed, ref } from 'vue'
+import { useMutation } from '@tanstack/vue-query'
 import ForgeSetup from '@/components/ForgeSetup.vue'
 import GitKrakenImportModal from '@/components/GitKrakenImportModal.vue'
 import ProfilesSection from '@/components/ProfilesSection.vue'
 import { useUiState } from '@/composables/useUiState'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
+import { useReposStore } from '@/stores/repos'
+import {
+  lfsInstall,
+  maintenanceFsck,
+  maintenanceGc,
+  type MaintenanceResult,
+} from '@/api/git'
+import { describeError } from '@/api/errors'
 import {
   useGeneralSettings,
   useUiSettingsStore,
@@ -28,6 +37,7 @@ type Category =
   | 'general'
   | 'ui'
   | 'editor'
+  | 'maintenance'
   | 'migrate'
   | 'about'
 
@@ -37,6 +47,7 @@ const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'ui', label: 'UI Customization' },
   { id: 'editor', label: 'Editor / Terminal' },
+  { id: 'maintenance', label: '유지보수' },
   { id: 'migrate', label: '마이그레이션' },
   { id: 'about', label: 'About' },
 ]
@@ -44,6 +55,64 @@ const active = ref<Category>('profiles')
 
 // ===== GitKraken 마이그레이션 =====
 const importGkOpen = ref(false)
+
+// ===== 유지보수 (gc / fsck / lfs install) — Sprint B14-2 =====
+const reposStore = useReposStore()
+const maintResult = ref<MaintenanceResult | null>(null)
+const maintLabel = ref<string>('')
+
+function onMaintenanceDone(label: string, r: MaintenanceResult) {
+  maintLabel.value = label
+  maintResult.value = r
+  if (r.success) {
+    toast.success(`${label} 완료`, '')
+  } else {
+    toast.warning(`${label} 비정상 종료`, `exit=${r.exitCode ?? '?'}`)
+  }
+}
+
+const gcMut = useMutation({
+  mutationFn: (aggressive: boolean) => {
+    if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
+    return maintenanceGc(reposStore.activeRepoId, aggressive)
+  },
+  onSuccess: (r, aggressive) =>
+    onMaintenanceDone(aggressive ? 'git gc --aggressive --prune=now' : 'git gc', r),
+  onError: (e) => toast.error('git gc 실패', describeError(e)),
+})
+
+const fsckMut = useMutation({
+  mutationFn: () => {
+    if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
+    return maintenanceFsck(reposStore.activeRepoId)
+  },
+  onSuccess: (r) => onMaintenanceDone('git fsck --full', r),
+  onError: (e) => toast.error('git fsck 실패', describeError(e)),
+})
+
+function confirmAggressiveGc() {
+  if (window.confirm('aggressive gc 는 시간이 오래 걸립니다. 진행할까요?')) {
+    gcMut.mutate(true)
+  }
+}
+
+const lfsInstallMut = useMutation({
+  mutationFn: () => {
+    if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
+    return lfsInstall(reposStore.activeRepoId)
+  },
+  onSuccess: () => {
+    maintLabel.value = 'git lfs install'
+    maintResult.value = {
+      success: true,
+      stdout: 'LFS hooks 등록 완료',
+      stderr: '',
+      exitCode: 0,
+    }
+    toast.success('LFS 초기화', 'pre-push hook 등록')
+  },
+  onError: (e) => toast.error('LFS 초기화 실패', describeError(e)),
+})
 
 // ===== General + UI settings — Sprint D1 공용 store 로 추출 =====
 const general = useGeneralSettings()
@@ -306,6 +375,101 @@ const buildInfo = computed(() => ({
         </ul>
         <p class="text-[10px] text-muted-foreground">
           v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정.
+        </p>
+      </div>
+
+      <!-- 유지보수 -->
+      <div
+        v-else-if="active === 'maintenance'"
+        class="flex max-w-2xl flex-col gap-4"
+      >
+        <h2 class="text-lg font-semibold">레포 유지보수</h2>
+        <p class="text-xs text-muted-foreground">
+          현재 활성 레포에 git gc / fsck / lfs install 실행. 거대 레포는 수 분
+          걸릴 수 있습니다.
+        </p>
+
+        <p
+          v-if="reposStore.activeRepoId == null"
+          class="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400"
+        >
+          ⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.
+        </p>
+
+        <div
+          v-else
+          class="flex flex-col gap-3 rounded border border-border bg-muted/20 p-4"
+        >
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded border border-border bg-background px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
+              :disabled="gcMut.isPending.value"
+              @click="gcMut.mutate(false)"
+            >
+              git gc
+              <span class="ml-1 text-[10px] text-muted-foreground">(housekeeping)</span>
+            </button>
+            <button
+              type="button"
+              class="rounded border border-border bg-background px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
+              :disabled="gcMut.isPending.value"
+              @click="confirmAggressiveGc"
+            >
+              git gc --aggressive --prune=now
+            </button>
+            <button
+              type="button"
+              class="rounded border border-border bg-background px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
+              :disabled="fsckMut.isPending.value"
+              @click="fsckMut.mutate()"
+            >
+              git fsck --full
+              <span class="ml-1 text-[10px] text-muted-foreground">(무결성 검증)</span>
+            </button>
+            <button
+              type="button"
+              class="rounded border border-border bg-background px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
+              :disabled="lfsInstallMut.isPending.value"
+              @click="lfsInstallMut.mutate()"
+            >
+              git lfs install
+              <span class="ml-1 text-[10px] text-muted-foreground">(LFS hook 등록)</span>
+            </button>
+          </div>
+
+          <p
+            v-if="gcMut.isPending.value || fsckMut.isPending.value || lfsInstallMut.isPending.value"
+            class="text-xs text-muted-foreground"
+          >
+            실행 중...
+          </p>
+
+          <div v-if="maintResult" class="mt-2 border-t border-border pt-3">
+            <h3 class="text-xs font-semibold">
+              {{ maintLabel }}
+              <span
+                class="ml-1 text-[10px]"
+                :class="maintResult.success ? 'text-green-600' : 'text-red-600'"
+              >
+                exit={{ maintResult.exitCode ?? '?' }}
+              </span>
+            </h3>
+            <pre
+              v-if="maintResult.stdout"
+              class="mt-1 max-h-48 overflow-auto rounded bg-muted/30 p-2 font-mono text-[10px]"
+              >{{ maintResult.stdout }}</pre
+            >
+            <pre
+              v-if="maintResult.stderr"
+              class="mt-1 max-h-48 overflow-auto rounded bg-amber-500/10 p-2 font-mono text-[10px] text-amber-700 dark:text-amber-400"
+              >{{ maintResult.stderr }}</pre
+            >
+          </div>
+        </div>
+
+        <p class="text-[10px] text-muted-foreground">
+          v1.x 추가 후보: gc 진행률 incremental progress / 정기 자동 maintenance.
         </p>
       </div>
 

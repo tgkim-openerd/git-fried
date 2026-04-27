@@ -381,6 +381,15 @@ pub async fn lfs_untrack(
 }
 
 #[tauri::command]
+pub async fn lfs_install(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::install(&path).await
+}
+
+#[tauri::command]
 pub async fn lfs_fetch(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_lfs::fetch(&path).await
