@@ -8,10 +8,11 @@
 //   - shift-click 으로 range select.
 //
 // `git apply --cached [--reverse] -` 사용 (apply_patch IPC).
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { applyPatch, getDiff } from '@/api/git'
 import { describeError } from '@/api/errors'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import {
@@ -154,6 +155,36 @@ function applySelectedLines(hunkIdx: number) {
   applyMut.mutate({ patch, what: `${s.size} 라인` })
 }
 
+// === Sprint 22-2 CM-4: hunk row 우클릭 메뉴 ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+function onHunkContextMenu(ev: MouseEvent, hIdx: number) {
+  ev.preventDefault()
+  const sel = selected.value.get(hIdx)
+  const items: ContextMenuItem[] = [
+    {
+      label: props.staged ? 'Hunk unstage (전체)' : 'Hunk stage (전체)',
+      icon: '✂',
+      action: () => applyHunk(hIdx),
+      disabled: applyMut.isPending.value,
+    },
+    {
+      label: props.staged
+        ? `선택 ${sel?.size ?? 0} 라인 unstage`
+        : `선택 ${sel?.size ?? 0} 라인 stage`,
+      icon: '✓',
+      action: () => applySelectedLines(hIdx),
+      disabled: !sel?.size || applyMut.isPending.value,
+    },
+    { divider: true },
+    {
+      label: expanded.value.has(hIdx) ? 'Hunk 접기' : 'Hunk 펼치기',
+      icon: expanded.value.has(hIdx) ? '▼' : '▶',
+      action: () => toggleExpanded(hIdx),
+    },
+  ]
+  ctxMenu.value?.openAt(ev, items)
+}
+
 function applyAllHunks() {
   const f = file.value
   if (!f || hunks.value.length === 0) return
@@ -237,6 +268,7 @@ function toggleExpanded(idx: number) {
             v-for="(h, hIdx) in hunks"
             :key="`h-${hIdx}`"
             class="mb-2 rounded border border-border"
+            @contextmenu="onHunkContextMenu($event, hIdx)"
           >
             <div
               class="flex items-center justify-between bg-muted/30 px-2 py-1 text-[11px]"
@@ -323,5 +355,6 @@ function toggleExpanded(idx: number) {
         </div>
       </div>
     </div>
+    <ContextMenu ref="ctxMenu" />
   </Teleport>
 </template>

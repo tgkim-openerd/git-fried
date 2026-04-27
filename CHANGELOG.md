@@ -24,6 +24,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- Sprint 22-2: ContextMenu 공용 + CM-1~4 (`docs/plan/22 §3`):
+  - 신규 `ContextMenu.vue` 공용 컴포넌트 — Teleport + 키보드 nav (↑↓ Enter Esc, ← submenu 닫기, → submenu 진입) + submenu 1 depth + viewport edge 회피 + outside-click close + destructive 색상 분리
+  - 신규 `useCommitActions` composable — copySha / cherryPick / revert / reset(soft/mixed/hard) / createBranchFrom / createTagFrom + buildItems(callbacks) (CM-1+CM-2 공유)
+  - **CM-1 CommitGraph row** 우클릭 메뉴 (10 액션: Show diff / Copy SHA / Cherry-pick / Revert / Reset submenu / Create branch / Create tag / Compare / Explain AI / Open in forge)
+  - **CM-2 CommitTable row** 우클릭 메뉴 (동일, useCommitActions 재사용)
+  - **CM-3 StatusPanel file row** 우클릭 — staged: Unstage / Hunk-unstage / File history / Copy path. unstaged: Stage / Discard (destructive) / Hunk-stage / File history / Copy path
+  - **CM-4 HunkStageModal hunk row** 우클릭 — Hunk stage/unstage / 선택 라인만 / 접기·펼치기
+- STALE_TIME 정책 13 위치 마이그레이션 (`docs/plan/22 §1 HIGH-1`):
+  - hardcoded `staleTime: 1_000` / `30_000` / `60_000` → `STALE_TIME.REALTIME / NORMAL / STATIC`
+  - 13 컴포넌트 (BisectModal / CommitDiffModal / CommitMessageInput / CompareModal / CreatePrModal / LfsPanel × 2 / MergeEditorModal / PrDetailModal / RepoSwitcherModal / RepoTabBar / StatusBar / launchpad)
+  - HunkStageModal `staleTime: 0` 의도 명시 주석 (always-fresh patch)
+- bench/baseline.json `$schema` 라인 제거 (실파일 없음, plan/22 §1 LOW-7)
 - Sprint 22-1 R-2A (CRITICAL 5건, `docs/plan/22 §2`):
   - **C1 bulk fetch 결과 절단** — `useBulkFetchResult` singleton + `BulkFetchResultModal.vue` 신규 + Sidebar 헤더에 📡 결과 버튼 (실패 N개 badge). 159 레포 환경에서 7+ 실패 시 toast 잘려서 어느 레포 실패한지 못 보던 friction 해소
   - **C2 한글 commit subject visual width** — `CommitMessageInput.vue::visualWidth(s)` (ASCII=1, CJK/Hangul/emoji=2 cell). 한글 36자 = 영문 72자 기준으로 amber warning. 이전엔 한글로만 작성 시 100자+ 까지도 통과

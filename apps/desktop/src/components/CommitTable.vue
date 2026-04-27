@@ -1,13 +1,22 @@
 <script setup lang="ts">
 // Sprint C14 G2 — Author filter dropdown (`docs/plan/14 §8`).
-import { computed, ref } from 'vue'
+// Sprint 22-2 CM-2 — row 우클릭 메뉴 (CommitGraph 와 동일 — useCommitActions 재사용).
+import { computed, ref, useTemplateRef } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getLog } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import { useCommitActions } from '@/composables/useCommitActions'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import type { CommitSummary } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null }>()
+const emit = defineEmits<{
+  showDiff: [sha: string]
+  compareWith: [sha: string]
+  explainAi: [sha: string]
+  openInForge: [sha: string]
+}>()
 
 const { data: commits, isFetching, error } = useQuery({
   queryKey: computed(() => ['log', props.repoId]),
@@ -48,6 +57,23 @@ function formatDate(unix: number): string {
 function refsLabel(c: CommitSummary): string | null {
   if (!c.refs || c.refs.length === 0) return null
   return c.refs.join(', ')
+}
+
+// === Sprint 22-2 CM-2: row 우클릭 메뉴 ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+const commitActions = useCommitActions(() => props.repoId)
+
+function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
+  ev.preventDefault()
+  ctxMenu.value?.openAt(
+    ev,
+    commitActions.buildItems(c.sha, {
+      onShowDiff: (s) => emit('showDiff', s),
+      onCompare: (s) => emit('compareWith', s),
+      onExplainAi: (s) => emit('explainAi', s),
+      onOpenInForge: (s) => emit('openInForge', s),
+    }),
+  )
 }
 </script>
 
@@ -95,6 +121,7 @@ function refsLabel(c: CommitSummary): string | null {
             v-for="c in filteredCommits"
             :key="c.sha"
             class="border-t border-border hover:bg-accent/50"
+            @contextmenu="onRowContextMenu($event, c)"
           >
             <td class="px-3 py-1.5 font-mono text-xs text-muted-foreground">
               {{ c.shortSha }}
@@ -131,5 +158,6 @@ function refsLabel(c: CommitSummary): string | null {
         </tbody>
       </table>
     </div>
+    <ContextMenu ref="ctxMenu" />
   </div>
 </template>

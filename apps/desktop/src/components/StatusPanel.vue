@@ -3,9 +3,10 @@
 // - staged / unstaged / untracked / conflicted 분리
 // - 파일 클릭 시 stage / unstage 토글
 // - "+ 모두 stage" / "− 모두 unstage" 단축
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import {
   discardPaths,
   launchMergetool,
@@ -115,6 +116,63 @@ function openHunk(path: string, staged: boolean) {
   hunkPath.value = path
   hunkStaged.value = staged
   hunkOpen.value = true
+}
+
+// === Sprint 22-2 CM-3: file row 우클릭 메뉴 ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+
+async function copyPath(path: string) {
+  try {
+    await navigator.clipboard.writeText(path)
+    toast.success('경로 복사', path)
+  } catch (e) {
+    toast.error('복사 실패', describeError(e))
+  }
+}
+
+function onFileContextMenu(ev: MouseEvent, path: string, isStaged: boolean) {
+  ev.preventDefault()
+  selectPath(path)
+  const items: ContextMenuItem[] = isStaged
+    ? [
+        { label: 'Unstage', icon: '−', action: () => onUnstageOne(path) },
+        { divider: true },
+        {
+          label: 'Hunk-level unstage',
+          icon: '✂',
+          action: () => openHunk(path, true),
+        },
+        { divider: true },
+        {
+          label: 'File history',
+          icon: '📜',
+          action: () => openHistory(path),
+        },
+        { label: 'Copy path', icon: '📋', action: () => void copyPath(path) },
+      ]
+    : [
+        { label: 'Stage', icon: '+', action: () => onStageOne(path) },
+        {
+          label: 'Discard',
+          icon: '⤺',
+          destructive: true,
+          action: () => onDiscardOne(path),
+        },
+        { divider: true },
+        {
+          label: 'Hunk-level stage',
+          icon: '✂',
+          action: () => openHunk(path, false),
+        },
+        { divider: true },
+        {
+          label: 'File history',
+          icon: '📜',
+          action: () => openHistory(path),
+        },
+        { label: 'Copy path', icon: '📋', action: () => void copyPath(path) },
+      ]
+  ctxMenu.value?.openAt(ev, items)
 }
 
 // Sprint C6 — 외부 merge tool launch
@@ -276,6 +334,7 @@ const isSelected = computed(
             :selected="isSelected(f.path)"
             @select="selectPath(f.path)"
             @action="onUnstageOne(f.path)"
+            @contextmenu="onFileContextMenu($event, f.path, true)"
           >
             <template #extra>
               <button
@@ -320,6 +379,7 @@ const isSelected = computed(
             :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
             draggable="true"
             @click="selectPath(f.path)"
+            @contextmenu="onFileContextMenu($event, f.path, false)"
             @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', f.path)"
           >
             <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(f.status)]">
@@ -456,5 +516,6 @@ const isSelected = computed(
       :open="hunkOpen"
       @close="hunkOpen = false"
     />
+    <ContextMenu ref="ctxMenu" />
   </section>
 </template>

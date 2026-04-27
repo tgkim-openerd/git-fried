@@ -202,9 +202,17 @@ interface ContextMenuItem {
 
 C1 + C2 + C3 + C4 + C5. PR 1개. 다음 세션 진입 전 dogfood 가속.
 
-### Sprint 22-2 — ContextMenu 공용 + P0 5 위치 (~6h)
+### Sprint 22-2 — ContextMenu 공용 + P0 4 위치 ✅ 완료 (2026-04-27)
 
-(선결) 신규 `ContextMenu.vue` (2h) → CM-1 (CommitGraph row, 2h) → CM-2 (CommitTable row, 30m) → CM-3 (StatusPanel file row, 1.5h) → CM-4 (Hunk row, 1h) — **CM-5 (BranchPanel) 는 §22-3 으로 분리** (작업량 큼).
+(선결) 신규 `ContextMenu.vue` ✅ Teleport + 키보드 nav (↑↓ Enter Esc, ← submenu 닫기, → submenu 진입) + submenu 1 depth + viewport edge 회피 + outside-click close + destructive 색상 분리.
+
+- ✅ 신규 composable `useCommitActions` — copySha / cherryPick / revert / reset(submenu soft/mixed/hard) / createBranchFrom / createTagFrom + buildItems(callbacks) (CM-1, CM-2 공유)
+- ✅ **CM-1 CommitGraph row** — `@contextmenu="onRowContextMenu"` + emit (showDiff/compareWith/explainAi/openInForge)
+- ✅ **CM-2 CommitTable row** — `useCommitActions` 재사용, 동일 emit 구조
+- ✅ **CM-3 StatusPanel file row** — staged: Unstage / Hunk-unstage / File history / Copy path. unstaged: Stage / Discard (destructive) / Hunk-stage / File history / Copy path
+- ✅ **CM-4 HunkStageModal hunk row** — Hunk stage/unstage 전체 / 선택 라인만 stage / Hunk 접기·펼치기
+
+(P0 의 CM-5 BranchPanel 11 액션은 §22-3 으로 분리 — 작업량 큼)
 
 ### Sprint 22-3 — BranchPanel 깊은 메뉴 + P0 viewer (~4h)
 

@@ -7,7 +7,7 @@
 //  - lane 폭 16px
 //  - 노드 원 6px, 엣지 stroke 1.5px
 //  - 8개 stable color (브랜치 hash)
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
@@ -15,7 +15,9 @@ import { useHiddenRefMutations, useRefVisibility } from '@/composables/useHidden
 import type { HiddenRefKind } from '@/api/git'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
+import { useCommitActions } from '@/composables/useCommitActions'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import type { GraphRow } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -247,11 +249,36 @@ function formatDate(unix: number): string {
 
 const emit = defineEmits<{
   selectCommit: [sha: string]
+  showDiff: [sha: string]
+  compareWith: [sha: string]
+  explainAi: [sha: string]
+  openInForge: [sha: string]
 }>()
 const selectedSha = ref<string | null>(null)
 function selectRow(r: GraphRow) {
   selectedSha.value = r.commit.sha
   emit('selectCommit', r.commit.sha)
+}
+
+// === Sprint 22-2 CM-1: row 우클릭 메뉴 ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+const commitActions = useCommitActions(() => props.repoId)
+
+function onRowContextMenu(ev: MouseEvent, row: GraphRow | undefined) {
+  if (!row) return
+  ev.preventDefault()
+  const sha = row.commit.sha
+  selectedSha.value = sha
+  emit('selectCommit', sha)
+  ctxMenu.value?.openAt(
+    ev,
+    commitActions.buildItems(sha, {
+      onShowDiff: (s) => emit('showDiff', s),
+      onCompare: (s) => emit('compareWith', s),
+      onExplainAi: (s) => emit('explainAi', s),
+      onOpenInForge: (s) => emit('openInForge', s),
+    }),
+  )
 }
 
 // Vim nav (J/K) — selectedSha 다음/이전 행. 비어있으면 첫 행 선택.
@@ -526,6 +553,7 @@ onUnmounted(() => {
             }
           "
           @click="selectRow(rows[v.index])"
+          @contextmenu="onRowContextMenu($event, rows[v.index])"
         >
           <template v-for="col in cols.visibleColumns.value" :key="col.id">
             <!-- sha -->
@@ -589,6 +617,7 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    <ContextMenu ref="ctxMenu" />
   </div>
 </template>
 
