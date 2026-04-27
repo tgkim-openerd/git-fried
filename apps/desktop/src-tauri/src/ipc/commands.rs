@@ -9,10 +9,11 @@
 
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    branch as git_branch, bulk as git_bulk, commit as git_commit, config_local as git_cfg_local,
-    diff as git_diff, graph as git_graph, maintenance as git_maint, remote as git_remote,
-    repository as repo, reset as git_reset, runner, stage, stash as git_stash,
-    status as git_status, submodule as git_sub, sync as git_sync, tag as git_tag,
+    branch as git_branch, bulk as git_bulk, clone as git_clone, commit as git_commit,
+    config_local as git_cfg_local, diff as git_diff, graph as git_graph,
+    maintenance as git_maint, remote as git_remote, repository as repo, reset as git_reset,
+    runner, stage, stash as git_stash, status as git_status, submodule as git_sub,
+    sync as git_sync, tag as git_tag,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -941,6 +942,107 @@ pub async fn apply_repo_config(
 ) -> AppResult<()> {
     let r = state.db.get_repo(args.repo_id).await?;
     git_cfg_local::apply_snapshot(Path::new(&r.local_path), &args.snapshot).await
+}
+
+// ====== Repo Clone with options (`docs/plan/14 §6 E1+E2` Sprint C14-2) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloneRepoArgs {
+    pub url: String,
+    pub target_path: String,
+    #[serde(default)]
+    pub options: git_clone::CloneOptions,
+    /// 클론 후 git-fried 워크스페이스에 자동 등록할지.
+    #[serde(default = "default_auto_register")]
+    pub auto_register: bool,
+    /// 자동 등록 시 소속 워크스페이스. None = unassigned.
+    #[serde(default)]
+    pub workspace_id: Option<i64>,
+}
+
+fn default_auto_register() -> bool {
+    true
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloneRepoResult {
+    pub clone: git_clone::CloneResult,
+    /// auto_register=true 이고 add_repo 성공 시 등록된 Repo. 실패 시 None + warning.
+    pub registered_repo: Option<Repo>,
+    pub warning: Option<String>,
+}
+
+#[tauri::command]
+pub async fn clone_repo(
+    args: CloneRepoArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<CloneRepoResult> {
+    let target = Path::new(&args.target_path);
+    let clone_res = git_clone::clone(&args.url, target, &args.options).await?;
+
+    if !args.auto_register {
+        return Ok(CloneRepoResult {
+            clone: clone_res,
+            registered_repo: None,
+            warning: None,
+        });
+    }
+
+    // auto_register: detect_meta + add_repo (importer 와 동일 graceful 패턴)
+    let meta = repo::detect_meta(target);
+    let (name, default_branch, default_remote, forge_kind, forge_owner, forge_repo) = match meta {
+        Ok(m) => (
+            m.name,
+            m.default_branch,
+            m.default_remote,
+            m.forge_kind,
+            m.forge_owner,
+            m.forge_repo,
+        ),
+        Err(_) => {
+            let fallback = target
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("repo")
+                .to_string();
+            (
+                fallback,
+                None,
+                None,
+                repo::ForgeKindLite::Unknown,
+                None,
+                None,
+            )
+        }
+    };
+
+    match state
+        .db
+        .add_repo(
+            &args.target_path,
+            args.workspace_id,
+            Some(&name),
+            default_branch.as_deref(),
+            default_remote.as_deref(),
+            forge_kind,
+            forge_owner.as_deref(),
+            forge_repo.as_deref(),
+        )
+        .await
+    {
+        Ok(r) => Ok(CloneRepoResult {
+            clone: clone_res,
+            registered_repo: Some(r),
+            warning: None,
+        }),
+        Err(e) => Ok(CloneRepoResult {
+            clone: clone_res,
+            registered_repo: None,
+            warning: Some(format!("자동 등록 실패: {e}")),
+        }),
+    }
 }
 
 // ====== Tag panel (`docs/plan/14 §8 G1` Sprint C14) ======

@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `bench/baseline.json` — schema (memory / graph / ipc / ai / bulk + regression_threshold_pct=20), null placeholder
   - `bench/README.md` — 도구 사용법
   - `release.yml` 에 optional `cargo bench` step (BENCH_REPO secret 있을 때만 실행, 없으면 자동 skip)
+- Sprint C14-2 (P2, `docs/plan/14 §6 + §7`): Clone with options + PR Filter syntax
+  - **E1+E2 Clone with options** — `git/clone.rs` 신규 (sparse-checkout cone + `--depth` + `--shallow-since` + `--single-branch` + `--bare`) + `clone_repo` IPC (auto-register=true 면 detect_meta 후 db.add_repo 자동) + `CloneRepoModal.vue` (URL + 부모 폴더 + 폴더명 + 고급 옵션 expand) + Sidebar 의 "⬇ Clone" 버튼
+  - **F2 PR Filter syntax** — Launchpad 에 검색 input + prefix helper 버튼 (`+author:` `+state:open` `+repo:` `+is:pinned` `+is:snoozed` `+is:bot`). syntax: `author:<sub>` / `state:<v>` / `repo:<sub>` / `is:<pinned|snoozed|bot>` + free-text title 매칭. 모든 token AND
 - Sprint C14 (P2 일부, `docs/plan/14 §5/§8`): G2 Author filter + D2 Edit stash msg + G1 Tag panel
   - **G2 Author filter dropdown** — CommitTable header 에 unique authors dropdown (커밋 200개 기반 ko-locale 정렬). 선택 시 그 author 만 필터, "모든 작성자" 로 해제. 작가 1명 이하면 dropdown 자동 hide
   - **D2 Edit stash message** — `git/stash.rs::edit_stash_message` (rev-parse → `stash store -m` → drop 원본, SHA unreachable 위험 없음). IPC + StashPanel 의 "edit msg" 버튼 (window.prompt). 새 entry 가 stash@{0} 으로 이동

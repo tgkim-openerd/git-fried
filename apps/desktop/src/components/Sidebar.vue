@@ -23,7 +23,11 @@ import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useNotification } from '@/composables/useNotification'
+import CloneRepoModal from './CloneRepoModal.vue'
 import type { Repo } from '@/types/git'
+
+// Sprint C14-2 (`docs/plan/14 §6 E1+E2`): Clone with sparse/shallow options.
+const cloneOpen = ref(false)
 
 // Sprint B9 — Sidebar 그룹핑 모드 (디렉토리 / org) + workspace color 편집.
 // localStorage 영속.
@@ -486,6 +490,14 @@ function cancelEditAlias() {
           <button
             type="button"
             class="rounded-md border border-input px-2 py-0.5 hover:bg-accent"
+            title="원격 URL 에서 clone (sparse / shallow 옵션 지원)"
+            @click="cloneOpen = true"
+          >
+            ⬇ Clone
+          </button>
+          <button
+            type="button"
+            class="rounded-md border border-input px-2 py-0.5 hover:bg-accent"
             :disabled="addRepoMutation.isPending.value"
             @click="pickAndAddRepo"
           >
@@ -617,5 +629,11 @@ function cancelEditAlias() {
     >
       Tauri 2 · Vue 3 · Rust
     </footer>
+
+    <CloneRepoModal
+      :open="cloneOpen"
+      :workspace-id="store.activeWorkspaceId"
+      @close="cloneOpen = false"
+    />
   </aside>
 </template>

@@ -222,11 +222,14 @@
 12. ✅ **G2 Author filter dropdown** — CommitTable header dropdown (unique authors / ko-locale 정렬, 작가 1명 이하면 hide)
 13. ✅ **D2 Edit stash message** — `git/stash.rs::edit_stash_message` (rev-parse → stash store -m → drop 원본) + IPC + StashPanel "edit msg" 버튼
 
-#### C14-2 (대기)
+#### C14-2 ✅ 부분 완료 (2026-04-27) — 작은 2건
 
-8. **E1~E2 Clone 옵션** (~6h)
-9. **F1 PR Code Suggestions** (~8h)
-10. **F2 PR Filter syntax** (~4h)
+8. ✅ **E1~E2 Clone 옵션** — `git/clone.rs` (sparse cone + depth + shallow-since + single-branch + bare) + `clone_repo` IPC (auto-register=true 면 add_repo 자동) + `CloneRepoModal.vue` + Sidebar "⬇ Clone" 버튼
+10. ✅ **F2 PR Filter syntax** — Launchpad 검색 input + helper 버튼 (`+author:` `+state:open` `+repo:` `+is:pinned/snoozed/bot`). syntax: `key:val` + free-text title 매칭, 모든 token AND
+
+#### C14-3 (대기) — 가장 큼
+
+9. **F1 PR Code Suggestions** (~8h, GitHub + Gitea 양쪽 endpoint)
 
 **합계 22 항목** = 약 **3~5일** (AI pair 가속 기준).
 

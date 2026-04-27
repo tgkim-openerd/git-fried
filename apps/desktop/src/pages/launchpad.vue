@@ -27,6 +27,91 @@ const showBots = ref(false)
 type Tab = 'active' | 'pinned' | 'snoozed'
 const tab = ref<Tab>('active')
 
+// === Sprint C14-2 F2 (`docs/plan/14 §7 F2`): PR Filter syntax ===
+// 검색 syntax:
+//   author:<sub>   — pr.author.username substring
+//   state:<v>      — open|closed|merged|draft 정확
+//   repo:<sub>     — repoName substring
+//   is:pinned      — meta.isPinned
+//   is:snoozed     — meta.snoozeRemaining != null
+//   is:bot         — isBot()
+//   그 외 token    — pr.title substring (case-insensitive)
+// 여러 token = AND.
+const searchQuery = ref<string>('')
+
+interface ParsedQuery {
+  author: string[]
+  state: string[]
+  repo: string[]
+  is: string[]
+  free: string[]
+}
+
+function parseQuery(q: string): ParsedQuery {
+  const out: ParsedQuery = { author: [], state: [], repo: [], is: [], free: [] }
+  const tokens = q.split(/\s+/).filter((t) => t.length > 0)
+  for (const t of tokens) {
+    const m = /^(author|state|repo|is):(.+)$/i.exec(t)
+    if (m) {
+      const key = m[1].toLowerCase() as keyof ParsedQuery
+      const val = m[2].toLowerCase()
+      if (key !== 'free') out[key].push(val)
+    } else {
+      out.free.push(t.toLowerCase())
+    }
+  }
+  return out
+}
+
+const parsedQuery = computed<ParsedQuery>(() => parseQuery(searchQuery.value))
+
+function matchesQuery(row: { repoName: string; pr: PullRequest }): boolean {
+  const q = parsedQuery.value
+  // author
+  if (q.author.length > 0) {
+    const u = row.pr.author.username.toLowerCase()
+    if (!q.author.some((a) => u.includes(a))) return false
+  }
+  // state
+  if (q.state.length > 0 && !q.state.includes(row.pr.state)) {
+    return false
+  }
+  // repo
+  if (q.repo.length > 0) {
+    const r = row.repoName.toLowerCase()
+    if (!q.repo.some((s) => r.includes(s))) return false
+  }
+  // is:
+  for (const tag of q.is) {
+    if (tag === 'pinned' && !meta.isPinned(row.pr)) return false
+    if (tag === 'snoozed' && meta.snoozeRemaining(row.pr) == null) return false
+    if (tag === 'bot' && !isBot(row.pr)) return false
+  }
+  // free text — title 매칭
+  if (q.free.length > 0) {
+    const t = row.pr.title.toLowerCase()
+    for (const f of q.free) {
+      if (!t.includes(f)) return false
+    }
+  }
+  return true
+}
+
+// helper buttons (input 끝에 token append)
+const FILTER_HELPERS: { label: string; insert: string }[] = [
+  { label: '+author:', insert: 'author:' },
+  { label: '+state:open', insert: 'state:open' },
+  { label: '+repo:', insert: 'repo:' },
+  { label: '+is:pinned', insert: 'is:pinned' },
+  { label: '+is:snoozed', insert: 'is:snoozed' },
+  { label: '+is:bot', insert: 'is:bot' },
+]
+
+function appendFilter(token: string) {
+  const cur = searchQuery.value.trimEnd()
+  searchQuery.value = cur ? `${cur} ${token}` : token
+}
+
 const { data, isFetching, error, refetch } = useQuery({
   queryKey: computed(() => [
     'launchpad-prs',
@@ -70,8 +155,11 @@ const flatRows = computed<FlatRow[]>(() => {
   return out
 })
 
-const humanPrs = computed(() => flatRows.value.filter((r) => !isBot(r.pr)))
-const botPrs = computed(() => flatRows.value.filter((r) => isBot(r.pr)))
+// === 검색 필터 적용 (F2) — humanPrs 단계 후 통과 ===
+const searchedRows = computed(() => flatRows.value.filter(matchesQuery))
+
+const humanPrs = computed(() => searchedRows.value.filter((r) => !isBot(r.pr)))
+const botPrs = computed(() => searchedRows.value.filter((r) => isBot(r.pr)))
 
 const pinnedRows = computed(() =>
   humanPrs.value.filter((r) => meta.isPinned(r.pr)),
@@ -254,6 +342,37 @@ function applyView(v: { filterJson: string }) {
         </button>
       </div>
     </header>
+
+    <!-- Sprint C14-2 F2 — PR 검색 (filter syntax) -->
+    <div
+      class="flex flex-wrap items-center gap-2 border-b border-border bg-muted/20 px-4 py-1.5 text-xs"
+    >
+      <input
+        v-model="searchQuery"
+        placeholder="검색: title 또는 author:tg state:open repo:foo is:pinned ..."
+        class="min-w-[280px] flex-1 rounded border border-input bg-background px-2 py-0.5"
+      />
+      <div class="flex flex-wrap gap-1">
+        <button
+          v-for="h in FILTER_HELPERS"
+          :key="h.label"
+          type="button"
+          class="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+          :title="`'${h.insert}' 추가`"
+          @click="appendFilter(h.insert)"
+        >
+          {{ h.label }}
+        </button>
+        <button
+          v-if="searchQuery"
+          type="button"
+          class="rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] text-destructive hover:bg-destructive/10"
+          @click="searchQuery = ''"
+        >
+          ✕ clear
+        </button>
+      </div>
+    </div>
 
     <!-- Tab 분리 + Saved Views -->
     <div class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-1 text-xs">

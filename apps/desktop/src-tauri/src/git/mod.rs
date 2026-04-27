@@ -8,6 +8,7 @@ pub mod bisect;
 pub mod branch;
 pub mod bulk;
 pub mod cherry_pick;
+pub mod clone;
 pub mod commit;
 pub mod compare;
 pub mod config_local;

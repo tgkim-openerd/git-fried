@@ -997,6 +997,39 @@ export interface AppInfo {
 }
 export const getAppInfo = (): Promise<AppInfo> => invoke('get_app_info')
 
+// --- Clone with options (`docs/plan/14 §6 E1+E2` Sprint C14-2) ---
+
+export interface CloneOptions {
+  sparsePaths?: string[] | null
+  depth?: number | null
+  shallowSince?: string | null
+  singleBranch?: string | null
+  bare?: boolean
+}
+
+export interface CloneResult {
+  targetPath: string
+  stdout: string
+  stderr: string
+}
+
+export interface CloneRepoResult {
+  clone: CloneResult
+  registeredRepo: Repo | null
+  warning: string | null
+}
+
+export const cloneRepo = (
+  url: string,
+  targetPath: string,
+  options: CloneOptions = {},
+  autoRegister = true,
+  workspaceId: number | null = null,
+): Promise<CloneRepoResult> =>
+  invoke('clone_repo', {
+    args: { url, targetPath, options, autoRegister, workspaceId },
+  })
+
 // --- Tag panel (`docs/plan/14 §8 G1` Sprint C14) ---
 
 export interface TagInfo {
