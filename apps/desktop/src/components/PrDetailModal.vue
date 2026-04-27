@@ -24,6 +24,7 @@ import { useToast } from '@/composables/useToast'
 import { useNotification } from '@/composables/useNotification'
 import { notifyAiDone } from '@/composables/useAiCli'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import BaseModal from './BaseModal.vue'
 import UserAvatar from './UserAvatar.vue'
 import DiffViewer from './DiffViewer.vue'
 import type {
@@ -356,26 +357,24 @@ const aiReviewMut = useMutation({
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open && number != null"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-6"
-      @click.self="emit('close')"
-    >
-      <div class="flex h-full w-full max-w-4xl flex-col rounded-lg border border-border bg-card shadow-xl">
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <h2 class="text-sm font-semibold">
-            <span v-if="detailQuery.data.value">
-              <span :class="['mr-2 text-[10px] uppercase', stateColor(detailQuery.data.value.state)]">
-                {{ detailQuery.data.value.state }}
-              </span>
-              <span class="font-mono">#{{ number }}</span>
-              <span class="ml-2">{{ detailQuery.data.value.title }}</span>
-            </span>
-            <span v-else>#{{ number }}</span>
-          </h2>
-          <button class="text-muted-foreground hover:text-foreground" @click="emit('close')">✕</button>
-        </header>
+  <BaseModal
+    :open="open && number != null"
+    max-width="4xl"
+    panel-class="h-[90vh]"
+    @close="emit('close')"
+  >
+    <template #header>
+      <h2 class="text-sm font-semibold">
+        <span v-if="detailQuery.data.value">
+          <span :class="['mr-2 text-[10px] uppercase', stateColor(detailQuery.data.value.state)]">
+            {{ detailQuery.data.value.state }}
+          </span>
+          <span class="font-mono">#{{ number }}</span>
+          <span class="ml-2">{{ detailQuery.data.value.title }}</span>
+        </span>
+        <span v-else>#{{ number }}</span>
+      </h2>
+    </template>
 
         <!-- Sprint 22-3 V-2: Conversation / Files Changed tab -->
         <nav class="flex border-b border-border bg-muted/20 text-xs">
@@ -716,50 +715,48 @@ const aiReviewMut = useMutation({
           </template>
         </div>
 
-        <!-- 푸터: Merge / Close / Reopen -->
-        <footer
-          v-if="detailQuery.data.value"
-          class="flex items-center justify-between gap-2 border-t border-border px-4 py-2 text-xs"
-        >
-          <div class="flex items-center gap-2">
-            <span class="text-muted-foreground">머지 방식:</span>
-            <select
-              v-model="mergeMethod"
-              class="rounded-md border border-input bg-background px-2 py-1"
-            >
-              <option value="merge">merge (traditional)</option>
-              <option value="squash">squash</option>
-              <option value="rebase">rebase</option>
-            </select>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              v-if="detailQuery.data.value.state === 'closed' && !detailQuery.data.value.merged"
-              class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
-              :disabled="reopenMut.isPending.value"
-              @click="reopenMut.mutate()"
-            >
-              다시 열기
-            </button>
-            <button
-              v-if="detailQuery.data.value.state === 'open' || detailQuery.data.value.state === 'draft'"
-              class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
-              :disabled="closeMut.isPending.value"
-              @click="onClose"
-            >
-              닫기
-            </button>
-            <button
-              v-if="detailQuery.data.value.state === 'open'"
-              class="rounded-md bg-violet-500 px-4 py-1 text-white disabled:opacity-50"
-              :disabled="mergeMut.isPending.value"
-              @click="onMerge"
-            >
-              {{ mergeMut.isPending.value ? '머지 중...' : '머지' }}
-            </button>
-          </div>
-        </footer>
+    <!-- 푸터: Merge / Close / Reopen -->
+    <template v-if="detailQuery.data.value" #footer>
+      <div class="flex items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-muted-foreground">머지 방식:</span>
+          <select
+            v-model="mergeMethod"
+            class="rounded-md border border-input bg-background px-2 py-1"
+            aria-label="머지 방식 선택"
+          >
+            <option value="merge">merge (traditional)</option>
+            <option value="squash">squash</option>
+            <option value="rebase">rebase</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="detailQuery.data.value.state === 'closed' && !detailQuery.data.value.merged"
+            class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
+            :disabled="reopenMut.isPending.value"
+            @click="reopenMut.mutate()"
+          >
+            다시 열기
+          </button>
+          <button
+            v-if="detailQuery.data.value.state === 'open' || detailQuery.data.value.state === 'draft'"
+            class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
+            :disabled="closeMut.isPending.value"
+            @click="onClose"
+          >
+            닫기
+          </button>
+          <button
+            v-if="detailQuery.data.value.state === 'open'"
+            class="rounded-md bg-violet-500 px-4 py-1 text-white disabled:opacity-50"
+            :disabled="mergeMut.isPending.value"
+            @click="onMerge"
+          >
+            {{ mergeMut.isPending.value ? '머지 중...' : '머지' }}
+          </button>
+        </div>
       </div>
-    </div>
-  </Teleport>
+    </template>
+  </BaseModal>
 </template>

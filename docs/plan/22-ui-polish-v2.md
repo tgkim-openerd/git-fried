@@ -266,9 +266,21 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
-### Sprint 22-7 (선택) — Polish 잔여 (~5h)
+### Sprint 22-7 (선택) — Polish 잔여 (~5h) ✅ 부분완료 (Q-3 + Modal 3 + aria 11건)
 
 Q-5/Q-6/Q-7 + S-2/S-3/S-4 + V-7~V-13 + F-P1~F-P5 중 ranking.
+
+- ✅ **Q-3 한글 너비 — visualWidth utility 추출 + RepoTabBar 적용** —
+  - 신규 `utils/visualWidth.ts` (visualWidth / visualTruncate / cjkRatio export)
+  - CommitMessageInput.vue 의 inline visualWidth 함수 → utility import (DRY)
+  - RepoTabBar tab label `max-w` 동적 (한글 비중 영문 2× 시각 폭 보정 — 24 cell 초과 시 max-w-[180px] → max-w-[280px])
+- ✅ **Modal BaseModal 마이그레이션 3건 (복잡 layout)** —
+  - **CommitDiffModal** — V-3 header action group (cherry-pick / revert / reset) 보존, header slot + show-close-button=false + panel-class for w-[1000px]
+  - **CompareModal** — split layout (좌 commit list + 우 patch) 그대로, max-h-[90vh] w-[1100px]
+  - **PrDetailModal** — V-2 Conversation/Files tab 보존 + footer slot (Merge/Close/Reopen + 머지 방식 select)
+  - 잔여 4 modal: RepoSwitcherModal (top-aligned palette, layout 다름) / HunkStageModal / InteractiveRebaseModal / MergeEditorModal — 별도 sprint
+- ✅ **S-1 aria-label 11건 추가** — StatusPanel (history / discard / hunk-stage / hunk-unstage / stage 동적 path) + RepoTabBar (탭 닫기 / 새 탭 추가) + TagPanel (push / del local / del remote 동적 tag name)
+  - 누적 17건 (Sprint 22-5 시범 6건 + 본 sprint 11건). 잔여 ~30 button 점진
 
 **총 6 sprint** (~28h AI pair = 4~5 세션). dogfood 결과로 우선순위 조정 가능.
 

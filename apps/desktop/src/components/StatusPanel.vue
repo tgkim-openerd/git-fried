@@ -416,6 +416,7 @@ const isSelected = computed(
                 type="button"
                 class="text-[10px] text-muted-foreground/70 hover:text-foreground"
                 title="Hunk-level unstage — 특정 라인만 골라 unstage (`docs/plan/14 §H1`)"
+                :aria-label="`'${f.path}' hunk 단위 unstage`"
                 @click.stop="openHunk(f.path, true)"
               >
                 ✂ hunk
@@ -465,6 +466,7 @@ const isSelected = computed(
               type="button"
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
               title="file history / blame"
+              :aria-label="`'${f.path}' history / blame`"
               @click.stop="openHistory(f.path)"
             >
               📜
@@ -473,6 +475,7 @@ const isSelected = computed(
               type="button"
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
               title="discard"
+              :aria-label="`'${f.path}' 변경 폐기`"
               @click.stop="onDiscardOne(f.path)"
             >
               ⤺
@@ -481,6 +484,7 @@ const isSelected = computed(
               type="button"
               class="text-[10px] text-muted-foreground/70 hover:text-foreground"
               title="Hunk-level stage — 특정 라인만 골라 stage (`docs/plan/14 §H1`)"
+              :aria-label="`'${f.path}' hunk 단위 stage`"
               @click.stop="openHunk(f.path, false)"
             >
               ✂ hunk
@@ -489,6 +493,7 @@ const isSelected = computed(
               type="button"
               class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
               title="stage"
+              :aria-label="`'${f.path}' stage`"
               @click.stop="onStageOne(f.path)"
             >
               +

@@ -15,6 +15,7 @@ import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import { visualWidth } from '@/utils/visualWidth'
 
 const store = useReposStore()
 const aliases = useRepoAliases()
@@ -44,6 +45,13 @@ function tabLabel(id: number): string {
   const r = repoMap.value.get(id)
   if (!r) return `repo:${id}`
   return aliases.resolveLocal(id, r.name).display
+}
+
+// Sprint 22-7 Q-3: 한글 tab label 은 시각 폭이 영문의 ~2배 →
+// label visualWidth 가 일정 cell 초과 시 max-w 확장 (180px → 280px).
+function tabLabelClass(id: number): string {
+  const w = visualWidth(tabLabel(id))
+  return w > 24 ? 'max-w-[280px]' : 'max-w-[180px]'
 }
 
 function tabSubtitle(id: number): string {
@@ -147,11 +155,12 @@ function onTabContextMenu(ev: MouseEvent, id: number) {
         @mousedown="onMiddleClick(id, $event)"
         @contextmenu="onTabContextMenu($event, id)"
       >
-        <span class="max-w-[180px] truncate">{{ tabLabel(id) }}</span>
+        <span class="truncate" :class="tabLabelClass(id)">{{ tabLabel(id) }}</span>
         <button
           type="button"
           class="rounded text-muted-foreground opacity-50 hover:bg-destructive/40 hover:text-destructive-foreground hover:opacity-100"
           :title="`탭 닫기: ${tabLabel(id)}`"
+          :aria-label="`탭 닫기: ${tabLabel(id)}`"
           @click="close(id, $event)"
         >
           ✕
@@ -162,6 +171,7 @@ function onTabContextMenu(ev: MouseEvent, id: number) {
       type="button"
       class="ml-1 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
       title="새 탭 (⌘T)"
+      aria-label="새 레포 탭 추가 (⌘T)"
       @click="$emit('openSwitcher')"
     >
       +

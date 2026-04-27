@@ -304,18 +304,21 @@ function onTagContextMenu(ev: MouseEvent, t: TagInfo) {
           <button
             class="hover:underline"
             title="origin 으로 push"
+            :aria-label="`tag '${t.name}' origin 에 push`"
             @click.stop="pushMut.mutate(t.name)"
           >
             push
           </button>
           <button
             class="hover:underline text-destructive"
+            :aria-label="`로컬 tag '${t.name}' 삭제`"
             @click.stop="onDelete(t.name)"
           >
             del local
           </button>
           <button
             class="hover:underline text-destructive"
+            :aria-label="`원격 tag 'origin/${t.name}' 삭제`"
             @click.stop="onDeleteRemote(t.name)"
           >
             del remote

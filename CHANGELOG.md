@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-7 — Q-3 한글 너비 + 복잡 Modal 3건 + aria-label 11건 (`docs/plan/22 §22-7`):
+  - **Q-3 visualWidth utility 추출** — 신규 `utils/visualWidth.ts` (visualWidth / visualTruncate / cjkRatio export). CommitMessageInput 의 inline 함수 → utility import (DRY)
+  - **Q-3 RepoTabBar 한글 tab label 시각 보정** — visualWidth > 24 cell 시 `max-w-[180px]` → `max-w-[280px]` 동적. 한글 tab name dense 환경 (회사 50+ 한글 레포) 가독성 향상
+  - **Modal BaseModal 마이그레이션 3건 (복잡 layout)**:
+    - CommitDiffModal — V-3 header action group (cherry-pick / revert / reset) 보존, header slot + show-close-button=false + panel-class for w-[1000px] + AiResultModal 외부 분리 (Vue fragment)
+    - CompareModal — split layout (좌 commit list + 우 patch) 그대로, max-h-[90vh] w-[1100px]
+    - PrDetailModal — V-2 Conversation/Files tab 보존 + footer slot (Merge/Close/Reopen + 머지 방식 select with aria-label)
+    - 잔여 4 modal: RepoSwitcherModal (top-aligned palette) / HunkStageModal / InteractiveRebaseModal / MergeEditorModal — 별도 sprint
+  - **S-1 aria-label 11건 추가** — StatusPanel (history / discard / hunk-stage / hunk-unstage / stage 동적 path) + RepoTabBar (탭 닫기 / 새 탭 추가) + TagPanel (push / del local / del remote 동적 tag name) + PrDetailModal 머지 방식 select
+  - 누적 BaseModal 14 modal / aria-label 17건 (Sprint 22-5 6 + 본 sprint 11)
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
 - Sprint 22-6 + V-5 + Modal 마이그레이션 8건 (`docs/plan/22 §22-6`, Q-3 다음 sprint):
   - **Modal BaseModal 마이그레이션 8건** — RemoteManageModal / ReflogModal / BisectModal / CreatePrModal / CloneRepoModal / FileHistoryModal (path nullable → computed isOpen) / SyncTemplateModal / GitKrakenImportModal. **잔여 7 modal**: CompareModal / CommitDiffModal / RepoSwitcherModal (top-aligned palette) / HunkStageModal / InteractiveRebaseModal / MergeEditorModal / PrDetailModal (복잡 layout, 차후)
   - **V-5 StatusPanel inline diff preview** (Sprint 22-4 V-5 이월 처리) — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유)
@@ -86,6 +97,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Page 07 UX Polish D18~D27 — Skeleton 4 / Empty 4 / DnD 4 시나리오 / Long-running 30s·1m·4m / 한글 visualWidth+ellipsis+⚠ / **a11y 47 aria-label** (툴바 13+StatusPanel 8+Graph 7+Sidebar 7+Diff 8+Ctx 3+1) / Motion 12 transition+reduced-motion / **Layout audit Tab 7→10 → ⌘8+ overflow dropdown** / Plugin/Integration 3 slot / v0.4 placeholder pattern + 🔜 15 항목 카탈로그
     - Self-assessment 8/8 ✓ (토큰 재사용 / Q1·Q2·Q3 / 미캡처 placeholder / skip 0 / 한국어 100% / 정보 밀도)
     - **다음 단계**: Visual Refactor — plan/24 후보 (토큰 → primitives → hub screens → modals → polish 코드 적용)
+- **2026-04-27 plan/24-visual-refactor.md 신규 작성** — Figma 디자인 → 코드 적용 절차서. 6 sub-sprint × 12~18일:
+  - Sprint A Foundation 토큰 (1~2일) — Pretendard self-host + Q2 색 분리 + Elevation 3 tier + Z-index 6 layer + Status semantic (success/warning/info)
+  - Sprint B Primitives + reka-ui (2~3일) — 🔥 Tooltip primitive + ContextMenu reka-ui wrap + Button 4×5×3 + Form 6 + Toast dedup
+  - Sprint C Hub Screens (3~5일) — D11 CommitDiff / D12 PrDetail / D13 StatusPanel / D14 Sidebar+Integrations slot / 🆕 D14b Onboarding (full size, 5 step) + Tab overflow ⌘8+ dropdown + Settings 2-level 6 그룹
+  - Sprint D Modal Audit (2~4일) — BaseModal 잔여 7 + 미캡처 5 신규 (MergeEditor/HunkStage/RemoteManage/AiResult/GitKrakenImport) + ContextMenu 17/17
+  - Sprint E UX Polish (3~5일) — Skeleton 4 / Empty 4 / DnD 4 시나리오 / Long-running 30s·1m·4m / 한글 좌측 ellipsis+tooltip / a11y 47/47 / Motion 12+reduced-motion / Plugin slot 활용 / v0.4 placeholder
+  - Sprint F 검증 (1~2일) — 36+ PNG 재캡처 + Figma 60+ 아트보드 visual diff audit ≥95% 일치 + Lighthouse a11y ≥90
+  - 의존: plan/22 22-7 의 BaseModal 잔여 7 마이그레이션을 plan/24 Sprint D 로 이전 권장 — 코드 충돌 회피
     - `00-product-brief.md` § 4-2 "Feature Parity Ambition" + § 8 Anti-Goals 보강 (minimal-leaning / GitKraken visual 모방 / 고정 카운트 가정)
     - `README.md` — 인덱스 + 권장 읽기 순서 + Handoff 옵션 (A 문서만 / B 스크린샷 / C Figma MCP)
 - Sprint A14 (`docs/plan/14`):

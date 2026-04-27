@@ -10,6 +10,7 @@ import { useBranches } from '@/composables/useBranches'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{
   repoId: number | null
@@ -66,26 +67,13 @@ function swap() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      @click.self="$emit('close')"
-    >
-      <div
-        class="flex max-h-[90vh] w-[1100px] max-w-full flex-col rounded-lg border border-border bg-card shadow-xl"
-      >
-        <header
-          class="flex items-center justify-between border-b border-border px-4 py-2"
-        >
-          <h2 class="text-sm font-semibold">Compare</h2>
-          <button
-            class="text-muted-foreground hover:text-foreground"
-            @click="$emit('close')"
-          >
-            ✕
-          </button>
-        </header>
+  <BaseModal
+    :open="open"
+    title="Compare"
+    panel-class="max-h-[90vh] w-[1100px]"
+    max-width="full"
+    @close="$emit('close')"
+  >
 
         <!-- ref picker -->
         <div
@@ -202,8 +190,6 @@ function swap() {
               diff 없음
             </p>
           </main>
-        </div>
-      </div>
     </div>
-  </Teleport>
+  </BaseModal>
 </template>

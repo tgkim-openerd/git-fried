@@ -17,6 +17,7 @@ import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useShortcut } from '@/composables/useShortcuts'
 import { notifyAiDone } from '@/composables/useAiCli'
+import { visualWidth } from '@/utils/visualWidth'
 import type { AiCli } from '@/api/git'
 import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -57,19 +58,8 @@ const finalMessage = computed(() => {
   })
 })
 
-// Visual width: ASCII = 1, 한글/CJK/emoji = 2 (terminal cell 기준).
-// `docs/plan/22 §2 C2` — 한글 36자 ≈ 영문 72자.
-function visualWidth(s: string): number {
-  let w = 0
-  for (const ch of s) {
-    const code = ch.codePointAt(0) ?? 0
-    // CJK Unified, Hangul, fullwidth, emoji 등 = 2-cell
-    // 간단 heuristic: code > 255 면 2 (정밀 East Asian Width 는 over-engineering)
-    w += code > 255 ? 2 : 1
-  }
-  return w
-}
-
+// Sprint 22-7 Q-3: visualWidth 를 utils/visualWidth.ts 로 추출 (DRY 재사용).
+// ASCII=1, 한글/CJK/emoji=2 — terminal cell 기준. 한글 36자 ≈ 영문 72자.
 const subjectLength = computed(() => visualWidth(subject.value))
 const subjectWarn = computed(() => subjectLength.value > 72)
 

@@ -13,6 +13,7 @@ import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import { useCommitActions } from '@/composables/useCommitActions'
 import { useDiffMode, DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import AiResultModal from './AiResultModal.vue'
+import BaseModal from './BaseModal.vue'
 import DiffViewer from './DiffViewer.vue'
 import DiffSplitView from './DiffSplitView.vue'
 
@@ -108,22 +109,21 @@ function onReset() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      @click.self="$emit('close')"
-    >
-      <div
-        class="flex max-h-[90vh] w-[1000px] max-w-full flex-col rounded-lg border border-border bg-card shadow-xl"
-      >
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <h2 class="font-mono text-sm">
-            commit
-            <span v-if="sha" class="ml-1 text-muted-foreground">{{ sha.slice(0, 12) }}</span>
-            <span v-if="isFetching" class="ml-2 text-xs text-muted-foreground">불러오는 중...</span>
-          </h2>
-          <div class="flex items-center gap-2">
+  <BaseModal
+    :open="open"
+    panel-class="max-h-[90vh] w-[1000px]"
+    max-width="full"
+    :show-close-button="false"
+    @close="$emit('close')"
+  >
+    <template #header>
+      <div class="flex w-full items-center justify-between gap-2">
+        <h2 class="font-mono text-sm">
+          commit
+          <span v-if="sha" class="ml-1 text-muted-foreground">{{ sha.slice(0, 12) }}</span>
+          <span v-if="isFetching" class="ml-2 text-xs text-muted-foreground">불러오는 중...</span>
+        </h2>
+        <div class="flex items-center gap-2">
             <!-- 3-mode 토글 (Sprint B1) -->
             <div class="flex gap-0.5 rounded-md border border-border bg-muted/40 p-0.5 text-[10px]">
               <button
@@ -205,13 +205,15 @@ function onReset() {
             <button
               type="button"
               class="text-muted-foreground hover:text-foreground"
+              aria-label="닫기"
               @click="$emit('close')"
             >
               ✕
             </button>
-          </div>
-        </header>
-        <div class="flex-1 overflow-hidden">
+        </div>
+      </div>
+    </template>
+    <div class="h-full">
           <p
             v-if="error"
             class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs"
@@ -230,17 +232,15 @@ function onReset() {
             class="h-full"
           />
           <DiffViewer v-else-if="data" :patch="data" class="h-full" />
-        </div>
-      </div>
     </div>
+  </BaseModal>
 
-    <AiResultModal
-      :open="explainOpen"
-      title="Commit 설명"
-      :content="explainContent"
-      :loading="explainMut.isPending.value"
-      :error="explainError"
-      @close="explainOpen = false"
-    />
-  </Teleport>
+  <AiResultModal
+    :open="explainOpen"
+    title="Commit 설명"
+    :content="explainContent"
+    :loading="explainMut.isPending.value"
+    :error="explainError"
+    @close="explainOpen = false"
+  />
 </template>
