@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+- Sprint 22-3 — UI Polish v2 깊은 메뉴 + Viewer (`docs/plan/22 §22-3` ✅):
+  - **CM-5 BranchPanel 우클릭 11 액션** — Checkout / Create from / Rename / Delete (destructive) / Merge into HEAD / Rebase HEAD onto / Hide / Solo / Compare / Push / Set upstream
+    - 신규 `apps/desktop/src/composables/useBranchActions.ts` (`useCommitActions` 패턴 + `localBranchName` helper export)
+    - `BranchPanel.vue` `@contextmenu` + `<ContextMenu>` 통합. hide/solo/compare 는 callback (useHiddenRefs / `window.gitFriedOpenCompare`)
+  - **V-1 CommitGraph + CommitTable row dblclick → CommitDiffModal** auto-open. ⌘D 단축키와 동일 액션 (`emit('show-diff', sha)` → pages/index.vue `onShowDiff`)
+  - **V-2 PrDetailModal Files Changed tab** —
+    - Backend: `forge::PrFile` 모델 + `ForgeClient::list_pr_files` trait + GitHub/Gitea 구현 (`GET /repos/{o}/{r}/pulls/{n}/files` per_page=100)
+    - IPC: `list_pr_files` command (lib.rs invoke_handler 등록 → 156 commands)
+    - Frontend: `listPrFiles` API + Conversation/Files tab + 파일별 status 뱃지 (A/M/D/R/C) + +/- 카운트 + DiffViewer (CodeMirror unified diff) per-file expand/collapse + Expand all / Collapse all + binary/large file 안내
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass (cargo check 는 환경 base64ct edition 2024 이슈로 보류 — CI 검증 권장)
+- Sprint 23 — Design System Extraction (`docs/plan/23` + `docs/design-context/` + Playwright 자동 캡처):
+  - `docs/plan/23-design-system-extraction.md` 신규 — Phase 1 (4 병렬 에이전트: Token/Component/Flow/Codex Intent) → Phase 2 (6 문서 통합) → Phase 3 (Handoff A/B/C 옵션) 절차서
+  - **Phase 3 옵션 B 완료** — Playwright 자동 캡처 12 화면 (`docs/design-context/screenshots/*.png`):
+    - `apps/desktop/src/api/devMock.ts` 신규 — 25+ command fixture (한글 commit, 듀얼 워크스페이스, ahead-behind, conflict). `import.meta.env.DEV` AND `window.__TAURI_INTERNALS__` 부재 시만 활성 (production / 실 Tauri 자동 우회)
+    - `apps/desktop/src/api/invokeWithTimeout.ts` 에 `isMockEnabled()` 가드 dev-only mock branch 추가
+    - `bun add -D playwright` + Chromium 설치
+    - `scripts/capture-screens.ts` 신규 — 1440×900 ko-KR, light/dark, sidebar 첫 레포 자동 활성, 단축키 dispatch (⌘P / ? / ⌘D / ⌘B / ⌘3) 로 모달·패널 자동 열기
+    - 12 PNG: 메인(L+D) / launchpad(L+D) / settings(L+D) / CommandPalette / HelpModal / CommitDiffModal / BranchPanel / StashPanel / PR panel
+    - `03-screens-and-flows.md` § 0 스크린샷 인덱스 + § 1·2·3 인라인 임베드 / `README.md` 캡처 환경 + 12 화면 인덱스 추가
+  - `docs/design-context/` 신규 6 문서 패키지:
+    - `00-product-brief.md` — 제품 정체성 / 페르소나 (회사 Gitea + 개인 GitHub 듀얼 포지) / 톤앤매너 (dense·calm·professional·instrumented)
+    - `01-design-tokens.md` — `tailwind.config.ts` + `src/styles/main.css` 1:1 추출 + W3C Design Tokens JSON + secondary/muted/accent 동일 HSL 결함 식별
+    - `02-component-inventory.md` — 48 컴포넌트 + 18 모달 카탈로그 + BaseModal/useFocusTrap/aria-modal/reka-ui Dialog 부재 5필드 검증
+    - `03-screens-and-flows.md` — 3 페이지 layout + 18 모달 entry/state/exit + 37 CommandPalette + 17 ContextMenu (P0 5/P1 6/P2 3) + 15 Click→Detail
+    - `04-interaction-patterns.md` — 키보드 modifier 표기 / 한글 visual width (CJK=2, 36자=72) / drag&drop / skeleton / a11y / IPC 5min progress
+    - `05-figma-handoff-brief.md` — Claude Design 작업 의뢰 prompt + 5 sprint × 24 deliverable + 8 결정 필요 Q&A
+    - `README.md` — 인덱스 + 권장 읽기 순서 + Handoff 옵션 (A 문서만 / B 스크린샷 / C Figma MCP)
 - Sprint A14 (`docs/plan/14`):
   - `⌘⇧H` File history search 단축키 (StatusPanel)
   - Stash 단일 파일 apply (`git/stash.rs::apply_stash_file` + `StashPanel.vue` 미리보기에 파일별 row + "이 파일만 apply")

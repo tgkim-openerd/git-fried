@@ -156,6 +156,7 @@ pub fn run() {
             ipc::forge_commands::merge_pr,
             ipc::forge_commands::close_pr,
             ipc::forge_commands::reopen_pr,
+            ipc::forge_commands::list_pr_files,
             ipc::v02_commands::list_worktrees,
             ipc::v02_commands::add_worktree,
             ipc::v02_commands::remove_worktree,

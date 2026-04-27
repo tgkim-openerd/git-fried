@@ -121,6 +121,7 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
             v-for="c in filteredCommits"
             :key="c.sha"
             class="border-t border-border hover:bg-accent/50"
+            @dblclick="emit('showDiff', c.sha)"
             @contextmenu="onRowContextMenu($event, c)"
           >
             <td class="px-3 py-1.5 font-mono text-xs text-muted-foreground">

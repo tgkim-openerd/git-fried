@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 브랜치 패널 — 로컬/원격 트리 + switch / create / delete + Hide / Solo (Sprint A1).
 // HEAD 표시, ahead/behind 카운터 포함.
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useBranches } from '@/composables/useBranches'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -26,6 +26,8 @@ import {
 } from '@/api/git'
 import AiResultModal from './AiResultModal.vue'
 import RemoteManageModal from './RemoteManageModal.vue'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
+import { useBranchActions, localBranchName } from '@/composables/useBranchActions'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
 const toast = useToast()
@@ -269,6 +271,26 @@ async function onDropOnBranch(target: BranchInfo, ev: DragEvent) {
   }
 }
 
+// === Sprint 22-3 — CM-5 우클릭 ContextMenu (11 액션) ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+const branchActions = useBranchActions(() => props.repoId)
+
+function onBranchContextMenu(ev: MouseEvent, b: BranchInfo) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const items = branchActions.buildItems(b, {
+    isHidden: (name) => isHidden(name),
+    isSolo: (name) => soloRef.value === name,
+    onToggleHide: (br) => toggleHide(br),
+    onToggleSolo: (br) => toggleSolo(br),
+    onCompare: (br) => {
+      // ref 비교: HEAD vs 이 브랜치 (App.vue::openCompare 트리거)
+      window.gitFriedOpenCompare?.('HEAD', localBranchName(br.name))
+    },
+  })
+  ctxMenu.value?.openAt(ev, items)
+}
+
 async function onExplainBranch(b: BranchInfo) {
   if (props.repoId == null || ai.available.value == null) {
     toast.error('AI 사용 불가', 'Claude/Codex CLI 미설치')
@@ -430,6 +452,7 @@ async function onExplainBranch(b: BranchInfo) {
           ]"
           draggable="true"
           @dblclick="onSwitch(b)"
+          @contextmenu="onBranchContextMenu($event, b)"
           @dragstart="onDragStartBranch(b, $event)"
           @dragover="onDragOverRow(idx, $event)"
           @dragleave="onDragLeaveRow(idx)"
@@ -483,5 +506,7 @@ async function onExplainBranch(b: BranchInfo) {
         </li>
       </ul>
     </div>
+
+    <ContextMenu ref="ctxMenu" />
   </section>
 </template>

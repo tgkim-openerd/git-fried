@@ -71,10 +71,15 @@ function toggleFocusMode() {
 }
 
 // Sprint B5 — ⌘D = 선택 commit 의 diff modal.
+// Sprint 22-3 V-1 — row dblclick 도 동일 액션 트리거.
 const selectedSha = ref<string | null>(null)
 const diffModalOpen = ref(false)
 function onSelectCommit(sha: string) {
   selectedSha.value = sha
+}
+function onShowDiff(sha: string) {
+  selectedSha.value = sha
+  diffModalOpen.value = true
 }
 useShortcut('showDiff', () => {
   if (selectedSha.value) diffModalOpen.value = true
@@ -121,6 +126,7 @@ onUnmounted(() => {
         v-if="!focusMode"
         :repo-id="store.activeRepoId"
         @select-commit="onSelectCommit"
+        @show-diff="onShowDiff"
       />
       <div v-else />
 

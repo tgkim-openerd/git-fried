@@ -13,6 +13,7 @@ import {
   closePr,
   getPullRequest,
   listPrComments,
+  listPrFiles,
   mergePr,
   reopenPr,
   submitPrReview,
@@ -24,9 +25,11 @@ import { useNotification } from '@/composables/useNotification'
 import { notifyAiDone } from '@/composables/useAiCli'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import UserAvatar from './UserAvatar.vue'
+import DiffViewer from './DiffViewer.vue'
 import type {
   AiCli,
   MergeMethod,
+  PrFile,
   PullRequest,
   ReviewVerdict,
 } from '@/api/git'
@@ -67,6 +70,59 @@ const commentsQuery = useQuery({
   ),
 })
 
+// === Sprint 22-3 V-2: Files Changed tab ===
+type PrTab = 'conversation' | 'files'
+const activeTab = ref<PrTab>('conversation')
+const expandedFiles = ref<Set<string>>(new Set())
+
+const filesQuery = useQuery({
+  queryKey: computed(() => ['pr-files', props.repoId, props.number]),
+  queryFn: () => {
+    if (props.repoId == null || props.number == null) return Promise.resolve([])
+    return listPrFiles(props.repoId, props.number)
+  },
+  // tab 진입 시점에만 fetch — conversation 만 보면 무관 endpoint 호출 회피
+  enabled: computed(
+    () =>
+      props.open &&
+      activeTab.value === 'files' &&
+      props.repoId != null &&
+      props.number != null,
+  ),
+  staleTime: STALE_TIME.NORMAL,
+})
+
+function toggleFileExpand(path: string) {
+  if (expandedFiles.value.has(path)) expandedFiles.value.delete(path)
+  else expandedFiles.value.add(path)
+  // 새 Set 으로 reactivity 강제 (Set 자체 mutation 은 추적 안 됨)
+  expandedFiles.value = new Set(expandedFiles.value)
+}
+
+function expandAllFiles() {
+  const list = filesQuery.data.value ?? []
+  expandedFiles.value = new Set(list.filter((f) => f.patch).map((f) => f.path))
+}
+
+function collapseAllFiles() {
+  expandedFiles.value = new Set()
+}
+
+function statusBadge(s: PrFile['status']): { label: string; cls: string } {
+  switch (s) {
+    case 'added':
+      return { label: 'A', cls: 'bg-emerald-500/20 text-emerald-500' }
+    case 'removed':
+      return { label: 'D', cls: 'bg-rose-500/20 text-rose-500' }
+    case 'renamed':
+      return { label: 'R', cls: 'bg-violet-500/20 text-violet-500' }
+    case 'copied':
+      return { label: 'C', cls: 'bg-violet-500/20 text-violet-500' }
+    default:
+      return { label: 'M', cls: 'bg-amber-500/20 text-amber-500' }
+  }
+}
+
 const newComment = ref('')
 const reviewBody = ref('')
 const verdict = ref<ReviewVerdict>('comment')
@@ -85,6 +141,9 @@ watch(
       sugLine.value = null
       sugNewCode.value = ''
       sugContext.value = ''
+      // Sprint 22-3 V-2: tab 상태 초기화
+      activeTab.value = 'conversation'
+      expandedFiles.value = new Set()
     }
   },
 )
@@ -318,7 +377,44 @@ const aiReviewMut = useMutation({
           <button class="text-muted-foreground hover:text-foreground" @click="emit('close')">✕</button>
         </header>
 
-        <div class="flex-1 overflow-auto p-4 text-sm">
+        <!-- Sprint 22-3 V-2: Conversation / Files Changed tab -->
+        <nav class="flex border-b border-border bg-muted/20 text-xs">
+          <button
+            type="button"
+            class="px-4 py-2"
+            :class="
+              activeTab === 'conversation'
+                ? 'border-b-2 border-primary font-semibold text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            "
+            @click="activeTab = 'conversation'"
+          >
+            💬 Conversation
+            <span class="ml-1 text-[10px] text-muted-foreground">
+              {{ commentsQuery.data.value?.length ?? 0 }}
+            </span>
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2"
+            :class="
+              activeTab === 'files'
+                ? 'border-b-2 border-primary font-semibold text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            "
+            @click="activeTab = 'files'"
+          >
+            📄 Files
+            <span class="ml-1 text-[10px] text-muted-foreground">
+              <template v-if="filesQuery.data.value">
+                {{ filesQuery.data.value.length }}
+              </template>
+              <template v-else-if="filesQuery.isFetching.value">…</template>
+            </span>
+          </button>
+        </nav>
+
+        <div v-show="activeTab === 'conversation'" class="flex-1 overflow-auto p-4 text-sm">
           <div
             v-if="detailQuery.error.value"
             class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs whitespace-pre-wrap"
@@ -514,6 +610,110 @@ const aiReviewMut = useMutation({
               </button>
             </div>
           </section>
+        </div>
+
+        <!-- Sprint 22-3 V-2 — Files Changed tab -->
+        <div v-show="activeTab === 'files'" class="flex-1 overflow-auto p-3 text-sm">
+          <div
+            v-if="filesQuery.error.value"
+            class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs whitespace-pre-wrap"
+          >
+            {{ describeError(filesQuery.error.value) }}
+          </div>
+
+          <div
+            v-if="filesQuery.isFetching.value && !filesQuery.data.value"
+            class="p-4 text-center text-xs text-muted-foreground"
+          >
+            파일 목록 불러오는 중...
+          </div>
+
+          <template v-else-if="filesQuery.data.value">
+            <div class="mb-2 flex items-center justify-between text-[10px]">
+              <span class="text-muted-foreground">
+                {{ filesQuery.data.value.length }} files /
+                +{{
+                  filesQuery.data.value.reduce((s, f) => s + f.additions, 0)
+                }}
+                / -{{
+                  filesQuery.data.value.reduce((s, f) => s + f.deletions, 0)
+                }}
+              </span>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  class="rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
+                  @click="expandAllFiles"
+                >
+                  Expand all
+                </button>
+                <button
+                  type="button"
+                  class="rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
+                  @click="collapseAllFiles"
+                >
+                  Collapse all
+                </button>
+              </div>
+            </div>
+
+            <ul class="space-y-1">
+              <li
+                v-for="f in filesQuery.data.value"
+                :key="f.path"
+                class="rounded border border-border bg-muted/10"
+              >
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 px-2 py-1 text-left hover:bg-accent/30"
+                  @click="toggleFileExpand(f.path)"
+                >
+                  <span class="text-[10px] text-muted-foreground">
+                    {{ expandedFiles.has(f.path) ? '▼' : '▸' }}
+                  </span>
+                  <span
+                    class="rounded px-1.5 text-[10px] font-bold"
+                    :class="statusBadge(f.status).cls"
+                    :title="f.status"
+                  >
+                    {{ statusBadge(f.status).label }}
+                  </span>
+                  <span class="flex-1 truncate font-mono text-xs">
+                    <span v-if="f.previousPath" class="text-muted-foreground">
+                      {{ f.previousPath }} →
+                    </span>
+                    {{ f.path }}
+                  </span>
+                  <span class="text-[10px] text-emerald-500">+{{ f.additions }}</span>
+                  <span class="text-[10px] text-rose-500">-{{ f.deletions }}</span>
+                </button>
+                <div v-if="expandedFiles.has(f.path)" class="border-t border-border">
+                  <div
+                    v-if="!f.patch"
+                    class="p-3 text-center text-[11px] text-muted-foreground"
+                  >
+                    이 파일은 너무 커서 forge 가 patch 를 생략했습니다 (binary 또는 large file).
+                    <a
+                      v-if="detailQuery.data.value"
+                      :href="`${detailQuery.data.value.htmlUrl}/files`"
+                      target="_blank"
+                      rel="noopener"
+                      class="ml-1 underline"
+                    >
+                      ↗ 외부에서 열기
+                    </a>
+                  </div>
+                  <DiffViewer v-else :patch="f.patch" />
+                </div>
+              </li>
+              <li
+                v-if="filesQuery.data.value.length === 0"
+                class="p-4 text-center text-xs text-muted-foreground"
+              >
+                변경된 파일 없음
+              </li>
+            </ul>
+          </template>
         </div>
 
         <!-- 푸터: Merge / Close / Reopen -->

@@ -13,7 +13,7 @@ use crate::auth;
 use crate::error::{AppError, AppResult};
 use crate::forge::{
     gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, Issue, MergeMethod,
-    PrComment, PrState, PullRequest, Release, ReviewVerdict,
+    PrComment, PrFile, PrState, PullRequest, Release, ReviewVerdict,
 };
 use crate::storage::DbExt;
 use crate::AppState;
@@ -431,5 +431,17 @@ pub async fn close_pr(args: GetPrArgs, state: tauri::State<'_, Arc<AppState>>) -
 pub async fn reopen_pr(args: GetPrArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
     client.reopen_pr(&owner, &repo, args.number).await
+}
+
+/// PR 변경 파일 목록 + per-file unified diff (`docs/plan/22 §3 V-2`).
+///
+/// 응답 row 의 `patch` 가 None 이면 forge 가 파일이 너무 커서 생략한 것.
+#[tauri::command]
+pub async fn list_pr_files(
+    args: GetPrArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<PrFile>> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client.list_pr_files(&owner, &repo, args.number).await
 }
 

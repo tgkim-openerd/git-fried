@@ -4,8 +4,8 @@
 // 베이스: https://api.github.com (Enterprise 는 `https://<host>/api/v3`).
 
 use super::model::{
-    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrState, PullRequest,
-    Release, ReviewVerdict,
+    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrFile, PrState,
+    PullRequest, Release, ReviewVerdict,
 };
 use super::{CreatePullRequestReq, ForgeClient};
 use crate::error::{AppError, AppResult};
@@ -338,6 +338,59 @@ impl ForgeClient for GithubClient {
             .await?
             .error_for_status()?;
         Ok(())
+    }
+
+    async fn list_pr_files(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+    ) -> AppResult<Vec<PrFile>> {
+        // Sprint 22-3 V-2 — GitHub `GET /repos/{o}/{r}/pulls/{n}/files`.
+        // per_page=100 (최대) — 100+ 파일 PR 은 흔치 않으므로 1페이지만 조회.
+        let url = self.url(&format!(
+            "/repos/{owner}/{repo}/pulls/{number}/files?per_page=100"
+        ));
+        let res: Vec<RawPrFile> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(res.into_iter().map(RawPrFile::into_file).collect())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+struct RawPrFile {
+    filename: String,
+    #[serde(default)]
+    previous_filename: Option<String>,
+    status: String,
+    #[serde(default)]
+    additions: u32,
+    #[serde(default)]
+    deletions: u32,
+    #[serde(default)]
+    changes: u32,
+    #[serde(default)]
+    patch: Option<String>,
+}
+
+impl RawPrFile {
+    fn into_file(self) -> PrFile {
+        PrFile {
+            path: self.filename,
+            previous_path: self.previous_filename,
+            status: self.status,
+            additions: self.additions,
+            deletions: self.deletions,
+            changes: self.changes,
+            patch: self.patch,
+        }
     }
 }
 

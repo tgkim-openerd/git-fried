@@ -1009,6 +1009,20 @@ export const closePr = (repoId: number, number: number): Promise<void> =>
 export const reopenPr = (repoId: number, number: number): Promise<void> =>
   invoke('reopen_pr', { args: { repoId, number } })
 
+/** PR 변경 파일 목록 (Sprint 22-3 V-2 — `docs/plan/22 §3 V-2`). */
+export interface PrFile {
+  path: string
+  previousPath: string | null
+  status: string // "added" | "modified" | "removed" | "renamed" | "copied" | "changed"
+  additions: number
+  deletions: number
+  changes: number
+  patch: string | null
+}
+
+export const listPrFiles = (repoId: number, number: number): Promise<PrFile[]> =>
+  invoke('list_pr_files', { args: { repoId, number } })
+
 // --- 진단 ---
 export interface AppInfo {
   version: string

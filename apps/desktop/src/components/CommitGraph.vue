@@ -264,6 +264,14 @@ function selectRow(r: GraphRow) {
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
 const commitActions = useCommitActions(() => props.repoId)
 
+// === Sprint 22-3 V-1: row 더블클릭 → CommitDiffModal auto-open ===
+function onRowDblClick(row: GraphRow | undefined) {
+  if (!row) return
+  selectedSha.value = row.commit.sha
+  emit('selectCommit', row.commit.sha)
+  emit('showDiff', row.commit.sha)
+}
+
 function onRowContextMenu(ev: MouseEvent, row: GraphRow | undefined) {
   if (!row) return
   ev.preventDefault()
@@ -553,6 +561,7 @@ onUnmounted(() => {
             }
           "
           @click="selectRow(rows[v.index])"
+          @dblclick="onRowDblClick(rows[v.index])"
           @contextmenu="onRowContextMenu($event, rows[v.index])"
         >
           <template v-for="col in cols.visibleColumns.value" :key="col.id">

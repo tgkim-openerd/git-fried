@@ -214,9 +214,18 @@ C1 + C2 + C3 + C4 + C5. PR 1개. 다음 세션 진입 전 dogfood 가속.
 
 (P0 의 CM-5 BranchPanel 11 액션은 §22-3 으로 분리 — 작업량 큼)
 
-### Sprint 22-3 — BranchPanel 깊은 메뉴 + P0 viewer (~4h)
+### Sprint 22-3 — BranchPanel 깊은 메뉴 + P0 viewer (~4h) ✅ 완료
 
 CM-5 BranchPanel 11 액션 (1h) + V-1 commit dblclick → diff (1h) + V-2 PrDetailModal Files tab (1.5h) — V-2 는 가장 시간 큼.
+
+- ✅ **CM-5 BranchPanel 11 액션** — Checkout / Create from / Rename / Delete (destructive) / Merge into HEAD / Rebase HEAD onto / Hide / Solo / Compare / Push / Set upstream
+  - 신규 `useBranchActions` composable (`useCommitActions` 패턴 재사용 + `localBranchName` helper export)
+  - hide/solo/compare 는 callback (useHiddenRefs / `window.gitFriedOpenCompare`)
+- ✅ **V-1 CommitGraph + CommitTable row dblclick** — `@dblclick` 이벤트 → `emit('show-diff', sha)` → pages/index.vue `onShowDiff` → CommitDiffModal auto-open. ⌘D 단축키와 동일 액션.
+- ✅ **V-2 PrDetailModal Files Changed tab** —
+  - Backend: `forge::PrFile` 모델 + `ForgeClient::list_pr_files` trait + GitHub/Gitea 구현 (per_page=100)
+  - IPC: `list_pr_files` command (lib.rs invoke_handler 등록)
+  - Frontend: `listPrFiles` API, PrDetailModal 에 Conversation/Files tab + 파일별 status 뱃지 (A/M/D/R/C) + +/- 카운트 + DiffViewer (CodeMirror) per-file expand/collapse + Expand all / Collapse all + binary/large file 안내
 
 ### Sprint 22-4 — P1 ContextMenu 6 + P1 viewer 4 (~7h)
 

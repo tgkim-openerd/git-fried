@@ -8,8 +8,8 @@ pub mod github;
 pub mod model;
 
 pub use model::{
-    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrState, PullRequest,
-    Release, ReviewVerdict,
+    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrFile, PrState,
+    PullRequest, Release, ReviewVerdict,
 };
 
 use crate::error::AppResult;
@@ -106,6 +106,18 @@ pub trait ForgeClient: Send + Sync {
 
     /// PR 다시 열기.
     async fn reopen_pr(&self, owner: &str, repo: &str, number: u64) -> AppResult<()>;
+
+    /// PR 의 변경 파일 목록 (Sprint 22-3 V-2 — `docs/plan/22 §3 V-2`).
+    ///
+    /// GitHub : `GET /repos/{o}/{r}/pulls/{n}/files` (per_page 100, 필요 시 페이지네이션).
+    /// Gitea  : 동일 endpoint, 동일 스키마.
+    /// 응답에는 file 별 unified diff `patch` 포함 (대용량은 None 가능).
+    async fn list_pr_files(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+    ) -> AppResult<Vec<PrFile>>;
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
