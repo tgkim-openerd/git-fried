@@ -93,14 +93,13 @@ export default defineConfig({
         'src/main.ts',
         'src/router/**',
       ],
-      // Threshold 전략 — global 베이스라인 보호 (실측 +0.5pt buffer).
-      // 진행도: 3% (eefc99e) → 5% (81e6274) → 6% (현재, 실측 6.77% lines / 67.57% branches / 46.39% functions / 6.77% statements).
-      // follow-up: composables / utils 80%+ 단계적 상승. 신규 사이클 마다 +1~2pt 글로벌.
+      // Threshold 전략 — global 베이스라인 보호 (실측 +0.2pt buffer).
+      // 진행도: 3% → 5% → 6% → 7% (현재, 실측 7.2% lines / 69.04% branches / 49.5% functions / 7.2% statements, 25 test files / 238 tests).
       thresholds: {
-        lines: 6,
-        statements: 6,
-        functions: 40,
-        branches: 65,
+        lines: 7,
+        statements: 7,
+        functions: 45,
+        branches: 68,
       },
     },
   },
