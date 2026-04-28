@@ -27,12 +27,13 @@ import HunkStageModal from './HunkStageModal.vue'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import { useStatusFilter } from '@/composables/useStatusFilter'
 import { flattenTree, useStatusTreeView } from '@/composables/useStatusTreeView'
+import { statusColor, statusLabel } from '@/utils/statusFormat'
 
 const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
 const collapsedUntracked = useSectionCollapse('status.untracked')
 const collapsedConflicted = useSectionCollapse('status.conflicted')
-import type { ChangeStatus, FileChange } from '@/types/git'
+import type { FileChange } from '@/types/git'
 
 // Sprint c25-2.1 — Path/Tree 토글. composables/useStatusTreeView.ts 로 추출 (StatusPanel 분리 2/N).
 import { buildPathTree } from '@/utils/pathTree'
@@ -77,24 +78,7 @@ function onStageAll() {
   if (props.repoId != null) stageAllMut.mutate(props.repoId)
 }
 
-function statusLabel(s: ChangeStatus): string {
-  switch (s) {
-    case 'added':
-      return '추가'
-    case 'modified':
-      return '수정'
-    case 'deleted':
-      return '삭제'
-    case 'renamed':
-      return '이름변경'
-    case 'copied':
-      return '복사'
-    case 'typechange':
-      return '타입변경'
-    default:
-      return '?'
-  }
-}
+// statusLabel / statusColor → utils/statusFormat.ts 로 이동 (test 가능 + DiffViewer 공용)
 
 // File history modal state
 const historyPath = ref<string | null>(null)
@@ -198,22 +182,6 @@ const mergetoolMut = useMutation({
 function onLaunchMergetool(p: string) {
   if (props.repoId == null) return
   mergetoolMut.mutate({ p })
-}
-
-function statusColor(s: ChangeStatus): string {
-  switch (s) {
-    case 'added':
-      return 'text-emerald-500'
-    case 'modified':
-      return 'text-amber-500'
-    case 'deleted':
-      return 'text-rose-500'
-    case 'renamed':
-    case 'copied':
-      return 'text-sky-500'
-    default:
-      return 'text-muted-foreground'
-  }
 }
 
 // Vim S/U — 현재 선택된 파일 stage / unstage (Sprint A2).
