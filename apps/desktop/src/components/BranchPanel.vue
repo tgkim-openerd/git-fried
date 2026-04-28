@@ -149,6 +149,23 @@ function localName(name: string): string {
   return name
 }
 
+// === Sprint 22-9 V-7 — hover preview tooltip ===
+// title attribute 로 latest commit subject + ahead/behind 풀어쓰기.
+// dblclick=switch / 우클릭=메뉴 안내까지 포함.
+function branchHoverTitle(b: BranchInfo): string {
+  const lines: string[] = [b.name]
+  if (b.lastCommitSubject) {
+    const sha = b.lastCommitSha?.slice(0, 7) ?? ''
+    lines.push(`최신 commit${sha ? ` (${sha})` : ''}: ${b.lastCommitSubject}`)
+  }
+  if (b.upstream) lines.push(`upstream: ${b.upstream}`)
+  if (b.ahead) lines.push(`↑ ${b.ahead} (push 가능)`)
+  if (b.behind) lines.push(`↓ ${b.behind} (pull 필요)`)
+  if (b.isHead) lines.push('(현재 HEAD)')
+  lines.push('— dblclick=switch, 우클릭=메뉴')
+  return lines.join('\n')
+}
+
 // === AI Explain branch (Sprint B7) ===
 const ai = useAiCli()
 const explainOpen = ref(false)
@@ -451,6 +468,7 @@ async function onExplainBranch(b: BranchInfo) {
             dragOverIdx === idx ? 'ring-2 ring-primary/60 bg-primary/10' : '',
           ]"
           draggable="true"
+          :title="branchHoverTitle(b)"
           @dblclick="onSwitch(b)"
           @contextmenu="onBranchContextMenu($event, b)"
           @dragstart="onDragStartBranch(b, $event)"

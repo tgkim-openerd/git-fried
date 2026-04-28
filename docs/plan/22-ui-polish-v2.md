@@ -266,6 +266,21 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-9 — P2 viewer 4건 (V-7/V-8/V-9/V-10) ✅ (2026-04-28, frontend-only)
+
+§4-3 P2 viewer 4건 처리. F-P3 / V-13 / F-P5 / F-P2 / F-P4 는 backend 변경 동반이라 별도 sprint 로 보류.
+
+- ✅ **V-7 BranchPanel hover preview** — row `title` attribute 에 latest commit subject (`BranchInfo.lastCommitSubject` 활용 — Rust 변경 0) + ahead/behind 풀어쓰기 + upstream + HEAD 표시. dblclick=switch / 우클릭=메뉴 안내 포함. `branchHoverTitle(b)` helper 추가
+- ✅ **V-8 StashPanel unified diff CodeMirror 화** — raw `<pre>` whitespace-pre-wrap → `DiffViewer` 컴포넌트 (V-5 StatusPanel 패턴 일치, +/− 라인 색상 + hunk 헤더 강조 + 한글 안전). diff mode toggle (compact/default/split) 은 `showStash` IPC 의 `contextLines` 파라미터 추가 필요 → v0.2 단계
+- ✅ **V-9 CommitGraph ref-pill body click = Solo toggle** — 기존 동작 (🙈 버튼 = hide) 보존. ref-pill 본문 자체를 button 으로 만들어 `setSolo(name)` 토글. solo 상태면 다시 클릭 = 해제. `useSoloRef` import + `toggleSoloRef(name)` helper. aria-label + title 한국어 ("이 ref 만 그래프에 표시" / "Solo 해제")
+- ✅ **V-10 WorktreePanel row click highlight** — `selectedPath` ref + click=시각 focus / dblclick=Switch (main repo 활성화) / 우클릭=CM-11 메뉴 (기존 유지). `onWorktreeDblClick(t)` helper. cursor-pointer + selected ring 시각 cue
+- ⏸ **F-P3 Sidebar repo ahead/behind preview** — `Repo` 타입에 ahead/behind 없음 + 50+ repo 일괄 fetch IPC 신설 필요 → 별도 sprint
+- ⏸ **V-13 PR Comment edit/delete** — forge API (`patch_pr_comment` / `delete_pr_comment`) 신설 + ForgeClient trait + GitHub/Gitea 구현 + IPC 추가 → 별도 sprint
+- ⏸ **F-P5 commit message grep 검색** — `git log --grep` IPC 신설 + Command Palette 통합 → 별도 sprint
+- ⏸ **F-P2 Sidebar 50+ repo virtualization** — vue-virtual 도입 (이미 deps 에 있음, 사용처 추가) → 별도 sprint
+- ⏸ **F-P4 한글 파일명 chardet** — Rust dep (`chardetng`) + git/runner.rs 인코딩 자동 감지 → 별도 sprint
+- 검증: typecheck 0 / lint 0 / vitest 13 pass
+
 ### Sprint 22-8 — 잔여 종료 (Modal 4 + V-11/12 + F-P1 + aria 5) ✅
 
 마지막 잔여 작업 모두 종료 — plan/22 모든 sprint 부분/완료.

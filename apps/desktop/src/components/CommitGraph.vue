@@ -11,7 +11,7 @@ import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
-import { useHiddenRefMutations, useRefVisibility } from '@/composables/useHiddenRefs'
+import { useHiddenRefMutations, useRefVisibility, useSoloRef } from '@/composables/useHiddenRefs'
 import type { HiddenRefKind } from '@/api/git'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
@@ -24,6 +24,14 @@ const props = defineProps<{ repoId: number | null }>()
 const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
 const { visibleFn: visibleRef, soloRef } = useRefVisibility(() => props.repoId)
 const { hide: hideMut } = useHiddenRefMutations(() => props.repoId)
+const { setSolo } = useSoloRef(() => props.repoId)
+
+// Sprint 22-9 V-9 — ref-pill body click = solo toggle (이 ref 만 그래프에 표시 / 다시 클릭=해제).
+// 🙈 버튼은 hide (기존 동작 유지). HEAD 표시 prefix 가 있을 수 있어 trim.
+function toggleSoloRef(name: string) {
+  const trimmed = name.replace(/^HEAD ->\s*/, '').trim()
+  setSolo(soloRef.value === trimmed ? null : trimmed)
+}
 
 // Sprint K — branch ref hover → 🙈 클릭 시 즉시 숨김.
 function refKindOf(name: string): HiddenRefKind {
@@ -588,11 +596,26 @@ onUnmounted(() => {
                       : 'bg-muted text-muted-foreground'
                   "
                 >
-                  <span>{{ r }}</span>
+                  <button
+                    type="button"
+                    class="ref-pill-body cursor-pointer hover:underline"
+                    :title="
+                      soloRef === r
+                        ? `Solo 해제: ${r}`
+                        : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
+                    "
+                    :aria-label="
+                      soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`
+                    "
+                    @click.stop="toggleSoloRef(r)"
+                  >
+                    {{ r }}
+                  </button>
                   <button
                     type="button"
                     class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
                     :title="`그래프에서 숨김: ${r}`"
+                    :aria-label="`'${r}' 그래프에서 숨김`"
                     @click.stop="hideRefByName(r)"
                   >
                     🙈

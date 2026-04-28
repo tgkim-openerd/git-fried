@@ -29,6 +29,17 @@ const qc = useQueryClient()
 const newPath = ref('')
 const newBranch = ref('')
 
+// Sprint 22-9 V-10 — row click 시 시각 focus.
+// (현재 worktree 별 repo_id 가 별도가 아니므로 active worktree 추적 무의미 — 시각 highlight 만 유지)
+const selectedPath = ref<string | null>(null)
+
+function onWorktreeDblClick(t: { path: string; isMain: boolean }) {
+  if (t.isMain) return
+  if (props.repoId == null) return
+  reposStore.setActiveRepo(props.repoId)
+  toast.success('활성화', t.path)
+}
+
 const addMut = useMutation({
   mutationFn: () => {
     if (props.repoId == null || !newPath.value)
@@ -206,7 +217,11 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
         <li
           v-for="t in trees"
           :key="t.path"
-          class="rounded px-2 py-1.5 hover:bg-accent/40"
+          class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
+          :class="selectedPath === t.path ? 'bg-accent/60 ring-1 ring-primary/40' : ''"
+          :title="`${t.path}\nclick=focus, dblclick=Switch (main repo 활성화), 우클릭=메뉴`"
+          @click="selectedPath = t.path"
+          @dblclick="onWorktreeDblClick(t)"
           @contextmenu="onWorktreeContextMenu($event, t)"
         >
           <div class="flex items-center justify-between">

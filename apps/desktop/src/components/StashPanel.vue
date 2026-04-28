@@ -24,6 +24,7 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import DiffViewer from './DiffViewer.vue'
 
 const toast = useToast()
 
@@ -283,11 +284,16 @@ const aiMut = useMutation({
           </button>
         </li>
       </ul>
-      <details class="text-[11px]">
+      <!-- Sprint 22-9 V-8 — raw <pre> → CodeMirror DiffViewer 로 교체 (V-5 StatusPanel 패턴 일치).
+           Diff mode toggle (compact/default/split) 은 showStash IPC 의 contextLines 파라미터 추가 필요 → v0.2 단계.
+      -->
+      <details class="text-[11px]" open>
         <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
-          raw diff
+          unified diff (CodeMirror)
         </summary>
-        <pre class="mt-1 whitespace-pre-wrap font-mono">{{ previewText }}</pre>
+        <div class="mt-1 max-h-80 overflow-auto rounded border border-border">
+          <DiffViewer :patch="previewText" />
+        </div>
       </details>
     </div>
   </section>
