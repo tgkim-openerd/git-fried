@@ -8,6 +8,13 @@ import { useMutation, useQuery } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import DiffViewer from './DiffViewer.vue'
+
+// Sprint c25-4 — DiffViewer expose 타입 (defineExpose 결과).
+type DiffViewerExpose = {
+  nextHunk: () => void
+  prevHunk: () => void
+  hunkCount: () => number
+}
 import {
   discardPaths,
   getDiff,
@@ -343,6 +350,17 @@ const detailDiffQuery = useQuery({
 const isSelected = computed(
   () => (path: string) => selectedPath.value === path,
 )
+
+// === Sprint c25-4 (`docs/plan/25 §5`) — inline diff 헤더 폴리시 ===
+// DiffViewer ref + Hunk ↑↓ 네비게이션 (GitKraken Image #2 흡수).
+const inlineDiffRef = useTemplateRef<DiffViewerExpose>('inlineDiff')
+
+function onPrevHunk() {
+  inlineDiffRef.value?.prevHunk()
+}
+function onNextHunk() {
+  inlineDiffRef.value?.nextHunk()
+}
 </script>
 
 <template>
@@ -594,6 +612,36 @@ const isSelected = computed(
             <span class="truncate font-mono">{{ selectedPath }}</span>
           </div>
           <div class="flex shrink-0 items-center gap-1 text-[11px]">
+            <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (GitKraken Image #2) -->
+            <div class="flex items-center gap-0.5 rounded border border-border bg-muted/30 px-0.5">
+              <button
+                type="button"
+                class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                title="이전 hunk"
+                aria-label="이전 hunk 로 이동"
+                @click="onPrevHunk"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                title="다음 hunk"
+                aria-label="다음 hunk 로 이동"
+                @click="onNextHunk"
+              >
+                ↓
+              </button>
+            </div>
+            <button
+              type="button"
+              class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
+              title="파일 히스토리 / Blame (⌘⇧H)"
+              aria-label="파일 히스토리 보기"
+              @click="openHistory(selectedPath)"
+            >
+              📜 History
+            </button>
             <button
               v-if="!selectedIsStaged"
               type="button"
@@ -661,6 +709,7 @@ const isSelected = computed(
           </div>
           <DiffViewer
             v-else
+            ref="inlineDiff"
             :patch="detailDiffQuery.data.value"
             class="h-full"
           />

@@ -160,4 +160,9 @@ GitKraken 의 좌측 sidebar 처럼 **Workspace · Branches · Tags · Stash · 
   - `CommitMessageInput.vue` 보강 — Amend 체크박스 + last_commit_message prefill (conventional 패턴 자동 매칭) + Stage Changes to Commit combo CTA (⌘⇧Enter wrapper, 대형 emerald 버튼)
   - `pages/index.vue` 우측 panel grid 행 4개로 확장 (badge / nav / content / commit input)
   - 기존 단축키 (⌘1~7 탭 / ⌘⇧Enter / ⌘Enter) 회귀 없음
-- 다음: c25-3 (좌측 sidebar 통합) 또는 c25-4 (Diff 인라인화) — 사용자 dogfood feedback 후 우선순위 결정
+- **c25-4 (이번 세션, c25-3 보다 위험도 낮음으로 우선 진행)** — Diff 헤더 폴리시:
+  - `DiffViewer.vue` — `nextHunk()` / `prevHunk()` / `hunkCount()` defineExpose. `@@` 라인을 doc scan 으로 모아 cursor 기준 정/역방향 점프 + scrollIntoView
+  - `StatusPanel.vue` inline diff 헤더 — Hunk ↑↓ 그룹 + 📜 History 버튼 (기존 FileHistoryModal 재사용) 추가. `useTemplateRef<DiffViewerExpose>('inlineDiff')`
+  - `CommitDiffModal.vue` 헤더 — Hunk ↑↓ 그룹 추가 (split 모드는 자체 file picker 라서 hidden)
+  - Edit This File / Blame inline 진입은 unified diff 텍스트 컨텍스트 모호로 후속 sprint 이연
+- 다음: c25-3 (좌측 sidebar 통합) — Tauri dev dogfood 검증 후 진입 권장

@@ -4,7 +4,7 @@
 // 기존 CommitGraph 가 selectCommit emit 하는 sha 를 받아 fetch + DiffViewer 로 렌더.
 // 모드 토글 (Hunk/Inline/Context) 은 git -U<n> 옵션으로 backend 에 직접 적용 —
 // CodeMirror 의 mode 가 아니라 patch 자체가 변함.
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { aiExplainCommit, getCommitDiff, type ResetMode } from '@/api/git'
 import { describeError } from '@/api/errors'
@@ -93,6 +93,20 @@ function explain() {
 
 const MODES: DiffMode[] = ['compact', 'default', 'context', 'split']
 
+// Sprint c25-4 — Hunk ↑↓ 네비게이션 (split 모드 외에서만 활성).
+type DiffViewerExpose = {
+  nextHunk: () => void
+  prevHunk: () => void
+  hunkCount: () => number
+}
+const diffRef = useTemplateRef<DiffViewerExpose>('diffRef')
+function onPrevHunk() {
+  diffRef.value?.prevHunk()
+}
+function onNextHunk() {
+  diffRef.value?.nextHunk()
+}
+
 // === Sprint 22-4 V-3: header action buttons (cherry-pick / revert / reset) ===
 const commitActions = useCommitActions(() => props.repoId)
 const resetMode = ref<ResetMode>('mixed')
@@ -124,6 +138,30 @@ function onReset() {
           <span v-if="isFetching" class="ml-2 text-xs text-muted-foreground">불러오는 중...</span>
         </h2>
         <div class="flex items-center gap-2">
+            <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (split 모드 제외) -->
+            <div
+              v-if="diffMode.mode.value !== 'split'"
+              class="flex items-center gap-0.5 rounded-md border border-border bg-muted/40 px-0.5"
+            >
+              <button
+                type="button"
+                class="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+                title="이전 hunk"
+                aria-label="이전 hunk"
+                @click="onPrevHunk"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                class="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+                title="다음 hunk"
+                aria-label="다음 hunk"
+                @click="onNextHunk"
+              >
+                ↓
+              </button>
+            </div>
             <!-- 3-mode 토글 (Sprint B1) -->
             <div class="flex gap-0.5 rounded-md border border-border bg-muted/40 p-0.5 text-[10px]">
               <button
@@ -231,7 +269,7 @@ function onReset() {
             :patch="data"
             class="h-full"
           />
-          <DiffViewer v-else-if="data" :patch="data" class="h-full" />
+          <DiffViewer v-else-if="data" ref="diffRef" :patch="data" class="h-full" />
     </div>
   </BaseModal>
 
