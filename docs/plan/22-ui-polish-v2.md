@@ -266,6 +266,16 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-15 — M1 Settings 2-level 6 그룹 (plan/24 C-7 / design §8-1) ✅ (2026-04-28, frontend-only)
+
+design §8-1 hard constraint 충족. v1.0 12+ 카테고리 확장 대비 평면 → grouping.
+
+- ✅ **CATEGORY_GROUPS 6 그룹 재구조화** (Q1 답변 반영, 평면 9 → 2-level 6)
+  - 계정 / 워크스페이스 / 에디터·터미널 / UI / 유지보수 / 시작·마이그레이션
+- ✅ **2-level nav UI** — group header + 들여쓰기 item (`pl-6 text-[13px]`). active + `aria-pressed` + `aria-label="${group} > ${item}"`
+- ✅ **nav width 48 → 52** (한글 그룹 label fit) + `<nav aria-label="설정 카테고리">` landmark
+- 검증: typecheck 0 / lint 0 / vitest 13 pass
+
 ### Sprint 22-14 — M3 Tab overflow (plan/24 C-6 / design §8-1) ✅ (2026-04-28, frontend-only)
 
 design §8-1 hard constraint (Layout extensibility) 부분 흡수. 본격 "더 보기" dropdown 은 reka-ui Popover 도입 후.

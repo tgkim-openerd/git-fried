@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-15 — M1 Settings 2-level 6 그룹 (plan/24 Sprint C C-7 / design §8-1 hard constraint, frontend-only):
+  - **CATEGORY_GROUPS 6 그룹 재구조화** (Q1 답변 반영) — 평면 9 카테고리 → 2-level 6 그룹:
+    - **계정** (account): Profiles / Forge 계정 (PAT)
+    - **워크스페이스** (workspace): Repository-Specific
+    - **에디터·터미널** (editor): Editor / Terminal (★ AI CLI)
+    - **UI** (ui): UI Customization
+    - **유지보수** (maintenance): gc / fsck / LFS
+    - **시작·마이그레이션** (start): General / GitKraken 마이그레이션 / About
+  - **2-level nav UI** — group header (`text-[10px] uppercase tracking-wider muted`) + 들여쓰기 item (`pl-6` + `text-[13px]`). active 표시 + `aria-pressed` + `aria-label="${group} > ${item}"` (스크린리더 친화)
+  - **nav width 48 → 52** (그룹 label "시작·마이그레이션" 한글 7자 fit)
+  - **`<nav aria-label="설정 카테고리">`** — landmark a11y
+  - design §8-1 의도: v1.0 12+ 카테고리 (Plugin / Telemetry / Updates / Notifications) 확장 시 자연스러운 grouping 자리 마련
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
 - Sprint 22-14 — M3 Tab overflow (plan/24 Sprint C C-6 / design §8-1 hard constraint, frontend-only):
   - **활성 탭 자동 scrollIntoView** — `watch(store.activeRepoId)` + `nextTick` → `[data-tab-id]` 검색 → `scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })`. ⌘T / RepoSwitcher 로 active 변경 시 viewport 밖이면 자동 노출
   - **8 탭 초과 시 overflow indicator** — `OVERFLOW_THRESHOLD = 8`. 초과 시 `.has-overflow` class 추가:

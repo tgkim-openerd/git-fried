@@ -43,17 +43,54 @@ type Category =
   | 'migrate'
   | 'about'
 
-const CATEGORIES: { id: Category; label: string }[] = [
-  { id: 'profiles', label: 'Profiles' },
-  { id: 'forge', label: 'Forge 계정 (PAT)' },
-  { id: 'general', label: 'General' },
-  { id: 'ui', label: 'UI Customization' },
-  { id: 'editor', label: 'Editor / Terminal' },
-  { id: 'repoSpecific', label: 'Repository-Specific' },
-  { id: 'maintenance', label: '유지보수' },
-  { id: 'migrate', label: '마이그레이션' },
-  { id: 'about', label: 'About' },
+// Sprint 22-15 M1 — Settings 2-level 6 그룹 (plan/24 §5 C-7 Q1 / design §8-1 hard constraint).
+// v1.0 12+ 카테고리 확장 대비 평면 9 → grouping 6.
+interface CategoryGroup {
+  id: string
+  label: string
+  items: { id: Category; label: string }[]
+}
+
+const CATEGORY_GROUPS: CategoryGroup[] = [
+  {
+    id: 'account',
+    label: '계정',
+    items: [
+      { id: 'profiles', label: 'Profiles' },
+      { id: 'forge', label: 'Forge 계정 (PAT)' },
+    ],
+  },
+  {
+    id: 'workspace',
+    label: '워크스페이스',
+    items: [{ id: 'repoSpecific', label: 'Repository-Specific' }],
+  },
+  {
+    id: 'editor',
+    label: '에디터·터미널',
+    items: [{ id: 'editor', label: 'Editor / Terminal (★ AI CLI)' }],
+  },
+  {
+    id: 'ui',
+    label: 'UI',
+    items: [{ id: 'ui', label: 'UI Customization' }],
+  },
+  {
+    id: 'maintenance',
+    label: '유지보수',
+    items: [{ id: 'maintenance', label: 'gc / fsck / LFS' }],
+  },
+  {
+    id: 'start',
+    label: '시작·마이그레이션',
+    items: [
+      { id: 'general', label: 'General' },
+      { id: 'migrate', label: 'GitKraken 마이그레이션' },
+      { id: 'about', label: 'About' },
+    ],
+  },
 ]
+
 const active = ref<Category>('profiles')
 
 // ===== GitKraken 마이그레이션 =====
@@ -164,25 +201,39 @@ const buildInfo = computed(() => ({
 
 <template>
   <div class="flex h-full overflow-hidden">
-    <!-- 좌측 카테고리 nav -->
+    <!-- Sprint 22-15 M1 — 좌측 카테고리 nav (2-level 6 그룹).
+         design §8-1 hard constraint: v1.0 12+ 카테고리 확장 대비.
+    -->
     <nav
-      class="w-48 shrink-0 overflow-auto border-r border-border bg-card py-4 text-sm"
+      class="w-52 shrink-0 overflow-auto border-r border-border bg-card py-4 text-sm"
+      aria-label="설정 카테고리"
     >
       <h1 class="px-4 pb-3 text-base font-semibold">설정</h1>
-      <ul>
-        <li v-for="c in CATEGORIES" :key="c.id">
-          <button
-            type="button"
-            class="w-full px-4 py-1.5 text-left hover:bg-accent/40"
-            :class="
-              active === c.id
-                ? 'bg-accent text-accent-foreground font-semibold'
-                : 'text-muted-foreground'
-            "
-            @click="active = c.id"
+      <ul class="flex flex-col gap-1">
+        <li v-for="g in CATEGORY_GROUPS" :key="g.id">
+          <div
+            class="px-4 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80"
           >
-            {{ c.label }}
-          </button>
+            {{ g.label }}
+          </div>
+          <ul>
+            <li v-for="c in g.items" :key="c.id">
+              <button
+                type="button"
+                class="w-full px-4 py-1 pl-6 text-left text-[13px] hover:bg-accent/40"
+                :class="
+                  active === c.id
+                    ? 'bg-accent text-accent-foreground font-semibold'
+                    : 'text-muted-foreground'
+                "
+                :aria-pressed="active === c.id"
+                :aria-label="`${g.label} > ${c.label}`"
+                @click="active = c.id"
+              >
+                {{ c.label }}
+              </button>
+            </li>
+          </ul>
         </li>
       </ul>
     </nav>
