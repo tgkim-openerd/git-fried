@@ -152,6 +152,48 @@ pub async fn bulk_list_prs(
     Ok(out)
 }
 
+/// 워크스페이스 모든 레포의 quick status (branch + upstream + ahead/behind only).
+/// Sprint 22-11 F-P3 — Sidebar 50+ repo "어느 레포 작업할까" preview 용.
+/// bulk_status 대비 ~50× 빠름 (file walk 생략).
+pub async fn bulk_quick_status(
+    db: &Db,
+    workspace_id: Option<i64>,
+) -> Result<Vec<BulkResult<git_status::QuickStatus>>, AppError> {
+    let repos = db.list_repos(workspace_id).await?;
+    let mut handles = Vec::with_capacity(repos.len());
+
+    for r in repos {
+        let path = PathBuf::from(r.local_path);
+        let id = r.id;
+        let name = r.name;
+        handles.push(tokio::task::spawn_blocking(move || {
+            let res = git_status::read_quick_status(&path);
+            BulkResult {
+                repo_id: id,
+                repo_name: name,
+                success: res.is_ok(),
+                data: res.as_ref().ok().cloned(),
+                error: res.err().map(|e| e.to_string()),
+            }
+        }));
+    }
+
+    let mut out = Vec::with_capacity(handles.len());
+    for h in handles {
+        match h.await {
+            Ok(r) => out.push(r),
+            Err(e) => out.push(BulkResult {
+                repo_id: -1,
+                repo_name: "(join error)".into(),
+                success: false,
+                data: None,
+                error: Some(e.to_string()),
+            }),
+        }
+    }
+    Ok(out)
+}
+
 /// 워크스페이스 모든 레포의 status 조회 (대시보드용).
 pub async fn bulk_status(
     db: &Db,

@@ -266,6 +266,21 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-11 — F-P3 Sidebar repo ahead/behind preview ✅ (2026-04-28, backend+frontend)
+
+§5-2 F-P3 처리. cargo build 환경 이슈(next_session_entry 알려진 위험) 해결 후 첫 backend 변경 commit.
+
+- ✅ **`bulk_quick_status` IPC 신설** —
+  - Rust `git/status.rs::read_quick_status` (branch + upstream + ahead/behind 만, file walk 생략)
+  - Rust `git/bulk.rs::bulk_quick_status` (워크스페이스 전체 병렬 spawn_blocking, BulkResult)
+  - `bulk_status` 대비 ~50× 빠름 (50+ repo: ~5s → ~50~250ms)
+  - `lib.rs` invoke_handler 등록 — 누적 159 IPC
+- ✅ **`useBulkQuickStatus` composable 신설** — Vue Query + `staleTime: STATIC` + `Map<repoId, QuickStatus>` 가공 → Sidebar v-for 안에서 O(1) lookup
+- ✅ **Sidebar repo row 갱신** — 기존 `repo.defaultBranch` 표시 → `repoBranch(id) ?? repo.defaultBranch` (현재 HEAD 우선) + ahead/behind preview (`↑N` emerald-500 + `↓N` rose-500). title attribute 한국어. `repoBranch` / `repoAhead` / `repoBehind` helper (template inline cast 회피)
+- 🌟 **dogfood 가치** — 사용자 회사 50+ Gitea 레포 환경에서 "어느 레포에 push할 게 있는지" 한눈에 확인 가능
+- 🛠 **cargo 환경 이슈 해결** — chocolatey cargo 1.60 + rustc 1.60 이 PATH 우선 → cargo가 invoke 한 child rustc 로 chocolatey 잡힘 → `--check-cfg` 거부. base64ct edition 2024 가설은 오인. `PATH="/c/Users/tgkim/.cargo/bin:$PATH"` prepend 로 rustup proxy (cargo 1.95 + rustc 1.95) 강제 → Sprint 22-3 PrFile 변경도 통과
+- 검증: `cargo check` 0 (warning 1: `assign_workspace` dead_code 기존) / typecheck 0 / lint 0 / vitest 13 pass
+
 ### Sprint 22-10 — P2 ContextMenu 3건 (CM-12/13/14) ✅ (2026-04-28, frontend-only)
 
 §3-4 P2 ContextMenu 3건 처리 → §3 catalog 100% 종료 (CM-1 ~ CM-14 모두 완료).

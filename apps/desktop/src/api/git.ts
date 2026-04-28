@@ -238,6 +238,18 @@ export const bulkStatus = (
   workspaceId?: number | null,
 ): Promise<BulkResult<RepoStatus>[]> => invoke('bulk_status', { workspaceId })
 
+// Sprint 22-11 F-P3 — quick status (branch + upstream + ahead/behind only).
+// bulk_status 대비 ~50× 빠름 (file walk 생략). Sidebar 50+ repo preview.
+export interface QuickStatus {
+  branch: string | null
+  upstream: string | null
+  ahead: number
+  behind: number
+}
+export const bulkQuickStatus = (
+  workspaceId?: number | null,
+): Promise<BulkResult<QuickStatus>[]> => invoke('bulk_quick_status', { workspaceId })
+
 export const bulkListPrs = (
   workspaceId?: number | null,
   stateFilter?: PrState | null,

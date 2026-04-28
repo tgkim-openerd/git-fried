@@ -33,6 +33,7 @@ import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './Con
 import LoadingSpinner from './LoadingSpinner.vue'
 import EmptyState from './EmptyState.vue'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
+import { useBulkQuickStatus } from '@/composables/useBulkQuickStatus'
 import type { Repo } from '@/types/git'
 
 // Sprint C14-2 (`docs/plan/14 §6 E1+E2`): Clone with sparse/shallow options.
@@ -69,6 +70,20 @@ const { data: repos, isFetching } = useQuery({
   queryKey: computed(() => ['repos', store.activeWorkspaceId]),
   queryFn: () => listRepos(store.activeWorkspaceId),
 })
+
+// Sprint 22-11 F-P3 — Sidebar 50+ repo "어느 레포 작업할까" preview.
+// branch + ahead/behind 만 일괄 조회 (~50× lightweight). repo row default branch line 옆에 ↑↓ 표시.
+const quickStatus = useBulkQuickStatus(() => store.activeWorkspaceId)
+
+function repoBranch(repoId: number): string | null {
+  return quickStatus.value.byId.get(repoId)?.branch ?? null
+}
+function repoAhead(repoId: number): number {
+  return quickStatus.value.byId.get(repoId)?.ahead ?? 0
+}
+function repoBehind(repoId: number): number {
+  return quickStatus.value.byId.get(repoId)?.behind ?? 0
+}
 
 const addRepoMutation = useMutation({
   mutationFn: addRepo,
@@ -766,11 +781,29 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
               </span>
             </div>
             <div
-              v-if="repo.defaultBranch"
-              class="truncate text-[11px] text-muted-foreground"
+              v-if="repo.defaultBranch || repoBranch(repo.id)"
+              class="flex items-center gap-1 truncate text-[11px] text-muted-foreground"
               :class="g.label ? 'pl-5' : 'pl-4'"
             >
-              {{ repo.defaultBranch }}
+              <!-- 현재 HEAD 브랜치 우선, 없으면 default branch -->
+              <span class="truncate">
+                {{ repoBranch(repo.id) ?? repo.defaultBranch }}
+              </span>
+              <!-- Sprint 22-11 F-P3: ahead/behind preview -->
+              <span
+                v-if="repoAhead(repo.id)"
+                class="shrink-0 text-emerald-500"
+                :title="`${repoAhead(repo.id)}개 commit push 가능`"
+              >
+                ↑{{ repoAhead(repo.id) }}
+              </span>
+              <span
+                v-if="repoBehind(repo.id)"
+                class="shrink-0 text-rose-500"
+                :title="`${repoBehind(repo.id)}개 commit pull 필요`"
+              >
+                ↓{{ repoBehind(repo.id) }}
+              </span>
             </div>
           </li>
         </template>

@@ -796,6 +796,16 @@ pub async fn bulk_status(
     git_bulk::bulk_status(&state.db, workspace_id).await
 }
 
+/// Sprint 22-11 F-P3 — Sidebar 50+ repo ahead/behind preview.
+/// quick status (branch + upstream + ahead/behind) 만 일괄 조회.
+#[tauri::command]
+pub async fn bulk_quick_status(
+    workspace_id: Option<i64>,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_bulk::BulkResult<git_status::QuickStatus>>> {
+    git_bulk::bulk_quick_status(&state.db, workspace_id).await
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BulkPrsArgs {

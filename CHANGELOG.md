@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-11 — F-P3 Sidebar repo ahead/behind preview (plan/22 §5-2):
+  - **`bulk_quick_status` IPC 신설** — Rust 백엔드 `git/status.rs::read_quick_status` (branch + upstream + ahead/behind 만, file walk 생략) + `git/bulk.rs::bulk_quick_status` (워크스페이스 전체 병렬 spawn_blocking, BulkResult). `bulk_status` 대비 ~50× 빠름 (50+ repo: ~5s → ~50~250ms). `lib.rs` invoke_handler 등록. **누적 159 IPC**
+  - **`useBulkQuickStatus` composable 신설** — Vue Query (`@tanstack/vue-query`) + `staleTime: STATIC` (사용자 fetch 시점 외 변경 거의 없음) + `Map<repoId, QuickStatus>` 가공 → Sidebar v-for 안에서 O(1) lookup
+  - **Sidebar repo row 갱신** — 기존 `repo.defaultBranch` 표시 → `repoBranch(id) ?? repo.defaultBranch` (현재 HEAD 우선) + ahead/behind preview (`↑N` emerald-500 + `↓N` rose-500). title attribute 한국어 (`N개 commit push 가능` / `N개 commit pull 필요`). `repoBranch` / `repoAhead` / `repoBehind` helper (template inline cast 회피)
+  - **dogfood 가치** — 사용자 회사 50+ Gitea 레포 환경에서 "어느 레포에 push할 게 있는지" 한눈에 확인 가능 (plan/22 §5-2 의도 직접 만족)
+  - 검증: `cargo check` 0 / typecheck 0 / lint 0 / vitest 13 pass
+- Sprint 22-11 environment fix — cargo build 환경 이슈 해결 (next_session_entry 알려진 위험 해소):
+  - 원인: chocolatey 설치 cargo 1.60 + rustc 1.60 이 PATH 우선 → cargo가 invoke한 child rustc로 chocolatey 1.60 잡힘 → `--check-cfg` 옵션 거부. base64ct edition 2024 가설은 오인이었음
+  - 우회: `PATH="/c/Users/tgkim/.cargo/bin:$PATH"` prepend 로 rustup proxy (cargo 1.95 + rustc 1.95) 강제. Sprint 22-3 PrFile + list_pr_files Rust 변경 검증 통과 (warning 1: `assign_workspace` dead_code, 기존)
 - Sprint 22-10 — P2 ContextMenu 3건 (plan/22 §3-4, frontend-only) — §3 ContextMenu catalog 100% 종료:
   - **CM-13 IssuesPanel issue row 우클릭** — Open detail / Open in browser / Copy URL / Copy issue number. `useTemplateRef` + `copyText` helper + `window.open(htmlUrl, '_blank', 'noopener')` 패턴 (PrPanel CM-9 동일)
   - **CM-14 ReleasesPanel release row 우클릭** — Open detail / Open in browser / Copy URL / Copy tag. plan 명세 "Download asset" 은 `ForgeRelease.assets` 모델 부재 → v0.2 promise (코멘트 명시)

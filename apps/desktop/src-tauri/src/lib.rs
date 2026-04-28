@@ -121,6 +121,7 @@ pub fn run() {
             ipc::commands::sync_submodules,
             ipc::commands::bulk_fetch,
             ipc::commands::bulk_status,
+            ipc::commands::bulk_quick_status,
             ipc::commands::bulk_list_prs,
             ipc::commands::list_remotes,
             ipc::commands::add_remote,
