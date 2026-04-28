@@ -2,26 +2,71 @@
 // Forge issue 목록 (Gitea + GitHub).
 // v0.3 단계: read-only. 코멘트/생성은 v1.0+.
 // Sprint 22 V-11: row click → IssueDetailModal (외부 link 만 → 자체 modal).
-import { ref } from 'vue'
+// Sprint 22-10 CM-13: 우클릭 메뉴 (Open in browser / Copy URL / Copy number).
+import { ref, useTemplateRef } from 'vue'
 import { useIssues } from '@/composables/useIssuesReleases'
 import { describeError } from '@/api/errors'
 import { formatDateLocalized } from '@/composables/useUserSettings'
+import { useToast } from '@/composables/useToast'
 import UserAvatar from './UserAvatar.vue'
 import IssueDetailModal from './IssueDetailModal.vue'
 import EmptyState from './EmptyState.vue'
 import LoadingSpinner from './LoadingSpinner.vue'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import type { ForgeIssue } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: issues, isFetching, error } = useIssues(() => props.repoId)
 
 const selected = ref<ForgeIssue | null>(null)
+const toast = useToast()
 
 function fmtDate(unix: number): string {
   return formatDateLocalized(unix, {
     month: '2-digit',
     day: '2-digit',
   })
+}
+
+// === Sprint 22-10 CM-13 — 우클릭 ContextMenu ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+
+async function copyText(text: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success('복사', label)
+  } catch (e) {
+    toast.error('복사 실패', describeError(e))
+  }
+}
+
+function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const items: ContextMenuItem[] = [
+    {
+      label: 'Open detail',
+      icon: '📋',
+      action: () => (selected.value = i),
+    },
+    {
+      label: 'Open in browser',
+      icon: '🔗',
+      action: () => window.open(i.htmlUrl, '_blank', 'noopener'),
+    },
+    { divider: true },
+    {
+      label: 'Copy URL',
+      icon: '📋',
+      action: () => void copyText(i.htmlUrl, i.htmlUrl),
+    },
+    {
+      label: 'Copy issue number',
+      icon: '#',
+      action: () => void copyText(`#${i.number}`, `#${i.number}`),
+    },
+  ]
+  ctxMenu.value?.openAt(ev, items)
 }
 </script>
 
@@ -47,6 +92,7 @@ function fmtDate(unix: number): string {
           :key="i.number"
           class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
           @click="selected = i"
+          @contextmenu="onIssueContextMenu($event, i)"
         >
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs text-muted-foreground">#{{ i.number }}</span>
@@ -86,5 +132,6 @@ function fmtDate(unix: number): string {
       :open="selected != null"
       @close="selected = null"
     />
+    <ContextMenu ref="ctxMenu" />
   </div>
 </template>

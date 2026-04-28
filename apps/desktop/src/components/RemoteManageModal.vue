@@ -3,10 +3,13 @@
 //
 // list / add / remove / rename / set-url 통합 UI.
 // 변경 후 ['branches', repoId] + ['remotes', repoId] invalidate.
-import { computed, ref } from 'vue'
+// Sprint 22-10 CM-12: 우클릭 메뉴 (Fetch (전체) / Rename / Set URL / Remove).
+//   단일 remote fetch IPC 미존재 → fetchAll 매핑 + label "(전체)" 명시.
+import { computed, ref, useTemplateRef } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   addRemote,
+  fetchAll,
   listRemotes,
   removeRemote,
   renameRemote,
@@ -17,6 +20,7 @@ import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import BaseModal from './BaseModal.vue'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 
 const props = defineProps<{ open: boolean; repoId: number | null }>()
 const emit = defineEmits<{ close: [] }>()
@@ -130,6 +134,58 @@ function close() {
   urlNew.value = ''
   emit('close')
 }
+
+// === Sprint 22-10 CM-12 — 우클릭 ContextMenu ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+
+const fetchAllMut = useMutation({
+  mutationFn: () => {
+    if (repoIdRef.value == null) throw new Error('레포 미선택')
+    return fetchAll(repoIdRef.value)
+  },
+  onSuccess: () => {
+    toast.success('Fetch 완료', '(전체 remote)')
+    invalidate()
+    if (repoIdRef.value != null) {
+      qc.invalidateQueries({ queryKey: ['status', repoIdRef.value] })
+      qc.invalidateQueries({ queryKey: ['log', repoIdRef.value] })
+      qc.invalidateQueries({ queryKey: ['graph', repoIdRef.value] })
+    }
+  },
+  onError: (e) => toast.error('Fetch 실패', describeError(e)),
+})
+
+function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const items: ContextMenuItem[] = [
+    {
+      // 단일 remote fetch IPC 부재 → fetchAll 일괄 매핑.
+      label: 'Fetch (전체 remote)',
+      icon: '⬇',
+      action: () => fetchAllMut.mutate(),
+    },
+    { divider: true },
+    {
+      label: '이름 변경',
+      icon: '✏',
+      action: () => startRename(r.name),
+    },
+    {
+      label: 'URL 변경',
+      icon: '🔗',
+      action: () => startUrlChange(r),
+    },
+    { divider: true },
+    {
+      label: '제거',
+      icon: '🗑',
+      destructive: true,
+      action: () => onRemove(r.name),
+    },
+  ]
+  ctxMenu.value?.openAt(ev, items)
+}
 </script>
 
 <template>
@@ -156,6 +212,7 @@ function close() {
               v-for="r in remotesQuery.data.value"
               :key="r.name"
               class="rounded border border-border bg-muted/20 p-2"
+              @contextmenu="onRemoteContextMenu($event, r)"
             >
               <div class="flex items-center justify-between gap-2">
                 <span class="font-mono text-xs font-semibold">{{ r.name }}</span>
@@ -285,5 +342,6 @@ function close() {
         </button>
       </div>
     </template>
+    <ContextMenu ref="ctxMenu" />
   </BaseModal>
 </template>

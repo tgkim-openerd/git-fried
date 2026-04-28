@@ -266,6 +266,16 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-10 — P2 ContextMenu 3건 (CM-12/13/14) ✅ (2026-04-28, frontend-only)
+
+§3-4 P2 ContextMenu 3건 처리 → §3 catalog 100% 종료 (CM-1 ~ CM-14 모두 완료).
+
+- ✅ **CM-13 IssuesPanel issue row 우클릭** — Open detail / Open in browser / Copy URL / Copy issue number. PrPanel CM-9 패턴 (`useTemplateRef` + `copyText` helper + `window.open(htmlUrl, '_blank', 'noopener')`)
+- ✅ **CM-14 ReleasesPanel release row 우클릭** — Open detail / Open in browser / Copy URL / Copy tag. plan 명세 "Download asset" 은 `ForgeRelease.assets` 모델 부재 → v0.2 promise (코멘트 명시)
+- ✅ **CM-12 RemoteManageModal remote row 우클릭** — Fetch (전체 remote) / 이름 변경 / URL 변경 / 제거 (destructive). 단일 remote fetch IPC 부재 → `fetchAll(repoId)` 일괄 매핑 + label "(전체 remote)" 명시 (사용자 의도 만족 + IPC 신설 회피). BaseModal 내부 ContextMenu Teleport to body + z-50 충돌 없음 (CM-1/CM-2 패턴 일치)
+- 누적: ContextMenu 14곳 / BaseModal 18 modal / Viewer 8건 / aria-label 22건 / 신규 component 6 + composable 2 + utility 1
+- 검증: typecheck 0 / lint 0 / vitest 13 pass
+
 ### Sprint 22-9 — P2 viewer 4건 (V-7/V-8/V-9/V-10) ✅ (2026-04-28, frontend-only)
 
 §4-3 P2 viewer 4건 처리. F-P3 / V-13 / F-P5 / F-P2 / F-P4 는 backend 변경 동반이라 별도 sprint 로 보류.

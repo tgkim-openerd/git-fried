@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-10 — P2 ContextMenu 3건 (plan/22 §3-4, frontend-only) — §3 ContextMenu catalog 100% 종료:
+  - **CM-13 IssuesPanel issue row 우클릭** — Open detail / Open in browser / Copy URL / Copy issue number. `useTemplateRef` + `copyText` helper + `window.open(htmlUrl, '_blank', 'noopener')` 패턴 (PrPanel CM-9 동일)
+  - **CM-14 ReleasesPanel release row 우클릭** — Open detail / Open in browser / Copy URL / Copy tag. plan 명세 "Download asset" 은 `ForgeRelease.assets` 모델 부재 → v0.2 promise (코멘트 명시)
+  - **CM-12 RemoteManageModal remote row 우클릭** — Fetch (전체 remote) / 이름 변경 / URL 변경 / 제거 (destructive). 단일 remote fetch IPC 부재 → `fetchAll(repoId)` 일괄 매핑 + label "(전체 remote)" 명시 (사용자 의도 만족 + IPC 신설 회피). BaseModal 내부 ContextMenu Teleport to body + z-50 충돌 없음 (CM-1/CM-2 패턴 일치)
+  - 누적 ContextMenu 14곳 (CM-1 ~ CM-14 모두 완료)
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
 - Sprint 22-9 — P2 viewer 4건 (plan/22 §4-3, frontend-only):
   - **V-7 BranchPanel hover preview** — row 의 `title` attribute 에 latest commit subject (BranchInfo.lastCommitSubject 활용, Rust 변경 0) + ahead/behind 풀어쓰기 + upstream + HEAD 표시. dblclick=switch / 우클릭=메뉴 안내 포함. `branchHoverTitle(b)` helper
   - **V-8 StashPanel unified diff CodeMirror 화** — raw `<pre>` whitespace-pre-wrap → `DiffViewer` 컴포넌트 (V-5 StatusPanel 패턴 일치, +/− 라인 색상 + hunk 헤더 강조 + 한글 안전). diff mode toggle (compact/default/split) 은 `showStash` IPC 의 `contextLines` 파라미터 추가 필요 → v0.2 단계
