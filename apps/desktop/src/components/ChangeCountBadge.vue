@@ -23,6 +23,7 @@ const { counts, isClean } = useStatusCounts(repoIdRef)
 <template>
   <button
     type="button"
+    data-testid="change-count-badge"
     class="flex w-full items-center justify-between gap-2 border-b border-border bg-card px-3 py-1.5 text-left text-xs hover:bg-accent/30"
     :title="
       isClean

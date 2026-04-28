@@ -109,10 +109,7 @@ const bulkFetchMut = useMutation({
       const PREVIEW = 5
       const lines = failed
         .slice(0, PREVIEW)
-        .map(
-          (f) =>
-            `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`,
-        )
+        .map((f) => `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`)
       if (failed.length > PREVIEW) {
         lines.push(`...외 ${failed.length - PREVIEW}개 — 좌상단 📡 버튼으로 전체 보기`)
       }
@@ -120,10 +117,7 @@ const bulkFetchMut = useMutation({
         `일괄 Fetch: ${ok}/${results.length} 성공 (${failed.length} 실패)`,
         lines.join('\n'),
       )
-      void notification.notify(
-        `일괄 Fetch: ${ok}/${results.length}`,
-        `${failed.length}개 실패`,
-      )
+      void notification.notify(`일괄 Fetch: ${ok}/${results.length}`, `${failed.length}개 실패`)
     } else if (results.length > 0) {
       toast.success(`일괄 Fetch 완료 (${ok} 레포)`)
       void notification.notify('일괄 Fetch 완료', `${ok} 레포`)
@@ -146,8 +140,7 @@ function selectRepo(id: number) {
 }
 
 const pinMut = useMutation({
-  mutationFn: ({ id, pinned }: { id: number; pinned: boolean }) =>
-    setRepoPinned(id, pinned),
+  mutationFn: ({ id, pinned }: { id: number; pinned: boolean }) => setRepoPinned(id, pinned),
   onSuccess: () => qc.invalidateQueries({ queryKey: ['repos'] }),
 })
 
@@ -229,8 +222,7 @@ const groups = computed<RepoGroup[]>(() => {
   }
   const result: RepoGroup[] = []
   for (const [key, list] of map.entries()) {
-    const isSolo =
-      key === '__solo__' || key === '__no-org__' || list.length === 1
+    const isSolo = key === '__solo__' || key === '__no-org__' || list.length === 1
     if (isSolo) {
       result.push({ key, label: null, repos: list })
     } else {
@@ -270,8 +262,7 @@ const COLOR_PRESETS = [
 ] as const
 
 const createWorkspaceMut = useMutation({
-  mutationFn: () =>
-    createWorkspace(newWorkspaceName.value.trim(), newWorkspaceColor.value),
+  mutationFn: () => createWorkspace(newWorkspaceName.value.trim(), newWorkspaceColor.value),
   onSuccess: () => {
     newWorkspaceName.value = ''
     qc.invalidateQueries({ queryKey: ['workspaces'] })
@@ -280,15 +271,8 @@ const createWorkspaceMut = useMutation({
 })
 
 const updateWorkspaceMut = useMutation({
-  mutationFn: ({
-    id,
-    name,
-    color,
-  }: {
-    id: number
-    name?: string | null
-    color?: string | null
-  }) => updateWorkspace(id, name, color),
+  mutationFn: ({ id, name, color }: { id: number; name?: string | null; color?: string | null }) =>
+    updateWorkspace(id, name, color),
   onSuccess: () => {
     editingWorkspaceId.value = null
     qc.invalidateQueries({ queryKey: ['workspaces'] })
@@ -313,9 +297,7 @@ const activeWorkspace = computed(() =>
 function confirmDeleteWorkspace() {
   const w = activeWorkspace.value
   if (!w) return
-  if (
-    confirm(`워크스페이스 '${w.name}' 삭제? 레포는 보존되고 그룹 해제만.`)
-  ) {
+  if (confirm(`워크스페이스 '${w.name}' 삭제? 레포는 보존되고 그룹 해제만.`)) {
     deleteWorkspaceMut.mutate(w.id)
   }
 }
@@ -332,18 +314,14 @@ const editingAliasScope = ref<'profile' | 'global'>('profile')
 function startEditAlias(r: Repo) {
   editingAliasRepoId.value = r.id
   editingAliasValue.value = aliases.activeAliasFor(r.id) ?? ''
-  editingAliasScope.value =
-    aliases.activeProfileId.value != null ? 'profile' : 'global'
+  editingAliasScope.value = aliases.activeProfileId.value != null ? 'profile' : 'global'
 }
 
 function commitEditAlias() {
   const id = editingAliasRepoId.value
   if (id == null) return
   const v = editingAliasValue.value.trim()
-  const profileId =
-    editingAliasScope.value === 'profile'
-      ? aliases.activeProfileId.value
-      : null
+  const profileId = editingAliasScope.value === 'profile' ? aliases.activeProfileId.value : null
   if (!v) {
     aliases.unsetMut.mutate({ repoId: id, profileId })
   } else {
@@ -468,21 +446,15 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
 </script>
 
 <template>
-  <aside
-    class="flex h-screen flex-col border-r border-border bg-card text-card-foreground"
-  >
-    <header
-      class="flex items-center justify-between border-b border-border px-4 py-3"
-    >
+  <aside class="flex h-screen flex-col border-r border-border bg-card text-card-foreground">
+    <header class="flex items-center justify-between border-b border-border px-4 py-3">
       <span class="font-mono text-sm font-semibold tracking-tight">git-fried</span>
       <span class="text-xs text-muted-foreground">v0.0</span>
     </header>
 
     <!-- 워크스페이스 + 일괄 Fetch -->
     <section class="border-b border-border px-3 py-2">
-      <label class="text-xs uppercase tracking-wider text-muted-foreground">
-        워크스페이스
-      </label>
+      <label class="text-xs uppercase tracking-wider text-muted-foreground"> 워크스페이스 </label>
       <div class="mt-1 flex items-center gap-1">
         <span
           v-if="activeWorkspace?.color"
@@ -560,10 +532,13 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
         <input
           :value="activeWorkspace.name"
           class="mb-1 w-full rounded border border-input bg-background px-2 py-1 text-xs"
-          @change="(e) => updateWorkspaceMut.mutate({
-            id: activeWorkspace!.id,
-            name: (e.target as HTMLInputElement).value,
-          })"
+          @change="
+            (e) =>
+              updateWorkspaceMut.mutate({
+                id: activeWorkspace!.id,
+                name: (e.target as HTMLInputElement).value,
+              })
+          "
         />
         <div class="mb-1 flex flex-wrap gap-1">
           <button
@@ -577,10 +552,12 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
                 : 'ring-transparent hover:ring-muted-foreground'
             "
             :style="{ backgroundColor: c }"
-            @click="updateWorkspaceMut.mutate({
-              id: activeWorkspace!.id,
-              color: c,
-            })"
+            @click="
+              updateWorkspaceMut.mutate({
+                id: activeWorkspace!.id,
+                color: c,
+              })
+            "
           />
         </div>
         <div class="flex justify-between gap-1 text-[10px]">
@@ -648,7 +625,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
         </span>
         <div class="flex gap-1 text-[10px]">
           <button
-            v-for="m in (['directory', 'org'] as GroupMode[])"
+            v-for="m in ['directory', 'org'] as GroupMode[]"
             :key="m"
             type="button"
             class="rounded px-1.5 py-0.5 border border-input"
@@ -658,7 +635,9 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
                 : 'text-muted-foreground hover:bg-accent/40'
             "
             :title="m === 'directory' ? '부모 디렉토리 그룹' : 'forge organization 그룹'"
-            :aria-label="m === 'directory' ? '부모 디렉토리 그룹으로 정렬' : 'forge organization 그룹으로 정렬'"
+            :aria-label="
+              m === 'directory' ? '부모 디렉토리 그룹으로 정렬' : 'forge organization 그룹으로 정렬'
+            "
             :aria-pressed="groupMode === m"
             @click="setGroupMode(m)"
           >
@@ -700,7 +679,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
         '{{ repoFilter }}' 매칭 레포 없음
       </p>
 
-      <ul class="px-1 pb-3">
+      <ul data-testid="sidebar-repo-list" class="px-1 pb-3">
         <template v-for="g in groups" :key="g.key">
           <!-- 그룹 헤더 (듀얼 레포만) -->
           <li
@@ -712,6 +691,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
           <li
             v-for="repo in g.repos"
             :key="repo.id"
+            :data-testid="`sidebar-repo-${repo.name}`"
             class="group cursor-pointer rounded-md py-1 text-sm hover:bg-accent"
             :class="[
               g.label ? 'pl-5 pr-2' : 'px-2',
@@ -751,19 +731,28 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
                     :value="editingAliasScope"
                     class="rounded border border-input bg-background px-1 py-0.5 text-[10px]"
                     @click.stop
-                    @change="(e) => (editingAliasScope = (e.target as HTMLSelectElement).value as 'profile' | 'global')"
+                    @change="
+                      (e) =>
+                        (editingAliasScope = (e.target as HTMLSelectElement).value as
+                          | 'profile'
+                          | 'global')
+                    "
                   >
-                    <option
-                      value="profile"
-                      :disabled="aliases.activeProfileId.value == null"
-                    >
+                    <option value="profile" :disabled="aliases.activeProfileId.value == null">
                       profile
                     </option>
                     <option value="global">global</option>
                   </select>
                 </template>
                 <template v-else>
-                  <span class="flex-1 truncate" :title="aliases.resolveLocal(repo.id, repo.name).aliased ? `별칭 (원본: ${repo.name})` : repo.name">
+                  <span
+                    class="flex-1 truncate"
+                    :title="
+                      aliases.resolveLocal(repo.id, repo.name).aliased
+                        ? `별칭 (원본: ${repo.name})`
+                        : repo.name
+                    "
+                  >
                     <span :class="aliases.resolveLocal(repo.id, repo.name).aliased ? 'italic' : ''">
                       {{ aliases.resolveLocal(repo.id, repo.name).display }}
                     </span>
@@ -865,9 +854,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
     <!-- Sprint c25-3 step 1 — 활성 레포 mini quick actions (collapsible) -->
     <ActiveRepoQuickActions />
 
-    <footer
-      class="border-t border-border px-3 py-2 text-[11px] text-muted-foreground"
-    >
+    <footer class="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
       Tauri 2 · Vue 3 · Rust
     </footer>
 
@@ -876,10 +863,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
       :workspace-id="store.activeWorkspaceId"
       @close="cloneOpen = false"
     />
-    <BulkFetchResultModal
-      :open="bulkResultOpen"
-      @close="bulkResultOpen = false"
-    />
+    <BulkFetchResultModal :open="bulkResultOpen" @close="bulkResultOpen = false" />
     <ContextMenu ref="repoCtxMenu" />
   </aside>
 </template>

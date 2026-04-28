@@ -37,10 +37,13 @@ const collapsed = useSectionCollapse(props.storageKey)
 </script>
 
 <template>
-  <div class="mt-1 space-y-0.5">
-    <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
+  <div :data-testid="`mini-section-${storageKey}`" class="mt-1 space-y-0.5">
+    <div
+      class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground"
+    >
       <button
         type="button"
+        :data-testid="`mini-section-toggle-${storageKey}`"
         class="flex flex-1 items-center gap-1 hover:text-foreground"
         :title="`${title} 섹션 ${collapsed ? '펴기' : '접기'}`"
         @click="collapsed = !collapsed"
