@@ -13,6 +13,7 @@ import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useBranches } from '@/composables/useBranches'
 import { useStash } from '@/composables/useStash'
+import { useWorktrees } from '@/composables/useWorktrees'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
@@ -100,6 +101,31 @@ function onApplyStash(idx: number) {
 function onPopStash(idx: number) {
   if (store.activeRepoId == null) return
   popStashMut.mutate({ id: store.activeRepoId, idx })
+}
+
+// === c25-3 step 4 — Worktree mini list (사용자 본인 8 worktree 환경 직격) ===
+// Worktree 경로 직접 열기는 IPC 부재 — 상세는 WorktreePanel (⌘7) 에서 처리.
+// mini 는 정보 표현 (path tail + branch + isMain ★ + lock) + 진입 단축만.
+const { data: worktrees } = useWorktrees(repoIdRef)
+// main worktree 우선, 그 다음 path 알파벳.
+const sortedWorktrees = computed(() => {
+  const list = [...(worktrees.value ?? [])]
+  list.sort((a, b) => {
+    if (a.isMain && !b.isMain) return -1
+    if (b.isMain && !a.isMain) return 1
+    return a.path.localeCompare(b.path)
+  })
+  return list
+})
+const miniWorktrees = computed(() => sortedWorktrees.value.slice(0, 4))
+const moreWorktreesCount = computed(() =>
+  Math.max(0, sortedWorktrees.value.length - miniWorktrees.value.length),
+)
+function worktreeName(path: string): string {
+  // path tail 만 표시 (e.g., 'C:/work/opnd/frontend' → 'frontend').
+  const trimmed = path.replace(/[/\\]+$/, '')
+  const segs = trimmed.split(/[/\\]/)
+  return segs[segs.length - 1] || path
 }
 
 const branch = computed(() => status.value?.branch ?? null)
@@ -279,6 +305,45 @@ const QUICK_TABS = [
             class="px-1 py-0.5 text-[10px] text-muted-foreground"
           >
             ⋯ +{{ moreStashesCount }}개 더 (전체 → 클릭)
+          </li>
+        </ul>
+      </div>
+
+      <!-- c25-3 step 4 — Worktree mini list (recent 4, main ★ + lock indicator). -->
+      <div v-if="miniWorktrees.length > 1" class="mt-1 space-y-0.5">
+        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span>Worktree ({{ sortedWorktrees.length }})</span>
+          <button
+            type="button"
+            class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
+            title="Worktree 패널 (⌘7)"
+            @click="dispatchShortcut('tab7')"
+          >
+            전체 →
+          </button>
+        </div>
+        <ul class="space-y-0.5">
+          <li
+            v-for="w in miniWorktrees"
+            :key="`mw-${w.path}`"
+            class="flex items-center gap-1 rounded px-1 py-0.5 text-[11px]"
+            :title="`${w.path}${w.branch ? ' [' + w.branch + ']' : ''}${w.isLocked ? ' (locked)' : ''}`"
+          >
+            <span class="shrink-0 w-3 text-center text-[10px]">
+              <span v-if="w.isMain" class="text-amber-500" title="main worktree">★</span>
+              <span v-else-if="w.isLocked" class="text-rose-500" title="locked">🔒</span>
+              <span v-else class="text-muted-foreground">·</span>
+            </span>
+            <span class="flex-1 truncate font-mono">{{ worktreeName(w.path) }}</span>
+            <span v-if="w.branch" class="truncate text-[9px] text-muted-foreground" :style="{ maxWidth: '80px' }">
+              {{ w.branch }}
+            </span>
+          </li>
+          <li
+            v-if="moreWorktreesCount > 0"
+            class="px-1 py-0.5 text-[10px] text-muted-foreground"
+          >
+            ⋯ +{{ moreWorktreesCount }}개 더 (전체 → 클릭)
           </li>
         </ul>
       </div>
