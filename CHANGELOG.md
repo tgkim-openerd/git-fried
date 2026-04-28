@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-21 — TDD-lite 정착 + Playwright MCP 글로벌 + 신규 컴포넌트 vitest 시범 (사용자 정책 변경: dogfood 최소화):
+  - **Playwright MCP user scope 설치** — `claude mcp add -s user playwright -- npx -y @playwright/mcp@latest`. `~/.claude.json` 등록 + 모든 프로젝트에서 사용 가능. Claude 가 `bun run dev` (vite 1420) + devMock 환경에서 직접 E2E 시나리오 실행 가능 (browser_navigate / browser_click / browser_snapshot / browser_screenshot)
+  - **build_test_responsibility 정책 갱신** (`memory/build_test_responsibility.md` § 2026-04-28) —
+    - TDD-lite: 신규 컴포넌트 / composable 작성 시 vitest 동반 (pure 함수 → composable → simple component → complex component 우선순위)
+    - Playwright MCP 자동 E2E 시나리오 (modal open/close / branch switch / commit input / ContextMenu nav / Toast dedup)
+    - 사용자 dogfood 영역 축소: 큰 release 직전 1회 + 한글 IME / OS 통합 / 50+ repo 환경 / Tauri WebView 차이만 위임. 그 외 회귀 검증은 Claude 자동
+  - **PlaceholderButton.test.ts 신규** (12 test) — props (label/eta/icon/size/showToast) + a11y (aria-label / 다중라인 title) + click → toast.info / showToast=false → click 무시 + size 분기 + cursor-not-allowed
+  - **SkeletonBlock.test.ts 신규** (16 test) — count (default 4 / 0 / 6) + height (sm/md/lg → h-4/6/8) + widthRange ([min,max] 범위 검증 + custom 적용 + deterministic per index — 동일 props 재마운트 시 width 동일) + a11y (role/aria-live/aria-label/sr-only) + animate-pulse
+  - **useToast.test.ts 신규** (17 test) — push/dismiss/clearAll + kind 별 default duration (3/4/6/8s) + 영구 (durationMs=0) + custom durationMs + **Sprint 22-12 Q-6 dedup** (count 누적 5번 / message 갱신 / 다른 kind/title 분리 / duration timer reset 마지막 trigger 기준) + cleanup (timer 정리 / clearAll memory leak 방지)
+  - 누적 vitest **29 → 74 pass** (+45 신규). 4 test 파일 → 6 (PlaceholderButton / SkeletonBlock / useToast 신규)
+  - 검증: typecheck 0 / lint 0 / vitest 74 pass
 - Sprint 22-20 — Onboarding GitKrakenImport detect minimal (plan/24 Sprint C C-5 / design §8-7 hard constraint, frontend-only):
   - **App.vue onMounted hook 신규** — 첫 실행 시 (`localStorage 'git-fried.onboarded.v1'` 부재) `importGitKrakenDetect()` IPC 호출
   - **toast.info 안내** — `repoCount > 0` 시 "GitKraken 데이터 발견 — N 레포 (워크스페이스 M개 / 즐겨찾기 K개 / 탭 L개). Settings → 시작·마이그레이션 → GitKraken 가져오기 에서 진행". 12s duration

@@ -266,6 +266,18 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-21 — TDD-lite 정착 + Playwright MCP + 시범 vitest 3건 ✅ (2026-04-28, infra + tests)
+
+사용자 정책 변경 ("dogfood 최대한 안 하는 방향"). 자동화 인프라 마련 + 시범 적용.
+
+- ✅ **Playwright MCP user scope 설치** — `claude mcp add -s user playwright -- npx -y @playwright/mcp@latest`. 모든 프로젝트에서 Claude 가 직접 E2E 시나리오 실행 가능 (browser_navigate / click / snapshot / screenshot)
+- ✅ **build_test_responsibility 정책 갱신** — TDD-lite (신규 컴포넌트 vitest 동반) + Playwright MCP 자동 E2E + dogfood 영역 축소 (큰 release / 한글 IME / OS 통합 / 50+ repo / Tauri WebView 차이만 사용자 위임)
+- ✅ **PlaceholderButton.test.ts** (12 test) — props / a11y / click → toast.info / size / disabled
+- ✅ **SkeletonBlock.test.ts** (16 test) — count / height (sm/md/lg) / widthRange + deterministic / a11y / animate-pulse
+- ✅ **useToast.test.ts** (17 test) — push/dismiss/clearAll + kind 별 duration + Q-6 dedup (count 누적 / message 갱신 / 다른 kind/title 분리 / timer reset) + memory leak 방지
+- 누적 vitest **29 → 74 pass** (+45). 4 → 6 test 파일
+- 검증: typecheck 0 / lint 0 / vitest 74 pass
+
 ### Sprint 22-20 — Onboarding GitKrakenImport detect minimal (design §8-7) ✅ (2026-04-28, frontend-only)
 
 design §8-7 hard constraint 부분 흡수. 7번째 / 마지막 hard constraint 부분 도달 (전체 5-step onboarding flow 는 별도 sprint).
