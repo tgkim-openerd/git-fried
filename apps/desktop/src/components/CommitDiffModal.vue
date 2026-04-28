@@ -11,6 +11,7 @@ import { computed, useTemplateRef } from 'vue'
 import { describeError } from '@/api/errors'
 import { DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import { useCommitDiff } from '@/composables/useCommitDiff'
+import { useShortcut } from '@/composables/useShortcuts'
 import AiResultModal from './AiResultModal.vue'
 import BaseModal from './BaseModal.vue'
 import DiffViewer from './DiffViewer.vue'
@@ -45,6 +46,14 @@ function onPrevHunk() {
 function onNextHunk() {
   if (!cd.hunkNavDisabled.value) diffRef.value?.nextHunk()
 }
+
+// c26-3 — Alt+↑/↓ 단축키 (modal open 시에만 작동).
+useShortcut('prevHunk', () => {
+  if (props.open) onPrevHunk()
+})
+useShortcut('nextHunk', () => {
+  if (props.open) onNextHunk()
+})
 </script>
 
 <template>

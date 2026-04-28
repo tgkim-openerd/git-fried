@@ -6,6 +6,7 @@ import { computed, useTemplateRef } from 'vue'
 import { describeError } from '@/api/errors'
 import { DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import { useCommitDiff } from '@/composables/useCommitDiff'
+import { useShortcut } from '@/composables/useShortcuts'
 import AiResultModal from './AiResultModal.vue'
 import DiffViewer from './DiffViewer.vue'
 import DiffSplitView from './DiffSplitView.vue'
@@ -36,6 +37,10 @@ function onPrevHunk() {
 function onNextHunk() {
   if (!cd.hunkNavDisabled.value) diffRef.value?.nextHunk()
 }
+
+// c26-3 — Alt+↑/↓ 키보드 단축키 (panel 마운트 시 등록).
+useShortcut('prevHunk', onPrevHunk)
+useShortcut('nextHunk', onNextHunk)
 
 const isSplit = computed(() => cd.diffMode.mode.value === 'split')
 </script>

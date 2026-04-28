@@ -40,6 +40,8 @@ export type ShortcutAction =
   | 'focusMessage' // ⌘⇧M
   | 'showDiff' // ⌘D — 선택 commit diff (modal)
   | 'toggleInlineDiff' // ⌘⇧D — inline diff panel 토글 (Sprint c25-4.5)
+  | 'prevHunk' // Alt+↑ — diff 이전 hunk (inline + modal, Sprint c26-3)
+  | 'nextHunk' // Alt+↓ — diff 다음 hunk
   | 'closeModal' // ⌘W — 활성 모달 닫기
   | 'zoomIn' // ⌘=
   | 'zoomOut' // ⌘-
@@ -136,6 +138,27 @@ function installGlobal() {
       }
       if (vimAction) {
         const set = bus.handlers.get(vimAction)
+        if (set && set.size > 0) {
+          e.preventDefault()
+          for (const fn of set) {
+            try {
+              fn()
+            } catch {
+              /* ignore */
+            }
+          }
+          return
+        }
+      }
+    }
+
+    // Alt+↑ / Alt+↓ — diff hunk navigation (Sprint c26-3). modifier=alt 단독.
+    if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+      let hunkAction: ShortcutAction | null = null
+      if (e.key === 'ArrowUp') hunkAction = 'prevHunk'
+      else if (e.key === 'ArrowDown') hunkAction = 'nextHunk'
+      if (hunkAction) {
+        const set = bus.handlers.get(hunkAction)
         if (set && set.size > 0) {
           e.preventDefault()
           for (const fn of set) {
