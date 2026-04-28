@@ -25,11 +25,13 @@ import { useToast } from '@/composables/useToast'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import DiffViewer from './DiffViewer.vue'
+import EmptyState from './EmptyState.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
 
 const toast = useToast()
 
 const props = defineProps<{ repoId: number | null }>()
-const { data: stashes } = useStash(() => props.repoId)
+const { data: stashes, isFetching: stashFetching } = useStash(() => props.repoId)
 const invalidate = useInvalidateRepoQueries()
 
 const newMessage = ref('')
@@ -264,11 +266,12 @@ const aiMut = useMutation({
             </button>
           </div>
         </li>
-        <li
-          v-if="stashes && stashes.length === 0"
-          class="px-2 py-3 text-center text-xs text-muted-foreground"
-        >
-          stash 없음
+        <!-- Sprint 22-18 — 첫 로딩 skeleton + empty state visual -->
+        <li v-if="stashFetching && !stashes" class="px-1 pt-2">
+          <SkeletonBlock :count="3" height="md" />
+        </li>
+        <li v-else-if="stashes && stashes.length === 0">
+          <EmptyState icon="📦" title="stash 없음" size="sm" />
         </li>
       </ul>
     </div>

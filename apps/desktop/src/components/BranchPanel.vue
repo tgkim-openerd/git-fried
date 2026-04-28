@@ -366,6 +366,8 @@ async function onExplainBranch(b: BranchInfo) {
           type="button"
           class="rounded px-1.5 py-0.5"
           :class="filterKind === k ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
+          :aria-label="`브랜치 필터: ${k}`"
+          :aria-pressed="filterKind === k"
           @click="filterKind = k"
         >
           {{ k }}
@@ -374,6 +376,7 @@ async function onExplainBranch(b: BranchInfo) {
           type="button"
           class="rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
           title="Remote 관리 (add / remove / rename / URL 변경)"
+          aria-label="Remote 관리 (add / remove / rename / URL 변경)"
           @click="remoteManageOpen = true"
         >
           🔗

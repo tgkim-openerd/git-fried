@@ -11,7 +11,7 @@ import { formatDateLocalized } from '@/composables/useUserSettings'
 import { useToast } from '@/composables/useToast'
 import ReleaseDetailModal from './ReleaseDetailModal.vue'
 import EmptyState from './EmptyState.vue'
-import LoadingSpinner from './LoadingSpinner.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import type { ForgeRelease } from '@/api/git'
 
@@ -85,7 +85,8 @@ function onReleaseContextMenu(ev: MouseEvent, r: ForgeRelease) {
     </div>
 
     <div class="flex-1 overflow-auto px-2 py-1 text-sm">
-      <LoadingSpinner v-if="isFetching && !releases" label="릴리스 목록 불러오는 중..." size="sm" />
+      <!-- Sprint 22-18 — 첫 로딩 skeleton (LoadingSpinner 대체) -->
+      <SkeletonBlock v-if="isFetching && !releases" :count="4" height="md" class="mt-2" />
 
       <ul>
         <li

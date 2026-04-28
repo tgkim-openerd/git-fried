@@ -16,6 +16,8 @@ import {
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
+import EmptyState from './EmptyState.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
 
 const toast = useToast()
 const props = defineProps<{ repoId: number | null }>()
@@ -256,11 +258,12 @@ function fmtSize(b: number | null): string {
             {{ fmtSize(f.size) }}
           </span>
         </li>
-        <li
-          v-if="filesQuery.data.value && filesQuery.data.value.length === 0"
-          class="px-2 py-3 text-center text-xs text-muted-foreground"
-        >
-          LFS 파일 없음
+        <!-- Sprint 22-18 — 첫 로딩 skeleton + empty state visual -->
+        <li v-if="filesQuery.isFetching.value && !filesQuery.data.value" class="px-1 pt-2">
+          <SkeletonBlock :count="3" height="sm" />
+        </li>
+        <li v-else-if="filesQuery.data.value && filesQuery.data.value.length === 0">
+          <EmptyState icon="📦" title="LFS 파일 없음" size="sm" />
         </li>
       </ul>
       <p class="mt-2 text-[10px] text-muted-foreground">

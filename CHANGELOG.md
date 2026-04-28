@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-18 — polish wrap (잔여 aria-label 4건 + EmptyState 4 panel + SkeletonBlock 6 panel, plan/22 §7 + plan/24 Sprint E E-1/E-2/E-6, frontend-only):
+  - **aria-label 잔여 4건** — BranchPanel header (filter local/remote/all + `aria-pressed` + Remote 관리 🔗) / Sidebar workspace 그룹 토글 (directory/org + `aria-pressed`) / Sidebar Clone 버튼. 누적 **43 → 47 ≥ 100%** 카탈로그 도달
+  - **EmptyState 4 panel 추가** — StashPanel `📦 stash 없음` / SubmodulePanel `🧩 서브모듈 없음` / LfsPanel `📦 LFS 파일 없음` / TagPanel `🏷 tag 없음`. 기존 단순 `<li class="text-center muted">X 없음</li>` → `<EmptyState icon title size="sm">` (visual 일관)
+  - **SkeletonBlock 6 panel 추가** — Stash / Submodule / Lfs / Tag / Issues / Releases 의 첫 로딩 (`isFetching && !data`) 시 SkeletonBlock count=3-5 height=sm/md 표시. IssuesPanel / ReleasesPanel 의 LoadingSpinner 대체 + dead import 정리
+  - 누적 SkeletonBlock 적용 화면 **2 → 8** (BranchPanel/PrPanel + Stash/Submodule/Lfs/Tag/Issues/Releases). 잔여 CommitGraph / StatusPanel / PrDetail 는 virtualizer 영향 큼 / 별도 sprint
+  - 검증: typecheck 0 / lint 0 / vitest 29 pass
 - Sprint 22-17 — E-1 Skeleton component + BranchPanel/PrPanel 시범 적용 (plan/24 Sprint E E-1 / design 04 §4-2, frontend-only):
   - **`SkeletonBlock.vue` 신규** — props (count: number / height: 'sm'|'md'|'lg' / widthRange: [min,max]). animate-pulse + bg-muted + deterministic width per index (sin pseudo-noise — reload 시 안정). a11y: `role="status"` + `aria-live="polite"` + sr-only "데이터 불러오는 중..."
   - **BranchPanel** — `useBranches({ isFetching })` 추가, branches 부재 + fetching 시 SkeletonBlock count=6 height=sm 표시 (기존 `<ul>` v-else)

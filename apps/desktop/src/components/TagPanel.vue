@@ -22,6 +22,8 @@ import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import EmptyState from './EmptyState.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
 
 const props = defineProps<{ repoId: number | null }>()
 
@@ -325,11 +327,12 @@ function onTagContextMenu(ev: MouseEvent, t: TagInfo) {
           </button>
         </div>
       </li>
-      <li
-        v-if="tagsQuery.data.value && tagsQuery.data.value.length === 0"
-        class="px-3 py-6 text-center text-xs text-muted-foreground"
-      >
-        tag 없음
+      <!-- Sprint 22-18 — 첫 로딩 skeleton + empty state visual -->
+      <li v-if="tagsQuery.isFetching.value && !tagsQuery.data.value" class="px-1 pt-2">
+        <SkeletonBlock :count="4" height="sm" />
+      </li>
+      <li v-else-if="tagsQuery.data.value && tagsQuery.data.value.length === 0">
+        <EmptyState icon="🏷" title="tag 없음" size="sm" />
       </li>
     </ul>
     <ContextMenu ref="tagCtxMenu" />

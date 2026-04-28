@@ -656,6 +656,8 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
                 : 'text-muted-foreground hover:bg-accent/40'
             "
             :title="m === 'directory' ? '부모 디렉토리 그룹' : 'forge organization 그룹'"
+            :aria-label="m === 'directory' ? '부모 디렉토리 그룹으로 정렬' : 'forge organization 그룹으로 정렬'"
+            :aria-pressed="groupMode === m"
             @click="setGroupMode(m)"
           >
             {{ m === 'directory' ? '폴더' : 'Org' }}
@@ -664,6 +666,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
             type="button"
             class="rounded-md border border-input px-2 py-0.5 hover:bg-accent"
             title="원격 URL 에서 clone (sparse / shallow 옵션 지원)"
+            aria-label="원격 URL 에서 clone (sparse / shallow 옵션 지원)"
             @click="cloneOpen = true"
           >
             ⬇ Clone

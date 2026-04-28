@@ -266,6 +266,16 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-18 — polish wrap (aria 4 + EmptyState 4 + Skeleton 6) ✅ (2026-04-28, frontend-only)
+
+§7 S-1 카탈로그 47/47 ≥ 100% + plan/24 Sprint E E-1/E-2/E-6 부분.
+
+- ✅ **aria-label 잔여 4건** — BranchPanel filter (local/remote/all) + Remote 관리 / Sidebar 그룹 모드 토글 (directory/org) + Clone. `aria-pressed` 추가. 누적 **43 → 47 ≥ 100%** 도달
+- ✅ **EmptyState 4 panel** — Stash 📦 / Submodule 🧩 / Lfs 📦 / Tag 🏷. 기존 단순 텍스트 → EmptyState component (visual 일관)
+- ✅ **SkeletonBlock 6 panel** — Stash / Submodule / Lfs / Tag / Issues / Releases 첫 로딩 시 표시. Issues/Releases LoadingSpinner 대체 + dead import 정리
+- 누적 SkeletonBlock 적용 화면 **2 → 8**. 잔여: CommitGraph / StatusPanel / PrDetail (virtualizer 영향, 별도 sprint)
+- 검증: typecheck 0 / lint 0 / vitest 29 pass
+
 ### Sprint 22-17 — E-1 Skeleton 시범 (BranchPanel/PrPanel) ✅ (2026-04-28, frontend-only)
 
 plan/24 Sprint E E-1 부분 흡수. design 04 §4-2 spec 만족.
