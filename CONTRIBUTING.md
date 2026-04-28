@@ -17,9 +17,12 @@
 git clone https://github.com/tgkim/git-fried
 cd git-fried
 bun install
-bun run tauri:dev    # 개발 (HMR ~1s)
-bun run tauri:build  # 프로덕션 MSI / NSIS
+bunx lefthook install  # git hooks (pre-commit lint/format + pre-push typecheck/test + commit-msg conventional)
+bun run tauri:dev      # 개발 (HMR ~1s)
+bun run tauri:build    # 프로덕션 MSI / NSIS
 ```
+
+> `lefthook` 가 commit/push 전에 자동으로 lint·format·typecheck·test 를 돌립니다. 긴급 시 `git commit --no-verify` / `git push --no-verify` 로 우회할 수 있으나 원인을 찾아 수정하는 것을 권장합니다.
 
 ## 코드 스타일
 

@@ -1,0 +1,39 @@
+# lefthook configuration — git-fried (Tauri 2 + Vue 3 + Rust)
+#
+# 설치: `bunx lefthook install` (이 저장소를 처음 clone 한 사용자만 1회).
+# bypass: `git commit --no-verify`, `git push --no-verify` (긴급 시).
+#
+# 설계 원칙
+#  - pre-commit: 빠른 staged-only 검사 (lint/format) + cargo fmt --check
+#  - pre-push: 무거운 전체 검사 (typecheck + vitest)
+#  - LLM 페어 작성이 기본 워크플로우라 자동 fix 우선 (stage_fixed: true)
+
+pre-commit:
+  parallel: true
+  commands:
+    eslint:
+      glob: "apps/desktop/src/**/*.{ts,vue,js}"
+      run: bunx --bun eslint --fix {staged_files}
+      stage_fixed: true
+    prettier:
+      glob: "apps/desktop/src/**/*.{ts,vue,css,md,json}"
+      run: bunx --bun prettier --write {staged_files}
+      stage_fixed: true
+    cargo-fmt-check:
+      glob: "apps/desktop/src-tauri/src/**/*.rs"
+      run: cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
+
+pre-push:
+  parallel: true
+  commands:
+    typecheck:
+      run: bun run --cwd apps/desktop typecheck
+    test-web:
+      run: bun run --cwd apps/desktop test
+
+commit-msg:
+  commands:
+    conventional:
+      # 외부 스크립트 (Windows shell multi-line `run: |` 호환성 회피)
+      # 스크립트 본체: scripts/lefthook-commit-msg.sh
+      run: bash scripts/lefthook-commit-msg.sh {1}
