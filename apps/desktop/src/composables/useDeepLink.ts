@@ -17,7 +17,7 @@ import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 
 /** `git-fried://command/<alias>` 의 alias → ShortcutAction 매핑. */
-const COMMAND_ALIASES: Record<string, ShortcutAction> = {
+export const COMMAND_ALIASES: Record<string, ShortcutAction> = {
   fetch: 'fetch',
   pull: 'pull',
   push: 'push',
@@ -49,58 +49,65 @@ interface UnlistenFn {
   (): void
 }
 
+interface DeepLinkContext {
+  router: Pick<Router, 'push'>
+  store: { setActiveRepo: (id: number) => void }
+}
+
+/** Deep link URL 1개를 dispatch — store/router 통한 라우팅 + shortcut trigger. test 가능 export. */
+export function dispatchDeepLink(rawUrl: string, ctx: DeepLinkContext): void {
+  try {
+    const url = new URL(rawUrl)
+    const host = url.hostname || url.pathname.replace(/^\/+/, '').split('/')[0]
+    const segs = url.pathname.replace(/^\/+/, '').split('/').filter(Boolean)
+    const cmd = host || segs[0]
+    const arg = host ? segs[0] : segs[1]
+
+    switch (cmd) {
+      case 'launchpad':
+        ctx.router.push('/launchpad')
+        break
+      case 'settings':
+        ctx.router.push('/settings')
+        break
+      case 'home':
+        ctx.router.push('/')
+        break
+      case 'repo': {
+        if (arg) {
+          const id = Number(arg)
+          if (!Number.isNaN(id)) {
+            ctx.store.setActiveRepo(id)
+            ctx.router.push('/')
+          }
+        }
+        break
+      }
+      case 'command': {
+        if (arg) {
+          const action = COMMAND_ALIASES[arg]
+          if (action) {
+            // router.push 가 mount 안 된 컴포넌트에 등록할 시간 확보.
+            setTimeout(() => dispatchShortcut(action), 50)
+          }
+        }
+        break
+      }
+      default:
+        // 알 수 없는 명령은 무시 (silent fail).
+        break
+    }
+  } catch {
+    /* malformed URL — ignore */
+  }
+}
+
 export function useDeepLink(router: Router) {
   const store = useReposStore()
   let unlisten: UnlistenFn | null = null
 
   function dispatch(rawUrl: string) {
-    try {
-      // git-fried://launchpad 같은 형식. URL parser 가 host=launchpad 로.
-      const url = new URL(rawUrl)
-      const host = url.hostname || url.pathname.replace(/^\/+/, '').split('/')[0]
-      const segs = url.pathname.replace(/^\/+/, '').split('/').filter(Boolean)
-      // Tauri 가 `git-fried://launchpad` 를 hostname=launchpad 로 파싱.
-      const cmd = host || segs[0]
-      const arg = host ? segs[0] : segs[1]
-
-      switch (cmd) {
-        case 'launchpad':
-          router.push('/launchpad')
-          break
-        case 'settings':
-          router.push('/settings')
-          break
-        case 'home':
-          router.push('/')
-          break
-        case 'repo': {
-          if (arg) {
-            const id = Number(arg)
-            if (!Number.isNaN(id)) {
-              store.setActiveRepo(id)
-              router.push('/')
-            }
-          }
-          break
-        }
-        case 'command': {
-          // git-fried://command/<alias> — Sprint D6.
-          if (arg) {
-            const action = COMMAND_ALIASES[arg]
-            if (action) {
-              // 다음 tick 에 dispatch (router.push 가 mount 안 된 컴포넌트에 등록할 시간).
-              setTimeout(() => dispatchShortcut(action), 50)
-            }
-          }
-          break
-        }
-        default:
-          // 알 수 없는 명령은 무시 (silent fail).
-          break
-      }
-    } catch {
-      /* malformed URL — ignore */
-    }
+    dispatchDeepLink(rawUrl, { router, store })
   }
 
   onMounted(async () => {
