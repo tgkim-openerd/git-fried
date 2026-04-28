@@ -25,6 +25,7 @@ import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
 import HunkStageModal from './HunkStageModal.vue'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
+import { useStatusFilter } from '@/composables/useStatusFilter'
 
 const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
@@ -70,18 +71,15 @@ const { data: status, isFetching } = useStatus(() => props.repoId)
 const invalidate = useInvalidateRepoQueries()
 
 const stageMut = useMutation({
-  mutationFn: ({ id, paths }: { id: number; paths: string[] }) =>
-    stagePaths(id, paths),
+  mutationFn: ({ id, paths }: { id: number; paths: string[] }) => stagePaths(id, paths),
   onSuccess: () => invalidate(props.repoId),
 })
 const unstageMut = useMutation({
-  mutationFn: ({ id, paths }: { id: number; paths: string[] }) =>
-    unstagePaths(id, paths),
+  mutationFn: ({ id, paths }: { id: number; paths: string[] }) => unstagePaths(id, paths),
   onSuccess: () => invalidate(props.repoId),
 })
 const discardMut = useMutation({
-  mutationFn: ({ id, paths }: { id: number; paths: string[] }) =>
-    discardPaths(id, paths),
+  mutationFn: ({ id, paths }: { id: number; paths: string[] }) => discardPaths(id, paths),
   onSuccess: () => invalidate(props.repoId),
 })
 const stageAllMut = useMutation({
@@ -97,11 +95,7 @@ function onUnstageOne(path: string) {
 }
 function onDiscardOne(path: string) {
   if (props.repoId == null) return
-  if (
-    confirm(
-      `'${path}' 의 변경을 폐기하시겠습니까? 되돌릴 수 없습니다.`,
-    )
-  ) {
+  if (confirm(`'${path}' 의 변경을 폐기하시겠습니까? 되돌릴 수 없습니다.`)) {
     discardMut.mutate({ id: props.repoId, paths: [path] })
   }
 }
@@ -222,10 +216,7 @@ const mergetoolMut = useMutation({
       toast.success('Mergetool 종료', '')
       invalidate(props.repoId)
     } else {
-      toast.error(
-        'Mergetool 실패',
-        res.stderr.slice(0, 200) || `exit ${res.exitCode}`,
-      )
+      toast.error('Mergetool 실패', res.stderr.slice(0, 200) || `exit ${res.exitCode}`)
     }
   },
   onError: (e) => toast.error('Mergetool 호출 실패', describeError(e)),
@@ -262,17 +253,11 @@ function pickStageTarget(): string | null {
   if (selectedPath.value) {
     // staged 에 있으면 이미 stage 됨 → 다음 unstaged 행으로.
     if (status.value?.staged.some((f) => f.path === selectedPath.value)) {
-      return status.value?.unstaged[0]?.path
-        ?? status.value?.untracked[0]
-        ?? null
+      return status.value?.unstaged[0]?.path ?? status.value?.untracked[0] ?? null
     }
     return selectedPath.value
   }
-  return (
-    status.value?.unstaged[0]?.path ??
-    status.value?.untracked[0] ??
-    null
-  )
+  return status.value?.unstaged[0]?.path ?? status.value?.untracked[0] ?? null
 }
 
 function pickUnstageTarget(): string | null {
@@ -314,10 +299,7 @@ useShortcut('unstageAll', () => {
 useShortcut('fileHistorySearch', () => {
   // 현재 selected 또는 첫 번째 unstaged/staged 의 history.
   const target =
-    selectedPath.value ??
-    status.value?.unstaged[0]?.path ??
-    status.value?.staged[0]?.path ??
-    null
+    selectedPath.value ?? status.value?.unstaged[0]?.path ?? status.value?.staged[0]?.path ?? null
   if (target) openHistory(target)
 })
 
@@ -326,20 +308,9 @@ function selectPath(path: string) {
 }
 
 // === Sprint 22-6 F-I1: 파일 필터 (50+ 파일 환경) ===
-const fileFilter = ref('')
-
-function matchFilter(path: string): boolean {
-  const q = fileFilter.value.trim().toLowerCase()
-  if (!q) return true
-  return path.toLowerCase().includes(q)
-}
-
-const filteredStaged = computed(() =>
-  (status.value?.staged ?? []).filter((f) => matchFilter(f.path)),
-)
-const filteredUnstaged = computed(() =>
-  (status.value?.unstaged ?? []).filter((f) => matchFilter(f.path)),
-)
+// composables/useStatusFilter.ts 로 추출 (StatusPanel.vue God comp 분리 1차).
+const { fileFilter, filteredStaged, filteredUnstaged, filteredUntracked, filteredConflicted } =
+  useStatusFilter(status)
 
 // Sprint c25-2.1 / c27-2 (TYPE-005 fix) — generic 트리 평탄화.
 // Modified / Staged / Untracked / Conflicted 4 섹션 공통 사용.
@@ -402,13 +373,6 @@ const conflictedTreeRows = computed<StringTreeRow[]>(() => {
   const tree = buildPathTree(items, { collapseSingleChild: true })
   return flattenTree(tree, collapsedDirs.value)
 })
-const filteredUntracked = computed(() =>
-  (status.value?.untracked ?? []).filter((p) => matchFilter(p)),
-)
-const filteredConflicted = computed(() =>
-  (status.value?.conflicted ?? []).filter((p) => matchFilter(p)),
-)
-
 // === Sprint 22-7 V-5: 선택 파일 inline diff preview ===
 const selectedIsStaged = computed<boolean>(() => {
   if (!selectedPath.value) return false
@@ -416,12 +380,9 @@ const selectedIsStaged = computed<boolean>(() => {
 })
 
 const detailDiffQuery = useQuery({
-  queryKey: computed(() => [
-    'file-diff',
-    props.repoId,
-    selectedPath.value,
-    selectedIsStaged.value,
-  ] as const),
+  queryKey: computed(
+    () => ['file-diff', props.repoId, selectedPath.value, selectedIsStaged.value] as const,
+  ),
   queryFn: () => {
     if (props.repoId == null || !selectedPath.value) return Promise.resolve('')
     return getDiff({
@@ -435,9 +396,7 @@ const detailDiffQuery = useQuery({
   staleTime: STALE_TIME.REALTIME,
 })
 
-const isSelected = computed(
-  () => (path: string) => selectedPath.value === path,
-)
+const isSelected = computed(() => (path: string) => selectedPath.value === path)
 
 // === Sprint c25-4 (`docs/plan/25 §5`) — inline diff 헤더 폴리시 ===
 // DiffViewer ref + Hunk ↑↓ 네비게이션 (GitKraken Image #2 흡수).
@@ -478,7 +437,11 @@ function onNextHunk() {
         <button
           type="button"
           class="rounded px-1.5 py-0.5"
-          :class="viewMode === 'path' ? 'bg-accent text-accent-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'"
+          :class="
+            viewMode === 'path'
+              ? 'bg-accent text-accent-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground'
+          "
           aria-label="평탄 path 모드"
           title="Path — 전체 경로 한 줄 표시"
           @click="setViewMode('path')"
@@ -488,7 +451,11 @@ function onNextHunk() {
         <button
           type="button"
           class="rounded px-1.5 py-0.5"
-          :class="viewMode === 'tree' ? 'bg-accent text-accent-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'"
+          :class="
+            viewMode === 'tree'
+              ? 'bg-accent text-accent-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground'
+          "
           aria-label="디렉토리 트리 모드"
           title="Tree — 디렉토리 그룹핑 (collapse 가능)"
           @click="setViewMode('tree')"
@@ -530,207 +497,145 @@ function onNextHunk() {
         </div>
       </div>
 
-    <div class="flex-1 overflow-auto px-2 py-2 text-sm">
-      <!-- Staged -->
-      <div v-if="status && status.staged.length > 0" class="mb-3">
-        <div
-          class="mb-1 flex cursor-pointer select-none items-center justify-between"
-          title="우클릭 = 섹션 접기/펴기"
-          @contextmenu.prevent="collapsedStaged = !collapsedStaged"
-          @click="collapsedStaged = !collapsedStaged"
-        >
-          <span class="text-xs uppercase tracking-wider text-muted-foreground">
-            {{ collapsedStaged ? '▶' : '▼' }} Staged ({{ status.staged.length }})
-          </span>
-        </div>
-        <ul v-if="!collapsedStaged && viewMode === 'path'">
-          <FileRow
-            v-for="f in filteredStaged"
-            :key="`s-${f.path}`"
-            :file="f"
-            :label="statusLabel(f.status)"
-            :color="statusColor(f.status)"
-            action="−"
-            action-title="unstage"
-            :selected="isSelected(f.path)"
-            @select="selectPath(f.path)"
-            @action="onUnstageOne(f.path)"
-            @contextmenu="onFileContextMenu($event, f.path, true)"
+      <div class="flex-1 overflow-auto px-2 py-2 text-sm">
+        <!-- Staged -->
+        <div v-if="status && status.staged.length > 0" class="mb-3">
+          <div
+            class="mb-1 flex cursor-pointer select-none items-center justify-between"
+            title="우클릭 = 섹션 접기/펴기"
+            @contextmenu.prevent="collapsedStaged = !collapsedStaged"
+            @click="collapsedStaged = !collapsedStaged"
           >
-            <template #extra>
-              <button
-                type="button"
-                class="text-[10px] text-muted-foreground/70 hover:text-foreground"
-                title="Hunk-level unstage — 특정 라인만 골라 unstage (`docs/plan/14 §H1`)"
-                :aria-label="`'${f.path}' hunk 단위 unstage`"
-                @click.stop="openHunk(f.path, true)"
-              >
-                ✂ hunk
-              </button>
-            </template>
-          </FileRow>
-        </ul>
-
-        <!-- c25-2.2 — Tree 모드: Staged (Modified 와 동일 패턴, action='-' unstage) -->
-        <ul v-else-if="!collapsedStaged && viewMode === 'tree'">
-          <template v-for="(row, idx) in stagedTreeRows" :key="`st-${idx}`">
-            <li
-              v-if="row.kind === 'dir'"
-              class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
-              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
-              @click="toggleDir(row.path)"
-            >
-              <span class="text-[10px] text-muted-foreground">{{ row.collapsed ? '▶' : '▼' }}</span>
-              <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
-            </li>
-            <li
-              v-else
-              class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-              :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
-              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              @click="selectPath(row.path)"
-              @contextmenu="onFileContextMenu($event, row.path, true)"
-            >
-              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.meta.status)]">
-                {{ statusLabel(row.meta.status) }}
-              </span>
-              <span class="flex-1 truncate font-mono text-xs" :title="row.path">
-                {{ row.path.split('/').pop() }}
-              </span>
-              <button
-                type="button"
-                class="text-[10px] text-muted-foreground/70 hover:text-foreground"
-                title="Hunk-level unstage"
-                :aria-label="`'${row.path}' hunk 단위 unstage`"
-                @click.stop="openHunk(row.path, true)"
-              >
-                ✂ hunk
-              </button>
-              <button
-                type="button"
-                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
-                title="unstage"
-                :aria-label="`'${row.path}' unstage`"
-                @click.stop="onUnstageOne(row.path)"
-              >
-                −
-              </button>
-            </li>
-          </template>
-        </ul>
-      </div>
-
-      <!-- Unstaged -->
-      <div v-if="status && status.unstaged.length > 0" class="mb-3">
-        <div
-          class="mb-1 flex cursor-pointer select-none items-center justify-between"
-          title="우클릭 = 섹션 접기/펴기"
-          @contextmenu.prevent="collapsedUnstaged = !collapsedUnstaged"
-        >
-          <span
-            class="text-xs uppercase tracking-wider text-muted-foreground"
-            @click="collapsedUnstaged = !collapsedUnstaged"
-          >
-            {{ collapsedUnstaged ? '▶' : '▼' }} Modified ({{ status.unstaged.length }})
-          </span>
-          <button
-            type="button"
-            class="text-xs text-muted-foreground hover:text-foreground"
-            @click.stop="onStageAll"
-          >
-            모두 stage
-          </button>
-        </div>
-        <ul v-if="!collapsedUnstaged && viewMode === 'path'">
-          <li
-            v-for="f in filteredUnstaged"
-            :key="`u-${f.path}`"
-            class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-            :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
-            draggable="true"
-            @click="selectPath(f.path)"
-            @contextmenu="onFileContextMenu($event, f.path, false)"
-            @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', f.path)"
-          >
-            <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(f.status)]">
-              {{ statusLabel(f.status) }}
+            <span class="text-xs uppercase tracking-wider text-muted-foreground">
+              {{ collapsedStaged ? '▶' : '▼' }} Staged ({{ status.staged.length }})
             </span>
-            <span class="flex-1 truncate font-mono text-xs">{{ f.path }}</span>
-            <button
-              type="button"
-              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
-              title="file history / blame"
-              :aria-label="`'${f.path}' history / blame`"
-              @click.stop="openHistory(f.path)"
+          </div>
+          <ul v-if="!collapsedStaged && viewMode === 'path'">
+            <FileRow
+              v-for="f in filteredStaged"
+              :key="`s-${f.path}`"
+              :file="f"
+              :label="statusLabel(f.status)"
+              :color="statusColor(f.status)"
+              action="−"
+              action-title="unstage"
+              :selected="isSelected(f.path)"
+              @select="selectPath(f.path)"
+              @action="onUnstageOne(f.path)"
+              @contextmenu="onFileContextMenu($event, f.path, true)"
             >
-              📜
-            </button>
-            <button
-              type="button"
-              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
-              title="discard"
-              :aria-label="`'${f.path}' 변경 폐기`"
-              @click.stop="onDiscardOne(f.path)"
-            >
-              ⤺
-            </button>
-            <button
-              type="button"
-              class="text-[10px] text-muted-foreground/70 hover:text-foreground"
-              title="Hunk-level stage — 특정 라인만 골라 stage (`docs/plan/14 §H1`)"
-              :aria-label="`'${f.path}' hunk 단위 stage`"
-              @click.stop="openHunk(f.path, false)"
-            >
-              ✂ hunk
-            </button>
-            <button
-              type="button"
-              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
-              title="stage"
-              :aria-label="`'${f.path}' stage`"
-              @click.stop="onStageOne(f.path)"
-            >
-              +
-            </button>
-          </li>
-        </ul>
+              <template #extra>
+                <button
+                  type="button"
+                  class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                  title="Hunk-level unstage — 특정 라인만 골라 unstage (`docs/plan/14 §H1`)"
+                  :aria-label="`'${f.path}' hunk 단위 unstage`"
+                  @click.stop="openHunk(f.path, true)"
+                >
+                  ✂ hunk
+                </button>
+              </template>
+            </FileRow>
+          </ul>
 
-        <!-- Sprint c25-2.1 — Tree 모드: 디렉토리 collapse + indent. file row 액션 동등. -->
-        <ul v-else-if="!collapsedUnstaged && viewMode === 'tree'">
-          <template v-for="(row, idx) in unstagedTreeRows" :key="`ut-${idx}`">
-            <li
-              v-if="row.kind === 'dir'"
-              class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
-              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
-              @click="toggleDir(row.path)"
+          <!-- c25-2.2 — Tree 모드: Staged (Modified 와 동일 패턴, action='-' unstage) -->
+          <ul v-else-if="!collapsedStaged && viewMode === 'tree'">
+            <template v-for="(row, idx) in stagedTreeRows" :key="`st-${idx}`">
+              <li
+                v-if="row.kind === 'dir'"
+                class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
+                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+                @click="toggleDir(row.path)"
+              >
+                <span class="text-[10px] text-muted-foreground">{{
+                  row.collapsed ? '▶' : '▼'
+                }}</span>
+                <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
+              </li>
+              <li
+                v-else
+                class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+                :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                @click="selectPath(row.path)"
+                @contextmenu="onFileContextMenu($event, row.path, true)"
+              >
+                <span
+                  :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.meta.status)]"
+                >
+                  {{ statusLabel(row.meta.status) }}
+                </span>
+                <span class="flex-1 truncate font-mono text-xs" :title="row.path">
+                  {{ row.path.split('/').pop() }}
+                </span>
+                <button
+                  type="button"
+                  class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                  title="Hunk-level unstage"
+                  :aria-label="`'${row.path}' hunk 단위 unstage`"
+                  @click.stop="openHunk(row.path, true)"
+                >
+                  ✂ hunk
+                </button>
+                <button
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  title="unstage"
+                  :aria-label="`'${row.path}' unstage`"
+                  @click.stop="onUnstageOne(row.path)"
+                >
+                  −
+                </button>
+              </li>
+            </template>
+          </ul>
+        </div>
+
+        <!-- Unstaged -->
+        <div v-if="status && status.unstaged.length > 0" class="mb-3">
+          <div
+            class="mb-1 flex cursor-pointer select-none items-center justify-between"
+            title="우클릭 = 섹션 접기/펴기"
+            @contextmenu.prevent="collapsedUnstaged = !collapsedUnstaged"
+          >
+            <span
+              class="text-xs uppercase tracking-wider text-muted-foreground"
+              @click="collapsedUnstaged = !collapsedUnstaged"
             >
-              <span class="text-[10px] text-muted-foreground">{{ row.collapsed ? '▶' : '▼' }}</span>
-              <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
-            </li>
+              {{ collapsedUnstaged ? '▶' : '▼' }} Modified ({{ status.unstaged.length }})
+            </span>
+            <button
+              type="button"
+              class="text-xs text-muted-foreground hover:text-foreground"
+              @click.stop="onStageAll"
+            >
+              모두 stage
+            </button>
+          </div>
+          <ul v-if="!collapsedUnstaged && viewMode === 'path'">
             <li
-              v-else
+              v-for="f in filteredUnstaged"
+              :key="`u-${f.path}`"
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-              :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
-              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
-              @click="selectPath(row.path)"
-              @contextmenu="onFileContextMenu($event, row.path, false)"
-              @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.path)"
+              @click="selectPath(f.path)"
+              @contextmenu="onFileContextMenu($event, f.path, false)"
+              @dragstart="
+                (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', f.path)
+              "
             >
-              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.meta.status)]">
-                {{ statusLabel(row.meta.status) }}
+              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(f.status)]">
+                {{ statusLabel(f.status) }}
               </span>
-              <span class="flex-1 truncate font-mono text-xs" :title="row.path">
-                {{ row.path.split('/').pop() }}
-              </span>
+              <span class="flex-1 truncate font-mono text-xs">{{ f.path }}</span>
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="file history / blame"
-                :aria-label="`'${row.path}' history / blame`"
-                @click.stop="openHistory(row.path)"
+                :aria-label="`'${f.path}' history / blame`"
+                @click.stop="openHistory(f.path)"
               >
                 📜
               </button>
@@ -738,17 +643,17 @@ function onNextHunk() {
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="discard"
-                :aria-label="`'${row.path}' 변경 폐기`"
-                @click.stop="onDiscardOne(row.path)"
+                :aria-label="`'${f.path}' 변경 폐기`"
+                @click.stop="onDiscardOne(f.path)"
               >
                 ⤺
               </button>
               <button
                 type="button"
                 class="text-[10px] text-muted-foreground/70 hover:text-foreground"
-                title="Hunk-level stage"
-                :aria-label="`'${row.path}' hunk 단위 stage`"
-                @click.stop="openHunk(row.path, false)"
+                title="Hunk-level stage — 특정 라인만 골라 stage (`docs/plan/14 §H1`)"
+                :aria-label="`'${f.path}' hunk 단위 stage`"
+                @click.stop="openHunk(f.path, false)"
               >
                 ✂ hunk
               </button>
@@ -756,164 +661,242 @@ function onNextHunk() {
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="stage"
-                :aria-label="`'${row.path}' stage`"
-                @click.stop="onStageOne(row.path)"
+                :aria-label="`'${f.path}' stage`"
+                @click.stop="onStageOne(f.path)"
               >
                 +
               </button>
             </li>
-          </template>
-        </ul>
-      </div>
+          </ul>
 
-      <!-- Untracked -->
-      <div v-if="status && status.untracked.length > 0" class="mb-3">
-        <div
-          class="mb-1 flex cursor-pointer select-none items-center justify-between"
-          title="우클릭 = 섹션 접기/펴기"
-          @contextmenu.prevent="collapsedUntracked = !collapsedUntracked"
-          @click="collapsedUntracked = !collapsedUntracked"
-        >
-          <span class="text-xs uppercase tracking-wider text-muted-foreground">
-            {{ collapsedUntracked ? '▶' : '▼' }} Untracked ({{ status.untracked.length }})
-          </span>
+          <!-- Sprint c25-2.1 — Tree 모드: 디렉토리 collapse + indent. file row 액션 동등. -->
+          <ul v-else-if="!collapsedUnstaged && viewMode === 'tree'">
+            <template v-for="(row, idx) in unstagedTreeRows" :key="`ut-${idx}`">
+              <li
+                v-if="row.kind === 'dir'"
+                class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
+                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+                @click="toggleDir(row.path)"
+              >
+                <span class="text-[10px] text-muted-foreground">{{
+                  row.collapsed ? '▶' : '▼'
+                }}</span>
+                <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
+              </li>
+              <li
+                v-else
+                class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+                :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                draggable="true"
+                @click="selectPath(row.path)"
+                @contextmenu="onFileContextMenu($event, row.path, false)"
+                @dragstart="
+                  (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.path)
+                "
+              >
+                <span
+                  :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.meta.status)]"
+                >
+                  {{ statusLabel(row.meta.status) }}
+                </span>
+                <span class="flex-1 truncate font-mono text-xs" :title="row.path">
+                  {{ row.path.split('/').pop() }}
+                </span>
+                <button
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  title="file history / blame"
+                  :aria-label="`'${row.path}' history / blame`"
+                  @click.stop="openHistory(row.path)"
+                >
+                  📜
+                </button>
+                <button
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  title="discard"
+                  :aria-label="`'${row.path}' 변경 폐기`"
+                  @click.stop="onDiscardOne(row.path)"
+                >
+                  ⤺
+                </button>
+                <button
+                  type="button"
+                  class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                  title="Hunk-level stage"
+                  :aria-label="`'${row.path}' hunk 단위 stage`"
+                  @click.stop="openHunk(row.path, false)"
+                >
+                  ✂ hunk
+                </button>
+                <button
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  title="stage"
+                  :aria-label="`'${row.path}' stage`"
+                  @click.stop="onStageOne(row.path)"
+                >
+                  +
+                </button>
+              </li>
+            </template>
+          </ul>
         </div>
-        <ul v-if="!collapsedUntracked && viewMode === 'path'">
-          <li
-            v-for="p in filteredUntracked"
-            :key="`n-${p}`"
-            class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-            :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
-            draggable="true"
-            @click="selectPath(p)"
-            @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)"
-          >
-            <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">
-              new
-            </span>
-            <span class="flex-1 truncate font-mono text-xs">{{ p }}</span>
-            <button
-              type="button"
-              class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
-              @click.stop="onStageOne(p)"
-            >
-              +
-            </button>
-          </li>
-        </ul>
 
-        <!-- c25-2.3 — Tree 모드: Untracked (string row, action='+' stage) -->
-        <ul v-else-if="!collapsedUntracked && viewMode === 'tree'">
-          <template v-for="(row, idx) in untrackedTreeRows" :key="`unt-${idx}`">
+        <!-- Untracked -->
+        <div v-if="status && status.untracked.length > 0" class="mb-3">
+          <div
+            class="mb-1 flex cursor-pointer select-none items-center justify-between"
+            title="우클릭 = 섹션 접기/펴기"
+            @contextmenu.prevent="collapsedUntracked = !collapsedUntracked"
+            @click="collapsedUntracked = !collapsedUntracked"
+          >
+            <span class="text-xs uppercase tracking-wider text-muted-foreground">
+              {{ collapsedUntracked ? '▶' : '▼' }} Untracked ({{ status.untracked.length }})
+            </span>
+          </div>
+          <ul v-if="!collapsedUntracked && viewMode === 'path'">
             <li
-              v-if="row.kind === 'dir'"
-              class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
-              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
-              @click="toggleDir(row.path)"
-            >
-              <span class="text-[10px] text-muted-foreground">{{ row.collapsed ? '▶' : '▼' }}</span>
-              <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
-            </li>
-            <li
-              v-else
+              v-for="p in filteredUntracked"
+              :key="`n-${p}`"
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-              :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
-              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              @click="selectPath(row.path)"
+              :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
+              draggable="true"
+              @click="selectPath(p)"
+              @dragstart="
+                (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)
+              "
             >
-              <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">new</span>
-              <span class="flex-1 truncate font-mono text-xs" :title="row.path">{{ row.name }}</span>
+              <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground"> new </span>
+              <span class="flex-1 truncate font-mono text-xs">{{ p }}</span>
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
-                title="stage"
-                :aria-label="`'${row.path}' stage`"
-                @click.stop="onStageOne(row.path)"
+                @click.stop="onStageOne(p)"
               >
                 +
               </button>
             </li>
-          </template>
-        </ul>
-      </div>
+          </ul>
 
-      <!-- Conflicted -->
-      <div v-if="status && status.conflicted.length > 0" class="mb-3">
-        <div
-          class="mb-1 cursor-pointer select-none text-xs uppercase tracking-wider text-destructive"
-          title="우클릭 = 섹션 접기/펴기"
-          @contextmenu.prevent="collapsedConflicted = !collapsedConflicted"
-          @click="collapsedConflicted = !collapsedConflicted"
-        >
-          {{ collapsedConflicted ? '▶' : '▼' }} Conflicted ({{ status.conflicted.length }})
+          <!-- c25-2.3 — Tree 모드: Untracked (string row, action='+' stage) -->
+          <ul v-else-if="!collapsedUntracked && viewMode === 'tree'">
+            <template v-for="(row, idx) in untrackedTreeRows" :key="`unt-${idx}`">
+              <li
+                v-if="row.kind === 'dir'"
+                class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
+                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+                @click="toggleDir(row.path)"
+              >
+                <span class="text-[10px] text-muted-foreground">{{
+                  row.collapsed ? '▶' : '▼'
+                }}</span>
+                <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
+              </li>
+              <li
+                v-else
+                class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+                :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                @click="selectPath(row.path)"
+              >
+                <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">new</span>
+                <span class="flex-1 truncate font-mono text-xs" :title="row.path">{{
+                  row.name
+                }}</span>
+                <button
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  title="stage"
+                  :aria-label="`'${row.path}' stage`"
+                  @click.stop="onStageOne(row.path)"
+                >
+                  +
+                </button>
+              </li>
+            </template>
+          </ul>
         </div>
-        <ul v-if="!collapsedConflicted && viewMode === 'path'">
-          <li
-            v-for="p in filteredConflicted"
-            :key="`c-${p}`"
-            class="group flex items-center gap-2 rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
-          >
-            <span class="flex-1 truncate font-mono">! {{ p }}</span>
-            <button
-              type="button"
-              class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
-              :title="`외부 mergetool (git config merge.tool)`"
-              :disabled="mergetoolMut.isPending.value"
-              @click="onLaunchMergetool(p)"
-            >
-              🛠
-            </button>
-            <button
-              type="button"
-              class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
-              @click="openMerge(p)"
-            >
-              해결
-            </button>
-          </li>
-        </ul>
 
-        <!-- c25-2.3 — Tree 모드: Conflicted (string row, action=mergetool / 해결) -->
-        <ul v-else-if="!collapsedConflicted && viewMode === 'tree'">
-          <template v-for="(row, idx) in conflictedTreeRows" :key="`ct-${idx}`">
+        <!-- Conflicted -->
+        <div v-if="status && status.conflicted.length > 0" class="mb-3">
+          <div
+            class="mb-1 cursor-pointer select-none text-xs uppercase tracking-wider text-destructive"
+            title="우클릭 = 섹션 접기/펴기"
+            @contextmenu.prevent="collapsedConflicted = !collapsedConflicted"
+            @click="collapsedConflicted = !collapsedConflicted"
+          >
+            {{ collapsedConflicted ? '▶' : '▼' }} Conflicted ({{ status.conflicted.length }})
+          </div>
+          <ul v-if="!collapsedConflicted && viewMode === 'path'">
             <li
-              v-if="row.kind === 'dir'"
-              class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 text-destructive hover:bg-destructive/10"
-              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
-              @click="toggleDir(row.path)"
-            >
-              <span class="text-[10px]">{{ row.collapsed ? '▶' : '▼' }}</span>
-              <span class="font-mono text-[11px]">{{ row.name }}/</span>
-            </li>
-            <li
-              v-else
+              v-for="p in filteredConflicted"
+              :key="`c-${p}`"
               class="group flex items-center gap-2 rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
-              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
             >
-              <span class="flex-1 truncate font-mono" :title="row.path">! {{ row.name }}</span>
+              <span class="flex-1 truncate font-mono">! {{ p }}</span>
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
-                title="외부 mergetool"
+                :title="`외부 mergetool (git config merge.tool)`"
                 :disabled="mergetoolMut.isPending.value"
-                @click="onLaunchMergetool(row.path)"
+                @click="onLaunchMergetool(p)"
               >
                 🛠
               </button>
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
-                @click="openMerge(row.path)"
+                @click="openMerge(p)"
               >
                 해결
               </button>
             </li>
-          </template>
-        </ul>
+          </ul>
+
+          <!-- c25-2.3 — Tree 모드: Conflicted (string row, action=mergetool / 해결) -->
+          <ul v-else-if="!collapsedConflicted && viewMode === 'tree'">
+            <template v-for="(row, idx) in conflictedTreeRows" :key="`ct-${idx}`">
+              <li
+                v-if="row.kind === 'dir'"
+                class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 text-destructive hover:bg-destructive/10"
+                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+                @click="toggleDir(row.path)"
+              >
+                <span class="text-[10px]">{{ row.collapsed ? '▶' : '▼' }}</span>
+                <span class="font-mono text-[11px]">{{ row.name }}/</span>
+              </li>
+              <li
+                v-else
+                class="group flex items-center gap-2 rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
+                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              >
+                <span class="flex-1 truncate font-mono" :title="row.path">! {{ row.name }}</span>
+                <button
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+                  title="외부 mergetool"
+                  :disabled="mergetoolMut.isPending.value"
+                  @click="onLaunchMergetool(row.path)"
+                >
+                  🛠
+                </button>
+                <button
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+                  @click="openMerge(row.path)"
+                >
+                  해결
+                </button>
+              </li>
+            </template>
+          </ul>
+        </div>
       </div>
-    </div>
 
       <!-- Sprint 22-7 V-5: 선택 파일 inline diff preview (하단 fixed 30%) -->
       <div
@@ -925,7 +908,11 @@ function onNextHunk() {
           <div class="flex min-w-0 items-center gap-2 text-xs">
             <span
               class="shrink-0 rounded px-1.5 text-[10px] font-bold"
-              :class="selectedIsStaged ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/20 text-amber-500'"
+              :class="
+                selectedIsStaged
+                  ? 'bg-emerald-500/20 text-emerald-500'
+                  : 'bg-amber-500/20 text-amber-500'
+              "
             >
               {{ selectedIsStaged ? 'STAGED' : 'WORKDIR' }}
             </span>
@@ -1036,12 +1023,7 @@ function onNextHunk() {
           >
             (변경 없음 — binary 파일이거나 untracked)
           </div>
-          <DiffViewer
-            v-else
-            ref="inlineDiff"
-            :patch="detailDiffQuery.data.value"
-            class="h-full"
-          />
+          <DiffViewer v-else ref="inlineDiff" :patch="detailDiffQuery.data.value" class="h-full" />
         </div>
       </div>
     </template>
