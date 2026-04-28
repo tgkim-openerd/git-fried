@@ -9,8 +9,6 @@ import { open } from '@tauri-apps/plugin-dialog'
 import {
   addRepo,
   bulkFetch,
-  createWorkspace,
-  deleteWorkspace,
   fetchAll,
   listRepos,
   listWorkspaces,
@@ -18,7 +16,6 @@ import {
   openInExplorer,
   removeRepo,
   setRepoPinned,
-  updateWorkspace,
 } from '@/api/git'
 import { useMutation } from '@tanstack/vue-query'
 import { humanizeGitError, describeError } from '@/api/errors'
@@ -27,6 +24,7 @@ import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { useSidebarFilter } from '@/composables/useSidebarFilter'
 import { useSidebarGroups } from '@/composables/useSidebarGroups'
+import { useWorkspaceMutations } from '@/composables/useWorkspaceMutations'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useNotification } from '@/composables/useNotification'
 import BulkFetchResultModal from './BulkFetchResultModal.vue'
@@ -166,67 +164,19 @@ useShortcut('filterRepos', focusRepoFilter)
 // Sprint B9 — directory / org 그룹핑. composables/useSidebarGroups.ts 로 추출 (Sidebar 분리 2/N).
 const { groupMode, setGroupMode, groups } = useSidebarGroups(filteredRepos)
 
-// === Workspace color / 신규 / 편집 (Sprint B9) ===
-const newWorkspaceName = ref('')
-const newWorkspaceColor = ref('#0ea5e9')
-const editingWorkspaceId = ref<number | null>(null)
-
-const COLOR_PRESETS = [
-  '#0ea5e9', // sky
-  '#22c55e', // green
-  '#f59e0b', // amber
-  '#a78bfa', // violet
-  '#f43f5e', // rose
-  '#10b981', // emerald
-  '#06b6d4', // cyan
-  '#ef4444', // red
-  '#6b7280', // gray
-] as const
-
-const createWorkspaceMut = useMutation({
-  mutationFn: () => createWorkspace(newWorkspaceName.value.trim(), newWorkspaceColor.value),
-  onSuccess: () => {
-    newWorkspaceName.value = ''
-    qc.invalidateQueries({ queryKey: ['workspaces'] })
-  },
-  onError: (e) => toast.error('워크스페이스 생성 실패', describeError(e)),
-})
-
-const updateWorkspaceMut = useMutation({
-  mutationFn: ({ id, name, color }: { id: number; name?: string | null; color?: string | null }) =>
-    updateWorkspace(id, name, color),
-  onSuccess: () => {
-    editingWorkspaceId.value = null
-    qc.invalidateQueries({ queryKey: ['workspaces'] })
-  },
-  onError: (e) => toast.error('워크스페이스 수정 실패', describeError(e)),
-})
-
-const deleteWorkspaceMut = useMutation({
-  mutationFn: (id: number) => deleteWorkspace(id),
-  onSuccess: () => {
-    qc.invalidateQueries({ queryKey: ['workspaces'] })
-    qc.invalidateQueries({ queryKey: ['repos'] })
-    if (store.activeWorkspaceId != null) store.setActiveWorkspace(null)
-  },
-  onError: (e) => toast.error('워크스페이스 삭제 실패', describeError(e)),
-})
-
-const activeWorkspace = computed(() =>
-  workspaces.value?.find((w) => w.id === store.activeWorkspaceId),
-)
-
-function confirmDeleteWorkspace() {
-  const w = activeWorkspace.value
-  if (!w) return
-  if (confirm(`워크스페이스 '${w.name}' 삭제? 레포는 보존되고 그룹 해제만.`)) {
-    deleteWorkspaceMut.mutate(w.id)
-  }
-}
-
-function tryCreateWorkspace() {
-  if (newWorkspaceName.value.trim()) createWorkspaceMut.mutate()
-}
+// === Workspace mutations (Sprint c29-2 — composables/useWorkspaceMutations 로 추출) ===
+const ws = useWorkspaceMutations(() => workspaces.value)
+// 기존 코드 호환성 위해 alias 노출 (template binding 영향 최소).
+const newWorkspaceName = ws.newName
+const newWorkspaceColor = ws.newColor
+const editingWorkspaceId = ws.editingId
+const COLOR_PRESETS = ws.colorPresets
+const createWorkspaceMut = ws.createMut
+const updateWorkspaceMut = ws.updateMut
+// deleteWorkspaceMut 는 confirmDeleteWorkspace 내부에서 ws 통해 호출 — 별도 노출 불필요
+const activeWorkspace = ws.activeWorkspace
+const confirmDeleteWorkspace = ws.confirmDelete
+const tryCreateWorkspace = ws.tryCreate
 
 // === Repo alias (Sprint B4) === — `aliases` 는 위에서 hoist (Sprint I).
 const editingAliasRepoId = ref<number | null>(null)
