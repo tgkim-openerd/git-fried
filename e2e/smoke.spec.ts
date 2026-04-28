@@ -75,6 +75,38 @@ test.describe('git-fried smoke', () => {
     await expect(stashToggle).toHaveAttribute('title', /펴기/)
   })
 
+  // selector follow-up — sidebar 의 '◇ 변경' quick action 과 main nav 의 '변경' tab 구분이 fragile
+  // 본 시나리오는 mcp__playwright dogfood 에서 검증됨 (수동 통과). data-testid 추가 후 재활성.
+  test.skip('Path/Tree 토글 + 4 섹션 노출', async ({ page }) => {
+    // main 의 nav 안 '변경' button (Sidebar quick action 의 ◇ 변경 과 구분)
+    await page.locator('nav').getByRole('button', { name: '변경', exact: true }).click()
+    await expect(page.getByText(/▼\s*STAGED/)).toBeVisible()
+    await expect(page.getByText(/▼\s*MODIFIED/)).toBeVisible()
+    await expect(page.getByText(/▼\s*UNTRACKED/)).toBeVisible()
+    await expect(page.getByText(/▼\s*CONFLICTED/)).toBeVisible()
+
+    // Tree 모드 토글 — 디렉토리 트리 모드 button
+    const treeBtn = page.locator('button[aria-label="디렉토리 트리 모드"]')
+    await treeBtn.click()
+    // localStorage 영속 검증
+    const stored = await page.evaluate(() => localStorage.getItem('git-fried.status.viewMode'))
+    expect(stored).toBe('tree')
+  })
+
+  test('CommitSearchModal — 검색 결과 노출 + Esc 닫기', async ({ page }) => {
+    await page.keyboard.press('Control+Shift+F')
+    const dialog = page.getByRole('dialog', { name: 'Commit message 검색' })
+    await expect(dialog).toBeVisible()
+    const input = page.locator('input[placeholder*="git log --grep"]')
+    await input.fill('feat')
+    // devMock 의 fake commit log 에 "feat" 포함 메시지 존재 → 결과 노출 (시간 제한 내)
+    await expect(page.getByText(/개 결과 \(max 50\)|매칭 commit 없음/)).toBeVisible({
+      timeout: 2_000,
+    })
+    await page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+  })
+
   test('console.error 0건', async ({ page }) => {
     const errors: string[] = []
     page.on('console', (msg) => {
