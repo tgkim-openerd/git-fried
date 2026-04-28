@@ -26,6 +26,7 @@ import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { useSidebarFilter } from '@/composables/useSidebarFilter'
+import { useSidebarGroups } from '@/composables/useSidebarGroups'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useNotification } from '@/composables/useNotification'
 import BulkFetchResultModal from './BulkFetchResultModal.vue'
@@ -50,15 +51,9 @@ const bulkResultFailedCount = computed(
   () => bulkResultStore.last.value?.results.filter((r) => !r.success).length ?? 0,
 )
 
-// Sprint B9 — Sidebar 그룹핑 모드 (디렉토리 / org) + workspace color 편집.
-// localStorage 영속.
-type GroupMode = 'directory' | 'org'
-const GROUP_KEY = 'git-fried.sidebar-group-mode'
-function loadGroupMode(): GroupMode {
-  if (typeof localStorage === 'undefined') return 'directory'
-  const v = localStorage.getItem(GROUP_KEY)
-  return v === 'org' ? 'org' : 'directory'
-}
+// Sprint B9 — Sidebar 그룹핑 모드 (디렉토리 / org). composables/useSidebarGroups.ts 로 추출 (Sidebar 분리 2/N).
+// type / load / persist / groups computed 모두 composable 내부.
+import type { GroupMode } from '@/composables/useSidebarGroups'
 
 const toast = useToast()
 
@@ -150,40 +145,8 @@ function togglePin(repo: Repo, e: Event) {
   pinMut.mutate({ id: repo.id, pinned: !repo.isPinned })
 }
 
-// === 그룹핑 ===
-//
-// 두 가지 모드:
-//   - directory: 부모 디렉토리 이름 (예: peeloff/frontend + peeloff/frontend-admin)
-//   - org: forge_owner (예: opnd-frontend/x + opnd-frontend/y → "opnd-frontend")
-//
-// 사용자가 회사 50+ 레포를 organization 별 그룹화 — Sprint B9 (`docs/plan/11 §22`).
-interface RepoGroup {
-  key: string
-  label: string | null
-  repos: Repo[]
-}
-
-const groupMode = ref<GroupMode>(loadGroupMode())
-function setGroupMode(m: GroupMode) {
-  groupMode.value = m
-  if (typeof localStorage !== 'undefined') {
-    try {
-      localStorage.setItem(GROUP_KEY, m)
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
-// alias resolver — 필터 로직이 일찍 사용. 원래 below 였으나 hoist.
+// alias resolver — 필터 / 별칭 표시에 일찍 사용. 원래 below 였으나 hoist.
 const aliases = useRepoAliases()
-
-function groupKey(r: Repo): string {
-  if (groupMode.value === 'org') {
-    return r.forgeOwner ?? '__no-org__'
-  }
-  return parentDirName(r.localPath) ?? '__solo__'
-}
 
 // Sprint I — Sidebar 레포 필터 (⌘⌥F). composables/useSidebarFilter.ts 로 추출 (Sidebar God comp 1/N).
 const filterInputRef = useTemplateRef<HTMLInputElement>('filterInput')
@@ -200,37 +163,8 @@ window.gitFriedFocusRepoFilter = focusRepoFilter
 
 useShortcut('filterRepos', focusRepoFilter)
 
-const groups = computed<RepoGroup[]>(() => {
-  if (!filteredRepos.value.length) return []
-  const map = new Map<string, Repo[]>()
-  for (const r of filteredRepos.value) {
-    const k = groupKey(r)
-    if (!map.has(k)) map.set(k, [])
-    map.get(k)!.push(r)
-  }
-  const result: RepoGroup[] = []
-  for (const [key, list] of map.entries()) {
-    const isSolo = key === '__solo__' || key === '__no-org__' || list.length === 1
-    if (isSolo) {
-      result.push({ key, label: null, repos: list })
-    } else {
-      result.push({ key, label: key, repos: list })
-    }
-  }
-  result.sort((a, b) => {
-    if (a.label && !b.label) return -1
-    if (!a.label && b.label) return 1
-    return (a.label || a.repos[0].name).localeCompare(b.label || b.repos[0].name)
-  })
-  return result
-})
-
-function parentDirName(p: string): string | null {
-  // 윈도/유닉스 둘 다 처리
-  const norm = p.replace(/\\/g, '/').replace(/\/+$/, '')
-  const parts = norm.split('/')
-  return parts.length >= 2 ? parts[parts.length - 2] : null
-}
+// Sprint B9 — directory / org 그룹핑. composables/useSidebarGroups.ts 로 추출 (Sidebar 분리 2/N).
+const { groupMode, setGroupMode, groups } = useSidebarGroups(filteredRepos)
 
 // === Workspace color / 신규 / 편집 (Sprint B9) ===
 const newWorkspaceName = ref('')

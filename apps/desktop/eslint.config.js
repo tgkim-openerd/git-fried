@@ -14,6 +14,7 @@ export default [
       '**/*.d.ts',
       'auto-imports.d.ts',
       'components.d.ts',
+      'coverage/**',
     ],
   },
   js.configs.recommended,
