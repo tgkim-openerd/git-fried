@@ -358,6 +358,13 @@ function onReorder() {
   cols.setOrder(headerOrder.value)
 }
 
+// header 메뉴 "기본값 복원" — prettier 가 vue template 의 multi-statement 를
+// 깨뜨려 (semicolon → newline) parse 에러 일으키는 회귀 방지용 함수 추출.
+function resetColsAndCloseMenu() {
+  cols.reset()
+  headerMenuOpen.value = false
+}
+
 function colDef(id: CommitColumnId) {
   return cols.allColumns.find((c) => c.id === id)
 }
@@ -487,10 +494,7 @@ onUnmounted(() => {
           <li class="border-t border-border" />
           <li
             class="cursor-pointer px-3 py-1.5 text-muted-foreground hover:bg-accent/40"
-            @click="
-              cols.reset()
-              headerMenuOpen = false
-            "
+            @click="resetColsAndCloseMenu"
           >
             기본값 복원
           </li>
