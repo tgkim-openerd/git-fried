@@ -114,7 +114,7 @@ export interface UndoResult {
   newHeadSha: string | null
 }
 export const undoLastAction = (repoId: number): Promise<UndoResult> =>
-  invoke('undo_last_action', { repoId })
+  invoke('undo_last_action', { args: { repoId } })
 
 // --- Sync ---
 export const fetchAll = (repoId: number): Promise<SyncResult> =>

@@ -10,7 +10,8 @@
 // 영속화: localStorage `git-fried.active-repo-quick.collapsed`.
 import { computed } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
-import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useStatusCounts } from '@/composables/useStatusCounts'
 import { useBranches } from '@/composables/useBranches'
 import { useStash } from '@/composables/useStash'
 import { useWorktrees } from '@/composables/useWorktrees'
@@ -35,7 +36,9 @@ const collapsedWorktree = useSectionCollapse('active-repo-quick.worktree')
 const collapsedPrs = useSectionCollapse('active-repo-quick.pr')
 
 const repoIdRef = computed(() => store.activeRepoId)
+// ARCH-006 fix — useStatusCounts 단일 진실원천. status 는 branch/upstream/ahead 만 별도 사용.
 const { data: status } = useStatus(repoIdRef)
+const { counts } = useStatusCounts(repoIdRef)
 // c25-3 step 2 — 활성 레포의 로컬 브랜치 mini list (top 5, current HEAD ✓).
 const { data: branches } = useBranches(repoIdRef)
 const localBranches = computed(() => {
@@ -161,15 +164,7 @@ const upstream = computed(() => status.value?.upstream ?? null)
 const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
-const counts = computed(() => {
-  const s = status.value
-  if (!s) return { total: 0, staged: 0, unstaged: 0, untracked: 0, conflicted: 0 }
-  const staged = s.staged?.length ?? 0
-  const unstaged = s.unstaged?.length ?? 0
-  const untracked = s.untracked?.length ?? 0
-  const conflicted = s.conflicted?.length ?? 0
-  return { total: staged + unstaged + untracked + conflicted, staged, unstaged, untracked, conflicted }
-})
+// ARCH-006 fix — counts 는 useStatusCounts (위) 에서 import.
 
 // 7-tab 단축 버튼 — pages/index.vue 의 useShortcut('tab1'~'tab7') 로 dispatch.
 // (변경/브랜치/Stash/Sub/LFS/PR/WT 매핑)

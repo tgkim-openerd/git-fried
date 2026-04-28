@@ -15,7 +15,8 @@ import { computed } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { fetchAll, popStash, pull, pushStash, push, undoLastAction, updateSubmodules } from '@/api/git'
 import { useStash } from '@/composables/useStash'
-import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useStatusCounts } from '@/composables/useStatusCounts'
 import { useGeneralSettings } from '@/composables/useUserSettings'
 import { describeError, humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
@@ -36,20 +37,10 @@ const general = useGeneralSettings()
 
 const repoIdRef = computed(() => props.repoId)
 const { data: stashList } = useStash(repoIdRef)
-const { data: status } = useStatus(repoIdRef)
+// ARCH-006 fix — useStatusCounts 단일 진실원천.
+const { hasChanges } = useStatusCounts(repoIdRef)
 
 const stashCount = computed(() => stashList.value?.length ?? 0)
-const hasChanges = computed(() => {
-  const s = status.value
-  if (!s) return false
-  return (
-    (s.staged?.length ?? 0) +
-      (s.unstaged?.length ?? 0) +
-      (s.untracked?.length ?? 0) +
-      (s.conflicted?.length ?? 0) >
-    0
-  )
-})
 
 // === Mutations (SyncBar 동작 동등) ===
 const fetchMut = useMutation({
@@ -108,7 +99,13 @@ const undoMut = useMutation({
   onSuccess: (res) => {
     if (res.executed) {
       invalidate(props.repoId)
-      const preview = res.message.split(/\r?\n/)[0].slice(0, 50)
+      // SEC-005 fix — reflog 출력의 control char (ANSI escape 등) 위생화.
+      // Vue 자동 escape 가 XSS 자체는 차단하지만 toast 표시 깨짐 방지.
+      const preview = res.message
+        .split(/\r?\n/)[0]
+        .slice(0, 50)
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\x00-\x1f]/g, '')
       toast.success(
         `Undid: ${res.action}`,
         preview ? `'${preview}' 되돌림 (--soft, working tree 보존)` : '되돌림 완료',

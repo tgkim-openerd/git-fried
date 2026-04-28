@@ -5,7 +5,8 @@
 // 탭 전환 무관 항상 표시 — Branches/Stash/PR 등 다른 패널 보고 있어도 변경 카운트가 보임.
 // 클릭 시 status 탭으로 전환 (emit:'navigate-status').
 import { computed } from 'vue'
-import { useStatus } from '@/composables/useStatus'
+// ARCH-006 fix — useStatusCounts composable 단일 진실원천 사용.
+import { useStatusCounts } from '@/composables/useStatusCounts'
 
 const props = defineProps<{
   repoId: number | null
@@ -16,25 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const repoIdRef = computed(() => props.repoId)
-const { data: status } = useStatus(repoIdRef)
-
-const counts = computed(() => {
-  const s = status.value
-  if (!s) return { total: 0, staged: 0, unstaged: 0, untracked: 0, conflicted: 0 }
-  const staged = s.staged?.length ?? 0
-  const unstaged = s.unstaged?.length ?? 0
-  const untracked = s.untracked?.length ?? 0
-  const conflicted = s.conflicted?.length ?? 0
-  return {
-    total: staged + unstaged + untracked + conflicted,
-    staged,
-    unstaged,
-    untracked,
-    conflicted,
-  }
-})
-
-const isClean = computed(() => counts.value.total === 0)
+const { counts, isClean } = useStatusCounts(repoIdRef)
 </script>
 
 <template>

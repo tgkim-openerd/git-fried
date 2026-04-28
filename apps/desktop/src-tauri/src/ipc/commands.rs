@@ -734,12 +734,20 @@ pub async fn revert(args: RevertArgs, state: tauri::State<'_, Arc<AppState>>) ->
 
 // ====== Sprint c25-1.5 — Undo last action ======
 
+// ARCH-007 fix — 다른 IPC (reset/revert) 와 일관 args struct 패턴.
+// 향후 옵션 (e.g., confirm_force) 추가 시 breaking change 회피.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UndoLastActionArgs {
+    pub repo_id: i64,
+}
+
 #[tauri::command]
 pub async fn undo_last_action(
-    repo_id: i64,
+    args: UndoLastActionArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_reset::UndoResult> {
-    let path = repo_path(&state, repo_id).await?;
+    let path = repo_path(&state, args.repo_id).await?;
     git_reset::undo_last_action(&path).await
 }
 

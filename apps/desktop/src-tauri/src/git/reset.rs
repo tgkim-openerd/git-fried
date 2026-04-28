@@ -79,32 +79,35 @@ pub async fn undo_last_action(path: &Path) -> AppResult<UndoResult> {
         None => (raw.clone(), String::new()),
     };
 
-    // 3. 지원 액션 화이트리스트.
-    //    `commit`, `commit (amend)`, `commit (initial)`, `commit (merge)` 만.
-    //    `merge`, `pull`, `rebase`, `checkout`, `reset`, `cherry-pick` 등은 거부.
-    let supported = action == "commit"
-        || action.starts_with("commit (");
+    // 3. 지원 액션 화이트리스트 (SEC-007 / ARCH-011 fix).
+    //    명시 매칭 — `commit (cherry-pick)` 등 미래 git 버전의 새 subaction 자동 통과 방지.
+    let supported = matches!(
+        action.as_str(),
+        "commit" | "commit (amend)" | "commit (initial)" | "commit (merge)"
+    );
     if !supported {
         return Ok(UndoResult {
             action,
             message,
             executed: false,
             rejection_reason: Some(
-                "commit/amend 외 액션은 안전 보장 어려움 — Reflog 모달에서 직접 처리하세요."
+                "commit/amend/initial/merge 외 액션은 안전 보장 어려움 — Reflog 모달에서 직접 처리하세요."
                     .to_string(),
             ),
             new_head_sha: None,
         });
     }
 
-    // 4. HEAD@{1} 이 존재하는지 확인 (reflog entry 1개뿐이면 거부).
-    let prev_check = git_run(
+    // 4. SEC-004 fix — TOCTOU 방지: HEAD@{1} 의 SHA 를 캡처해 reset target 으로 직접 사용.
+    //    reflog 조회 (1) → SHA 캡처 (4) → reset (5) 사이에 외부 git 프로세스 (CLI/hooks)
+    //    가 reflog 추가하더라도 캡처된 SHA 로 reset → race 무력화.
+    let prev_sha = git_run(
         path,
         &["rev-parse", "--verify", "HEAD@{1}"],
         &GitRunOpts::default(),
     )
     .await?;
-    if prev_check.exit_code != Some(0) {
+    if prev_sha.exit_code != Some(0) {
         return Ok(UndoResult {
             action,
             message,
@@ -113,9 +116,20 @@ pub async fn undo_last_action(path: &Path) -> AppResult<UndoResult> {
             new_head_sha: None,
         });
     }
+    let target_sha = prev_sha.stdout.trim().to_string();
+    if target_sha.is_empty() {
+        return Ok(UndoResult {
+            action,
+            message,
+            executed: false,
+            rejection_reason: Some("HEAD@{1} SHA 조회 실패 (빈 응답).".to_string()),
+            new_head_sha: None,
+        });
+    }
 
-    // 5. soft reset — working tree / index 보존, branch 만 HEAD@{1} 로.
-    git_run(path, &["reset", "--soft", "HEAD@{1}"], &GitRunOpts::default())
+    // 5. soft reset — working tree / index 보존, branch 만 캡처된 SHA 로.
+    //    HEAD@{1} 직접 사용 안 함 (race 방지).
+    git_run(path, &["reset", "--soft", &target_sha], &GitRunOpts::default())
         .await?
         .into_ok()?;
 

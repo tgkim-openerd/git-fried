@@ -51,6 +51,11 @@ function setViewMode(m: ViewMode) {
 }
 
 // Tree mode — 디렉토리 collapse 상태 (path 별 Set).
+//
+// ARCH-005 (의도적 일관성) — 4 섹션 (Staged / Modified / Untracked / Conflicted) 이
+// 동일한 `apps/desktop/src/api` 디렉토리 노드를 가질 수 있다. 한쪽에서 접으면 양쪽 모두
+// 접히는 동작이 의도. 사용자가 "이 디렉토리 전체 숨김" 모델로 인지하기 쉽게 통일.
+// 섹션별 분리가 필요하면 `Record<SectionKey, Set<string>>` 으로 변경 (현재 미적용).
 const collapsedDirs = ref<Set<string>>(new Set())
 function toggleDir(path: string) {
   const next = new Set(collapsedDirs.value)

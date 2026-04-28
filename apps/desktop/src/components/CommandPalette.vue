@@ -505,6 +505,29 @@ const allCommands = computed<Cmd[]>(() => {
       action: callWindow('gitFriedOpenReflog'),
     },
 
+    // ===== Diff (3 — Sprint c25-4.5 / c26-3, ARCH-008 fix) =====
+    {
+      id: 'diff.toggle-inline',
+      category: 'history',
+      label: 'Inline diff panel 토글',
+      hint: '⌘⇧D',
+      action: trigger('toggleInlineDiff'),
+    },
+    {
+      id: 'diff.prev-hunk',
+      category: 'history',
+      label: 'Diff 이전 hunk',
+      hint: 'Alt+↑',
+      action: trigger('prevHunk'),
+    },
+    {
+      id: 'diff.next-hunk',
+      category: 'history',
+      label: 'Diff 다음 hunk',
+      hint: 'Alt+↓',
+      action: trigger('nextHunk'),
+    },
+
     // ===== AI (1) =====
     {
       id: 'ai.explain-current',

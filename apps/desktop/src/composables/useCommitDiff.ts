@@ -57,12 +57,15 @@ export function useCommitDiff(options: UseCommitDiffOptions) {
     mutationFn: () => {
       const id = repoIdRef.value
       const sha = shaRef.value
+      // TYPE-004 fix — ai.available.value 두 번 접근 사이 reactivity 변경 race 방지.
+      // 한 번만 읽고 로컬 캡처.
+      const cli = ai.available.value
       if (id == null || sha == null) return Promise.reject(new Error('레포/sha 미선택'))
-      if (ai.available.value == null) {
+      if (cli == null) {
         return Promise.reject(new Error('Claude/Codex CLI 미설치'))
       }
       if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
-      return aiExplainCommit(id, ai.available.value, sha, true)
+      return aiExplainCommit(id, cli, sha, true)
     },
     onSuccess: (out) => {
       if (out.success) {

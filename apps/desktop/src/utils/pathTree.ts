@@ -95,7 +95,9 @@ function materialize<T>(
         cur.children.size === 1 &&
         cur.files.length === 0
       ) {
-        const onlyEntry = cur.children.entries().next().value
+        // TYPE-002 fix — Map.entries().next() 의 IteratorResult 가 narrowing 어려움.
+        // 명시적 array 변환으로 [string, RawDir<T>] | undefined 안전 추출.
+        const onlyEntry = [...cur.children.entries()][0]
         if (!onlyEntry) break
         const [nextName, nextChild] = onlyEntry
         displayName += '/' + nextName
