@@ -8,6 +8,8 @@ import StatusPanel from '@/components/StatusPanel.vue'
 // Sprint c25-1 (`docs/plan/25 §2`) — SyncBar → GitKrakenToolbar 교체.
 // SyncBar 는 단계적 마이그레이션을 위해 보존 (c25-3 이후 deprecation 검토).
 import GitKrakenToolbar from '@/components/GitKrakenToolbar.vue'
+// Sprint c25-2 (`docs/plan/25 §3`) — 우측 패널 영구 헤더 (탭 전환 무관).
+import ChangeCountBadge from '@/components/ChangeCountBadge.vue'
 import CommitMessageInput from '@/components/CommitMessageInput.vue'
 import BranchPanel from '@/components/BranchPanel.vue'
 import StashPanel from '@/components/StashPanel.vue'
@@ -135,11 +137,17 @@ onUnmounted(() => {
       />
       <div v-else />
 
-      <!-- 우측: 탭 (Status / Branches / Stash) + 하단 commit input -->
+      <!-- 우측: 영구 ChangeCountBadge + 탭 (Status / Branches / Stash) + 하단 commit input -->
       <div
         v-if="ui.detailVisible.value || focusMode"
-        class="grid grid-rows-[auto_1fr_auto] overflow-hidden border-l border-border"
+        class="grid grid-rows-[auto_auto_1fr_auto] overflow-hidden border-l border-border"
       >
+        <!-- Sprint c25-2 §3 — 항상 표시되는 변경 카운트 (탭 무관) -->
+        <ChangeCountBadge
+          :repo-id="store.activeRepoId"
+          :branch="branch"
+          @navigate-status="tab = 'status'"
+        />
         <nav
           class="flex border-b border-border bg-card text-xs"
           title="더블클릭 = 좌측 그래프 숨김 / 복원"

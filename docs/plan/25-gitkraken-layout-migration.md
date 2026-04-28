@@ -151,7 +151,13 @@ GitKraken 의 좌측 sidebar 처럼 **Workspace · Branches · Tags · Stash · 
 
 ## 7. 진행 로그
 
-### 2026-04-28 — c25-1 진입
+### 2026-04-28 — c25-1 / c25-2 동일 세션 진행
 - feature branch `feat/c25-gitkraken-layout` 생성 (main: `ac4c918`)
 - plan 25 문서 작성
-- (아래 세션 작업 진행 중)
+- **c25-1 commit `75c8712`** — GitKrakenToolbar 8-button 도입 (typecheck ✅ / tests 74 pass)
+- **c25-2 (이번 세션)** — 우측 패널 영구 commit 강화:
+  - `ChangeCountBadge.vue` 신규 — 탭 무관 항상 노출되는 "N file changes on {branch}" 헤더 (staged/mod/new/conflicted 색 코드 badge)
+  - `CommitMessageInput.vue` 보강 — Amend 체크박스 + last_commit_message prefill (conventional 패턴 자동 매칭) + Stage Changes to Commit combo CTA (⌘⇧Enter wrapper, 대형 emerald 버튼)
+  - `pages/index.vue` 우측 panel grid 행 4개로 확장 (badge / nav / content / commit input)
+  - 기존 단축키 (⌘1~7 탭 / ⌘⇧Enter / ⌘Enter) 회귀 없음
+- 다음: c25-3 (좌측 sidebar 통합) 또는 c25-4 (Diff 인라인화) — 사용자 dogfood feedback 후 우선순위 결정
