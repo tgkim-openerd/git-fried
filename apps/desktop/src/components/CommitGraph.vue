@@ -206,14 +206,7 @@ function drawGraph() {
         } else {
           // 곡선 (베지어)
           ctx.moveTo(fromX, y)
-          ctx.bezierCurveTo(
-            fromX,
-            y + ROW_H / 2,
-            toX,
-            nextY - ROW_H / 2,
-            toX,
-            nextY,
-          )
+          ctx.bezierCurveTo(fromX, y + ROW_H / 2, toX, nextY - ROW_H / 2, toX, nextY)
         }
         ctx.stroke()
       }
@@ -358,12 +351,9 @@ watch(headerMenuOpen, (open) => {
 // drag-drop 의 v-model 은 visibleColumns 의 mutated 배열.
 // VueDraggable 이 array 를 in-place 변경하므로 setOrder 호출.
 const headerOrder = ref<CommitColumnId[]>(cols.visibleIds.value.slice())
-watch(
-  cols.visibleIds,
-  (ids) => {
-    headerOrder.value = ids.slice()
-  },
-)
+watch(cols.visibleIds, (ids) => {
+  headerOrder.value = ids.slice()
+})
 function onReorder() {
   cols.setOrder(headerOrder.value)
 }
@@ -497,7 +487,10 @@ onUnmounted(() => {
           <li class="border-t border-border" />
           <li
             class="cursor-pointer px-3 py-1.5 text-muted-foreground hover:bg-accent/40"
-            @click="cols.reset(); headerMenuOpen = false"
+            @click="
+              cols.reset()
+              headerMenuOpen = false
+            "
           >
             기본값 복원
           </li>
@@ -505,11 +498,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div
-      ref="containerRef"
-      class="relative flex-1 overflow-auto"
-      @scroll="onScroll"
-    >
+    <div ref="containerRef" class="relative flex-1 overflow-auto" @scroll="onScroll">
       <!-- 가상 height -->
       <div :style="{ height: totalHeight + 'px', position: 'relative' }">
         <!-- canvas (sticky 좌측) -->
@@ -553,13 +542,12 @@ onUnmounted(() => {
           }"
           class="flex cursor-pointer items-center gap-2 px-2 text-sm hover:bg-accent/40 transition-opacity"
           :class="[
-            selectedSha === rows[v.index]?.commit.sha
-              ? 'bg-accent text-accent-foreground'
-              : '',
+            selectedSha === rows[v.index]?.commit.sha ? 'bg-accent text-accent-foreground' : '',
             searchQuery && rows[v.index] && !isMatch(rows[v.index], searchQuery)
               ? 'opacity-25'
               : '',
           ]"
+          :data-testid="`commit-row-${rows[v.index]?.commit.sha?.slice(0, 7) ?? `idx-${v.index}`}`"
           draggable="true"
           @dragstart="
             (ev: DragEvent) => {
@@ -583,10 +571,7 @@ onUnmounted(() => {
               {{ rows[v.index]?.commit.shortSha }}
             </span>
             <!-- message + refs -->
-            <span
-              v-else-if="col.id === 'message'"
-              :class="[col.widthClass, 'truncate']"
-            >
+            <span v-else-if="col.id === 'message'" :class="[col.widthClass, 'truncate']">
               {{ rows[v.index]?.commit.subject }}
               <template v-for="r in rows[v.index]?.commit.refs ?? []" :key="r">
                 <span
@@ -606,9 +591,7 @@ onUnmounted(() => {
                         ? `Solo 해제: ${r}`
                         : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
                     "
-                    :aria-label="
-                      soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`
-                    "
+                    :aria-label="soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`"
                     @click.stop="toggleSoloRef(r)"
                   >
                     {{ r }}

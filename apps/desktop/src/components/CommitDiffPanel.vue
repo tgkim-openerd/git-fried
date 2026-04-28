@@ -40,15 +40,22 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
 </script>
 
 <template>
-  <section class="flex h-full flex-col overflow-hidden border-t border-border bg-card">
-    <header class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1.5">
+  <section
+    data-testid="inline-diff-panel"
+    class="flex h-full flex-col overflow-hidden border-t border-border bg-card"
+  >
+    <header
+      class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1.5"
+    >
       <div class="flex items-center gap-2 font-mono text-xs">
         <span class="rounded bg-emerald-500/15 px-1.5 text-[10px] font-bold text-emerald-500">
           INLINE DIFF
         </span>
         <span>commit</span>
         <span v-if="sha" class="text-muted-foreground">{{ sha.slice(0, 12) }}</span>
-        <span v-if="cd.isFetching.value" class="text-[10px] text-muted-foreground">불러오는 중...</span>
+        <span v-if="cd.isFetching.value" class="text-[10px] text-muted-foreground"
+          >불러오는 중...</span
+        >
       </div>
       <div class="flex flex-wrap items-center gap-1">
         <!-- Hunk ↑↓ -->
@@ -168,17 +175,10 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
       >
         {{ describeError(cd.error.value) }}
       </p>
-      <p
-        v-else-if="!sha"
-        class="p-6 text-center text-sm text-muted-foreground"
-      >
+      <p v-else-if="!sha" class="p-6 text-center text-sm text-muted-foreground">
         그래프에서 commit 을 선택하세요. (J/K 또는 클릭)
       </p>
-      <DiffSplitView
-        v-else-if="cd.data.value && isSplit"
-        :patch="cd.data.value"
-        class="h-full"
-      />
+      <DiffSplitView v-else-if="cd.data.value && isSplit" :patch="cd.data.value" class="h-full" />
       <DiffViewer v-else-if="cd.data.value" ref="diffRef" :patch="cd.data.value" class="h-full" />
     </div>
 
