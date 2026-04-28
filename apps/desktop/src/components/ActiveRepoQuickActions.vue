@@ -9,16 +9,56 @@
 // 의도: Sidebar 의 footer 위, repo list 아래에 collapsible details 로 배치.
 // 영속화: localStorage `git-fried.active-repo-quick.collapsed`.
 import { computed } from 'vue'
-import { useStatus } from '@/composables/useStatus'
+import { useMutation } from '@tanstack/vue-query'
+import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useBranches } from '@/composables/useBranches'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
+import { switchBranch } from '@/api/git'
+import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 
 const store = useReposStore()
+const toast = useToast()
+const invalidate = useInvalidateRepoQueries()
 const collapsed = useSectionCollapse('active-repo-quick')
 
 const repoIdRef = computed(() => store.activeRepoId)
 const { data: status } = useStatus(repoIdRef)
+// c25-3 step 2 — 활성 레포의 로컬 브랜치 mini list (top 5, current HEAD ✓).
+const { data: branches } = useBranches(repoIdRef)
+const localBranches = computed(() => {
+  const all = branches.value ?? []
+  return all.filter((b) => b.kind === 'local')
+})
+// HEAD branch 우선, 그 다음 최근 정렬 순.
+const miniBranches = computed(() => {
+  const list = [...localBranches.value]
+  list.sort((a, b) => {
+    if (a.isHead && !b.isHead) return -1
+    if (b.isHead && !a.isHead) return 1
+    return 0
+  })
+  return list.slice(0, 5)
+})
+const moreBranchesCount = computed(() =>
+  Math.max(0, localBranches.value.length - miniBranches.value.length),
+)
+
+const switchMut = useMutation({
+  mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name),
+  onSuccess: (_res, vars) => {
+    invalidate(store.activeRepoId)
+    toast.success(`브랜치 전환`, vars.name)
+  },
+  onError: (e) => toast.error('브랜치 전환 실패', describeError(e)),
+})
+function onSwitchBranch(name: string, isHead: boolean) {
+  if (isHead) return
+  if (store.activeRepoId == null) return
+  switchMut.mutate({ id: store.activeRepoId, name })
+}
 
 const branch = computed(() => status.value?.branch ?? null)
 const upstream = computed(() => status.value?.upstream ?? null)
@@ -101,6 +141,52 @@ const QUICK_TABS = [
           <span class="text-sm leading-none">{{ t.icon }}</span>
           <span class="leading-tight">{{ t.label }}</span>
         </button>
+      </div>
+
+      <!-- c25-3 step 2 — 로컬 브랜치 mini list (top 5, 클릭 시 switch). -->
+      <div v-if="miniBranches.length > 0" class="mt-1 space-y-0.5">
+        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span>로컬 브랜치 ({{ localBranches.length }})</span>
+          <button
+            type="button"
+            class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
+            title="전체 브랜치 패널 (⌘B)"
+            @click="dispatchShortcut('newBranch')"
+          >
+            전체 →
+          </button>
+        </div>
+        <ul class="space-y-0.5">
+          <li
+            v-for="b in miniBranches"
+            :key="`mb-${b.name}`"
+            class="group flex items-center gap-1 rounded px-1 py-0.5 text-[11px]"
+            :class="
+              b.isHead
+                ? 'bg-emerald-500/10 text-emerald-500'
+                : 'text-foreground hover:bg-accent/40 cursor-pointer'
+            "
+            :title="
+              b.isHead
+                ? '현재 HEAD (체크아웃 됨)'
+                : `${b.name} 으로 체크아웃 (clean working tree 권장)`
+            "
+            @click="onSwitchBranch(b.name, b.isHead)"
+          >
+            <span class="shrink-0 w-3 text-center">{{ b.isHead ? '●' : '' }}</span>
+            <span class="flex-1 truncate font-mono">{{ b.name }}</span>
+            <span v-if="b.ahead || b.behind" class="text-[9px]">
+              <span v-if="b.ahead" class="text-emerald-500">↑{{ b.ahead }}</span>
+              <span v-if="b.behind" class="ml-0.5 text-rose-500">↓{{ b.behind }}</span>
+            </span>
+          </li>
+          <li
+            v-if="moreBranchesCount > 0"
+            class="px-1 py-0.5 text-[10px] text-muted-foreground"
+          >
+            ⋯ +{{ moreBranchesCount }}개 더 (전체 → 클릭)
+          </li>
+        </ul>
       </div>
     </div>
   </details>
