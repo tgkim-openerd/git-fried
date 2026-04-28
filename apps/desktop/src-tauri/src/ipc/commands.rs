@@ -10,10 +10,10 @@
 use crate::error::{AppError, AppResult};
 use crate::git::{
     branch as git_branch, bulk as git_bulk, clone as git_clone, commit as git_commit,
-    config_local as git_cfg_local, diff as git_diff, graph as git_graph,
-    maintenance as git_maint, remote as git_remote, repository as repo, reset as git_reset,
-    runner, stage, stash as git_stash, status as git_status, submodule as git_sub,
-    sync as git_sync, tag as git_tag,
+    config_local as git_cfg_local, diff as git_diff, graph as git_graph, maintenance as git_maint,
+    remote as git_remote, repository as repo, reset as git_reset, runner, stage,
+    stash as git_stash, status as git_status, submodule as git_sub, sync as git_sync,
+    tag as git_tag,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -488,6 +488,40 @@ pub async fn get_graph(
     tokio::task::spawn_blocking(move || git_graph::compute_graph(&path, limit))
         .await
         .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))?
+}
+
+// Sprint F-P5 — commit message 검색 (`git log --grep` 동등, git2 revwalk 기반).
+// CommandPalette 의 'msg:' prefix mode 가 호출. 한글 안전 (UTF-8).
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchCommitsByMessageArgs {
+    pub repo_id: i64,
+    pub pattern: String,
+    pub limit: Option<usize>,
+    #[serde(default = "default_case_insensitive")]
+    pub case_insensitive: bool,
+}
+
+fn default_case_insensitive() -> bool {
+    true
+}
+
+#[tauri::command]
+pub async fn search_commits_by_message(
+    args: SearchCommitsByMessageArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<repo::CommitSummary>> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let limit = args.limit.unwrap_or(50).min(500);
+    let pattern = args.pattern;
+    let ci = args.case_insensitive;
+    tokio::task::spawn_blocking(move || {
+        let r = repo::open(&path)?;
+        repo::search_commits_by_message(&r, &pattern, limit, ci)
+    })
+    .await
+    .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))?
 }
 
 // ====== Branches ======
@@ -1138,10 +1172,7 @@ pub struct PushTagArgs {
 }
 
 #[tauri::command]
-pub async fn push_tag(
-    args: PushTagArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn push_tag(args: PushTagArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let r = state.db.get_repo(args.repo_id).await?;
     git_tag::push_tag(Path::new(&r.local_path), &args.remote, &args.name).await
 }
@@ -1185,4 +1216,3 @@ pub async fn import_gitkraken_apply(
     let payload = gitkraken::read_payload(Path::new(&args.profile_dir))?;
     gitkraken::apply(&state.db, &payload).await
 }
-

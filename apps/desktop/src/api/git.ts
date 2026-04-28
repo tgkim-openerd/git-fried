@@ -23,30 +23,24 @@ import type {
 // --- 워크스페이스 ---
 export const listWorkspaces = (): Promise<Workspace[]> => invoke('list_workspaces')
 
-export const createWorkspace = (
-  name: string,
-  color?: string | null,
-): Promise<Workspace> => invoke('create_workspace', { name, color })
+export const createWorkspace = (name: string, color?: string | null): Promise<Workspace> =>
+  invoke('create_workspace', { name, color })
 
 export const updateWorkspace = (
   id: number,
   name?: string | null,
   color?: string | null,
-): Promise<Workspace> =>
-  invoke('update_workspace', { args: { id, name, color } })
+): Promise<Workspace> => invoke('update_workspace', { args: { id, name, color } })
 
-export const deleteWorkspace = (id: number): Promise<void> =>
-  invoke('delete_workspace', { id })
+export const deleteWorkspace = (id: number): Promise<void> => invoke('delete_workspace', { id })
 
 // --- 레포 ---
 export const listRepos = (workspaceId?: number | null): Promise<Repo[]> =>
   invoke('list_repos', { workspaceId })
 
-export const addRepo = (args: AddRepoArgs): Promise<Repo> =>
-  invoke('add_repo', { args })
+export const addRepo = (args: AddRepoArgs): Promise<Repo> => invoke('add_repo', { args })
 
-export const removeRepo = (id: number): Promise<void> =>
-  invoke('remove_repo', { id })
+export const removeRepo = (id: number): Promise<void> => invoke('remove_repo', { id })
 
 export const setRepoPinned = (id: number, pinned: boolean): Promise<Repo> =>
   invoke('set_repo_pinned', { args: { id, pinned } })
@@ -56,18 +50,15 @@ export const openInExplorer = (repoId: number): Promise<void> =>
   invoke('open_in_explorer', { repoId })
 
 // --- Git read ---
-export const getLog = (args: GetLogArgs): Promise<CommitSummary[]> =>
-  invoke('get_log', { args })
+export const getLog = (args: GetLogArgs): Promise<CommitSummary[]> => invoke('get_log', { args })
 
-export const getStatus = (repoId: number): Promise<RepoStatus> =>
-  invoke('get_status', { repoId })
+export const getStatus = (repoId: number): Promise<RepoStatus> => invoke('get_status', { repoId })
 
 // --- Stage / Unstage / Discard ---
 export const stagePaths = (repoId: number, paths: string[]): Promise<void> =>
   invoke('stage_paths', { args: { repoId, paths } })
 
-export const stageAll = (repoId: number): Promise<void> =>
-  invoke('stage_all', { repoId })
+export const stageAll = (repoId: number): Promise<void> => invoke('stage_all', { repoId })
 
 export const unstagePaths = (repoId: number, paths: string[]): Promise<void> =>
   invoke('unstage_paths', { args: { repoId, paths } })
@@ -75,27 +66,20 @@ export const unstagePaths = (repoId: number, paths: string[]): Promise<void> =>
 export const discardPaths = (repoId: number, paths: string[]): Promise<void> =>
   invoke('discard_paths', { args: { repoId, paths } })
 
-export const applyPatch = (
-  repoId: number,
-  patch: string,
-  reverse: boolean,
-): Promise<void> =>
+export const applyPatch = (repoId: number, patch: string, reverse: boolean): Promise<void> =>
   invoke('apply_patch', { args: { repoId, patch, reverse } })
 
 // --- Diff ---
-export const getDiff = (args: DiffArgs): Promise<string> =>
-  invoke('get_diff', { args })
+export const getDiff = (args: DiffArgs): Promise<string> => invoke('get_diff', { args })
 
 export const getCommitDiff = (
   repoId: number,
   sha: string,
   context?: number | null,
-): Promise<string> =>
-  invoke('get_commit_diff', { args: { repoId, sha, context } })
+): Promise<string> => invoke('get_commit_diff', { args: { repoId, sha, context } })
 
 // --- Commit ---
-export const commit = (args: CommitArgs): Promise<CommitResult> =>
-  invoke('commit', { args })
+export const commit = (args: CommitArgs): Promise<CommitResult> => invoke('commit', { args })
 
 export const lastCommitMessage = (repoId: number): Promise<string> =>
   invoke('last_commit_message', { repoId })
@@ -117,14 +101,11 @@ export const undoLastAction = (repoId: number): Promise<UndoResult> =>
   invoke('undo_last_action', { args: { repoId } })
 
 // --- Sync ---
-export const fetchAll = (repoId: number): Promise<SyncResult> =>
-  invoke('fetch_all', { repoId })
+export const fetchAll = (repoId: number): Promise<SyncResult> => invoke('fetch_all', { repoId })
 
-export const pull = (args: PullArgs): Promise<SyncResult> =>
-  invoke('pull', { args })
+export const pull = (args: PullArgs): Promise<SyncResult> => invoke('pull', { args })
 
-export const push = (args: PushArgs): Promise<SyncResult> =>
-  invoke('push', { args })
+export const push = (args: PushArgs): Promise<SyncResult> => invoke('push', { args })
 
 // --- Commit graph ---
 export interface GraphRow {
@@ -140,6 +121,21 @@ export interface GraphResult {
 }
 export const getGraph = (repoId: number, limit?: number): Promise<GraphResult> =>
   invoke('get_graph', { args: { repoId, limit } })
+
+// Sprint F-P5 — commit message 검색 (`git log --grep` 동등). CommandPalette 'msg:' mode.
+export const searchCommitsByMessage = (
+  repoId: number,
+  pattern: string,
+  opts?: { limit?: number; caseInsensitive?: boolean },
+): Promise<CommitSummary[]> =>
+  invoke('search_commits_by_message', {
+    args: {
+      repoId,
+      pattern,
+      limit: opts?.limit,
+      caseInsensitive: opts?.caseInsensitive ?? true,
+    },
+  })
 
 // --- Branches ---
 export interface BranchInfo {
@@ -171,14 +167,12 @@ export interface StashEntry {
   branch: string | null
   createdAt: number
 }
-export const listStash = (repoId: number): Promise<StashEntry[]> =>
-  invoke('list_stash', { repoId })
+export const listStash = (repoId: number): Promise<StashEntry[]> => invoke('list_stash', { repoId })
 export const pushStash = (
   repoId: number,
   message?: string | null,
   includeUntracked = false,
-): Promise<void> =>
-  invoke('push_stash', { args: { repoId, message, includeUntracked } })
+): Promise<void> => invoke('push_stash', { args: { repoId, message, includeUntracked } })
 export const applyStash = (repoId: number, index: number): Promise<void> =>
   invoke('apply_stash', { args: { repoId, index } })
 export const popStash = (repoId: number, index: number): Promise<void> =>
@@ -188,19 +182,11 @@ export const dropStash = (repoId: number, index: number): Promise<void> =>
 export const showStash = (repoId: number, index: number): Promise<string> =>
   invoke('show_stash', { args: { repoId, index } })
 /** stash@{n} 의 단일 파일만 working tree 에 apply (`docs/plan/14 §5 D1`). */
-export const applyStashFile = (
-  repoId: number,
-  index: number,
-  path: string,
-): Promise<void> =>
+export const applyStashFile = (repoId: number, index: number, path: string): Promise<void> =>
   invoke('apply_stash_file', { args: { repoId, index, path } })
 
 /** stash@{n} 메시지 수정 (`docs/plan/14 §5 D2`). 새 entry 가 stash@{0} 으로 이동. */
-export const editStashMessage = (
-  repoId: number,
-  index: number,
-  message: string,
-): Promise<void> =>
+export const editStashMessage = (repoId: number, index: number, message: string): Promise<void> =>
   invoke('edit_stash_message', { args: { repoId, index, message } })
 
 // --- Compare (`docs/plan/14 §2 A1`) ---
@@ -216,11 +202,7 @@ export interface CompareResult {
   leftCount: number
   rightCount: number
 }
-export const compareRefs = (
-  repoId: number,
-  ref1: string,
-  ref2: string,
-): Promise<CompareResult> =>
+export const compareRefs = (repoId: number, ref1: string, ref2: string): Promise<CompareResult> =>
   invoke('compare_refs', { args: { repoId, ref1, ref2 } })
 
 // --- Submodule ---
@@ -247,12 +229,10 @@ export interface BulkResult<T> {
   data: T | null
   error: string | null
 }
-export const bulkFetch = (
-  workspaceId?: number | null,
-): Promise<BulkResult<SyncResult>[]> => invoke('bulk_fetch', { workspaceId })
-export const bulkStatus = (
-  workspaceId?: number | null,
-): Promise<BulkResult<RepoStatus>[]> => invoke('bulk_status', { workspaceId })
+export const bulkFetch = (workspaceId?: number | null): Promise<BulkResult<SyncResult>[]> =>
+  invoke('bulk_fetch', { workspaceId })
+export const bulkStatus = (workspaceId?: number | null): Promise<BulkResult<RepoStatus>[]> =>
+  invoke('bulk_status', { workspaceId })
 
 // Sprint 22-11 F-P3 — quick status (branch + upstream + ahead/behind only).
 // bulk_status 대비 ~50× 빠름 (file walk 생략). Sidebar 50+ repo preview.
@@ -262,9 +242,8 @@ export interface QuickStatus {
   ahead: number
   behind: number
 }
-export const bulkQuickStatus = (
-  workspaceId?: number | null,
-): Promise<BulkResult<QuickStatus>[]> => invoke('bulk_quick_status', { workspaceId })
+export const bulkQuickStatus = (workspaceId?: number | null): Promise<BulkResult<QuickStatus>[]> =>
+  invoke('bulk_quick_status', { workspaceId })
 
 export const bulkListPrs = (
   workspaceId?: number | null,
@@ -290,16 +269,10 @@ export interface ConflictedFile {
 export type SideTake = 'ours' | 'theirs'
 export const readConflicted = (repoId: number, path: string): Promise<ConflictedFile> =>
   invoke('read_conflicted', { args: { repoId, path } })
-export const writeResolved = (
-  repoId: number,
-  path: string,
-  content: string,
-): Promise<void> => invoke('write_resolved', { args: { repoId, path, content } })
-export const takeSide = (
-  repoId: number,
-  path: string,
-  side: SideTake,
-): Promise<void> => invoke('take_side', { args: { repoId, path, side } })
+export const writeResolved = (repoId: number, path: string, content: string): Promise<void> =>
+  invoke('write_resolved', { args: { repoId, path, content } })
+export const takeSide = (repoId: number, path: string, side: SideTake): Promise<void> =>
+  invoke('take_side', { args: { repoId, path, side } })
 
 // Sprint C6 — 외부 merge tool launch
 export interface MergetoolResult {
@@ -313,8 +286,7 @@ export const launchMergetool = (
   repoId: number,
   file?: string | null,
   tool?: string | null,
-): Promise<MergetoolResult> =>
-  invoke('launch_mergetool', { args: { repoId, file, tool } })
+): Promise<MergetoolResult> => invoke('launch_mergetool', { args: { repoId, file, tool } })
 
 // === File history / Blame ===
 export interface BlameLine {
@@ -331,8 +303,7 @@ export const getFileHistory = (
   repoId: number,
   path: string,
   limit?: number,
-): Promise<CommitSummary[]> =>
-  invoke('get_file_history', { args: { repoId, path, limit } })
+): Promise<CommitSummary[]> => invoke('get_file_history', { args: { repoId, path, limit } })
 export const getFileBlame = (repoId: number, path: string): Promise<BlameLine[]> =>
   invoke('get_file_blame', { args: { repoId, path } })
 
@@ -348,20 +319,16 @@ export interface LfsFile {
   downloaded: boolean
   size: number | null
 }
-export const lfsStatus = (repoId: number): Promise<LfsStatus> =>
-  invoke('lfs_status', { repoId })
+export const lfsStatus = (repoId: number): Promise<LfsStatus> => invoke('lfs_status', { repoId })
 export const lfsListFiles = (repoId: number): Promise<LfsFile[]> =>
   invoke('lfs_list_files', { repoId })
 export const lfsTrack = (repoId: number, pattern: string): Promise<void> =>
   invoke('lfs_track', { args: { repoId, pattern } })
 export const lfsUntrack = (repoId: number, pattern: string): Promise<void> =>
   invoke('lfs_untrack', { args: { repoId, pattern } })
-export const lfsFetch = (repoId: number): Promise<void> =>
-  invoke('lfs_fetch', { repoId })
-export const lfsPull = (repoId: number): Promise<void> =>
-  invoke('lfs_pull', { repoId })
-export const lfsPrune = (repoId: number): Promise<void> =>
-  invoke('lfs_prune', { repoId })
+export const lfsFetch = (repoId: number): Promise<void> => invoke('lfs_fetch', { repoId })
+export const lfsPull = (repoId: number): Promise<void> => invoke('lfs_pull', { repoId })
+export const lfsPrune = (repoId: number): Promise<void> => invoke('lfs_prune', { repoId })
 
 // Sprint C2 — pre-push size estimation
 export interface LfsPushSize {
@@ -385,15 +352,10 @@ export interface BisectStatus {
 }
 export const getBisectStatus = (repoId: number): Promise<BisectStatus> =>
   invoke('bisect_status', { repoId })
-export const bisectStart = (repoId: number): Promise<string> =>
-  invoke('bisect_start', { repoId })
-export const bisectMark = (
-  repoId: number,
-  mark: BisectMark,
-  sha?: string,
-): Promise<string> => invoke('bisect_mark', { args: { repoId, mark, sha } })
-export const bisectReset = (repoId: number): Promise<void> =>
-  invoke('bisect_reset', { repoId })
+export const bisectStart = (repoId: number): Promise<string> => invoke('bisect_start', { repoId })
+export const bisectMark = (repoId: number, mark: BisectMark, sha?: string): Promise<string> =>
+  invoke('bisect_mark', { args: { repoId, mark, sha } })
+export const bisectReset = (repoId: number): Promise<void> => invoke('bisect_reset', { repoId })
 
 // === Reflog ===
 export interface ReflogEntry {
@@ -408,8 +370,7 @@ export const listReflog = (
   repoId: number,
   refName?: string,
   limit?: number,
-): Promise<ReflogEntry[]> =>
-  invoke('list_reflog', { args: { repoId, refName, limit } })
+): Promise<ReflogEntry[]> => invoke('list_reflog', { args: { repoId, refName, limit } })
 
 // === Profiles (개인 ↔ 회사 1-click 토글) ===
 export interface Profile {
@@ -435,10 +396,8 @@ export const createProfile = (input: ProfileInput): Promise<Profile> =>
   invoke('create_profile', { input })
 export const updateProfile = (id: number, input: ProfileInput): Promise<Profile> =>
   invoke('update_profile', { args: { id, input } })
-export const deleteProfile = (id: number): Promise<void> =>
-  invoke('delete_profile', { id })
-export const activateProfile = (id: number): Promise<Profile> =>
-  invoke('activate_profile', { id })
+export const deleteProfile = (id: number): Promise<void> => invoke('delete_profile', { id })
+export const activateProfile = (id: number): Promise<Profile> => invoke('activate_profile', { id })
 
 // === Worktree ===
 export interface WorktreeEntry {
@@ -459,21 +418,13 @@ export const addWorktree = (args: {
   branch?: string
   startPoint?: string
 }): Promise<void> => invoke('add_worktree', { args })
-export const removeWorktree = (
-  repoId: number,
-  path: string,
-  force = false,
-): Promise<void> =>
+export const removeWorktree = (repoId: number, path: string, force = false): Promise<void> =>
   invoke('remove_worktree', { args: { repoId, path, force } })
 export const pruneWorktrees = (repoId: number): Promise<void> =>
   invoke('prune_worktrees', { repoId })
 
 // Sprint C1
-export const lockWorktree = (
-  repoId: number,
-  path: string,
-  reason?: string | null,
-): Promise<void> =>
+export const lockWorktree = (repoId: number, path: string, reason?: string | null): Promise<void> =>
   invoke('lock_worktree', { args: { repoId, path, reason } })
 
 export const unlockWorktree = (repoId: number, path: string): Promise<void> =>
@@ -514,8 +465,7 @@ export const aiCommitMessage = (
   repoId: number,
   cli: AiCli,
   userApproved: boolean,
-): Promise<AiOutput> =>
-  invoke('ai_commit_message', { args: { repoId, cli, userApproved } })
+): Promise<AiOutput> => invoke('ai_commit_message', { args: { repoId, cli, userApproved } })
 export const aiPrBody = (
   repoId: number,
   cli: AiCli,
@@ -531,8 +481,7 @@ export const aiResolveConflict = (
   cli: AiCli,
   path: string,
   userApproved: boolean,
-): Promise<AiOutput> =>
-  invoke('ai_resolve_conflict', { args: { repoId, cli, path, userApproved } })
+): Promise<AiOutput> => invoke('ai_resolve_conflict', { args: { repoId, cli, path, userApproved } })
 
 export const aiCodeReview = (args: {
   repoId: number
@@ -550,8 +499,7 @@ export const aiExplainCommit = (
   cli: AiCli,
   sha: string,
   userApproved: boolean,
-): Promise<AiOutput> =>
-  invoke('ai_explain_commit', { args: { repoId, cli, sha, userApproved } })
+): Promise<AiOutput> => invoke('ai_explain_commit', { args: { repoId, cli, sha, userApproved } })
 
 export const aiExplainBranch = (
   repoId: number,
@@ -580,8 +528,7 @@ export const aiComposerPlan = (
   cli: AiCli,
   count: number,
   userApproved: boolean,
-): Promise<AiOutput> =>
-  invoke('ai_composer_plan', { args: { repoId, cli, count, userApproved } })
+): Promise<AiOutput> => invoke('ai_composer_plan', { args: { repoId, cli, count, userApproved } })
 
 // === Interactive rebase (docs/plan/09 옵션 A) ===
 export type RebaseAction = 'pick' | 'reword' | 'squash' | 'fixup' | 'drop'
@@ -610,18 +557,14 @@ export interface RebaseRunResult {
   status: RebaseStatus
 }
 
-export const rebasePrepareTodo = (
-  repoId: number,
-  count: number,
-): Promise<RebaseTodoEntry[]> =>
+export const rebasePrepareTodo = (repoId: number, count: number): Promise<RebaseTodoEntry[]> =>
   invoke('rebase_prepare_todo', { args: { repoId, count } })
 
 export const rebaseRun = (
   repoId: number,
   base: string,
   todo: RebaseTodoEntry[],
-): Promise<RebaseRunResult> =>
-  invoke('rebase_run', { args: { repoId, base, todo } })
+): Promise<RebaseRunResult> => invoke('rebase_run', { args: { repoId, base, todo } })
 
 export const getRebaseStatus = (repoId: number): Promise<RebaseStatus> =>
   invoke('rebase_status', { repoId })
@@ -629,8 +572,7 @@ export const getRebaseStatus = (repoId: number): Promise<RebaseStatus> =>
 export const rebaseContinue = (repoId: number): Promise<RebaseRunResult> =>
   invoke('rebase_continue', { repoId })
 
-export const rebaseAbort = (repoId: number): Promise<void> =>
-  invoke('rebase_abort', { repoId })
+export const rebaseAbort = (repoId: number): Promise<void> => invoke('rebase_abort', { repoId })
 
 export const rebaseSkip = (repoId: number): Promise<RebaseRunResult> =>
   invoke('rebase_skip', { repoId })
@@ -667,8 +609,7 @@ export interface SavedView {
   updatedAt: number
 }
 
-export const launchpadListActive = (): Promise<PrMeta[]> =>
-  invoke('launchpad_list_active')
+export const launchpadListActive = (): Promise<PrMeta[]> => invoke('launchpad_list_active')
 
 export const launchpadListForRepo = (
   forgeKind: string,
@@ -680,20 +621,15 @@ export const launchpadListForRepo = (
     args: { forgeKind, baseUrl, owner, repo },
   })
 
-export const launchpadSetPinned = (
-  id: PrIdentifier,
-  pinned: boolean,
-): Promise<PrMeta> =>
+export const launchpadSetPinned = (id: PrIdentifier, pinned: boolean): Promise<PrMeta> =>
   invoke('launchpad_set_pinned', { args: { ...id, pinned } })
 
 export const launchpadSetSnooze = (
   id: PrIdentifier,
   snoozedUntil: number | null,
-): Promise<PrMeta> =>
-  invoke('launchpad_set_snooze', { args: { ...id, snoozedUntil } })
+): Promise<PrMeta> => invoke('launchpad_set_snooze', { args: { ...id, snoozedUntil } })
 
-export const launchpadCleanupDefaults = (): Promise<number> =>
-  invoke('launchpad_cleanup_defaults')
+export const launchpadCleanupDefaults = (): Promise<number> => invoke('launchpad_cleanup_defaults')
 
 export const launchpadListViews = (viewKind: string): Promise<SavedView[]> =>
   invoke('launchpad_list_views', { args: { viewKind } })
@@ -738,21 +674,16 @@ export const mergeBranch = (
   source: string,
   noFf: boolean = true,
   noCommit: boolean = false,
-): Promise<MergeOpResult> =>
-  invoke('merge_branch', { args: { repoId, source, noFf, noCommit } })
+): Promise<MergeOpResult> => invoke('merge_branch', { args: { repoId, source, noFf, noCommit } })
 
-export const rebaseBranch = (
-  repoId: number,
-  upstream: string,
-): Promise<MergeOpResult> =>
+export const rebaseBranch = (repoId: number, upstream: string): Promise<MergeOpResult> =>
   invoke('rebase_branch', { args: { repoId, upstream } })
 
 export const cherryPickSha = (
   repoId: number,
   sha: string,
   targetBranch?: string | null,
-): Promise<MergeOpResult> =>
-  invoke('cherry_pick_sha', { args: { repoId, sha, targetBranch } })
+): Promise<MergeOpResult> => invoke('cherry_pick_sha', { args: { repoId, sha, targetBranch } })
 
 // === Conflict Prediction (Sprint B2 / docs/plan/11 §20) ===
 export interface ConflictPrediction {
@@ -765,8 +696,7 @@ export interface ConflictPrediction {
 export const predictTargetConflict = (
   repoId: number,
   target?: string | null,
-): Promise<ConflictPrediction> =>
-  invoke('predict_target_conflict', { args: { repoId, target } })
+): Promise<ConflictPrediction> => invoke('predict_target_conflict', { args: { repoId, target } })
 
 // === Repo alias (Sprint B4 / docs/plan/11 §15) ===
 export interface RepoAlias {
@@ -776,26 +706,20 @@ export interface RepoAlias {
   updatedAt: number
 }
 
-export const listAllRepoAliases = (): Promise<RepoAlias[]> =>
-  invoke('list_all_repo_aliases')
+export const listAllRepoAliases = (): Promise<RepoAlias[]> => invoke('list_all_repo_aliases')
 
 export const resolveRepoAlias = (
   repoId: number,
   profileId: number | null,
-): Promise<string | null> =>
-  invoke('resolve_repo_alias', { args: { repoId, profileId } })
+): Promise<string | null> => invoke('resolve_repo_alias', { args: { repoId, profileId } })
 
 export const setRepoAlias = (
   repoId: number,
   profileId: number | null,
   alias: string,
-): Promise<RepoAlias> =>
-  invoke('set_repo_alias', { args: { repoId, profileId, alias } })
+): Promise<RepoAlias> => invoke('set_repo_alias', { args: { repoId, profileId, alias } })
 
-export const unsetRepoAlias = (
-  repoId: number,
-  profileId: number | null,
-): Promise<void> =>
+export const unsetRepoAlias = (repoId: number, profileId: number | null): Promise<void> =>
   invoke('unset_repo_alias', { args: { repoId, profileId } })
 
 // === Hide branches (docs/plan/11 §5d / Sprint A1) ===
@@ -810,11 +734,7 @@ export interface HiddenRef {
 export const listHiddenRefs = (repoId: number): Promise<HiddenRef[]> =>
   invoke('list_hidden_refs', { repoId })
 
-export const hideRef = (
-  repoId: number,
-  refName: string,
-  refKind: HiddenRefKind,
-): Promise<void> =>
+export const hideRef = (repoId: number, refName: string, refKind: HiddenRefKind): Promise<void> =>
   invoke('hide_ref', { args: { repoId, refName, refKind } })
 
 export const unhideRef = (repoId: number, refName: string): Promise<void> =>
@@ -825,10 +745,7 @@ export const hideRefsBulk = (
   refs: { refName: string; refKind: HiddenRefKind }[],
 ): Promise<number> => invoke('hide_refs_bulk', { args: { repoId, refs } })
 
-export const unhideRefsByKind = (
-  repoId: number,
-  refKind: HiddenRefKind,
-): Promise<number> =>
+export const unhideRefsByKind = (repoId: number, refKind: HiddenRefKind): Promise<number> =>
   invoke('unhide_refs_by_kind', { args: { repoId, refKind } })
 
 export const unhideAllRefs = (repoId: number): Promise<number> =>
@@ -843,20 +760,15 @@ export const ptyOpen = (
   cols: number,
   rows: number,
   onData: Channel<number[]>,
-): Promise<number> =>
-  invoke('pty_open', { args: { cwd, shell, cols, rows }, onData })
+): Promise<number> => invoke('pty_open', { args: { cwd, shell, cols, rows }, onData })
 
 export const ptyWrite = (id: number, data: number[]): Promise<void> =>
   invoke('pty_write', { args: { id, data } })
 
-export const ptyResize = (
-  id: number,
-  cols: number,
-  rows: number,
-): Promise<void> => invoke('pty_resize', { args: { id, cols, rows } })
+export const ptyResize = (id: number, cols: number, rows: number): Promise<void> =>
+  invoke('pty_resize', { args: { id, cols, rows } })
 
-export const ptyClose = (id: number): Promise<void> =>
-  invoke('pty_close', { id })
+export const ptyClose = (id: number): Promise<void> => invoke('pty_close', { id })
 
 // === Forge (Gitea + GitHub) ===
 export type PrState = 'open' | 'closed' | 'merged' | 'draft'
@@ -940,8 +852,7 @@ export const forgeSaveToken = (
     args: { forgeKind, baseUrl, username, token },
   })
 
-export const forgeListAccounts = (): Promise<ForgeAccount[]> =>
-  invoke('forge_list_accounts')
+export const forgeListAccounts = (): Promise<ForgeAccount[]> => invoke('forge_list_accounts')
 
 export const forgeDeleteAccount = (id: number): Promise<void> =>
   invoke('forge_delete_account', { id })
@@ -950,14 +861,12 @@ export const forgeWhoami = (
   forgeKind: 'gitea' | 'github',
   baseUrl: string,
   token: string,
-): Promise<ForgeAuthor> =>
-  invoke('forge_whoami', { args: { forgeKind, baseUrl, token } })
+): Promise<ForgeAuthor> => invoke('forge_whoami', { args: { forgeKind, baseUrl, token } })
 
 export const listPullRequests = (
   repoId: number,
   stateFilter?: PrState | null,
-): Promise<PullRequest[]> =>
-  invoke('list_pull_requests', { args: { repoId, stateFilter } })
+): Promise<PullRequest[]> => invoke('list_pull_requests', { args: { repoId, stateFilter } })
 
 export const getPullRequest = (repoId: number, number: number): Promise<PullRequest> =>
   invoke('get_pull_request', { args: { repoId, number } })
@@ -992,11 +901,8 @@ export interface PrComment {
 export const listPrComments = (repoId: number, number: number): Promise<PrComment[]> =>
   invoke('list_pr_comments', { args: { repoId, number } })
 
-export const addPrComment = (
-  repoId: number,
-  number: number,
-  body: string,
-): Promise<PrComment> => invoke('add_pr_comment', { args: { repoId, number, body } })
+export const addPrComment = (repoId: number, number: number, body: string): Promise<PrComment> =>
+  invoke('add_pr_comment', { args: { repoId, number, body } })
 
 /** PR diff line-level suggestion 코멘트 (`docs/plan/14 §7 F1`).
  *  - body 는 호출자가 ```suggestion wrap 까지 포함해서 전달.
@@ -1019,8 +925,7 @@ export const submitPrReview = (
   number: number,
   verdict: ReviewVerdict,
   body: string,
-): Promise<void> =>
-  invoke('submit_pr_review', { args: { repoId, number, verdict, body } })
+): Promise<void> => invoke('submit_pr_review', { args: { repoId, number, verdict, body } })
 
 export const mergePr = (
   repoId: number,
@@ -1028,8 +933,7 @@ export const mergePr = (
   method: MergeMethod,
   title?: string,
   message?: string,
-): Promise<void> =>
-  invoke('merge_pr', { args: { repoId, number, method, title, message } })
+): Promise<void> => invoke('merge_pr', { args: { repoId, number, method, title, message } })
 
 export const closePr = (repoId: number, number: number): Promise<void> =>
   invoke('close_pr', { args: { repoId, number } })
@@ -1103,32 +1007,22 @@ export interface TagInfo {
   annotated: boolean
 }
 
-export const listTags = (repoId: number): Promise<TagInfo[]> =>
-  invoke('list_tags', { repoId })
+export const listTags = (repoId: number): Promise<TagInfo[]> => invoke('list_tags', { repoId })
 
 export const createTag = (
   repoId: number,
   name: string,
   target?: string | null,
   message?: string | null,
-): Promise<void> =>
-  invoke('create_tag', { args: { repoId, name, target, message } })
+): Promise<void> => invoke('create_tag', { args: { repoId, name, target, message } })
 
 export const deleteTag = (repoId: number, name: string): Promise<void> =>
   invoke('delete_tag', { args: { repoId, name } })
 
-export const pushTag = (
-  repoId: number,
-  remote: string,
-  name: string,
-): Promise<void> =>
+export const pushTag = (repoId: number, remote: string, name: string): Promise<void> =>
   invoke('push_tag', { args: { repoId, remote, name } })
 
-export const deleteRemoteTag = (
-  repoId: number,
-  remote: string,
-  name: string,
-): Promise<void> =>
+export const deleteRemoteTag = (repoId: number, remote: string, name: string): Promise<void> =>
   invoke('delete_remote_tag', { args: { repoId, remote, name } })
 
 // --- Repository-Specific Preferences (`docs/plan/14 §3` Sprint B14-3) ---
@@ -1152,10 +1046,7 @@ export interface RepoConfigSnapshot {
 export const readRepoConfig = (repoId: number): Promise<RepoConfigSnapshot> =>
   invoke('read_repo_config', { repoId })
 
-export const applyRepoConfig = (
-  repoId: number,
-  snapshot: RepoConfigSnapshot,
-): Promise<void> =>
+export const applyRepoConfig = (repoId: number, snapshot: RepoConfigSnapshot): Promise<void> =>
   invoke('apply_repo_config', { args: { repoId, snapshot } })
 
 // --- Repo Maintenance (`docs/plan/14 §2 A2` Sprint B14-2) ---
@@ -1167,17 +1058,13 @@ export interface MaintenanceResult {
   exitCode: number | null
 }
 
-export const maintenanceGc = (
-  repoId: number,
-  aggressive: boolean,
-): Promise<MaintenanceResult> =>
+export const maintenanceGc = (repoId: number, aggressive: boolean): Promise<MaintenanceResult> =>
   invoke('maintenance_gc', { args: { repoId, aggressive } })
 
 export const maintenanceFsck = (repoId: number): Promise<MaintenanceResult> =>
   invoke('maintenance_fsck', { repoId })
 
-export const lfsInstall = (repoId: number): Promise<void> =>
-  invoke('lfs_install', { repoId })
+export const lfsInstall = (repoId: number): Promise<void> => invoke('lfs_install', { repoId })
 
 // --- Remote 관리 (`docs/plan/14 §4` Sprint B14-1) ---
 
@@ -1190,27 +1077,17 @@ export interface RemoteInfo {
 export const listRemotes = (repoId: number): Promise<RemoteInfo[]> =>
   invoke('list_remotes', { repoId })
 
-export const addRemote = (
-  repoId: number,
-  name: string,
-  url: string,
-): Promise<void> => invoke('add_remote', { args: { repoId, name, url } })
+export const addRemote = (repoId: number, name: string, url: string): Promise<void> =>
+  invoke('add_remote', { args: { repoId, name, url } })
 
 export const removeRemote = (repoId: number, name: string): Promise<void> =>
   invoke('remove_remote', { args: { repoId, name } })
 
-export const renameRemote = (
-  repoId: number,
-  oldName: string,
-  newName: string,
-): Promise<void> =>
+export const renameRemote = (repoId: number, oldName: string, newName: string): Promise<void> =>
   invoke('rename_remote', { args: { repoId, oldName, newName } })
 
-export const setRemoteUrl = (
-  repoId: number,
-  name: string,
-  url: string,
-): Promise<void> => invoke('set_remote_url', { args: { repoId, name, url } })
+export const setRemoteUrl = (repoId: number, name: string, url: string): Promise<void> =>
+  invoke('set_remote_url', { args: { repoId, name, url } })
 
 // --- GitKraken importer (`docs/plan/21`) ---
 
@@ -1242,12 +1119,8 @@ export interface GitKrakenApplyResult {
 export const importGitKrakenDetect = (): Promise<GitKrakenDetect | null> =>
   invoke('import_gitkraken_detect')
 
-export const importGitKrakenDryRun = (
-  profileDir: string,
-): Promise<GitKrakenImportPlan> =>
+export const importGitKrakenDryRun = (profileDir: string): Promise<GitKrakenImportPlan> =>
   invoke('import_gitkraken_dry_run', { args: { profileDir } })
 
-export const importGitKrakenApply = (
-  profileDir: string,
-): Promise<GitKrakenApplyResult> =>
+export const importGitKrakenApply = (profileDir: string): Promise<GitKrakenApplyResult> =>
   invoke('import_gitkraken_apply', { args: { profileDir } })

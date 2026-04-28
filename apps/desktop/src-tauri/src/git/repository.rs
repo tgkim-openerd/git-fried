@@ -107,6 +107,93 @@ pub fn log(repo: &Repository, limit: usize, skip: usize) -> AppResult<Vec<Commit
     Ok(out)
 }
 
+/// 단일 commit OID 를 CommitSummary 로 변환 (log + search 공통 helper).
+fn build_commit_summary(
+    repo: &Repository,
+    oid: Oid,
+    refs_map: &std::collections::HashMap<String, Vec<String>>,
+) -> AppResult<CommitSummary> {
+    let commit = repo.find_commit(oid).map_err(AppError::Git)?;
+    let author = commit.author();
+    let committer = commit.committer();
+    let message = commit.message().unwrap_or("");
+    let (subject, body) = split_subject_body(message);
+
+    let sha = oid.to_string();
+    let refs = refs_map.get(&sha).cloned().unwrap_or_default();
+    let parent_shas = (0..commit.parent_count())
+        .map(|i| {
+            commit
+                .parent_id(i)
+                .map(|x| x.to_string())
+                .unwrap_or_default()
+        })
+        .collect();
+    let signed = commit
+        .header_field_bytes("gpgsig")
+        .map(|b| !b.is_empty())
+        .unwrap_or(false);
+
+    Ok(CommitSummary {
+        short_sha: sha.chars().take(7).collect(),
+        sha,
+        parent_shas,
+        author_name: author.name().unwrap_or("").to_string(),
+        author_email: author.email().unwrap_or("").to_string(),
+        author_at: author.when().seconds(),
+        committer_at: committer.when().seconds(),
+        subject,
+        body,
+        signed,
+        refs,
+    })
+}
+
+/// 커밋 메시지 (subject + body) 에서 substring 검색. case-insensitive 옵션.
+/// HEAD 부터 reverse-time 으로 walk, `limit` 매칭에서 종료.
+/// 한글 패턴은 git2 가 UTF-8 String 으로 노출 — 별도 인코딩 처리 불필요.
+pub fn search_commits_by_message(
+    repo: &Repository,
+    pattern: &str,
+    limit: usize,
+    case_insensitive: bool,
+) -> AppResult<Vec<CommitSummary>> {
+    let needle: String = if case_insensitive {
+        pattern.to_lowercase()
+    } else {
+        pattern.to_string()
+    };
+    if needle.is_empty() || limit == 0 {
+        return Ok(Vec::new());
+    }
+
+    let mut walker = repo.revwalk().map_err(AppError::Git)?;
+    walker.set_sorting(Sort::TIME).map_err(AppError::Git)?;
+    walker.push_head().map_err(AppError::Git)?;
+
+    let refs_map = collect_refs_map(repo).unwrap_or_default();
+    let mut out = Vec::with_capacity(limit.min(64));
+
+    for oid in walker {
+        if out.len() >= limit {
+            break;
+        }
+        let oid = oid.map_err(AppError::Git)?;
+        let commit = repo.find_commit(oid).map_err(AppError::Git)?;
+        let message = commit.message().unwrap_or("");
+        let haystack = if case_insensitive {
+            message.to_lowercase()
+        } else {
+            message.to_string()
+        };
+        if !haystack.contains(&needle) {
+            continue;
+        }
+        out.push(build_commit_summary(repo, oid, &refs_map)?);
+    }
+    Ok(out)
+}
+
 fn split_subject_body(msg: &str) -> (String, String) {
     let trimmed = msg.trim_end();
     if let Some(idx) = trimmed.find('\n') {

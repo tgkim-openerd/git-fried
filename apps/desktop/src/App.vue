@@ -10,6 +10,7 @@ import BisectModal from './components/BisectModal.vue'
 import ReflogModal from './components/ReflogModal.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import LongRunningBanner from './components/LongRunningBanner.vue'
+import CommitSearchModal from './components/CommitSearchModal.vue'
 import RepoSwitcherModal from './components/RepoSwitcherModal.vue'
 import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
@@ -47,6 +48,8 @@ const reflogOpen = ref(false)
 const repoSwitcherOpen = ref(false)
 const createPrOpen = ref(false)
 const helpOpen = ref(false)
+// Sprint F-P5 — Commit message 검색 modal (`git log --grep` 동등). ⌘⇧F 단축키.
+const commitSearchOpen = ref(false)
 // Sprint C3 — Compare modal
 const compareOpen = ref(false)
 const compareInitialRef1 = ref<string | null>(null)
@@ -58,11 +61,15 @@ function openCompare(ref1?: string | null, ref2?: string | null) {
 }
 
 // ⌘⇧P 빠른 레포 전환 단축키 (Command Palette ⌘P 와 다름).
+// ⌘⇧F Commit message 검색 modal (Sprint F-P5).
 function onKeydown(e: KeyboardEvent) {
   const meta = e.metaKey || e.ctrlKey
   if (meta && e.shiftKey && e.key.toLowerCase() === 'p') {
     e.preventDefault()
     repoSwitcherOpen.value = !repoSwitcherOpen.value
+  } else if (meta && e.shiftKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault()
+    commitSearchOpen.value = !commitSearchOpen.value
   }
 }
 window.addEventListener('keydown', onKeydown)
@@ -91,8 +98,9 @@ function closeAllModals() {
   repoSwitcherOpen.value = false
   createPrOpen.value = false
   helpOpen.value = false
+  commitSearchOpen.value = false
   // 외부 등록된 modal trigger 들도 close — 각자 자체 ESC 핸들링.
-  // 여기서는 우리가 관리하는 6개만 처리.
+  // 여기서는 우리가 관리하는 7개만 처리.
 }
 useShortcut('closeModal', closeAllModals)
 
@@ -263,5 +271,6 @@ window.gitFriedOpenCompare = openCompare
     <HelpModal :open="helpOpen" @close="helpOpen = false" />
     <ToastContainer />
     <LongRunningBanner />
+    <CommitSearchModal :open="commitSearchOpen" @close="commitSearchOpen = false" />
   </div>
 </template>
