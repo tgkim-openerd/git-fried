@@ -26,6 +26,7 @@ import MergeEditorModal from './MergeEditorModal.vue'
 import HunkStageModal from './HunkStageModal.vue'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import { useStatusFilter } from '@/composables/useStatusFilter'
+import { flattenTree, useStatusTreeView } from '@/composables/useStatusTreeView'
 
 const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
@@ -33,37 +34,10 @@ const collapsedUntracked = useSectionCollapse('status.untracked')
 const collapsedConflicted = useSectionCollapse('status.conflicted')
 import type { ChangeStatus, FileChange } from '@/types/git'
 
-// Sprint c25-2.1 — Path/Tree 토글 (`docs/plan/25 §3-2`).
-// GitKraken Image #1 의 우측 패널 헤더 `Path | Tree` 흡수.
-// scope 최소화 — Modified (unstaged) 섹션만 tree 지원.
-import { buildPathTree, type TreeNode } from '@/utils/pathTree'
+// Sprint c25-2.1 — Path/Tree 토글. composables/useStatusTreeView.ts 로 추출 (StatusPanel 분리 2/N).
+import { buildPathTree } from '@/utils/pathTree'
 
-type ViewMode = 'path' | 'tree'
-const VIEW_MODE_KEY = 'git-fried.status.viewMode'
-function loadViewMode(): ViewMode {
-  if (typeof localStorage === 'undefined') return 'path'
-  const v = localStorage.getItem(VIEW_MODE_KEY)
-  return v === 'tree' ? 'tree' : 'path'
-}
-const viewMode = ref<ViewMode>(loadViewMode())
-function setViewMode(m: ViewMode) {
-  viewMode.value = m
-  if (typeof localStorage !== 'undefined') localStorage.setItem(VIEW_MODE_KEY, m)
-}
-
-// Tree mode — 디렉토리 collapse 상태 (path 별 Set).
-//
-// ARCH-005 (의도적 일관성) — 4 섹션 (Staged / Modified / Untracked / Conflicted) 이
-// 동일한 `apps/desktop/src/api` 디렉토리 노드를 가질 수 있다. 한쪽에서 접으면 양쪽 모두
-// 접히는 동작이 의도. 사용자가 "이 디렉토리 전체 숨김" 모델로 인지하기 쉽게 통일.
-// 섹션별 분리가 필요하면 `Record<SectionKey, Set<string>>` 으로 변경 (현재 미적용).
-const collapsedDirs = ref<Set<string>>(new Set())
-function toggleDir(path: string) {
-  const next = new Set(collapsedDirs.value)
-  if (next.has(path)) next.delete(path)
-  else next.add(path)
-  collapsedDirs.value = next
-}
+const { viewMode, setViewMode, collapsedDirs, toggleDir } = useStatusTreeView()
 
 const props = defineProps<{ repoId: number | null }>()
 const toast = useToast()
@@ -312,36 +286,9 @@ function selectPath(path: string) {
 const { fileFilter, filteredStaged, filteredUnstaged, filteredUntracked, filteredConflicted } =
   useStatusFilter(status)
 
-// Sprint c25-2.1 / c27-2 (TYPE-005 fix) — generic 트리 평탄화.
-// Modified / Staged / Untracked / Conflicted 4 섹션 공통 사용.
-// row 의 meta 는 호출자 generic <T> — FileChange (Modified/Staged) 또는 string (Untracked/Conflicted).
-// path / name 은 두 mode 모두 노출 (file row 의 SoT).
-type FlatTreeRow<T> =
-  | { kind: 'dir'; path: string; name: string; depth: number; collapsed: boolean }
-  | { kind: 'file'; path: string; name: string; depth: number; meta: T }
-
-function flattenTree<T>(
-  nodes: TreeNode<T>[],
-  collapsed: Set<string>,
-  out: FlatTreeRow<T>[] = [],
-): FlatTreeRow<T>[] {
-  for (const n of nodes) {
-    if (n.kind === 'dir') {
-      const isCollapsed = collapsed.has(n.path)
-      out.push({
-        kind: 'dir',
-        path: n.path,
-        name: n.name,
-        depth: n.depth,
-        collapsed: isCollapsed,
-      })
-      if (!isCollapsed) flattenTree(n.children, collapsed, out)
-    } else {
-      out.push({ kind: 'file', path: n.path, name: n.name, depth: n.depth, meta: n.meta })
-    }
-  }
-  return out
-}
+// Sprint c25-2.1 / c27-2 (TYPE-005 fix) — generic 트리 평탄화 type.
+// flattenTree + FlatTreeRow 본체는 composables/useStatusTreeView.ts (분리 2/N).
+import type { FlatTreeRow } from '@/composables/useStatusTreeView'
 
 type FileChangeTreeRow = FlatTreeRow<FileChange>
 type StringTreeRow = FlatTreeRow<string>
