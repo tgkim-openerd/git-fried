@@ -100,10 +100,22 @@ type DiffViewerExpose = {
   hunkCount: () => number
 }
 const diffRef = useTemplateRef<DiffViewerExpose>('diffRef')
+
+// patch 자체에서 `@@` 라인 카운트 (DiffViewer.hunkCount() 는 reactive 하지 않음).
+const commitHunkCount = computed(() => {
+  const patch = data.value
+  if (!patch) return 0
+  const m = patch.match(/^@@\s/gm)
+  return m ? m.length : 0
+})
+const commitHunkNavDisabled = computed(() => commitHunkCount.value <= 1)
+
 function onPrevHunk() {
+  if (commitHunkNavDisabled.value) return
   diffRef.value?.prevHunk()
 }
 function onNextHunk() {
+  if (commitHunkNavDisabled.value) return
   diffRef.value?.nextHunk()
 }
 
@@ -138,14 +150,20 @@ function onReset() {
           <span v-if="isFetching" class="ml-2 text-xs text-muted-foreground">불러오는 중...</span>
         </h2>
         <div class="flex items-center gap-2">
-            <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (split 모드 제외) -->
+            <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (split 모드 제외, 1-hunk 이하 disabled) -->
             <div
               v-if="diffMode.mode.value !== 'split'"
               class="flex items-center gap-0.5 rounded-md border border-border bg-muted/40 px-0.5"
+              :title="
+                commitHunkNavDisabled
+                  ? '이 commit 은 hunk 1개 이하 — nav 불필요'
+                  : `${commitHunkCount}개 hunk — ↑↓ 로 이동`
+              "
             >
               <button
                 type="button"
-                class="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+                class="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+                :disabled="commitHunkNavDisabled"
                 title="이전 hunk"
                 aria-label="이전 hunk"
                 @click="onPrevHunk"
@@ -154,7 +172,8 @@ function onReset() {
               </button>
               <button
                 type="button"
-                class="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+                class="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+                :disabled="commitHunkNavDisabled"
                 title="다음 hunk"
                 aria-label="다음 hunk"
                 @click="onNextHunk"

@@ -51,3 +51,9 @@ yarn-error.log*
 # misc
 .cache/
 *.bak
+
+# Playwright MCP dogfood artifacts (local-only verification)
+.playwright-mcp/
+c25-*.png
+playwright-report/
+test-results/

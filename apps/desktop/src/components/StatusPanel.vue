@@ -355,10 +355,22 @@ const isSelected = computed(
 // DiffViewer ref + Hunk ↑↓ 네비게이션 (GitKraken Image #2 흡수).
 const inlineDiffRef = useTemplateRef<DiffViewerExpose>('inlineDiff')
 
+// Hunk count 는 patch 텍스트에서 직접 셈 — DiffViewer.hunkCount() 는 reactive 하지 않음.
+// `@@ -... +... @@` 라인 매칭 (split 모드 외).
+const inlineHunkCount = computed(() => {
+  const patch = detailDiffQuery.data.value
+  if (!patch) return 0
+  const m = patch.match(/^@@\s/gm)
+  return m ? m.length : 0
+})
+const hunkNavDisabled = computed(() => inlineHunkCount.value <= 1)
+
 function onPrevHunk() {
+  if (hunkNavDisabled.value) return
   inlineDiffRef.value?.prevHunk()
 }
 function onNextHunk() {
+  if (hunkNavDisabled.value) return
   inlineDiffRef.value?.nextHunk()
 }
 </script>
@@ -612,11 +624,19 @@ function onNextHunk() {
             <span class="truncate font-mono">{{ selectedPath }}</span>
           </div>
           <div class="flex shrink-0 items-center gap-1 text-[11px]">
-            <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (GitKraken Image #2) -->
-            <div class="flex items-center gap-0.5 rounded border border-border bg-muted/30 px-0.5">
+            <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (GitKraken Image #2). 1-hunk 이하면 disabled -->
+            <div
+              class="flex items-center gap-0.5 rounded border border-border bg-muted/30 px-0.5"
+              :title="
+                hunkNavDisabled
+                  ? '이 patch 는 hunk 1개 이하 — nav 불필요'
+                  : `${inlineHunkCount}개 hunk — ↑↓ 로 이동`
+              "
+            >
               <button
                 type="button"
-                class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+                :disabled="hunkNavDisabled"
                 title="이전 hunk"
                 aria-label="이전 hunk 로 이동"
                 @click="onPrevHunk"
@@ -625,7 +645,8 @@ function onNextHunk() {
               </button>
               <button
                 type="button"
-                class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+                class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+                :disabled="hunkNavDisabled"
                 title="다음 hunk"
                 aria-label="다음 hunk 로 이동"
                 @click="onNextHunk"
