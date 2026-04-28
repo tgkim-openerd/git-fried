@@ -92,6 +92,32 @@ test.describe('git-fried smoke', () => {
     expect(stored).toBe('tree')
   })
 
+  test('Status 4 section sticky + STAGED bulk-unstage button', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
+    await page.reload()
+    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
+    await page.locator('[data-testid="main-nav-status"]').click()
+
+    // 4 section header 의 첫 자식 div 가 sticky 인지 computed style 검증.
+    const sticky = await page.evaluate(() => {
+      const txts = ['Staged', 'Modified', 'Untracked', 'Conflicted']
+      return txts.map((t) => {
+        const span = Array.from(document.querySelectorAll('span, div')).find(
+          (el) =>
+            el.children.length === 0 &&
+            new RegExp(`[▶▼]\\s*${t}\\s*\\(`).test(el.textContent ?? ''),
+        )
+        const header = span?.closest('div.sticky')
+        return { name: t, sticky: !!header }
+      })
+    })
+    expect(sticky.every((s) => s.sticky)).toBe(true)
+
+    // STAGED 옆 "모두 unstage" button — devMock 의 staged 3 개 기준.
+    const unstageAllBtn = page.locator('button[title*="모두 unstage"]')
+    await expect(unstageAllBtn).toBeVisible()
+  })
+
   test('CommitSearchModal — 검색 결과 노출 + Esc 닫기', async ({ page }) => {
     await page.keyboard.press('Control+Shift+F')
     const dialog = page.getByRole('dialog', { name: 'Commit message 검색' })

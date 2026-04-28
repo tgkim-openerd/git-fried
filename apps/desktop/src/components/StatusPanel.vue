@@ -77,6 +77,12 @@ function onDiscardOne(path: string) {
 function onStageAll() {
   if (props.repoId != null) stageAllMut.mutate(props.repoId)
 }
+function onUnstageAll() {
+  if (props.repoId == null) return
+  const paths = (status.value?.staged ?? []).map((f) => f.path)
+  if (paths.length === 0) return
+  unstageMut.mutate({ id: props.repoId, paths })
+}
 
 // statusLabel / statusColor → utils/statusFormat.ts 로 이동 (test 가능 + DiffViewer 공용)
 
@@ -416,14 +422,25 @@ function onNextHunk() {
         <!-- Staged -->
         <div v-if="status && status.staged.length > 0" class="mb-3">
           <div
-            class="mb-1 flex cursor-pointer select-none items-center justify-between"
+            class="sticky top-0 z-10 mb-1 flex cursor-pointer select-none items-center justify-between border-b border-border/40 bg-card"
             title="우클릭 = 섹션 접기/펴기"
             @contextmenu.prevent="collapsedStaged = !collapsedStaged"
-            @click="collapsedStaged = !collapsedStaged"
           >
-            <span class="text-xs uppercase tracking-wider text-muted-foreground">
+            <span
+              class="text-xs uppercase tracking-wider text-muted-foreground"
+              @click="collapsedStaged = !collapsedStaged"
+            >
               {{ collapsedStaged ? '▶' : '▼' }} Staged ({{ status.staged.length }})
             </span>
+            <button
+              type="button"
+              class="text-xs text-muted-foreground hover:text-foreground"
+              title="모두 unstage (⌘⇧U)"
+              :aria-label="`staged ${status.staged.length}개 모두 unstage`"
+              @click.stop="onUnstageAll"
+            >
+              모두 unstage
+            </button>
           </div>
           <ul v-if="!collapsedStaged && viewMode === 'path'">
             <FileRow
@@ -510,7 +527,7 @@ function onNextHunk() {
         <!-- Unstaged -->
         <div v-if="status && status.unstaged.length > 0" class="mb-3">
           <div
-            class="mb-1 flex cursor-pointer select-none items-center justify-between"
+            class="sticky top-0 z-10 mb-1 flex cursor-pointer select-none items-center justify-between border-b border-border/40 bg-card"
             title="우클릭 = 섹션 접기/펴기"
             @contextmenu.prevent="collapsedUnstaged = !collapsedUnstaged"
           >
@@ -663,7 +680,7 @@ function onNextHunk() {
         <!-- Untracked -->
         <div v-if="status && status.untracked.length > 0" class="mb-3">
           <div
-            class="mb-1 flex cursor-pointer select-none items-center justify-between"
+            class="sticky top-0 z-10 mb-1 flex cursor-pointer select-none items-center justify-between border-b border-border/40 bg-card"
             title="우클릭 = 섹션 접기/펴기"
             @contextmenu.prevent="collapsedUntracked = !collapsedUntracked"
             @click="collapsedUntracked = !collapsedUntracked"
@@ -739,7 +756,7 @@ function onNextHunk() {
         <!-- Conflicted -->
         <div v-if="status && status.conflicted.length > 0" class="mb-3">
           <div
-            class="mb-1 cursor-pointer select-none text-xs uppercase tracking-wider text-destructive"
+            class="sticky top-0 z-10 mb-1 cursor-pointer select-none border-b border-border/40 bg-card text-xs uppercase tracking-wider text-destructive"
             title="우클릭 = 섹션 접기/펴기"
             @contextmenu.prevent="collapsedConflicted = !collapsedConflicted"
             @click="collapsedConflicted = !collapsedConflicted"
