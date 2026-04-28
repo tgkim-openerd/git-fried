@@ -167,7 +167,7 @@
 | E-1 | **D18 Skeleton 4 화면** — CommitGraph / BranchPanel / StatusPanel / PrDetail | 각 component skeleton sub-component |
 | E-2 | **D19 Empty state 4 종** — onboarding hero / 검색 0 / 레포 0 / PR 0 | EmptyState 활용 (Sprint 22-6 신규) + 화면 적용 |
 | E-3 | **D20 DnD 4 시나리오** — Branch→Branch / Commit→Branch / File→Stash / Tab reorder. ghost / drop highlight / cancel | `bun add vue-draggable-plus` + 각 panel |
-| E-4 | **D21 Long-running progress 30s/1m/4m 단계** — 5min IPC 작업 UI | `useLongRunningProgress.ts` 신규 + 기존 invokeWithTimeout 통합 |
+| E-4 ✅ (2026-04-28) | **D21 Long-running progress 30s/1m/4m 단계** — 5min IPC 작업 UI | [`useLongRunningProgress.ts`](apps/desktop/src/composables/useLongRunningProgress.ts) + [`LongRunningBanner.vue`](apps/desktop/src/components/LongRunningBanner.vue) + [`invokeWithTimeout.ts`](apps/desktop/src/api/invokeWithTimeout.ts) (long-running prefix 자동 등록). 8 vitest spec |
 | E-5 | **D22 한글 처리 — 좌측 ellipsis / tooltip expand / encoding ⚠** | utility + Sidebar / file path |
 | E-6 | **D23 a11y 47 aria-label** — 잔여 ~37 button | 각 component |
 | E-7 | **D24 Micro-interaction 12 transition + reduced-motion** — `@media (prefers-reduced-motion)` fallback | `main.css` + 컴포넌트 |
