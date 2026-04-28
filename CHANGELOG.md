@@ -128,6 +128,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - tailwind.config.ts 확장: popover/success/warning/info colors + boxShadow + zIndex
   - 검증: typecheck 0 / lint 0 / vitest 13 pass / 36 PNG 재캡처 시각 확인
   - **Sprint B~F 계획 단계 유지 결정** (사용자 판단): Sprint A 만 코드 적용, B~F (Primitives+reka-ui / Hub Screens / Modal Audit / UX Polish / 검증)는 plan/24 에 계획으로만 남김. 이유: plan/22 22-7 까지 진행되며 BaseModal 14/18·aria-label 17·ContextMenu 11/17·V-5/F-I1/F-I2/Q-3/Q-4 등 점진 적용이 이미 진행 중. plan/24 § 11 재개 조건 명시 (plan/22 정체 OR Figma↔코드 drift ≥30% OR 사용자 명시 트리거)
+- **plan/24 § 11-3 추가 디자인 후보 카탈로그 21건 확장 + § 11-4 Sprint G/H/I prompt 보존**:
+  - Sprint G HIGH 5 (에러/인증 catalog 8 패턴 / AI flow UX / Onboarding sub-screen / Settings complex form 5 / Tauri 앱 icon set)
+  - Sprint H MEDIUM 5 (Long-running 실 시나리오 / 고밀도 edge case / Empty state 확장 / 컴포넌트 상태 매트릭스 / Settings 카테고리 detail)
+  - Sprint I LOW 11 (i18n / Storybook / Custom theme / Marketing / Anatomy / Branding / Typography hierarchy / Dashboard / Release note / Animation / Localization)
+  - § 11-4 에 Sprint G prompt 전문 보존 — Figma Make 발송용 SoT. Sprint G 통과 후 H, I 순차
     - `00-product-brief.md` § 4-2 "Feature Parity Ambition" + § 8 Anti-Goals 보강 (minimal-leaning / GitKraken visual 모방 / 고정 카운트 가정)
     - `README.md` — 인덱스 + 권장 읽기 순서 + Handoff 옵션 (A 문서만 / B 스크린샷 / C Figma MCP)
 - Sprint A14 (`docs/plan/14`):

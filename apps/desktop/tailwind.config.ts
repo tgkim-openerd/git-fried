@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 // shadcn-vue 표준 + 디자인 토큰 (07-design-decisions.md §9 색상)
+// + plan/24 Sprint A 적용 (Status semantic / Elevation tier 3 / Z-index 6 layer)
 export default {
   darkMode: ['class'],
   content: ['./index.html', './src/**/*.{ts,vue}'],
@@ -40,11 +41,49 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        // Status semantic (plan/24 Sprint A-3)
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          foreground: 'hsl(var(--success-foreground))',
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          foreground: 'hsl(var(--warning-foreground))',
+        },
+        info: {
+          DEFAULT: 'hsl(var(--info))',
+          foreground: 'hsl(var(--info-foreground))',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      boxShadow: {
+        // Elevation tier 3 (plan/24 Sprint A-4)
+        popover: 'var(--shadow-popover)',
+        modal: 'var(--shadow-modal)',
+        toast: 'var(--shadow-toast)',
+      },
+      zIndex: {
+        // Layer 6 (plan/24 Sprint A-5)
+        // 10 sticky header (SyncBar)
+        // 20 sidebar overlay (future mobile)
+        // 30 popover / dropdown / tooltip
+        // 40 modal backdrop
+        // 50 modal content
+        // 60 toast (최상단)
+        '10': '10',
+        '20': '20',
+        '30': '30',
+        '40': '40',
+        '50': '50',
+        '60': '60',
       },
       fontFamily: {
         sans: [
