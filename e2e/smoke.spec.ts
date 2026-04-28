@@ -106,6 +106,38 @@ test.describe('git-fried smoke', () => {
     await expect(dialog).not.toBeVisible()
   })
 
+  test('commit row click → inline-diff-panel visible', async ({ page }) => {
+    // detail panel + inline diff 모두 켜진 상태에서 진입.
+    await page.evaluate(() => {
+      localStorage.setItem('git-fried.detail-visible', '1')
+      localStorage.setItem('git-fried.inline-diff.visible', '1')
+    })
+    await page.reload()
+    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
+
+    // devMock fake log 의 첫 commit. shortSha 기준 testid.
+    const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
+    await expect(row).toBeVisible()
+    // row 의 sha cell 클릭 — message 영역의 ref pill (HEAD/main 등) 은 @click.stop 으로 row 핸들러 차단.
+    await row.locator('span', { hasText: /^6ef63e0$/ }).click()
+
+    // selectedSha set → CommitDiffPanel mount.
+    await expect(page.locator('[data-testid="inline-diff-panel"]')).toBeVisible({
+      timeout: 2_000,
+    })
+  })
+
+  test('sidebar filter focus path (window.gitFriedFocusRepoFilter)', async ({ page }) => {
+    // Playwright press_key (⌘⌥F) 가 Chromium OS 단축키와 충돌, dispatchEvent 도 KeyboardEvent.ctrlKey/altKey synthesis 환경 의존.
+    // window helper 가 Sidebar.vue 에서 mount 시 등록되는 SoT (focus path).
+    // 단축키 → handler → window helper 매핑 자체는 useShortcuts unit spec 으로 검증.
+    await page.evaluate(() => window.gitFriedFocusRepoFilter?.())
+    const filter = page
+      .locator('input[placeholder*="필터"][placeholder*="별칭"]')
+      .first()
+    await expect(filter).toBeFocused({ timeout: 1_000 })
+  })
+
   test('console.error 0건', async ({ page }) => {
     const errors: string[] = []
     page.on('console', (msg) => {
