@@ -79,5 +79,22 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,vue}'],
+      exclude: [
+        'src/**/*.d.ts',
+        'src/**/*.test.ts',
+        'src/**/*.spec.ts',
+        'src/api/devMock.ts', // dev-only mock fixtures
+        'src/types/**',
+        'src/main.ts',
+        'src/router/**',
+      ],
+      // 초기 도입 — threshold 미설정 (측정 only). 베이스라인 ~3% (대부분 모듈 untested).
+      // follow-up: composables / utils / api 부터 단계적 상승 (10% → 25% → 40%).
+    },
   },
 })
