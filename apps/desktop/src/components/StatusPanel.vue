@@ -9,14 +9,8 @@ import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 // TYPE-003 / ARCH-004 fix — DiffViewer 가 export 하는 공통 expose 타입 import.
 import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
-import {
-  discardPaths,
-  getDiff,
-  launchMergetool,
-  stageAll,
-  stagePaths,
-  unstagePaths,
-} from '@/api/git'
+import { getDiff, launchMergetool } from '@/api/git'
+import { useStageMutations } from '@/composables/useStageMutations'
 import { describeError } from '@/api/errors'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useToast } from '@/composables/useToast'
@@ -45,44 +39,21 @@ const toast = useToast()
 const { data: status, isFetching } = useStatus(() => props.repoId)
 const invalidate = useInvalidateRepoQueries()
 
-const stageMut = useMutation({
-  mutationFn: ({ id, paths }: { id: number; paths: string[] }) => stagePaths(id, paths),
-  onSuccess: () => invalidate(props.repoId),
-})
-const unstageMut = useMutation({
-  mutationFn: ({ id, paths }: { id: number; paths: string[] }) => unstagePaths(id, paths),
-  onSuccess: () => invalidate(props.repoId),
-})
-const discardMut = useMutation({
-  mutationFn: ({ id, paths }: { id: number; paths: string[] }) => discardPaths(id, paths),
-  onSuccess: () => invalidate(props.repoId),
-})
-const stageAllMut = useMutation({
-  mutationFn: (id: number) => stageAll(id),
-  onSuccess: () => invalidate(props.repoId),
-})
-
-function onStageOne(path: string) {
-  if (props.repoId != null) stageMut.mutate({ id: props.repoId, paths: [path] })
-}
-function onUnstageOne(path: string) {
-  if (props.repoId != null) unstageMut.mutate({ id: props.repoId, paths: [path] })
-}
-function onDiscardOne(path: string) {
-  if (props.repoId == null) return
-  if (confirm(`'${path}' 의 변경을 폐기하시겠습니까? 되돌릴 수 없습니다.`)) {
-    discardMut.mutate({ id: props.repoId, paths: [path] })
-  }
-}
-function onStageAll() {
-  if (props.repoId != null) stageAllMut.mutate(props.repoId)
-}
-function onUnstageAll() {
-  if (props.repoId == null) return
-  const paths = (status.value?.staged ?? []).map((f) => f.path)
-  if (paths.length === 0) return
-  unstageMut.mutate({ id: props.repoId, paths })
-}
+// === Stage / unstage / discard mutations (Sprint c29-6 — composables/useStageMutations 로 추출) ===
+const sm = useStageMutations(
+  () => props.repoId,
+  () => status.value,
+)
+// 기존 binding 호환 alias.
+const stageMut = sm.stageMut
+const unstageMut = sm.unstageMut
+// discardMut 는 sm.discardOne 내부에서 호출 — 외부 노출 불필요.
+const stageAllMut = sm.stageAllMut
+const onStageOne = sm.stageOne
+const onUnstageOne = sm.unstageOne
+const onDiscardOne = sm.discardOne
+const onStageAll = sm.stageAll
+const onUnstageAll = sm.unstageAll
 
 // statusLabel / statusColor → utils/statusFormat.ts 로 이동 (test 가능 + DiffViewer 공용)
 
