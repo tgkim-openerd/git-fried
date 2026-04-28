@@ -6,8 +6,7 @@
   "license": "MIT",
   "author": "tgkim",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "bun run --cwd apps/desktop dev",
