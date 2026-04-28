@@ -75,15 +75,14 @@ test.describe('git-fried smoke', () => {
     await expect(stashToggle).toHaveAttribute('title', /펴기/)
   })
 
-  // selector follow-up — sidebar 의 '◇ 변경' quick action 과 main nav 의 '변경' tab 구분이 fragile
-  // 본 시나리오는 mcp__playwright dogfood 에서 검증됨 (수동 통과). data-testid 추가 후 재활성.
-  test.skip('Path/Tree 토글 + 4 섹션 노출', async ({ page }) => {
-    // main 의 nav 안 '변경' button (Sidebar quick action 의 ◇ 변경 과 구분)
-    await page.locator('nav').getByRole('button', { name: '변경', exact: true }).click()
-    await expect(page.getByText(/▼\s*STAGED/)).toBeVisible()
-    await expect(page.getByText(/▼\s*MODIFIED/)).toBeVisible()
-    await expect(page.getByText(/▼\s*UNTRACKED/)).toBeVisible()
-    await expect(page.getByText(/▼\s*CONFLICTED/)).toBeVisible()
+  test('Path/Tree 토글 + 4 섹션 노출', async ({ page }) => {
+    // main nav 의 '변경' tab — data-testid="main-nav-status"
+    await page.locator('[data-testid="main-nav-status"]').click()
+    // page evaluation — STAGED/MODIFIED 텍스트 노출 검증 (CSS selector 매칭 race-condition 회피)
+    await page.waitForFunction(() => {
+      const t = document.body.innerText
+      return /STAGED.*MODIFIED.*UNTRACKED.*CONFLICTED/s.test(t)
+    }, { timeout: 5_000 })
 
     // Tree 모드 토글 — 디렉토리 트리 모드 button
     const treeBtn = page.locator('button[aria-label="디렉토리 트리 모드"]')

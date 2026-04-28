@@ -35,14 +35,7 @@ const upstream = computed(() => status.value?.upstream ?? null)
 const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
-type Tab =
-  | 'status'
-  | 'branches'
-  | 'stash'
-  | 'submodule'
-  | 'lfs'
-  | 'pr'
-  | 'worktree'
+type Tab = 'status' | 'branches' | 'stash' | 'submodule' | 'lfs' | 'pr' | 'worktree'
 const tab = ref<Tab>('status')
 
 // Sprint B10 — per-profile 탭 영속화.
@@ -130,7 +123,11 @@ onUnmounted(() => {
 <template>
   <div
     class="grid h-full overflow-hidden"
-    :class="terminalOpen ? 'grid-rows-[auto_auto_minmax(0,1fr)_minmax(140px,30%)]' : 'grid-rows-[auto_auto_1fr]'"
+    :class="
+      terminalOpen
+        ? 'grid-rows-[auto_auto_minmax(0,1fr)_minmax(140px,30%)]'
+        : 'grid-rows-[auto_auto_1fr]'
+    "
   >
     <GitKrakenToolbar
       :repo-id="store.activeRepoId"
@@ -147,8 +144,8 @@ onUnmounted(() => {
         focusMode
           ? 'grid-cols-[0_1fr]'
           : ui.detailVisible.value
-          ? 'grid-cols-[1fr_360px]'
-          : 'grid-cols-[1fr_0]'
+            ? 'grid-cols-[1fr_360px]'
+            : 'grid-cols-[1fr_0]'
       "
     >
       <!-- 좌측: 커밋 그래프 + Sprint c25-4.5 inline diff vertical split (focusMode 시 숨김) -->
@@ -199,6 +196,7 @@ onUnmounted(() => {
             ] as Tab[]"
             :key="t"
             type="button"
+            :data-testid="`main-nav-${t}`"
             class="flex-1 px-1.5 py-1.5 capitalize"
             :class="
               tab === t
@@ -211,16 +209,16 @@ onUnmounted(() => {
               t === 'status'
                 ? '변경'
                 : t === 'branches'
-                ? '브랜치'
-                : t === 'stash'
-                ? 'Stash'
-                : t === 'submodule'
-                ? 'Sub'
-                : t === 'lfs'
-                ? 'LFS'
-                : t === 'pr'
-                ? 'PR'
-                : 'WT'
+                  ? '브랜치'
+                  : t === 'stash'
+                    ? 'Stash'
+                    : t === 'submodule'
+                      ? 'Sub'
+                      : t === 'lfs'
+                        ? 'LFS'
+                        : t === 'pr'
+                          ? 'PR'
+                          : 'WT'
             }}
           </button>
           <button
@@ -235,20 +233,36 @@ onUnmounted(() => {
         </nav>
 
         <div class="overflow-hidden">
-          <StatusPanel v-if="tab === 'status'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
-          <BranchPanel v-else-if="tab === 'branches'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
-          <StashPanel v-else-if="tab === 'stash'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
-          <SubmodulePanel v-else-if="tab === 'submodule'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
-          <LfsPanel v-else-if="tab === 'lfs'" :repo-id="store.activeRepoId" class="h-full border-l-0" />
+          <StatusPanel
+            v-if="tab === 'status'"
+            :repo-id="store.activeRepoId"
+            class="h-full border-l-0"
+          />
+          <BranchPanel
+            v-else-if="tab === 'branches'"
+            :repo-id="store.activeRepoId"
+            class="h-full border-l-0"
+          />
+          <StashPanel
+            v-else-if="tab === 'stash'"
+            :repo-id="store.activeRepoId"
+            class="h-full border-l-0"
+          />
+          <SubmodulePanel
+            v-else-if="tab === 'submodule'"
+            :repo-id="store.activeRepoId"
+            class="h-full border-l-0"
+          />
+          <LfsPanel
+            v-else-if="tab === 'lfs'"
+            :repo-id="store.activeRepoId"
+            class="h-full border-l-0"
+          />
           <ForgePanel v-else-if="tab === 'pr'" :repo-id="store.activeRepoId" class="h-full" />
           <WorktreePanel v-else :repo-id="store.activeRepoId" class="h-full border-l-0" />
         </div>
 
-        <CommitMessageInput
-          :repo-id="store.activeRepoId"
-          :ahead="ahead"
-          :behind="behind"
-        />
+        <CommitMessageInput :repo-id="store.activeRepoId" :ahead="ahead" :behind="behind" />
       </div>
     </div>
 
