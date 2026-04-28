@@ -14,6 +14,7 @@ import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useBranches } from '@/composables/useBranches'
 import { useStash } from '@/composables/useStash'
 import { useWorktrees } from '@/composables/useWorktrees'
+import { usePullRequests } from '@/composables/usePullRequests'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
@@ -127,6 +128,16 @@ function worktreeName(path: string): string {
   const segs = trimmed.split(/[/\\]/)
   return segs[segs.length - 1] || path
 }
+
+// === c25-3 step 5 — PR mini list (활성 레포의 open PR top 3) ===
+// Launchpad 가 cross-repo 통합인 반면 sidebar mini PR 은 active-repo-only.
+// 클릭 시 PrDetailModal 가 PrPanel 의 modal state — sidebar 에서 직접 띄우려면 window 트리거 필요.
+// 단순화: 클릭 시 dispatchShortcut('tab6') → PrPanel 진입 (사용자가 거기서 detail).
+const { data: prs } = usePullRequests(repoIdRef, () => 'open')
+const miniPrs = computed(() => (prs.value ?? []).slice(0, 3))
+const morePrsCount = computed(() =>
+  Math.max(0, (prs.value?.length ?? 0) - miniPrs.value.length),
+)
 
 const branch = computed(() => status.value?.branch ?? null)
 const upstream = computed(() => status.value?.upstream ?? null)
@@ -344,6 +355,47 @@ const QUICK_TABS = [
             class="px-1 py-0.5 text-[10px] text-muted-foreground"
           >
             ⋯ +{{ moreWorktreesCount }}개 더 (전체 → 클릭)
+          </li>
+        </ul>
+      </div>
+
+      <!-- c25-3 step 5 — Open PR mini list (active repo, recent 3). -->
+      <div v-if="miniPrs.length > 0" class="mt-1 space-y-0.5">
+        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span>Open PR ({{ prs?.length ?? 0 }})</span>
+          <button
+            type="button"
+            class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
+            title="PR 패널 (⌘6)"
+            @click="dispatchShortcut('tab6')"
+          >
+            전체 →
+          </button>
+        </div>
+        <ul class="space-y-0.5">
+          <li
+            v-for="p in miniPrs"
+            :key="`mp-${p.number}`"
+            class="flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-accent/30"
+            :title="`#${p.number} ${p.title}\nby ${p.author.username} — ${p.headBranch} → ${p.baseBranch}`"
+            @click="dispatchShortcut('tab6')"
+          >
+            <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
+              #{{ p.number }}
+            </span>
+            <span v-if="p.draft" class="shrink-0 rounded bg-muted/50 px-1 text-[9px] text-muted-foreground">
+              draft
+            </span>
+            <span class="flex-1 truncate">{{ p.title }}</span>
+            <span v-if="p.comments > 0" class="text-[9px] text-muted-foreground">
+              💬{{ p.comments }}
+            </span>
+          </li>
+          <li
+            v-if="morePrsCount > 0"
+            class="px-1 py-0.5 text-[10px] text-muted-foreground"
+          >
+            ⋯ +{{ morePrsCount }}개 더 (전체 → 클릭)
           </li>
         </ul>
       </div>
