@@ -8,6 +8,7 @@
 // timeout 시 reject 되어 useToast 의 onError 가 자동 표시.
 
 import { invoke as nativeInvoke } from '@tauri-apps/api/core'
+import { isMockEnabled, mockInvoke } from './devMock'
 
 const DEFAULT_TIMEOUT_MS = 30_000
 const LONG_TIMEOUT_MS = 5 * 60_000
@@ -37,6 +38,12 @@ export function invoke<T>(
   args?: Record<string, unknown>,
   opts?: InvokeOptions,
 ): Promise<T> {
+  // dev-only mock: Tauri webview 부재 시 fixture 응답 (`docs/plan/23`).
+  // 실 Tauri webview / production 빌드는 자동 우회.
+  if (isMockEnabled()) {
+    return mockInvoke<T>(cmd, args)
+  }
+
   const t =
     opts?.timeoutMs ?? (isLongRunning(cmd) ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
 
