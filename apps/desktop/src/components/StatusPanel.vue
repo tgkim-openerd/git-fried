@@ -385,6 +385,42 @@ const stagedTreeRows = computed<UnstagedTreeRow[]>(() => {
   const tree = buildPathTree(items, { collapseSingleChild: true })
   return flattenTree(tree, collapsedDirs.value)
 })
+
+// c25-2.3 — untracked / conflicted 섹션도 Tree 지원 (string[] meta).
+type StringTreeRow =
+  | { kind: 'dir'; path: string; name: string; depth: number; collapsed: boolean }
+  | { kind: 'file'; path: string; name: string; depth: number }
+
+function flattenStringTree(
+  nodes: TreeNode<string>[],
+  collapsed: Set<string>,
+  out: StringTreeRow[] = [],
+): StringTreeRow[] {
+  for (const n of nodes) {
+    if (n.kind === 'dir') {
+      const isCollapsed = collapsed.has(n.path)
+      out.push({ kind: 'dir', path: n.path, name: n.name, depth: n.depth, collapsed: isCollapsed })
+      if (!isCollapsed) flattenStringTree(n.children, collapsed, out)
+    } else {
+      out.push({ kind: 'file', path: n.path, name: n.name, depth: n.depth })
+    }
+  }
+  return out
+}
+
+const untrackedTreeRows = computed<StringTreeRow[]>(() => {
+  if (viewMode.value !== 'tree') return []
+  const items = filteredUntracked.value.map((p) => ({ path: p, meta: p }))
+  const tree = buildPathTree(items, { collapseSingleChild: true })
+  return flattenStringTree(tree, collapsedDirs.value)
+})
+
+const conflictedTreeRows = computed<StringTreeRow[]>(() => {
+  if (viewMode.value !== 'tree') return []
+  const items = filteredConflicted.value.map((p) => ({ path: p, meta: p }))
+  const tree = buildPathTree(items, { collapseSingleChild: true })
+  return flattenStringTree(tree, collapsedDirs.value)
+})
 const filteredUntracked = computed(() =>
   (status.value?.untracked ?? []).filter((p) => matchFilter(p)),
 )
@@ -761,7 +797,7 @@ function onNextHunk() {
             {{ collapsedUntracked ? '▶' : '▼' }} Untracked ({{ status.untracked.length }})
           </span>
         </div>
-        <ul v-if="!collapsedUntracked">
+        <ul v-if="!collapsedUntracked && viewMode === 'path'">
           <li
             v-for="p in filteredUntracked"
             :key="`n-${p}`"
@@ -784,6 +820,41 @@ function onNextHunk() {
             </button>
           </li>
         </ul>
+
+        <!-- c25-2.3 — Tree 모드: Untracked (string row, action='+' stage) -->
+        <ul v-else-if="!collapsedUntracked && viewMode === 'tree'">
+          <template v-for="(row, idx) in untrackedTreeRows" :key="`unt-${idx}`">
+            <li
+              v-if="row.kind === 'dir'"
+              class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
+              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+              @click="toggleDir(row.path)"
+            >
+              <span class="text-[10px] text-muted-foreground">{{ row.collapsed ? '▶' : '▼' }}</span>
+              <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
+            </li>
+            <li
+              v-else
+              class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+              :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              @click="selectPath(row.path)"
+            >
+              <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">new</span>
+              <span class="flex-1 truncate font-mono text-xs" :title="row.path">{{ row.name }}</span>
+              <button
+                type="button"
+                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                title="stage"
+                :aria-label="`'${row.path}' stage`"
+                @click.stop="onStageOne(row.path)"
+              >
+                +
+              </button>
+            </li>
+          </template>
+        </ul>
       </div>
 
       <!-- Conflicted -->
@@ -796,7 +867,7 @@ function onNextHunk() {
         >
           {{ collapsedConflicted ? '▶' : '▼' }} Conflicted ({{ status.conflicted.length }})
         </div>
-        <ul v-if="!collapsedConflicted">
+        <ul v-if="!collapsedConflicted && viewMode === 'path'">
           <li
             v-for="p in filteredConflicted"
             :key="`c-${p}`"
@@ -820,6 +891,45 @@ function onNextHunk() {
               해결
             </button>
           </li>
+        </ul>
+
+        <!-- c25-2.3 — Tree 모드: Conflicted (string row, action=mergetool / 해결) -->
+        <ul v-else-if="!collapsedConflicted && viewMode === 'tree'">
+          <template v-for="(row, idx) in conflictedTreeRows" :key="`ct-${idx}`">
+            <li
+              v-if="row.kind === 'dir'"
+              class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 text-destructive hover:bg-destructive/10"
+              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+              @click="toggleDir(row.path)"
+            >
+              <span class="text-[10px]">{{ row.collapsed ? '▶' : '▼' }}</span>
+              <span class="font-mono text-[11px]">{{ row.name }}/</span>
+            </li>
+            <li
+              v-else
+              class="group flex items-center gap-2 rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
+              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+            >
+              <span class="flex-1 truncate font-mono" :title="row.path">! {{ row.name }}</span>
+              <button
+                type="button"
+                class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+                title="외부 mergetool"
+                :disabled="mergetoolMut.isPending.value"
+                @click="onLaunchMergetool(row.path)"
+              >
+                🛠
+              </button>
+              <button
+                type="button"
+                class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+                @click="openMerge(row.path)"
+              >
+                해결
+              </button>
+            </li>
+          </template>
         </ul>
       </div>
     </div>
