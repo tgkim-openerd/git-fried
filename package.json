@@ -19,13 +19,15 @@
     "test:web": "bun run --cwd apps/desktop test",
     "lint": "bun run --cwd apps/desktop lint",
     "typecheck": "bun run --cwd apps/desktop typecheck",
-    "fmt": "bun run --cwd apps/desktop fmt && cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml"
+    "fmt": "bun run --cwd apps/desktop fmt && cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "bun": ">=1.1.0"
   },
   "packageManager": "bun@1.1.0",
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "lefthook": "^2.1.6",
     "playwright": "^1.59.1"
   }
