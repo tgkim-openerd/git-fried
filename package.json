@@ -25,5 +25,8 @@
   "engines": {
     "bun": ">=1.1.0"
   },
-  "packageManager": "bun@1.1.0"
+  "packageManager": "bun@1.1.0",
+  "devDependencies": {
+    "playwright": "^1.59.1"
+  }
 }

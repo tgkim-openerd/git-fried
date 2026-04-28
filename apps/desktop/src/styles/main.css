@@ -1,28 +1,89 @@
+/* Pretendard self-host — Q1 결정 (plan/24 Sprint A-1).
+ * pretendard npm 패키지의 woff2 + @font-face. OS 미설치 환경 fallback 차단.
+ * Variable 버전 (단일 파일, ~150KB) — font-display: swap 으로 FOUT 허용.
+ */
+@import 'pretendard/dist/web/variable/pretendardvariable.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* shadcn-vue 디자인 토큰 (light + dark) */
+/* shadcn-vue 디자인 토큰 — Q2 (색 의미 분리) + Status semantic + Elevation
+ * + Z-index layer (plan/24 Sprint A-2/3/4/5).
+ *
+ * Q2 결정:
+ *  - secondary: 현재값 유지 (subtle action / chip 배경)
+ *  - muted:     한 단계 더 흐리게 (placeholder / 비활성 텍스트 배경)
+ *  - accent:    primary 의 옅은 변형 (hover / selected highlight)
+ */
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
     --primary: 240 5.9% 10%;
     --primary-foreground: 0 0% 98%;
+
+    /* Q2: secondary 그대로 */
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
+
+    /* Q2: muted 한 단계 더 흐리게 (95.9% → 97.5%) */
+    --muted: 240 4.8% 97.5%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
+
+    /* Q2: accent = primary 의 옅은 변형 (hue 일치 + L 92%) */
+    --accent: 240 5.9% 92%;
     --accent-foreground: 240 5.9% 10%;
+
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
+
+    /* Status semantic — A-3 신규 */
+    --success: 142 71% 35%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 45%;
+    --warning-foreground: 0 0% 100%;
+    --info: 217 91% 50%;
+    --info-foreground: 0 0% 98%;
+
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
     --radius: 0.5rem;
+
+    /* Elevation tier 3 — A-4 신규 (popover / modal / toast) */
+    --shadow-popover: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-modal:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-toast:
+      0 20px 25px -5px rgb(0 0 0 / 0.1),
+      0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    /* Sprint 22-12 Q-5 Transition 정책 + S-4 Micro-interaction (design 01 §7 / 04 §6).
+     *
+     * 일관 적용:
+     *   --transition-fast (75ms)   : hover 색 / opacity / 작은 변형
+     *   --transition-base (150ms)  : modal enter / focus 변경 / panel toggle
+     *   --transition-slow (200ms)  : toast slide-in / drawer / 큰 layout shift
+     *   --transition-instant (0ms) : focus ring (즉시 표시 — a11y / 인지 가속)
+     *
+     * cubic-bezier:
+     *   --ease-out: enter (느려지며 멈춤)
+     *   --ease-in:  exit (빨라지며 사라짐)
+     *
+     * @media (prefers-reduced-motion: reduce) 시 모두 0ms 으로 override (E-7 부분 흡수).
+     */
+    --transition-fast: 75ms;
+    --transition-base: 150ms;
+    --transition-slow: 200ms;
+    --transition-instant: 0ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
   }
 
   .dark {
@@ -30,19 +91,46 @@
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
+
+    /* Q2: secondary 그대로 */
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
+
+    /* Q2: muted 더 흐리게 (15.9% → 12%) */
+    --muted: 240 3.7% 12%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+
+    /* Q2: accent = primary 옅은 변형 (dark 에선 약간 밝은 grey) */
+    --accent: 240 3.7% 22%;
     --accent-foreground: 0 0% 98%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+
+    /* Status semantic — A-3 신규 (dark) */
+    --success: 142 65% 45%;
+    --success-foreground: 240 10% 3.9%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 240 10% 3.9%;
+    --info: 217 91% 60%;
+    --info-foreground: 240 10% 3.9%;
+
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+
+    /* Elevation tier (dark — opacity 강화) */
+    --shadow-popover: 0 1px 2px 0 rgb(0 0 0 / 0.6);
+    --shadow-modal:
+      0 10px 15px -3px rgb(0 0 0 / 0.5),
+      0 4px 6px -4px rgb(0 0 0 / 0.5);
+    --shadow-toast:
+      0 20px 25px -5px rgb(0 0 0 / 0.6),
+      0 8px 10px -6px rgb(0 0 0 / 0.6);
   }
 
   * {
@@ -59,5 +147,24 @@
   input[type='text'],
   input:not([type]) {
     line-height: 1.5;
+  }
+
+  /* Sprint 22-12 Q-5 — prefers-reduced-motion 폴백 (WCAG 2.3.3 + design 04 §1-3).
+   * 사용자가 OS 설정으로 모션 감소 선택 시 모든 transition / animation 무효화.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --transition-fast: 0ms;
+      --transition-base: 0ms;
+      --transition-slow: 0ms;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

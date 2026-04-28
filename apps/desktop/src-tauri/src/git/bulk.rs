@@ -5,9 +5,7 @@
 
 use crate::auth;
 use crate::error::AppError;
-use crate::forge::{
-    gitea::GiteaClient, github::GithubClient, ForgeClient, PrState, PullRequest,
-};
+use crate::forge::{gitea::GiteaClient, github::GithubClient, ForgeClient, PrState, PullRequest};
 use crate::git::{status as git_status, sync as git_sync};
 use crate::storage::{Db, DbExt};
 use serde::{Deserialize, Serialize};
@@ -78,12 +76,11 @@ pub async fn bulk_list_prs(
     // forge_kind 별로 토큰 / base_url 미리 조회 (DB 질의 줄임).
     let mut accounts: std::collections::HashMap<String, (String, String)> =
         std::collections::HashMap::new();
-    let rows = sqlx::query(
-        "SELECT forge_kind, base_url, keychain_ref FROM forge_accounts ORDER BY id",
-    )
-    .fetch_all(&db.pool)
-    .await
-    .map_err(AppError::Db)?;
+    let rows =
+        sqlx::query("SELECT forge_kind, base_url, keychain_ref FROM forge_accounts ORDER BY id")
+            .fetch_all(&db.pool)
+            .await
+            .map_err(AppError::Db)?;
     for r in rows {
         let kind: String = r.try_get("forge_kind")?;
         if accounts.contains_key(&kind) {
@@ -129,6 +126,48 @@ pub async fn bulk_list_prs(
                 Ok(c) => c.list_pull_requests(&owner, &repo_name, state_filter).await,
                 Err(e) => Err(e),
             };
+            BulkResult {
+                repo_id: id,
+                repo_name: name,
+                success: res.is_ok(),
+                data: res.as_ref().ok().cloned(),
+                error: res.err().map(|e| e.to_string()),
+            }
+        }));
+    }
+
+    let mut out = Vec::with_capacity(handles.len());
+    for h in handles {
+        match h.await {
+            Ok(r) => out.push(r),
+            Err(e) => out.push(BulkResult {
+                repo_id: -1,
+                repo_name: "(join error)".into(),
+                success: false,
+                data: None,
+                error: Some(e.to_string()),
+            }),
+        }
+    }
+    Ok(out)
+}
+
+/// 워크스페이스 모든 레포의 quick status (branch + upstream + ahead/behind only).
+/// Sprint 22-11 F-P3 — Sidebar 50+ repo "어느 레포 작업할까" preview 용.
+/// bulk_status 대비 ~50× 빠름 (file walk 생략).
+pub async fn bulk_quick_status(
+    db: &Db,
+    workspace_id: Option<i64>,
+) -> Result<Vec<BulkResult<git_status::QuickStatus>>, AppError> {
+    let repos = db.list_repos(workspace_id).await?;
+    let mut handles = Vec::with_capacity(repos.len());
+
+    for r in repos {
+        let path = PathBuf::from(r.local_path);
+        let id = r.id;
+        let name = r.name;
+        handles.push(tokio::task::spawn_blocking(move || {
+            let res = git_status::read_quick_status(&path);
             BulkResult {
                 repo_id: id,
                 repo_name: name,

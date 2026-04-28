@@ -4,11 +4,21 @@
 //   - feat / fix / chore / refactor / docs / perf / test / ci 80%+ 일관 사용
 //   - 한글 메시지 55~72%
 // → 디폴트 빌더 모드, 자유 입력 토글 가능.
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { aiCommitMessage, aiDetectClis, commit as ipcCommit } from '@/api/git'
+import {
+  aiCommitMessage,
+  aiDetectClis,
+  commit as ipcCommit,
+  lastCommitMessage,
+  stageAll as apiStageAll,
+} from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
+import { useShortcut } from '@/composables/useShortcuts'
+import { notifyAiDone } from '@/composables/useAiCli'
+import { visualWidth } from '@/utils/visualWidth'
 import type { AiCli } from '@/api/git'
 import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -17,6 +27,7 @@ const toast = useToast()
 import {
   buildConventional,
   CONVENTIONAL_TYPES,
+  isConventionalType,
   type ConventionalType,
 } from '@/types/git'
 
@@ -35,7 +46,63 @@ const footer = ref('')
 const freeMessage = ref('')
 const signoff = ref(false)
 const noVerify = ref(false)
+// Sprint c25-2 §3-2 — Amend 토글. ON 시 last_commit_message prefill, --amend 로 commit.
+const amend = ref(false)
 const invalidate = useInvalidateRepoQueries()
+
+// Amend ON 시 마지막 commit 메시지를 빈 입력에 prefill.
+// 이미 입력 중이면 덮어쓰지 않음 (사용자 입력 보호).
+watch(
+  [amend, () => props.repoId],
+  async ([on, id]) => {
+    if (!on || id == null) return
+    // SEC-006 fix — 이미 push 된 commit 의 amend 는 force-push 필요 (history rewrite).
+    // ahead === 0 && upstream 존재 = 마지막 commit 이 원격에도 있음 → 강제 confirm.
+    if (props.ahead === 0) {
+      if (
+        !confirm(
+          '⚠ Amend 경고 — 이미 push 된 commit 일 수 있습니다\n\n' +
+            '• ahead = 0 (모든 local commit 이 원격에 push 됨)\n' +
+            '• Amend 시 마지막 commit hash 변경 → 동료의 fetch 충돌\n' +
+            '• 해결: push 후 force-push (--force-with-lease) 필요\n\n' +
+            'Amend 를 진행하시겠습니까?',
+        )
+      ) {
+        amend.value = false
+        return
+      }
+    }
+    const hasInput =
+      mode.value === 'free'
+        ? freeMessage.value.trim().length > 0
+        : subject.value.trim().length > 0
+    if (hasInput) return
+    try {
+      const last = await lastCommitMessage(id)
+      if (!last) return
+      // 첫 줄 + 본문 분리 후 conventional 패턴 매칭 시도.
+      const lines = last.split(/\r?\n/)
+      const m = lines[0].match(/^(\w+)(?:\(([^)]+)\))?(!?):\s*(.+)$/)
+      if (m && isConventionalType(m[1])) {
+        type.value = m[1]
+        scope.value = m[2] || ''
+        breaking.value = m[3] === '!'
+        subject.value = m[4]
+        const bodyStart = lines.findIndex((l, i) => i > 0 && l.trim() === '')
+        if (bodyStart > 0) {
+          body.value = lines.slice(bodyStart + 1).join('\n').trim()
+        }
+        mode.value = 'conventional'
+      } else {
+        mode.value = 'free'
+        freeMessage.value = last
+      }
+    } catch (e) {
+      toast.error('마지막 커밋 메시지 조회 실패', describeError(e))
+    }
+  },
+  { immediate: false },
+)
 
 const finalMessage = computed(() => {
   if (mode.value === 'free') return freeMessage.value
@@ -49,7 +116,9 @@ const finalMessage = computed(() => {
   })
 })
 
-const subjectLength = computed(() => subject.value.length)
+// Sprint 22-7 Q-3: visualWidth 를 utils/visualWidth.ts 로 추출 (DRY 재사용).
+// ASCII=1, 한글/CJK/emoji=2 — terminal cell 기준. 한글 36자 ≈ 영문 72자.
+const subjectLength = computed(() => visualWidth(subject.value))
 const subjectWarn = computed(() => subjectLength.value > 72)
 
 // commit 실패 결과 (hook 출력) — alert 대신 inline panel.
@@ -69,6 +138,7 @@ const commitMut = useMutation({
       message: finalMessage.value,
       signoff: signoff.value,
       noVerify: nv,
+      amend: amend.value,
     })
   },
   onSuccess: (res) => {
@@ -79,11 +149,29 @@ const commitMut = useMutation({
       footer.value = ''
       freeMessage.value = ''
       breaking.value = false
+      // Amend 성공 시 토글 해제 (다음 commit 은 일반 commit 로).
+      amend.value = false
       invalidate(props.repoId)
       emit('committed')
     } else {
       // pre-commit hook 실패 등 — inline panel 로 표시
       lastResult.value = res
+      // R-2A C5 (`docs/plan/22 §2 C5`): conflict marker 가 stderr 에 보이면
+      // 사용자에게 어디 충돌인지 안내. git 은 "<<<<<<<" 라인이 남으면 거부.
+      const merged = `${res.stdout ?? ''}\n${res.stderr ?? ''}`
+      const conflictHints = [
+        /<{4,7}\s*HEAD/, // <<<<<<< HEAD
+        /needs merge/i,
+        /unmerged paths/i,
+        /conflicting files/i,
+        /you have unmerged files/i,
+      ]
+      if (conflictHints.some((re) => re.test(merged))) {
+        toast.warning(
+          '⚠ Conflict marker 가 남아 있습니다',
+          'StatusPanel 의 "Conflicted" 섹션에서 충돌 파일을 열어 ours/theirs 를 선택하고 stage 하세요. (또는 우측 패널의 ⚔ Merge editor)',
+        )
+      }
     }
   },
   onError: (e) => toast.error('커밋 호출 실패', describeError(e)),
@@ -105,7 +193,7 @@ function hookKind(stderr: string): string | null {
 const { data: aiProbes } = useQuery({
   queryKey: ['aiProbes'],
   queryFn: aiDetectClis,
-  staleTime: 60_000,
+  staleTime: STALE_TIME.STATIC,
 })
 const availableCli = computed<AiCli | null>(() => {
   const p = aiProbes.value
@@ -131,14 +219,15 @@ const aiMut = useMutation({
   },
   onSuccess: (out) => {
     if (out.success) {
+      notifyAiDone('AI commit message 생성', out.text.split(/\r?\n/)[0])
       const lines = out.text.trim().split(/\r?\n/)
       // 첫 줄 = subject. 빈 줄 이후 = body
       mode.value = 'free'
       freeMessage.value = out.text.trim()
       // conventional 모드 채울 수도 있음
       const m = lines[0].match(/^(\w+)(?:\(([^)]+)\))?(!?):\s*(.+)$/)
-      if (m && CONVENTIONAL_TYPES.includes(m[1] as ConventionalType)) {
-        type.value = m[1] as ConventionalType
+      if (m && isConventionalType(m[1])) {
+        type.value = m[1]
         scope.value = m[2] || ''
         breaking.value = m[3] === '!'
         subject.value = m[4]
@@ -158,6 +247,34 @@ const aiMut = useMutation({
     toast.error('AI 호출 실패', msg)
   },
 })
+
+// Sprint B5 — ⌘⇧Enter (stage all + commit) / ⌘⇧M (focus message).
+const subjectRef = ref<HTMLInputElement | null>(null)
+const freeRef = ref<HTMLTextAreaElement | null>(null)
+
+useShortcut('focusMessage', () => {
+  if (mode.value === 'free') {
+    freeRef.value?.focus()
+  } else {
+    subjectRef.value?.focus()
+  }
+})
+
+async function dispatchStageAndCommit() {
+  if (props.repoId == null) return
+  if (!canCommit()) {
+    toast.error('커밋 불가', '메시지가 비어있거나 레포 미선택')
+    return
+  }
+  try {
+    await apiStageAll(props.repoId)
+    invalidate(props.repoId)
+    commitMut.mutate({ noVerify: noVerify.value })
+  } catch (e) {
+    toast.error('Stage all 실패', describeError(e))
+  }
+}
+useShortcut('stageAndCommit', dispatchStageAndCommit)
 </script>
 
 <template>
@@ -168,6 +285,8 @@ const aiMut = useMutation({
           type="button"
           class="rounded-md border border-input px-2 py-0.5"
           :class="mode === 'conventional' ? 'bg-accent text-accent-foreground' : ''"
+          aria-label="Conventional Commits 모드 (type/scope/subject)"
+          :aria-pressed="mode === 'conventional'"
           @click="mode = 'conventional'"
         >
           Conventional
@@ -176,6 +295,8 @@ const aiMut = useMutation({
           type="button"
           class="rounded-md border border-input px-2 py-0.5"
           :class="mode === 'free' ? 'bg-accent text-accent-foreground' : ''"
+          aria-label="자유 형식 commit 메시지 모드"
+          :aria-pressed="mode === 'free'"
           @click="mode = 'free'"
         >
           Free-form
@@ -206,6 +327,7 @@ const aiMut = useMutation({
         </label>
       </div>
       <input
+        ref="subjectRef"
         v-model="subject"
         placeholder="subject (한글 OK)"
         class="rounded-md border border-input bg-background px-2 py-1 text-sm"
@@ -232,6 +354,7 @@ const aiMut = useMutation({
     <!-- Free 모드 -->
     <template v-else>
       <textarea
+        ref="freeRef"
         v-model="freeMessage"
         placeholder="커밋 메시지 (자유 형식)"
         rows="6"
@@ -244,6 +367,23 @@ const aiMut = useMutation({
       <summary class="cursor-pointer text-muted-foreground">최종 메시지 미리보기</summary>
       <pre class="mt-1 whitespace-pre-wrap font-mono text-[11px]">{{ finalMessage || '(비어있음)' }}</pre>
     </details>
+
+    <!-- Sprint c25-2 §3-2 — Amend previous commit (GitKraken 호환) -->
+    <label
+      class="flex items-center gap-1.5 rounded-md border border-input px-2 py-1 text-xs"
+      :class="amend ? 'border-amber-500/60 bg-amber-500/5' : ''"
+      :title="
+        amend
+          ? '⚠ --amend ON — 마지막 커밋이 새 메시지로 덮어써짐. push 됐다면 force-push 필요.'
+          : '체크 시 마지막 커밋 메시지 prefill + git commit --amend 로 동작'
+      "
+    >
+      <input v-model="amend" type="checkbox" :disabled="!repoId" class="accent-amber-500" />
+      <span :class="amend ? 'font-semibold text-amber-500' : ''">
+        Amend previous commit
+      </span>
+      <span v-if="amend" class="text-[10px] text-muted-foreground">— 마지막 커밋 수정</span>
+    </label>
 
     <!-- 옵션 + commit 버튼 -->
     <div class="flex items-center justify-between text-xs">
@@ -272,12 +412,37 @@ const aiMut = useMutation({
           type="button"
           class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
           :disabled="!canCommit() || commitMut.isPending.value"
+          :title="amend ? 'Amend (⌘Enter) — 마지막 커밋 덮어쓰기' : 'Commit (⌘Enter)'"
           @click="commitWith(noVerify)"
         >
-          {{ commitMut.isPending.value ? '커밋 중...' : 'Commit (⌘Enter)' }}
+          {{
+            commitMut.isPending.value
+              ? amend ? 'Amend 중...' : '커밋 중...'
+              : amend ? 'Amend (⌘Enter)' : 'Commit (⌘Enter)'
+          }}
         </button>
       </div>
     </div>
+
+    <!-- Sprint c25-2 §3-2 — 'Stage Changes to Commit' combo CTA (대형 primary).
+         GitKraken 의 우측 패널 하단 큰 버튼과 1:1 매칭. ⌘⇧Enter 와 동일 동작. -->
+    <button
+      type="button"
+      class="mt-1 flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:bg-emerald-600/50 disabled:cursor-not-allowed"
+      :disabled="!canCommit() || commitMut.isPending.value"
+      :title="
+        amend
+          ? '⌘⇧Enter — 모든 변경 stage + amend (마지막 커밋 덮어쓰기)'
+          : '⌘⇧Enter — 모든 변경 stage + commit'
+      "
+      @click="dispatchStageAndCommit"
+    >
+      <span class="text-base leading-none">⤓</span>
+      <span>
+        {{ amend ? 'Stage All & Amend' : 'Stage Changes to Commit' }}
+      </span>
+      <span class="text-[10px] opacity-75">⌘⇧Enter</span>
+    </button>
 
     <!-- Pre-commit hook 실패 결과 패널 -->
     <div

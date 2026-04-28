@@ -12,10 +12,10 @@
 use crate::auth;
 use crate::error::{AppError, AppResult};
 use crate::forge::{
-    gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, ForgeKind,
-    Issue, MergeMethod, PrComment, PrState, PullRequest, Release, ReviewVerdict,
+    gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, Issue, MergeMethod,
+    PrComment, PrFile, PrState, PullRequest, Release, ReviewVerdict,
 };
-use crate::storage::{Db, DbExt};
+use crate::storage::DbExt;
 use crate::AppState;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -237,7 +237,9 @@ pub async fn list_pull_requests(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Vec<PullRequest>> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
-    client.list_pull_requests(&owner, &repo, args.state_filter).await
+    client
+        .list_pull_requests(&owner, &repo, args.state_filter)
+        .await
 }
 
 #[derive(Debug, Deserialize)]
@@ -341,6 +343,41 @@ pub async fn add_pr_comment(
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AddReviewCommentArgs {
+    pub repo_id: i64,
+    pub number: u64,
+    /// PR head SHA. None 이면 GitHub 가 PR detail 에서 자동 조회.
+    #[serde(default)]
+    pub commit_id: Option<String>,
+    pub path: String,
+    /// 1-based file line 번호 (RIGHT side).
+    pub line: u32,
+    /// 호출자가 ` ```suggestion `wrap 까지 포함해서 보낼 것.
+    pub body: String,
+}
+
+/// PR diff line-level suggestion 코멘트 추가 (`docs/plan/14 §7 F1`).
+#[tauri::command]
+pub async fn add_review_comment(
+    args: AddReviewCommentArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client
+        .add_review_comment(
+            &owner,
+            &repo,
+            args.number,
+            args.commit_id.as_deref(),
+            &args.path,
+            args.line,
+            &args.body,
+        )
+        .await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SubmitReviewArgs {
     pub repo_id: i64,
     pub number: u64,
@@ -370,10 +407,7 @@ pub struct MergePrArgs {
 }
 
 #[tauri::command]
-pub async fn merge_pr(
-    args: MergePrArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn merge_pr(args: MergePrArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
     client
         .merge_pr(
@@ -388,24 +422,26 @@ pub async fn merge_pr(
 }
 
 #[tauri::command]
-pub async fn close_pr(
-    args: GetPrArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn close_pr(args: GetPrArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
     client.close_pr(&owner, &repo, args.number).await
 }
 
 #[tauri::command]
-pub async fn reopen_pr(
-    args: GetPrArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn reopen_pr(args: GetPrArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
     client.reopen_pr(&owner, &repo, args.number).await
 }
 
-#[allow(dead_code)]
-fn _kind_marker(_: ForgeKind) {}
-#[allow(dead_code)]
-fn _db_marker(_: &Db) {}
+/// PR 변경 파일 목록 + per-file unified diff (`docs/plan/22 §3 V-2`).
+///
+/// 응답 row 의 `patch` 가 None 이면 forge 가 파일이 너무 커서 생략한 것.
+#[tauri::command]
+pub async fn list_pr_files(
+    args: GetPrArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<PrFile>> {
+    let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
+    client.list_pr_files(&owner, &repo, args.number).await
+}
+

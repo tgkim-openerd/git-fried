@@ -8,8 +8,8 @@ pub mod github;
 pub mod model;
 
 pub use model::{
-    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrState, PullRequest,
-    Release, ReviewVerdict,
+    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrFile, PrState,
+    PullRequest, Release, ReviewVerdict,
 };
 
 use crate::error::AppResult;
@@ -65,6 +65,21 @@ pub trait ForgeClient: Send + Sync {
         body: &str,
     ) -> AppResult<PrComment>;
 
+    /// PR diff 의 특정 라인에 review-comment 추가 (`docs/plan/14 §7 F1`).
+    /// - `body` 는 호출자가 ` ```suggestion ` wrap 까지 완성해서 전달.
+    /// - `commit_id` 는 PR head SHA. None 이면 forge 가 자동 (GitHub 는 필수).
+    /// - `line` 은 RIGHT side (PR 의 새 코드) 의 1-based file line 번호.
+    async fn add_review_comment(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        commit_id: Option<&str>,
+        path: &str,
+        line: u32,
+        body: &str,
+    ) -> AppResult<()>;
+
     /// PR review 제출 (Approve / RequestChanges / Comment + 본문).
     async fn submit_pr_review(
         &self,
@@ -91,6 +106,18 @@ pub trait ForgeClient: Send + Sync {
 
     /// PR 다시 열기.
     async fn reopen_pr(&self, owner: &str, repo: &str, number: u64) -> AppResult<()>;
+
+    /// PR 의 변경 파일 목록 (Sprint 22-3 V-2 — `docs/plan/22 §3 V-2`).
+    ///
+    /// GitHub : `GET /repos/{o}/{r}/pulls/{n}/files` (per_page 100, 필요 시 페이지네이션).
+    /// Gitea  : 동일 endpoint, 동일 스키마.
+    /// 응답에는 file 별 unified diff `patch` 포함 (대용량은 None 가능).
+    async fn list_pr_files(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+    ) -> AppResult<Vec<PrFile>>;
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

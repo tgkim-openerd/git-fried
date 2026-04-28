@@ -52,7 +52,11 @@ pub async fn fetch(repo: &Path, remote: &str) -> AppResult<SyncResult> {
 }
 
 /// pull (== fetch + merge | rebase). 디폴트는 사용자 `pull.rebase` 설정 따름.
-pub async fn pull(repo: &Path, remote: Option<&str>, branch: Option<&str>) -> AppResult<SyncResult> {
+pub async fn pull(
+    repo: &Path,
+    remote: Option<&str>,
+    branch: Option<&str>,
+) -> AppResult<SyncResult> {
     let mut args: Vec<&str> = vec!["pull"];
     if let Some(r) = remote {
         args.push(r);

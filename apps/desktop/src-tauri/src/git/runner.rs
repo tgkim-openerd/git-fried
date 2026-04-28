@@ -60,11 +60,7 @@ pub struct GitRunOpts {
 /// let out = git_run(&repo_path, &["log", "--oneline", "-10"], &Default::default()).await?;
 /// let log = out.into_ok()?;
 /// ```
-pub async fn git_run(
-    cwd: &Path,
-    args: &[&str],
-    opts: &GitRunOpts,
-) -> AppResult<GitOutput> {
+pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<GitOutput> {
     // -c 강제 주입: core.quotepath=false 가 한글 파일명 escape 방지의 핵심
     let injected: &[&str] = &[
         "-c",
@@ -108,7 +104,10 @@ pub async fn git_run(
 
     if let (Some(input), Some(mut stdin)) = (opts.stdin.as_ref(), child.stdin.take()) {
         use tokio::io::AsyncWriteExt;
-        stdin.write_all(input.as_bytes()).await.map_err(AppError::Io)?;
+        stdin
+            .write_all(input.as_bytes())
+            .await
+            .map_err(AppError::Io)?;
         stdin.shutdown().await.map_err(AppError::Io)?;
     }
 

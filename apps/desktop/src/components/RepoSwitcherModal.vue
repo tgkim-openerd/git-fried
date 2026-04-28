@@ -4,8 +4,11 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { listRepos } from '@/api/git'
+import { STALE_TIME } from '@/api/queryClient'
 import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
+import { useRepoAliases } from '@/composables/useRepoAliases'
+import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -19,33 +22,42 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const { data: repos } = useQuery({
   queryKey: ['repos-all-for-switcher'],
   queryFn: () => listRepos(null),
-  staleTime: 30_000,
+  staleTime: STALE_TIME.NORMAL,
 })
+
+const aliases = useRepoAliases()
+
+function aliasOrName(r: Repo): string {
+  return aliases.resolveLocal(r.id, r.name).display
+}
 
 const filtered = computed<Repo[]>(() => {
   const q = filter.value.trim().toLowerCase()
   const list = repos.value ?? []
   if (!q) {
-    // pinned 우선, 그 다음 알파벳
+    // pinned 우선, 그 다음 alias/이름 알파벳
     return [...list].sort((a, b) => {
       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
-      return a.name.localeCompare(b.name)
+      return aliasOrName(a).localeCompare(aliasOrName(b))
     })
   }
   return list
-    .filter(
-      (r) =>
+    .filter((r) => {
+      const display = aliasOrName(r).toLowerCase()
+      return (
+        display.includes(q) ||
         r.name.toLowerCase().includes(q) ||
         r.localPath.toLowerCase().includes(q) ||
-        (r.forgeOwner ?? '').toLowerCase().includes(q),
-    )
+        (r.forgeOwner ?? '').toLowerCase().includes(q)
+      )
+    })
     .sort((a, b) => {
       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
-      // 매칭 점수: name startsWith > 포함
-      const aStart = a.name.toLowerCase().startsWith(q)
-      const bStart = b.name.toLowerCase().startsWith(q)
+      // 매칭 점수: alias/name startsWith > 포함
+      const aStart = aliasOrName(a).toLowerCase().startsWith(q)
+      const bStart = aliasOrName(b).toLowerCase().startsWith(q)
       if (aStart !== bStart) return aStart ? -1 : 1
-      return a.name.localeCompare(b.name)
+      return aliasOrName(a).localeCompare(aliasOrName(b))
     })
 })
 
@@ -94,21 +106,23 @@ function onKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-32"
-      @click.self="emit('close')"
-      @keydown="onKeydown"
-    >
-      <div class="w-[640px] max-w-[90vw] rounded-lg border border-border bg-card shadow-xl">
-        <input
-          ref="inputRef"
-          v-model="filter"
-          placeholder="레포 검색... (이름 / 경로 / owner) — Esc 닫기"
-          class="w-full rounded-t-lg border-b border-border bg-transparent px-3 py-2 text-sm outline-none"
-          @keydown="onKeydown"
-        />
+  <BaseModal
+    :open="open"
+    align="top"
+    :show-close-button="false"
+    panel-class="w-[640px] max-w-[90vw]"
+    max-width="full"
+    @close="emit('close')"
+  >
+    <div @keydown="onKeydown">
+      <input
+        ref="inputRef"
+        v-model="filter"
+        placeholder="레포 검색... (이름 / 경로 / owner) — Esc 닫기"
+        class="w-full rounded-t-lg border-b border-border bg-transparent px-3 py-2 text-sm outline-none"
+        aria-label="레포 검색"
+        @keydown="onKeydown"
+      />
         <ul class="max-h-96 overflow-auto py-1">
           <li
             v-for="(r, i) in filtered"
@@ -121,7 +135,19 @@ function onKeydown(e: KeyboardEvent) {
             <div class="flex items-center justify-between gap-2">
               <span class="flex items-center gap-2 truncate">
                 <span v-if="r.isPinned" class="text-amber-500">⭐</span>
-                <span class="font-medium">{{ r.name }}</span>
+                <span
+                  class="font-medium"
+                  :class="aliases.resolveLocal(r.id, r.name).aliased ? 'italic' : ''"
+                >
+                  {{ aliases.resolveLocal(r.id, r.name).display }}
+                </span>
+                <span
+                  v-if="aliases.resolveLocal(r.id, r.name).aliased"
+                  class="text-[10px] text-muted-foreground"
+                  :title="`원본: ${r.name}`"
+                >
+                  ({{ r.name }})
+                </span>
                 <span
                   v-if="r.forgeKind !== 'unknown'"
                   class="rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
@@ -144,10 +170,9 @@ function onKeydown(e: KeyboardEvent) {
             결과 없음
           </li>
         </ul>
-        <div class="border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
-          ↑↓ 탐색 · Enter 선택 · Esc 닫기 · ⭐ pinned 우선
-        </div>
+      <div class="border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+        ↑↓ 탐색 · Enter 선택 · Esc 닫기 · ⭐ pinned 우선
       </div>
     </div>
-  </Teleport>
+  </BaseModal>
 </template>

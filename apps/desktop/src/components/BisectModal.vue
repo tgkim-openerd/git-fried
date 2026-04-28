@@ -9,9 +9,11 @@ import {
   getBisectStatus,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import BaseModal from './BaseModal.vue'
 
 const toast = useToast()
 
@@ -30,7 +32,7 @@ const statusQuery = useQuery({
     return getBisectStatus(repoId.value)
   },
   enabled: computed(() => props.open && repoId.value != null),
-  staleTime: 1_000,
+  staleTime: STALE_TIME.REALTIME,
 })
 
 const startMut = useMutation({
@@ -71,19 +73,13 @@ const resetMut = useMutation({
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-6"
-      @click.self="emit('close')"
-    >
-      <div class="flex w-full max-w-2xl flex-col rounded-lg border border-border bg-card shadow-xl">
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <h2 class="text-sm font-semibold">🔬 Bisect — 잘못된 commit 찾기</h2>
-          <button class="text-muted-foreground hover:text-foreground" @click="emit('close')">✕</button>
-        </header>
-
-        <div class="p-4 text-sm">
+  <BaseModal
+    :open="open"
+    max-width="2xl"
+    title="🔬 Bisect — 잘못된 commit 찾기"
+    @close="emit('close')"
+  >
+    <div class="p-4 text-sm">
           <p class="mb-3 text-xs text-muted-foreground">
             🔬 binary search 로 버그 commit 식별. 시작 → 현재 HEAD 가 좋은지 나쁜지 표시 →
             git 이 자동으로 중간 commit 으로 checkout → 반복.
@@ -162,8 +158,6 @@ const resetMut = useMutation({
               <pre class="mt-1 max-h-48 overflow-auto whitespace-pre-wrap font-mono">{{ statusQuery.data.value.lastOutput }}</pre>
             </details>
           </div>
-        </div>
-      </div>
     </div>
-  </Teleport>
+  </BaseModal>
 </template>

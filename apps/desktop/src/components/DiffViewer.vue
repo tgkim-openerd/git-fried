@@ -105,6 +105,73 @@ watch(
 )
 
 onUnmounted(() => view?.destroy())
+
+// === Sprint c25-4 (`docs/plan/25 §5`) — Hunk navigation API ===
+// `@@ -... +... @@` 라인 위치를 모아 정/역방향 점프 + scrollIntoView.
+// 부모 컴포넌트가 ref 로 받아 ↑/↓ 버튼에 와이어업.
+function findHunkLines(): number[] {
+  if (!view) return []
+  const doc = view.state.doc
+  const lines: number[] = []
+  for (let i = 1; i <= doc.lines; i++) {
+    const text = doc.line(i).text
+    if (text.startsWith('@@')) lines.push(i)
+  }
+  return lines
+}
+
+function jumpToLine(lineNum: number) {
+  if (!view) return
+  const line = view.state.doc.line(lineNum)
+  view.dispatch({
+    selection: { anchor: line.from, head: line.from },
+    effects: EditorView.scrollIntoView(line.from, { y: 'start', yMargin: 24 }),
+  })
+  view.focus()
+}
+
+function currentHunkIndex(hunks: number[]): number {
+  if (!view || hunks.length === 0) return -1
+  const cursor = view.state.selection.main.head
+  const cursorLine = view.state.doc.lineAt(cursor).number
+  // 현재 커서가 속한 가장 가까운 (이하) hunk index.
+  let idx = -1
+  for (let i = 0; i < hunks.length; i++) {
+    if (hunks[i] <= cursorLine) idx = i
+    else break
+  }
+  return idx
+}
+
+function nextHunk() {
+  const hunks = findHunkLines()
+  if (hunks.length === 0) return
+  const cur = currentHunkIndex(hunks)
+  const nextIdx = cur < 0 ? 0 : Math.min(cur + 1, hunks.length - 1)
+  jumpToLine(hunks[nextIdx])
+}
+
+function prevHunk() {
+  const hunks = findHunkLines()
+  if (hunks.length === 0) return
+  const cur = currentHunkIndex(hunks)
+  const prevIdx = cur <= 0 ? 0 : cur - 1
+  jumpToLine(hunks[prevIdx])
+}
+
+function hunkCount(): number {
+  return findHunkLines().length
+}
+
+// TYPE-003 / ARCH-004 fix — expose 타입 SoT.
+// 호출자 (StatusPanel / CommitDiffModal / CommitDiffPanel) 가 import 해서 useTemplateRef 에 사용.
+export type DiffViewerExpose = {
+  nextHunk: () => void
+  prevHunk: () => void
+  hunkCount: () => number
+}
+
+defineExpose<DiffViewerExpose>({ nextHunk, prevHunk, hunkCount })
 </script>
 
 <template>

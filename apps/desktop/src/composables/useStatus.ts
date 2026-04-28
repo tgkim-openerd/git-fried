@@ -3,6 +3,7 @@
 import { computed, type MaybeRefOrGetter, toRef } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { getStatus } from '@/api/git'
+import { STALE_TIME } from '@/api/queryClient'
 
 export function useStatus(repoIdRef: MaybeRefOrGetter<number | null>) {
   const repoId = toRef(repoIdRef)
@@ -13,7 +14,7 @@ export function useStatus(repoIdRef: MaybeRefOrGetter<number | null>) {
       return getStatus(repoId.value)
     },
     enabled: computed(() => repoId.value != null),
-    staleTime: 2_000,
+    staleTime: STALE_TIME.REALTIME,
   })
   return query
 }

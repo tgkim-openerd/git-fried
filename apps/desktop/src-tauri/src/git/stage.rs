@@ -16,7 +16,9 @@ pub async fn stage_paths(repo: &Path, paths: &[String]) -> AppResult<()> {
     for p in paths {
         args.push(p.as_str());
     }
-    git_run(repo, &args, &GitRunOpts::default()).await?.into_ok()?;
+    git_run(repo, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 
@@ -37,7 +39,9 @@ pub async fn unstage_paths(repo: &Path, paths: &[String]) -> AppResult<()> {
     for p in paths {
         args.push(p.as_str());
     }
-    git_run(repo, &args, &GitRunOpts::default()).await?.into_ok()?;
+    git_run(repo, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 
@@ -51,7 +55,9 @@ pub async fn discard_paths(repo: &Path, paths: &[String]) -> AppResult<()> {
     for p in paths {
         args.push(p.as_str());
     }
-    git_run(repo, &args, &GitRunOpts::default()).await?.into_ok()?;
+    git_run(repo, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 

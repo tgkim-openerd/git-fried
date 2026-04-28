@@ -75,7 +75,12 @@ pub fn commit_message_prompt(diff: &str, recent_subjects: &[String]) -> String {
 }
 
 /// AI PR body 생성 prompt.
-pub fn pr_body_prompt(commits: &[String], diff_stat: &str, head_branch: &str, base_branch: &str) -> String {
+pub fn pr_body_prompt(
+    commits: &[String],
+    diff_stat: &str,
+    head_branch: &str,
+    base_branch: &str,
+) -> String {
     let cs = if commits.is_empty() {
         String::from("(없음)")
     } else {
@@ -125,10 +130,7 @@ pub fn merge_resolution_prompt(
     let masked_o = mask_secrets(ours);
     let masked_t = mask_secrets(theirs);
     let base_block = match base {
-        Some(b) => format!(
-            "\n**BASE (공통 조상)**:\n```\n{}\n```\n",
-            mask_secrets(b)
-        ),
+        Some(b) => format!("\n**BASE (공통 조상)**:\n```\n{}\n```\n", mask_secrets(b)),
         None => String::new(),
     };
     format!(
@@ -170,12 +172,7 @@ pub fn merge_resolution_prompt(
 ///   - 보안/성능/한글 처리/에러 처리 관점 issue
 ///   - 잘 된 점
 ///   - 사소한 nit
-pub fn code_review_prompt(
-    pr_title: &str,
-    pr_body: &str,
-    commits: &[String],
-    diff: &str,
-) -> String {
+pub fn code_review_prompt(pr_title: &str, pr_body: &str, commits: &[String], diff: &str) -> String {
     let masked_diff = mask_secrets(diff);
     let masked_body = mask_secrets(pr_body);
     let cs = if commits.is_empty() {
@@ -222,6 +219,152 @@ pub fn code_review_prompt(
 
 **금지**: `Co-Authored-By: Claude` / "Generated with Claude" 푸터.
 응답은 위 4 섹션만, 그대로.
+"#
+    )
+}
+
+/// 단일 commit 의 diff 를 한국어로 설명 (`docs/plan/11 §18` Sprint B7).
+///
+/// "what" 보다 **"why" + 영향**. 코드 자체는 사용자가 이미 본 상태 가정.
+pub fn explain_commit_prompt(subject: &str, diff: &str) -> String {
+    let masked = mask_secrets(diff);
+    format!(
+        r#"다음 단일 commit 을 한국어로 설명해주세요.
+
+**규칙**:
+- 의도(why) 와 영향(이게 깨질 위험 / 추가될 기능) 중심.
+- 'what' 은 1줄로 압축, 'why' 가 메인.
+- 마크다운, 200~400자.
+- 섹션:
+  ## 요약 (1줄)
+  ## 의도
+  ## 영향 / 주의
+
+**Commit 제목**: {subject}
+
+**diff**:
+```diff
+{masked}
+```
+
+응답은 위 3 섹션 마크다운만.
+"#
+    )
+}
+
+/// 브랜치 (base..head) 변경 요약 (`docs/plan/11 §18` Sprint B7).
+///
+/// PR body 와 다른 점: PR 작성 전 "이 브랜치가 뭐 했는지" 빠른 조망.
+/// 더 짧고 더 explain 스타일.
+pub fn explain_branch_prompt(
+    head_branch: &str,
+    base_branch: &str,
+    commits: &[String],
+    diff_stat: &str,
+) -> String {
+    let masked_stat = mask_secrets(diff_stat);
+    let cs = if commits.is_empty() {
+        String::from("(없음)")
+    } else {
+        commits
+            .iter()
+            .take(30)
+            .map(|s| format!("  - {s}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    format!(
+        r#"브랜치 `{head_branch}` 가 `{base_branch}` 대비 무엇을 했는지 한국어로 설명해주세요.
+
+**규칙**:
+- 마크다운, 200~500자.
+- 섹션:
+  ## 한 줄 요약
+  ## 주요 변경 (3~5 bullet)
+  ## 영향 / 잠재 위험
+
+**커밋 (시간순)**:
+{cs}
+
+**diff stat**:
+```
+{masked_stat}
+```
+
+응답은 위 3 섹션 마크다운만.
+"#
+    )
+}
+
+/// Commit Composer plan — 범위 N개 commit 을 reorder/squash/reword/drop 추천
+/// (Sprint B3 / `docs/plan/11 §18`).
+///
+/// 응답 형식: **JSON array 만**. 다른 텍스트 없이.
+/// 각 entry: { "sha": "...", "action": "pick|reword|squash|fixup|drop", "newMessage": "..." | null }
+/// 응답 순서가 그대로 rebase todo 순서가 된다 (oldest → newest).
+pub fn composer_plan_prompt(commits: &[(String, String, String)]) -> String {
+    let mut sections = String::new();
+    for (i, (sha, subject, diff)) in commits.iter().enumerate() {
+        let masked = mask_secrets(diff);
+        // 너무 큰 diff 잘라내기 (LLM context 한도).
+        let truncated: String = if masked.chars().count() > 4000 {
+            let mut s: String = masked.chars().take(4000).collect();
+            s.push_str("\n... (truncated)");
+            s
+        } else {
+            masked
+        };
+        sections.push_str(&format!(
+            "\n## #{idx} `{sha}`\n**제목**: {subject}\n```diff\n{truncated}\n```\n",
+            idx = i + 1,
+            sha = sha,
+            subject = subject,
+            truncated = truncated,
+        ));
+    }
+    format!(
+        r#"다음 commit 범위를 정리/재작성하기 위한 rebase plan 을 제안해주세요.
+
+**규칙**:
+- 응답은 **JSON array 한 개만**. 다른 설명/마크다운/코드블록 백틱 없이.
+- 각 entry: `{{"sha": "<원본 sha>", "action": "pick"|"reword"|"squash"|"fixup"|"drop", "newMessage": "<reword 시 새 메시지>" | null}}`.
+- 입력 순서를 유지 (oldest → newest). 재정렬은 v1 미지원.
+- action 선택 가이드:
+  - `pick`: 그대로.
+  - `reword`: 메시지 모호하면 한국어로 명료하게. newMessage 채움.
+  - `squash`: 직전 commit 과 의미 동일한 후속 커밋 (typo / 작은 fixup). 직전 pick 과 합침.
+  - `fixup`: squash 와 동일하되 메시지 버림.
+  - `drop`: 의미 없는 commit (revert 후 같은 변경, 노이즈).
+- 보수적으로: 확신 없으면 `pick`.
+- newMessage 는 한국어 Conventional Commit 형식 (예: "feat: ...").
+
+**Commit 범위**:
+{sections}
+
+응답: JSON array 만.
+"#
+    )
+}
+
+/// Stash 메시지 한 줄 생성 (`docs/plan/11 §18` Sprint B7).
+///
+/// commit message 와 비슷하지만 더 짧고 ad-hoc — "WIP: " prefix.
+pub fn stash_message_prompt(diff: &str) -> String {
+    let masked = mask_secrets(diff);
+    format!(
+        r#"다음 변경사항에 대한 stash 메시지를 한국어로 한 줄로 작성해주세요.
+
+**규칙**:
+- 형식: `WIP: <한국어 한 줄 설명>` (50자 이내).
+- 가장 핵심적인 변경에 집중.
+- 마크다운/코드블록/줄바꿈 없이 **한 줄만** 응답.
+
+**Working tree diff**:
+```diff
+{masked}
+```
+
+응답은 한 줄만.
 "#
     )
 }
@@ -281,5 +424,49 @@ mod tests {
         assert!(p.contains("Conventional"));
         assert!(p.contains("hello"));
         assert!(p.contains("feat: 첫 커밋"));
+    }
+
+    #[test]
+    fn test_explain_commit_prompt() {
+        let p = explain_commit_prompt("feat: 한글 추가", "diff --git a/x b/x\n+한글");
+        assert!(p.contains("의도"));
+        assert!(p.contains("feat: 한글 추가"));
+        assert!(p.contains("한글"));
+    }
+
+    #[test]
+    fn test_explain_branch_prompt_includes_commits_and_stat() {
+        let p = explain_branch_prompt(
+            "feat/x",
+            "main",
+            &["feat: A".into(), "fix: B".into()],
+            " 1 file | 5 +",
+        );
+        assert!(p.contains("feat/x"));
+        assert!(p.contains("main"));
+        assert!(p.contains("feat: A"));
+        assert!(p.contains("fix: B"));
+        assert!(p.contains("1 file"));
+    }
+
+    #[test]
+    fn test_stash_message_prompt_one_line() {
+        let p = stash_message_prompt("diff --git\n+test");
+        assert!(p.contains("한 줄"));
+        assert!(p.contains("WIP"));
+    }
+
+    #[test]
+    fn test_composer_plan_prompt_includes_all_commits() {
+        let commits = vec![
+            ("abc1234".into(), "feat: A".into(), "diff a".into()),
+            ("def5678".into(), "fix typo".into(), "diff b".into()),
+        ];
+        let p = composer_plan_prompt(&commits);
+        assert!(p.contains("abc1234"));
+        assert!(p.contains("def5678"));
+        assert!(p.contains("feat: A"));
+        assert!(p.contains("JSON array"));
+        assert!(p.contains("squash"));
     }
 }

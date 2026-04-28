@@ -155,6 +155,12 @@ export const CONVENTIONAL_TYPES: ConventionalType[] = [
   'revert',
 ]
 
+// TYPE-007 fix — type guard 추출. CommitMessageInput 의 amend prefill + AI commit 결과 파싱
+// 두 곳에서 동일한 `m[1] as ConventionalType` 캐스트 중복 제거.
+export function isConventionalType(s: string): s is ConventionalType {
+  return (CONVENTIONAL_TYPES as string[]).includes(s)
+}
+
 export interface ConventionalParts {
   type: ConventionalType
   scope: string

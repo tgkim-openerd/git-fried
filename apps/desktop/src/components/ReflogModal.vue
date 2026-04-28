@@ -1,16 +1,28 @@
 <script setup lang="ts">
 // Reflog viewer — HEAD 의 reflog 표시 (실수로 잃은 commit 복구용).
-import { computed } from 'vue'
+// Sprint 22-4 CM-10 + V-6: row click 선택 + 우클릭 메뉴 (Restore HEAD here / Show diff / Copy SHA / Create branch here).
+import { computed, ref, useTemplateRef } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { listReflog } from '@/api/git'
+import { createBranch, listReflog, reset as ipcReset, type ReflogEntry } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useReposStore } from '@/stores/repos'
+import { useToast } from '@/composables/useToast'
+import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { formatDateLocalized } from '@/composables/useUserSettings'
+import BaseModal from './BaseModal.vue'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 
 const props = defineProps<{ open: boolean }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{
+  close: []
+  /** Sprint 22-4 V-6 — 선택 row 의 sha 를 부모에 알림 (CommitDiffModal 트리거용). */
+  showDiff: [sha: string]
+}>()
 
 const store = useReposStore()
 const repoId = computed(() => store.activeRepoId)
+const toast = useToast()
+const invalidateAll = useInvalidateRepoQueries()
 
 const reflogQuery = useQuery({
   queryKey: computed(() => ['reflog', repoId.value]),
@@ -22,7 +34,7 @@ const reflogQuery = useQuery({
 })
 
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleString('ko-KR', {
+  return formatDateLocalized(unix, {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -38,63 +50,141 @@ function actionColor(action: string): string {
   if (action.includes('checkout')) return 'text-muted-foreground'
   return 'text-foreground'
 }
+
+// === Sprint 22-4 V-6: row click 선택 highlight ===
+const selectedSha = ref<string | null>(null)
+
+// === Sprint 22-4 CM-10: row 우클릭 메뉴 ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+
+async function copySha(sha: string) {
+  try {
+    await navigator.clipboard.writeText(sha)
+    toast.success('SHA 복사', sha.slice(0, 8))
+  } catch (e) {
+    toast.error('복사 실패', describeError(e))
+  }
+}
+
+async function restoreHeadTo(sha: string) {
+  if (repoId.value == null) return
+  if (
+    !window.confirm(
+      `⚠ HEAD 를 ${sha.slice(0, 8)} 로 reset --mixed 합니다.\n` +
+        `working tree 변경은 보존되지만, 이후 commit/push 한 변경은 reflog 에 남으니 다시 복구 가능.\n진행?`,
+    )
+  )
+    return
+  try {
+    await ipcReset(repoId.value, 'mixed', sha)
+    toast.success('HEAD restore', sha.slice(0, 8))
+    invalidateAll(repoId.value)
+  } catch (e) {
+    toast.error('Restore 실패', describeError(e))
+  }
+}
+
+async function createBranchHere(sha: string) {
+  if (repoId.value == null) return
+  const name = window.prompt(`복구 브랜치 이름 (from ${sha.slice(0, 8)}):`, 'recover/' + sha.slice(0, 8))
+  if (!name?.trim()) return
+  try {
+    await createBranch(repoId.value, name.trim(), sha)
+    toast.success('브랜치 생성', `${name.trim()} from ${sha.slice(0, 8)}`)
+    invalidateAll(repoId.value)
+  } catch (e) {
+    toast.error('브랜치 생성 실패', describeError(e))
+  }
+}
+
+function onRowClick(e: ReflogEntry) {
+  selectedSha.value = e.sha
+}
+
+function onRowContextMenu(ev: MouseEvent, e: ReflogEntry) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  selectedSha.value = e.sha
+  const items: ContextMenuItem[] = [
+    {
+      label: 'Show diff',
+      icon: '👁',
+      action: () => emit('showDiff', e.sha),
+    },
+    {
+      label: 'Restore HEAD here (reset --mixed)',
+      icon: '⏮',
+      destructive: true,
+      action: () => void restoreHeadTo(e.sha),
+    },
+    { divider: true },
+    {
+      label: 'Copy SHA',
+      icon: '📋',
+      action: () => void copySha(e.sha),
+    },
+    {
+      label: 'Create branch here',
+      icon: '🌿',
+      action: () => void createBranchHere(e.sha),
+    },
+  ]
+  ctxMenu.value?.openAt(ev, items)
+}
 </script>
 
 <template>
-  <Teleport to="body">
+  <BaseModal
+    :open="open"
+    max-width="4xl"
+    title="📜 Reflog (HEAD)"
+    panel-class="h-[90vh]"
+    @close="emit('close')"
+  >
+    <p class="border-b border-border bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+      💡 실수로 reset / rebase / branch 삭제로 잃은 commit 을 복구할 때 사용. SHA 복사 후
+      <code class="rounded bg-muted px-1">git reset &lt;sha&gt;</code> 또는
+      <code class="rounded bg-muted px-1">git checkout -b 복구브랜치 &lt;sha&gt;</code>.
+    </p>
+
     <div
-      v-if="open"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-6"
-      @click.self="emit('close')"
+      v-if="reflogQuery.error.value"
+      class="m-3 rounded border border-destructive bg-destructive/10 p-2 text-xs"
     >
-      <div class="flex h-full w-full max-w-4xl flex-col rounded-lg border border-border bg-card shadow-xl">
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <h2 class="text-sm font-semibold">📜 Reflog (HEAD)</h2>
-          <button class="text-muted-foreground hover:text-foreground" @click="emit('close')">✕</button>
-        </header>
-        <p class="border-b border-border bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
-          💡 실수로 reset / rebase / branch 삭제로 잃은 commit 을 복구할 때 사용. SHA 복사 후
-          <code class="rounded bg-muted px-1">git reset &lt;sha&gt;</code> 또는
-          <code class="rounded bg-muted px-1">git checkout -b 복구브랜치 &lt;sha&gt;</code>.
-        </p>
-
-        <div
-          v-if="reflogQuery.error.value"
-          class="m-3 rounded border border-destructive bg-destructive/10 p-2 text-xs"
-        >
-          {{ describeError(reflogQuery.error.value) }}
-        </div>
-
-        <div class="flex-1 overflow-auto">
-          <table class="w-full text-xs">
-            <thead class="sticky top-0 bg-card text-[10px] text-muted-foreground">
-              <tr>
-                <th class="px-3 py-1.5 text-left font-normal w-24">ref</th>
-                <th class="px-3 py-1.5 text-left font-normal w-16">SHA</th>
-                <th class="px-3 py-1.5 text-left font-normal w-20">action</th>
-                <th class="px-3 py-1.5 text-left font-normal">메시지</th>
-                <th class="px-3 py-1.5 text-left font-normal w-24">시각</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(e, i) in reflogQuery.data.value"
-                :key="`${e.refLabel}-${i}`"
-                class="border-t border-border/50 hover:bg-accent/30"
-              >
-                <td class="px-3 py-1 font-mono">{{ e.refLabel }}</td>
-                <td class="px-3 py-1 font-mono text-muted-foreground">{{ e.shortSha }}</td>
-                <td :class="['px-3 py-1', actionColor(e.action)]">{{ e.action }}</td>
-                <td class="px-3 py-1 truncate">{{ e.subject }}</td>
-                <td class="px-3 py-1 text-muted-foreground">{{ fmtDate(e.at) }}</td>
-              </tr>
-              <tr v-if="reflogQuery.data.value && reflogQuery.data.value.length === 0">
-                <td colspan="5" class="p-4 text-center text-muted-foreground">reflog 비어있음</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {{ describeError(reflogQuery.error.value) }}
     </div>
-  </Teleport>
+
+    <table class="w-full text-xs">
+      <thead class="sticky top-0 bg-card text-[10px] text-muted-foreground">
+        <tr>
+          <th class="px-3 py-1.5 text-left font-normal w-24">ref</th>
+          <th class="px-3 py-1.5 text-left font-normal w-16">SHA</th>
+          <th class="px-3 py-1.5 text-left font-normal w-20">action</th>
+          <th class="px-3 py-1.5 text-left font-normal">메시지</th>
+          <th class="px-3 py-1.5 text-left font-normal w-24">시각</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="(e, i) in reflogQuery.data.value"
+          :key="`${e.refLabel}-${i}`"
+          class="cursor-pointer border-t border-border/50 hover:bg-accent/30"
+          :class="selectedSha === e.sha ? 'bg-accent/50' : ''"
+          @click="onRowClick(e)"
+          @dblclick="emit('showDiff', e.sha)"
+          @contextmenu="onRowContextMenu($event, e)"
+        >
+          <td class="px-3 py-1 font-mono">{{ e.refLabel }}</td>
+          <td class="px-3 py-1 font-mono text-muted-foreground">{{ e.shortSha }}</td>
+          <td :class="['px-3 py-1', actionColor(e.action)]">{{ e.action }}</td>
+          <td class="px-3 py-1 truncate">{{ e.subject }}</td>
+          <td class="px-3 py-1 text-muted-foreground">{{ fmtDate(e.at) }}</td>
+        </tr>
+        <tr v-if="reflogQuery.data.value && reflogQuery.data.value.length === 0">
+          <td colspan="5" class="p-4 text-center text-muted-foreground">reflog 비어있음</td>
+        </tr>
+      </tbody>
+    </table>
+    <ContextMenu ref="ctxMenu" />
+  </BaseModal>
 </template>

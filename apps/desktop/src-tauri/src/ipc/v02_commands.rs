@@ -3,8 +3,9 @@
 use crate::ai;
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    bisect as git_bisect, cherry_pick as git_cp, file_history as git_fh, lfs as git_lfs,
-    merge as git_merge, reflog as git_reflog, worktree as git_wt,
+    bisect as git_bisect, cherry_pick as git_cp, conflict_prediction as git_cp_pred,
+    file_history as git_fh, lfs as git_lfs, merge as git_merge, rebase as git_rebase,
+    reflog as git_reflog, worktree as git_wt,
 };
 use crate::AppState;
 use serde::Deserialize;
@@ -14,6 +15,44 @@ use std::sync::Arc;
 async fn repo_path(state: &Arc<AppState>, repo_id: i64) -> AppResult<PathBuf> {
     use crate::storage::DbExt;
     Ok(PathBuf::from(state.db.get_repo(repo_id).await?.local_path))
+}
+
+// ====== Open repo path in OS file manager (Sprint F4) ======
+
+#[tauri::command]
+pub async fn open_in_explorer(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    open_path_in_os(&path)
+}
+
+#[cfg(target_os = "windows")]
+fn open_path_in_os(path: &std::path::Path) -> AppResult<()> {
+    std::process::Command::new("explorer.exe")
+        .arg(path)
+        .spawn()
+        .map_err(|e| AppError::Internal(format!("explorer.exe spawn 실패: {e}")))?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn open_path_in_os(path: &std::path::Path) -> AppResult<()> {
+    std::process::Command::new("open")
+        .arg(path)
+        .spawn()
+        .map_err(|e| AppError::Internal(format!("open spawn 실패: {e}")))?;
+    Ok(())
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_path_in_os(path: &std::path::Path) -> AppResult<()> {
+    std::process::Command::new("xdg-open")
+        .arg(path)
+        .spawn()
+        .map_err(|e| AppError::Internal(format!("xdg-open spawn 실패: {e}")))?;
+    Ok(())
 }
 
 // ====== Worktree ======
@@ -80,6 +119,39 @@ pub async fn prune_worktrees(
 ) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_wt::prune_worktrees(&path).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LockWorktreeArgs {
+    pub repo_id: i64,
+    pub path: String,
+    pub reason: Option<String>,
+}
+
+#[tauri::command]
+pub async fn lock_worktree(
+    args: LockWorktreeArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_wt::lock_worktree(&path, &args.path, args.reason.as_deref()).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnlockWorktreeArgs {
+    pub repo_id: i64,
+    pub path: String,
+}
+
+#[tauri::command]
+pub async fn unlock_worktree(
+    args: UnlockWorktreeArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_wt::unlock_worktree(&path, &args.path).await
 }
 
 // ====== Cherry-pick (단일 + 멀티 레포) ======
@@ -164,6 +236,41 @@ pub async fn take_side(
     git_merge::take_side(&path, &args.path, args.side).await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LaunchMergetoolArgs {
+    pub repo_id: i64,
+    /// merge tool 이름 (선택, git config merge.tool 사용 시 None).
+    pub tool: Option<String>,
+    /// 특정 파일만 (선택, 전체 conflicted 파일 처리 시 None).
+    pub file: Option<String>,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MergetoolResult {
+    pub success: bool,
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: Option<i32>,
+}
+
+#[tauri::command]
+pub async fn launch_mergetool(
+    args: LaunchMergetoolArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<MergetoolResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let out =
+        git_merge::launch_mergetool(&path, args.tool.as_deref(), args.file.as_deref()).await?;
+    Ok(MergetoolResult {
+        success: out.exit_code == Some(0),
+        stdout: out.stdout,
+        stderr: out.stderr,
+        exit_code: out.exit_code,
+    })
+}
+
 // ====== Bisect ======
 
 #[tauri::command]
@@ -202,10 +309,7 @@ pub async fn bisect_mark(
 }
 
 #[tauri::command]
-pub async fn bisect_reset(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn bisect_reset(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_bisect::reset(&path).await
 }
@@ -277,30 +381,39 @@ pub async fn lfs_untrack(
 }
 
 #[tauri::command]
-pub async fn lfs_fetch(
+pub async fn lfs_install(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::install(&path).await
+}
+
+#[tauri::command]
+pub async fn lfs_fetch(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_lfs::fetch(&path).await
 }
 
 #[tauri::command]
-pub async fn lfs_pull(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn lfs_pull(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_lfs::pull(&path).await
 }
 
 #[tauri::command]
-pub async fn lfs_prune(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
+pub async fn lfs_prune(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_lfs::prune(&path).await
+}
+
+#[tauri::command]
+pub async fn lfs_push_size(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_lfs::LfsPushSize> {
+    let path = repo_path(&state, repo_id).await?;
+    git_lfs::push_size(&path).await
 }
 
 // ====== File history / Blame ======
@@ -362,9 +475,7 @@ pub async fn ai_commit_message(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<ai::AiOutput> {
     if !args.user_approved {
-        return Err(AppError::validation(
-            "AI 호출 전 송출 승인이 필요합니다.",
-        ));
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
     }
     let path = repo_path(&state, args.repo_id).await?;
 
@@ -519,9 +630,7 @@ pub async fn ai_pr_body(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<ai::AiOutput> {
     if !args.user_approved {
-        return Err(AppError::validation(
-            "AI 호출 전 송출 승인이 필요합니다.",
-        ));
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
     }
     let path = repo_path(&state, args.repo_id).await?;
 
@@ -555,4 +664,346 @@ pub async fn ai_pr_body(
 
     let prompt = ai::pr_body_prompt(&commits, &stat, &args.head_branch, &args.base_branch);
     ai::ai_run(args.cli, &prompt).await
+}
+
+// ====== Conflict Prediction (Sprint B2 / `docs/plan/11 §20`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PredictConflictArgs {
+    pub repo_id: i64,
+    /// 비교 대상 (예: 'origin/main' 또는 'main'). 비어있으면 default_branch 사용.
+    pub target: Option<String>,
+}
+
+#[tauri::command]
+pub async fn predict_target_conflict(
+    args: PredictConflictArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_cp_pred::ConflictPrediction> {
+    use crate::storage::DbExt;
+    let repo = state.db.get_repo(args.repo_id).await?;
+    let path = std::path::PathBuf::from(&repo.local_path);
+    let target = args
+        .target
+        .or_else(|| repo.default_branch.as_ref().map(|b| format!("origin/{b}")))
+        .unwrap_or_else(|| "origin/main".to_string());
+    git_cp_pred::predict(&path, &target).await
+}
+
+// ====== AI explain / stash (Sprint B7 / `docs/plan/11 §18`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiExplainCommitArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    pub sha: String,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_explain_commit(
+    args: AiExplainCommitArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    // commit subject + diff 추출.
+    let subject = crate::git::runner::git_run(
+        &path,
+        &["log", "-1", "--pretty=%s", &args.sha],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?
+    .trim()
+    .to_string();
+
+    let diff = crate::git::runner::git_run(
+        &path,
+        &["show", "--no-color", "--format=", &args.sha],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+
+    if diff.trim().is_empty() {
+        return Err(AppError::validation("commit diff 가 비었습니다."));
+    }
+
+    let prompt = ai::explain_commit_prompt(&subject, &diff);
+    ai::ai_run(args.cli, &prompt).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiExplainBranchArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    pub head_branch: String,
+    pub base_branch: String,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_explain_branch(
+    args: AiExplainBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    let log_arg = format!("{}..{}", args.base_branch, args.head_branch);
+    let log = crate::git::runner::git_run(
+        &path,
+        &["log", &log_arg, "--pretty=%s", "--reverse"],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await
+    .ok()
+    .and_then(|o| o.into_ok().ok())
+    .unwrap_or_default();
+    let commits: Vec<String> = log
+        .lines()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.to_string())
+        .collect();
+
+    let stat = crate::git::runner::git_run(
+        &path,
+        &["diff", "--stat", &log_arg],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await
+    .ok()
+    .and_then(|o| o.into_ok().ok())
+    .unwrap_or_default();
+
+    if commits.is_empty() && stat.trim().is_empty() {
+        return Err(AppError::validation(
+            "브랜치에 변경이 없습니다. base/head 확인.",
+        ));
+    }
+
+    let prompt = ai::explain_branch_prompt(&args.head_branch, &args.base_branch, &commits, &stat);
+    ai::ai_run(args.cli, &prompt).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiStashMessageArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    /// `true` 이면 untracked 포함; `false` 면 tracked 변경만.
+    #[serde(default)]
+    pub include_untracked: bool,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_stash_message(
+    args: AiStashMessageArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    // working tree 의 모든 변경 (staged + unstaged) — `git diff HEAD`.
+    let diff_args: Vec<&str> = if args.include_untracked {
+        vec!["diff", "HEAD", "--no-color"]
+    } else {
+        vec!["diff", "--no-color"]
+    };
+    let diff = crate::git::runner::git_run(
+        &path,
+        &diff_args,
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+
+    if diff.trim().is_empty() {
+        return Err(AppError::validation("stash 할 변경이 없습니다."));
+    }
+
+    let prompt = ai::stash_message_prompt(&diff);
+    ai::ai_run(args.cli, &prompt).await
+}
+
+// ====== Commit Composer AI (Sprint B3 / `docs/plan/11 §18`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiComposerArgs {
+    pub repo_id: i64,
+    pub cli: ai::AiCli,
+    /// 마지막 N 개 commit 을 대상으로 (oldest → newest 순서로 prompt).
+    pub count: usize,
+    #[serde(default)]
+    pub user_approved: bool,
+}
+
+#[tauri::command]
+pub async fn ai_composer_plan(
+    args: AiComposerArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<ai::AiOutput> {
+    if !args.user_approved {
+        return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
+    }
+    if args.count == 0 || args.count > 30 {
+        return Err(AppError::validation("count 는 1~30."));
+    }
+    let path = repo_path(&state, args.repo_id).await?;
+
+    // 마지막 N commit 의 (sha, subject) 추출 (oldest → newest).
+    let n = format!("-n{}", args.count);
+    let log = crate::git::runner::git_run(
+        &path,
+        &["log", &n, "--pretty=%H%x1f%s", "--reverse"],
+        &crate::git::runner::GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+
+    let mut entries: Vec<(String, String, String)> = Vec::new();
+    for line in log.lines() {
+        let mut parts = line.splitn(2, '\x1f');
+        let sha = parts.next().unwrap_or("").trim().to_string();
+        let subject = parts.next().unwrap_or("").to_string();
+        if sha.is_empty() {
+            continue;
+        }
+        // 각 commit 의 diff 추출 (parent vs commit). truncate 는 prompt 가 처리.
+        let diff = crate::git::runner::git_run(
+            &path,
+            &["show", "--no-color", "--format=", &sha],
+            &crate::git::runner::GitRunOpts::default(),
+        )
+        .await
+        .ok()
+        .and_then(|o| o.into_ok().ok())
+        .unwrap_or_default();
+        entries.push((sha, subject, diff));
+    }
+
+    if entries.is_empty() {
+        return Err(AppError::validation("commit 이 없습니다."));
+    }
+
+    let prompt = ai::composer_plan_prompt(&entries);
+    ai::ai_run(args.cli, &prompt).await
+}
+
+// ====== Interactive rebase (`docs/plan/09 옵션 A`) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RebasePrepareArgs {
+    pub repo_id: i64,
+    pub count: usize,
+}
+
+#[tauri::command]
+pub async fn rebase_prepare_todo(
+    args: RebasePrepareArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_rebase::RebaseTodoEntry>> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_rebase::prepare_todo(&path, args.count).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RebaseRunArgs {
+    pub repo_id: i64,
+    pub base: String,
+    pub todo: Vec<git_rebase::RebaseTodoEntry>,
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RebaseRunResult {
+    pub success: bool,
+    pub exit_code: Option<i32>,
+    pub stdout: String,
+    pub stderr: String,
+    pub status: git_rebase::RebaseStatus,
+}
+
+#[tauri::command]
+pub async fn rebase_run(
+    args: RebaseRunArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<RebaseRunResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let out = git_rebase::run_interactive(&path, &args.base, &args.todo).await?;
+    let status = git_rebase::status(&path)?;
+    Ok(RebaseRunResult {
+        success: out.exit_code == Some(0) && !status.in_progress,
+        exit_code: out.exit_code,
+        stdout: out.stdout,
+        stderr: out.stderr,
+        status,
+    })
+}
+
+#[tauri::command]
+pub async fn rebase_status(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_rebase::RebaseStatus> {
+    let path = repo_path(&state, repo_id).await?;
+    git_rebase::status(&path)
+}
+
+#[tauri::command]
+pub async fn rebase_continue(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<RebaseRunResult> {
+    let path = repo_path(&state, repo_id).await?;
+    let out = git_rebase::rebase_continue(&path).await?;
+    let status = git_rebase::status(&path)?;
+    Ok(RebaseRunResult {
+        success: out.exit_code == Some(0) && !status.in_progress,
+        exit_code: out.exit_code,
+        stdout: out.stdout,
+        stderr: out.stderr,
+        status,
+    })
+}
+
+#[tauri::command]
+pub async fn rebase_abort(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let path = repo_path(&state, repo_id).await?;
+    git_rebase::rebase_abort(&path).await
+}
+
+#[tauri::command]
+pub async fn rebase_skip(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<RebaseRunResult> {
+    let path = repo_path(&state, repo_id).await?;
+    let out = git_rebase::rebase_skip(&path).await?;
+    let status = git_rebase::status(&path)?;
+    Ok(RebaseRunResult {
+        success: out.exit_code == Some(0) && !status.in_progress,
+        exit_code: out.exit_code,
+        stdout: out.stdout,
+        stderr: out.stderr,
+        status,
+    })
 }

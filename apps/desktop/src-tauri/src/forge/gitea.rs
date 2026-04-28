@@ -4,8 +4,8 @@
 // 사용자 회사 인스턴스: https://git.dev.opnd.io
 
 use super::model::{
-    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrState, PullRequest,
-    Release, ReviewVerdict,
+    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrFile, PrState,
+    PullRequest, Release, ReviewVerdict,
 };
 use super::{CreatePullRequestReq, ForgeClient};
 use crate::error::{AppError, AppResult};
@@ -83,7 +83,14 @@ impl ForgeClient for GiteaClient {
         let url = self.url(&format!(
             "/repos/{owner}/{repo}/pulls?state={state}&limit=50&page=1"
         ));
-        let res: Vec<RawPr> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let res: Vec<RawPr> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(res.into_iter().map(|r| r.into_pr(owner, repo)).collect())
     }
 
@@ -94,7 +101,14 @@ impl ForgeClient for GiteaClient {
         number: u64,
     ) -> AppResult<PullRequest> {
         let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}"));
-        let r: RawPr = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let r: RawPr = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(r.into_pr(owner, repo))
     }
 
@@ -129,19 +143,43 @@ impl ForgeClient for GiteaClient {
         let url = self.url(&format!(
             "/repos/{owner}/{repo}/issues?state=open&type=issues&limit=50"
         ));
-        let res: Vec<RawIssue> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let res: Vec<RawIssue> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(res.into_iter().map(|r| r.into_issue(owner, repo)).collect())
     }
 
     async fn list_releases(&self, owner: &str, repo: &str) -> AppResult<Vec<Release>> {
         let url = self.url(&format!("/repos/{owner}/{repo}/releases?limit=50"));
-        let res: Vec<RawRelease> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
-        Ok(res.into_iter().map(|r| r.into_release(owner, repo)).collect())
+        let res: Vec<RawRelease> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(res
+            .into_iter()
+            .map(|r| r.into_release(owner, repo))
+            .collect())
     }
 
     async fn whoami(&self) -> AppResult<Author> {
         let url = self.url("/user");
-        let r: RawUser = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let r: RawUser = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(r.into_author())
     }
 
@@ -182,6 +220,40 @@ impl ForgeClient for GiteaClient {
             .json()
             .await?;
         Ok(r.into_comment())
+    }
+
+    async fn add_review_comment(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        commit_id: Option<&str>,
+        path: &str,
+        line: u32,
+        body: &str,
+    ) -> AppResult<()> {
+        // Gitea: line-level comment 는 single-comment review 로 POST.
+        // POST /repos/{o}/{r}/pulls/{n}/reviews
+        // body: { event: "COMMENT", commit_id?, comments: [{ path, body, new_position }] }
+        let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}/reviews"));
+        let mut payload = serde_json::json!({
+            "event": "COMMENT",
+            "comments": [{
+                "path": path,
+                "body": body,
+                "new_position": line,
+            }]
+        });
+        if let Some(c) = commit_id {
+            payload["commit_id"] = serde_json::Value::String(c.to_string());
+        }
+        self.http
+            .post(&url)
+            .json(&payload)
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
     }
 
     async fn submit_pr_review(
@@ -255,6 +327,59 @@ impl ForgeClient for GiteaClient {
             .await?
             .error_for_status()?;
         Ok(())
+    }
+
+    async fn list_pr_files(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+    ) -> AppResult<Vec<PrFile>> {
+        // Sprint 22-3 V-2 — Gitea `GET /repos/{o}/{r}/pulls/{n}/files`.
+        // Gitea swagger schema 는 GitHub 와 호환 (filename / status / additions / deletions / changes / patch).
+        let url = self.url(&format!(
+            "/repos/{owner}/{repo}/pulls/{number}/files?limit=100"
+        ));
+        let res: Vec<RawPrFile> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(res.into_iter().map(RawPrFile::into_file).collect())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+struct RawPrFile {
+    filename: String,
+    #[serde(default)]
+    previous_filename: Option<String>,
+    status: String,
+    #[serde(default)]
+    additions: u32,
+    #[serde(default)]
+    deletions: u32,
+    #[serde(default)]
+    changes: u32,
+    #[serde(default)]
+    patch: Option<String>,
+}
+
+impl RawPrFile {
+    fn into_file(self) -> PrFile {
+        PrFile {
+            path: self.filename,
+            previous_path: self.previous_filename,
+            status: self.status,
+            additions: self.additions,
+            deletions: self.deletions,
+            changes: self.changes,
+            patch: self.patch,
+        }
     }
 }
 

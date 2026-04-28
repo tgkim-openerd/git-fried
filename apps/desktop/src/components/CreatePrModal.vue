@@ -14,7 +14,10 @@ import {
 } from '@/api/git'
 import type { AiCli, BranchInfo } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
+import { notifyAiDone } from '@/composables/useAiCli'
+import BaseModal from './BaseModal.vue'
 
 const toast = useToast()
 
@@ -64,7 +67,7 @@ const localBranches = computed(
 const { data: aiProbes } = useQuery({
   queryKey: ['aiProbes'],
   queryFn: aiDetectClis,
-  staleTime: 60_000,
+  staleTime: STALE_TIME.STATIC,
 })
 const availableCli = computed<AiCli | null>(() => {
   const p = aiProbes.value
@@ -101,6 +104,7 @@ const aiBodyMut = useMutation({
   onSuccess: (out) => {
     if (out.success) {
       body.value = out.text.trim()
+      notifyAiDone('AI PR body 생성', out.text.split(/\r?\n/)[0])
     } else {
       toast.error('AI body 생성 실패', out.stderr || out.text)
     }
@@ -145,19 +149,14 @@ const titleLength = computed(() => title.value.length)
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-6"
-      @click.self="emit('close')"
-    >
-      <div class="flex h-full w-full max-w-3xl flex-col rounded-lg border border-border bg-card shadow-xl">
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <h2 class="text-base font-semibold">새 Pull Request</h2>
-          <button class="text-muted-foreground hover:text-foreground" @click="emit('close')">✕</button>
-        </header>
-
-        <div class="flex-1 overflow-auto p-4 text-sm">
+  <BaseModal
+    :open="open"
+    max-width="3xl"
+    title="새 Pull Request"
+    panel-class="h-[90vh]"
+    @close="emit('close')"
+  >
+    <div class="p-4 text-sm">
           <!-- head → base -->
           <div class="mb-3 grid grid-cols-2 gap-2">
             <label class="text-xs text-muted-foreground">
@@ -222,27 +221,27 @@ const titleLength = computed(() => title.value.length)
             <input v-model="draft" type="checkbox" />
             draft 로 생성 (GitHub 전용 — Gitea 는 무시)
           </label>
-        </div>
-
-        <footer class="flex items-center justify-end gap-2 border-t border-border px-4 py-2 text-xs">
-          <span v-if="head && base && head === base" class="mr-auto text-amber-500">
-            ⚠ head 와 base 가 같습니다
-          </span>
-          <button
-            class="rounded-md border border-input px-3 py-1.5 hover:bg-accent"
-            @click="emit('close')"
-          >
-            취소
-          </button>
-          <button
-            class="rounded-md bg-primary px-4 py-1.5 text-primary-foreground disabled:opacity-50"
-            :disabled="!canCreate"
-            @click="createMut.mutate()"
-          >
-            {{ createMut.isPending.value ? '생성 중...' : 'PR 생성' }}
-          </button>
-        </footer>
-      </div>
     </div>
-  </Teleport>
+
+    <template #footer>
+      <div class="flex items-center justify-end gap-2 text-xs">
+        <span v-if="head && base && head === base" class="mr-auto text-amber-500">
+          ⚠ head 와 base 가 같습니다
+        </span>
+        <button
+          class="rounded-md border border-input px-3 py-1.5 hover:bg-accent"
+          @click="emit('close')"
+        >
+          취소
+        </button>
+        <button
+          class="rounded-md bg-primary px-4 py-1.5 text-primary-foreground disabled:opacity-50"
+          :disabled="!canCreate"
+          @click="createMut.mutate()"
+        >
+          {{ createMut.isPending.value ? '생성 중...' : 'PR 생성' }}
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>

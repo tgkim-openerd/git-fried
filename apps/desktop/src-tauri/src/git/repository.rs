@@ -78,9 +78,17 @@ pub fn log(repo: &Repository, limit: usize, skip: usize) -> AppResult<Vec<Commit
         let sha = oid.to_string();
         let refs = refs_map.get(&sha).cloned().unwrap_or_default();
         let parent_shas = (0..commit.parent_count())
-            .map(|i| commit.parent_id(i).map(|x| x.to_string()).unwrap_or_default())
+            .map(|i| {
+                commit
+                    .parent_id(i)
+                    .map(|x| x.to_string())
+                    .unwrap_or_default()
+            })
             .collect();
-        let signed = commit.header_field_bytes("gpgsig").map(|b| !b.is_empty()).unwrap_or(false);
+        let signed = commit
+            .header_field_bytes("gpgsig")
+            .map(|b| !b.is_empty())
+            .unwrap_or(false);
 
         out.push(CommitSummary {
             short_sha: sha.chars().take(7).collect(),

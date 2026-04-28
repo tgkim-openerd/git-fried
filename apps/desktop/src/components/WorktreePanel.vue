@@ -2,16 +2,23 @@
 // Worktree 패널 — list / add / remove / prune.
 // 사용자 8개 동시 사용 패턴 (`docs/plan/02 §3 W2`).
 // AI 에이전트 자동 worktree (`worktree-agent-*`) 식별 가능.
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useWorktrees } from '@/composables/useWorktrees'
 import {
   addWorktree,
+  lockWorktree,
+  openInExplorer,
   pruneWorktrees,
   removeWorktree,
+  unlockWorktree,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { useReposStore } from '@/stores/repos'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+
+const reposStore = useReposStore()
 
 const toast = useToast()
 
@@ -21,6 +28,17 @@ const qc = useQueryClient()
 
 const newPath = ref('')
 const newBranch = ref('')
+
+// Sprint 22-9 V-10 — row click 시 시각 focus.
+// (현재 worktree 별 repo_id 가 별도가 아니므로 active worktree 추적 무의미 — 시각 highlight 만 유지)
+const selectedPath = ref<string | null>(null)
+
+function onWorktreeDblClick(t: { path: string; isMain: boolean }) {
+  if (t.isMain) return
+  if (props.repoId == null) return
+  reposStore.setActiveRepo(props.repoId)
+  toast.success('활성화', t.path)
+}
 
 const addMut = useMutation({
   mutationFn: () => {
@@ -70,6 +88,88 @@ function confirmRemove(path: string) {
     removeMut.mutate({ p: path, force: false })
   }
 }
+
+// === Sprint C1 — Lock / Unlock ===
+const lockMut = useMutation({
+  mutationFn: ({ p, reason }: { p: string; reason: string | null }) =>
+    lockWorktree(props.repoId!, p, reason),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] })
+    toast.success('Worktree 잠금', '')
+  },
+  onError: (e) => toast.error('Lock 실패', describeError(e)),
+})
+
+const unlockMut = useMutation({
+  mutationFn: (p: string) => unlockWorktree(props.repoId!, p),
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] })
+    toast.success('Worktree 잠금 해제', '')
+  },
+  onError: (e) => toast.error('Unlock 실패', describeError(e)),
+})
+
+function onLock(path: string) {
+  if (props.repoId == null) return
+  const reason = window.prompt(
+    `'${path}' 잠금 사유 (선택, 외장 디스크 / 비활성 등)`,
+    '',
+  )
+  // reason 이 null = cancel.
+  if (reason === null) return
+  lockMut.mutate({ p: path, reason: reason.trim() || null })
+}
+
+function onUnlock(path: string) {
+  if (props.repoId == null) return
+  unlockMut.mutate(path)
+}
+
+// === Sprint 22-4 CM-11: worktree row 우클릭 (5 액션) ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+type WorktreeItem = NonNullable<typeof trees.value>[number]
+
+function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const items: ContextMenuItem[] = [
+    {
+      label: 'Open in Explorer',
+      icon: '📂',
+      action: () => {
+        // openInExplorer 는 repoId 단위 — worktree 의 경로는 직접 열 수 없으므로
+        // 일단 main repo 위치를 열고, 사용자에게 안내.
+        if (props.repoId != null) void openInExplorer(props.repoId)
+        toast.success('Explorer 열림 (main repo)', t.path)
+      },
+    },
+    {
+      label: t.isMain ? 'Switch (이미 main repo)' : 'Switch — main repo 활성화',
+      icon: '⊙',
+      disabled: t.isMain,
+      action: () => {
+        // worktree 별 repo_id 가 별도가 아니므로 단순히 active 로 set (한 worktree = 한 repoId 가정).
+        if (props.repoId != null) reposStore.setActiveRepo(props.repoId)
+        toast.success('활성화', t.path)
+      },
+    },
+    { divider: true },
+    {
+      label: t.isLocked ? 'Unlock' : 'Lock',
+      icon: t.isLocked ? '🔓' : '🔒',
+      action: () => (t.isLocked ? onUnlock(t.path) : onLock(t.path)),
+    },
+    { divider: true },
+    {
+      label: t.isMain ? 'Remove (main 불가)' : 'Remove',
+      icon: '🗑',
+      destructive: true,
+      disabled: t.isMain || t.isLocked,
+      action: () => confirmRemove(t.path),
+    },
+  ]
+  ctxMenu.value?.openAt(ev, items)
+}
 </script>
 
 <template>
@@ -82,6 +182,7 @@ function confirmRemove(path: string) {
         type="button"
         class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent disabled:opacity-50"
         :disabled="!repoId || pruneMut.isPending.value"
+        aria-label="prunable worktree 정리 (디스크 정리)"
         @click="pruneMut.mutate()"
       >
         prune
@@ -117,7 +218,12 @@ function confirmRemove(path: string) {
         <li
           v-for="t in trees"
           :key="t.path"
-          class="rounded px-2 py-1.5 hover:bg-accent/40"
+          class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
+          :class="selectedPath === t.path ? 'bg-accent/60 ring-1 ring-primary/40' : ''"
+          :title="`${t.path}\nclick=focus, dblclick=Switch (main repo 활성화), 우클릭=메뉴`"
+          @click="selectedPath = t.path"
+          @dblclick="onWorktreeDblClick(t)"
+          @contextmenu="onWorktreeContextMenu($event, t)"
         >
           <div class="flex items-center justify-between">
             <span class="truncate text-xs">
@@ -130,10 +236,33 @@ function confirmRemove(path: string) {
             <span class="text-[10px] text-muted-foreground">{{ fmtSize(t.sizeBytes) }}</span>
           </div>
           <div class="truncate font-mono text-[10px] text-muted-foreground">{{ t.path }}</div>
-          <div v-if="!t.isMain" class="mt-1 flex justify-end">
+          <div v-if="!t.isMain" class="mt-1 flex justify-end gap-2">
+            <button
+              v-if="!t.isLocked"
+              type="button"
+              class="text-[10px] text-amber-500 hover:underline"
+              :disabled="lockMut.isPending.value"
+              :aria-label="`worktree '${t.path}' 잠금`"
+              @click="onLock(t.path)"
+            >
+              lock
+            </button>
+            <button
+              v-else
+              type="button"
+              class="text-[10px] text-amber-500 hover:underline"
+              :disabled="unlockMut.isPending.value"
+              :aria-label="`worktree '${t.path}' 잠금 해제`"
+              @click="onUnlock(t.path)"
+            >
+              unlock
+            </button>
             <button
               type="button"
               class="text-[10px] text-destructive hover:underline"
+              :disabled="t.isLocked"
+              :title="t.isLocked ? 'unlock 후 제거' : ''"
+              :aria-label="`worktree '${t.path}' 제거`"
               @click="confirmRemove(t.path)"
             >
               remove
@@ -142,5 +271,6 @@ function confirmRemove(path: string) {
         </li>
       </ul>
     </div>
+    <ContextMenu ref="ctxMenu" />
   </section>
 </template>

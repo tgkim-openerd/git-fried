@@ -4,8 +4,8 @@
 // 베이스: https://api.github.com (Enterprise 는 `https://<host>/api/v3`).
 
 use super::model::{
-    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrState, PullRequest,
-    Release, ReviewVerdict,
+    Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrFile, PrState,
+    PullRequest, Release, ReviewVerdict,
 };
 use super::{CreatePullRequestReq, ForgeClient};
 use crate::error::{AppError, AppResult};
@@ -23,7 +23,9 @@ pub struct GithubClient {
 
 impl GithubClient {
     pub fn new(base_url: Option<&str>, token: &str) -> AppResult<Self> {
-        let base = base_url.unwrap_or("https://api.github.com").trim_end_matches('/');
+        let base = base_url
+            .unwrap_or("https://api.github.com")
+            .trim_end_matches('/');
         let mut headers = HeaderMap::new();
         headers.insert(
             AUTHORIZATION,
@@ -83,7 +85,14 @@ impl ForgeClient for GithubClient {
         let url = self.url(&format!(
             "/repos/{owner}/{repo}/pulls?state={state}&per_page=50"
         ));
-        let res: Vec<RawPr> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let res: Vec<RawPr> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(res.into_iter().map(|r| r.into_pr(owner, repo)).collect())
     }
 
@@ -94,7 +103,14 @@ impl ForgeClient for GithubClient {
         number: u64,
     ) -> AppResult<PullRequest> {
         let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}"));
-        let r: RawPr = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let r: RawPr = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(r.into_pr(owner, repo))
     }
 
@@ -129,7 +145,14 @@ impl ForgeClient for GithubClient {
         let url = self.url(&format!(
             "/repos/{owner}/{repo}/issues?state=open&per_page=50"
         ));
-        let res: Vec<RawIssue> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let res: Vec<RawIssue> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(res
             .into_iter()
             .filter(|r| r.pull_request.is_none())
@@ -139,13 +162,30 @@ impl ForgeClient for GithubClient {
 
     async fn list_releases(&self, owner: &str, repo: &str) -> AppResult<Vec<Release>> {
         let url = self.url(&format!("/repos/{owner}/{repo}/releases?per_page=50"));
-        let res: Vec<RawRelease> = self.http.get(&url).send().await?.error_for_status()?.json().await?;
-        Ok(res.into_iter().map(|r| r.into_release(owner, repo)).collect())
+        let res: Vec<RawRelease> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(res
+            .into_iter()
+            .map(|r| r.into_release(owner, repo))
+            .collect())
     }
 
     async fn whoami(&self) -> AppResult<Author> {
         let url = self.url("/user");
-        let r: RawUser = self.http.get(&url).send().await?.error_for_status()?.json().await?;
+        let r: RawUser = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
         Ok(r.into_author())
     }
 
@@ -188,6 +228,43 @@ impl ForgeClient for GithubClient {
             .json()
             .await?;
         Ok(r.into_comment())
+    }
+
+    async fn add_review_comment(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+        commit_id: Option<&str>,
+        path: &str,
+        line: u32,
+        body: &str,
+    ) -> AppResult<()> {
+        // GitHub: POST /repos/{o}/{r}/pulls/{n}/comments
+        // body / commit_id / path / line / side=RIGHT (PR 새 코드 기준)
+        // commit_id 가 None 이면 PR head SHA 자동 lookup.
+        let resolved_commit_id = if let Some(c) = commit_id {
+            c.to_string()
+        } else {
+            let pr = self.get_pull_request(owner, repo, number).await?;
+            pr.head_sha.ok_or_else(|| {
+                crate::error::AppError::validation("PR head SHA 추출 실패")
+            })?
+        };
+        let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}/comments"));
+        self.http
+            .post(&url)
+            .json(&serde_json::json!({
+                "body": body,
+                "commit_id": resolved_commit_id,
+                "path": path,
+                "line": line,
+                "side": "RIGHT",
+            }))
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
     }
 
     async fn submit_pr_review(
@@ -261,6 +338,59 @@ impl ForgeClient for GithubClient {
             .await?
             .error_for_status()?;
         Ok(())
+    }
+
+    async fn list_pr_files(
+        &self,
+        owner: &str,
+        repo: &str,
+        number: u64,
+    ) -> AppResult<Vec<PrFile>> {
+        // Sprint 22-3 V-2 — GitHub `GET /repos/{o}/{r}/pulls/{n}/files`.
+        // per_page=100 (최대) — 100+ 파일 PR 은 흔치 않으므로 1페이지만 조회.
+        let url = self.url(&format!(
+            "/repos/{owner}/{repo}/pulls/{number}/files?per_page=100"
+        ));
+        let res: Vec<RawPrFile> = self
+            .http
+            .get(&url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+        Ok(res.into_iter().map(RawPrFile::into_file).collect())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+struct RawPrFile {
+    filename: String,
+    #[serde(default)]
+    previous_filename: Option<String>,
+    status: String,
+    #[serde(default)]
+    additions: u32,
+    #[serde(default)]
+    deletions: u32,
+    #[serde(default)]
+    changes: u32,
+    #[serde(default)]
+    patch: Option<String>,
+}
+
+impl RawPrFile {
+    fn into_file(self) -> PrFile {
+        PrFile {
+            path: self.filename,
+            previous_path: self.previous_filename,
+            status: self.status,
+            additions: self.additions,
+            deletions: self.deletions,
+            changes: self.changes,
+            patch: self.patch,
+        }
     }
 }
 

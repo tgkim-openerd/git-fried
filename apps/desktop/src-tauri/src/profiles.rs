@@ -86,11 +86,7 @@ pub async fn create(pool: &SqlitePool, input: ProfileInput) -> AppResult<Profile
     row_to_profile(row)
 }
 
-pub async fn update(
-    pool: &SqlitePool,
-    id: i64,
-    input: ProfileInput,
-) -> AppResult<Profile> {
+pub async fn update(pool: &SqlitePool, id: i64, input: ProfileInput) -> AppResult<Profile> {
     sqlx::query(
         "UPDATE profiles SET name = ?, git_user_name = ?, git_user_email = ?, \
          signing_key = ?, ssh_key_path = ?, default_forge_account_id = ? \

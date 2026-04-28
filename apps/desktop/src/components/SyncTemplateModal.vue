@@ -19,6 +19,7 @@ import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import BaseModal from './BaseModal.vue'
 
 const toast = useToast()
 const props = defineProps<{
@@ -104,19 +105,14 @@ function repoName(id: number): string {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-6"
-      @click.self="emit('close')"
-    >
-      <div class="flex h-full w-full max-w-3xl flex-col rounded-lg border border-border bg-card shadow-xl">
-        <header class="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 class="text-base font-semibold">Sync template — 다중 레포 Cherry-pick</h2>
-          <button class="text-muted-foreground hover:text-foreground" @click="emit('close')">✕</button>
-        </header>
-
-        <div class="flex-1 overflow-auto p-4 text-sm">
+  <BaseModal
+    :open="open"
+    max-width="3xl"
+    title="Sync template — 다중 레포 Cherry-pick"
+    panel-class="h-[90vh]"
+    @close="emit('close')"
+  >
+    <div class="p-4 text-sm">
           <!-- 1. SHA -->
           <section class="mb-4">
             <label class="mb-1 block text-xs text-muted-foreground">
@@ -217,21 +213,21 @@ function repoName(id: number): string {
               </li>
             </ul>
           </section>
-        </div>
-
-        <footer class="flex items-center justify-end gap-2 border-t border-border px-4 py-3 text-xs">
-          <button class="rounded-md border border-input px-3 py-1.5 hover:bg-accent" @click="emit('close')">
-            닫기
-          </button>
-          <button
-            class="rounded-md bg-primary px-4 py-1.5 text-primary-foreground disabled:opacity-50"
-            :disabled="!canRun"
-            @click="runMut.mutate()"
-          >
-            {{ runMut.isPending.value ? '실행 중...' : `${selectedIds.size}개 레포에 적용` }}
-          </button>
-        </footer>
-      </div>
     </div>
-  </Teleport>
+
+    <template #footer>
+      <div class="flex items-center justify-end gap-2 text-xs">
+        <button class="rounded-md border border-input px-3 py-1.5 hover:bg-accent" @click="emit('close')">
+          닫기
+        </button>
+        <button
+          class="rounded-md bg-primary px-4 py-1.5 text-primary-foreground disabled:opacity-50"
+          :disabled="!canRun"
+          @click="runMut.mutate()"
+        >
+          {{ runMut.isPending.value ? '실행 중...' : `${selectedIds.size}개 레포에 적용` }}
+        </button>
+      </div>
+    </template>
+  </BaseModal>
 </template>

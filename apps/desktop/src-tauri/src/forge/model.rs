@@ -111,6 +111,24 @@ pub enum MergeMethod {
     Rebase,
 }
 
+/// PR 의 변경 파일 (Sprint 22-3 V-2 — `docs/plan/22 §3 V-2`).
+///
+/// GitHub: `GET /repos/{o}/{r}/pulls/{n}/files` 응답 매핑.
+/// Gitea : 동일 endpoint 동일 스키마.
+///
+/// `patch` 는 unified diff (header 포함). 큰 파일은 forge 가 None 반환할 수 있음.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PrFile {
+    pub path: String,
+    pub previous_path: Option<String>,
+    pub status: String, // "added" | "modified" | "removed" | "renamed" | "copied" | "changed"
+    pub additions: u32,
+    pub deletions: u32,
+    pub changes: u32,
+    pub patch: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Release {

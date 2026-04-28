@@ -82,7 +82,10 @@ impl Serialize for AppError {
         let mut map = ser.serialize_map(Some(2))?;
         map.serialize_entry("kind", self.kind())?;
         map.serialize_entry("message", &self.to_string())?;
-        if let Self::GitCli { stderr, exit_code, .. } = self {
+        if let Self::GitCli {
+            stderr, exit_code, ..
+        } = self
+        {
             map.serialize_entry("stderr", stderr)?;
             map.serialize_entry("exitCode", exit_code)?;
         }

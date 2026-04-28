@@ -10,12 +10,16 @@
 //   - storage: SQLite + sqlx + 마이그레이션
 //   - ipc: Tauri commands (#[tauri::command])
 pub mod ai;
+pub mod alias;
 pub mod auth;
 pub mod error;
 pub mod forge;
 pub mod git;
+pub mod importer;
 pub mod ipc;
+pub mod launchpad;
 pub mod profiles;
+pub mod pty;
 pub mod storage;
 
 use std::sync::Arc;
@@ -25,12 +29,17 @@ pub use error::{AppError, AppResult};
 /// 앱 전역 상태. Tauri State 로 등록되어 모든 IPC 핸들러에서 접근 가능.
 pub struct AppState {
     pub db: storage::Db,
+    /// 통합 터미널 PTY 세션 (`docs/plan/10 옵션 A`).
+    pub pty: pty::PtyRegistry,
 }
 
 impl AppState {
     pub async fn new() -> AppResult<Arc<Self>> {
         let db = storage::Db::open_default().await?;
-        Ok(Arc::new(Self { db }))
+        Ok(Arc::new(Self {
+            db,
+            pty: pty::PtyRegistry::new(),
+        }))
     }
 }
 
@@ -55,8 +64,10 @@ pub fn run() {
         .expect("AppState init failed");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
         .manage(state)
         .manage(runtime)
@@ -64,6 +75,11 @@ pub fn run() {
             ipc::commands::get_app_info,
             ipc::commands::list_workspaces,
             ipc::commands::create_workspace,
+            ipc::commands::update_workspace,
+            ipc::commands::delete_workspace,
+            ipc::commands::merge_branch,
+            ipc::commands::rebase_branch,
+            ipc::commands::cherry_pick_sha,
             ipc::commands::list_repos,
             ipc::commands::add_repo,
             ipc::commands::remove_repo,
@@ -93,8 +109,12 @@ pub fn run() {
             ipc::commands::pop_stash,
             ipc::commands::drop_stash,
             ipc::commands::show_stash,
+            ipc::commands::apply_stash_file,
+            ipc::commands::edit_stash_message,
+            ipc::commands::compare_refs,
             ipc::commands::reset,
             ipc::commands::revert,
+            ipc::commands::undo_last_action,
             ipc::commands::get_graph,
             ipc::commands::list_submodules,
             ipc::commands::init_submodules,
@@ -102,7 +122,26 @@ pub fn run() {
             ipc::commands::sync_submodules,
             ipc::commands::bulk_fetch,
             ipc::commands::bulk_status,
+            ipc::commands::bulk_quick_status,
             ipc::commands::bulk_list_prs,
+            ipc::commands::list_remotes,
+            ipc::commands::add_remote,
+            ipc::commands::remove_remote,
+            ipc::commands::rename_remote,
+            ipc::commands::set_remote_url,
+            ipc::commands::maintenance_gc,
+            ipc::commands::maintenance_fsck,
+            ipc::commands::read_repo_config,
+            ipc::commands::apply_repo_config,
+            ipc::commands::list_tags,
+            ipc::commands::create_tag,
+            ipc::commands::delete_tag,
+            ipc::commands::push_tag,
+            ipc::commands::delete_remote_tag,
+            ipc::commands::clone_repo,
+            ipc::commands::import_gitkraken_detect,
+            ipc::commands::import_gitkraken_dry_run,
+            ipc::commands::import_gitkraken_apply,
             ipc::forge_commands::forge_save_token,
             ipc::forge_commands::forge_list_accounts,
             ipc::forge_commands::forge_delete_account,
@@ -114,18 +153,24 @@ pub fn run() {
             ipc::forge_commands::list_releases,
             ipc::forge_commands::list_pr_comments,
             ipc::forge_commands::add_pr_comment,
+            ipc::forge_commands::add_review_comment,
             ipc::forge_commands::submit_pr_review,
             ipc::forge_commands::merge_pr,
             ipc::forge_commands::close_pr,
             ipc::forge_commands::reopen_pr,
+            ipc::forge_commands::list_pr_files,
             ipc::v02_commands::list_worktrees,
             ipc::v02_commands::add_worktree,
             ipc::v02_commands::remove_worktree,
             ipc::v02_commands::prune_worktrees,
+            ipc::v02_commands::lock_worktree,
+            ipc::v02_commands::unlock_worktree,
             ipc::v02_commands::bulk_cherry_pick,
             ipc::v02_commands::read_conflicted,
             ipc::v02_commands::write_resolved,
             ipc::v02_commands::take_side,
+            ipc::v02_commands::launch_mergetool,
+            ipc::v02_commands::open_in_explorer,
             ipc::v02_commands::bisect_status,
             ipc::v02_commands::bisect_start,
             ipc::v02_commands::bisect_mark,
@@ -133,11 +178,13 @@ pub fn run() {
             ipc::v02_commands::list_reflog,
             ipc::v02_commands::lfs_status,
             ipc::v02_commands::lfs_list_files,
+            ipc::v02_commands::lfs_install,
             ipc::v02_commands::lfs_track,
             ipc::v02_commands::lfs_untrack,
             ipc::v02_commands::lfs_fetch,
             ipc::v02_commands::lfs_pull,
             ipc::v02_commands::lfs_prune,
+            ipc::v02_commands::lfs_push_size,
             ipc::v02_commands::get_file_history,
             ipc::v02_commands::get_file_blame,
             ipc::v02_commands::ai_detect_clis,
@@ -145,6 +192,39 @@ pub fn run() {
             ipc::v02_commands::ai_pr_body,
             ipc::v02_commands::ai_resolve_conflict,
             ipc::v02_commands::ai_code_review,
+            ipc::v02_commands::ai_explain_commit,
+            ipc::v02_commands::ai_explain_branch,
+            ipc::v02_commands::ai_stash_message,
+            ipc::v02_commands::predict_target_conflict,
+            ipc::v02_commands::ai_composer_plan,
+            ipc::v02_commands::rebase_prepare_todo,
+            ipc::v02_commands::rebase_run,
+            ipc::v02_commands::rebase_status,
+            ipc::v02_commands::rebase_continue,
+            ipc::v02_commands::rebase_abort,
+            ipc::v02_commands::rebase_skip,
+            ipc::pty_commands::pty_open,
+            ipc::pty_commands::pty_write,
+            ipc::pty_commands::pty_resize,
+            ipc::pty_commands::pty_close,
+            ipc::hide_commands::list_hidden_refs,
+            ipc::hide_commands::hide_ref,
+            ipc::hide_commands::unhide_ref,
+            ipc::hide_commands::hide_refs_bulk,
+            ipc::hide_commands::unhide_refs_by_kind,
+            ipc::hide_commands::unhide_all_refs,
+            ipc::launchpad_commands::launchpad_list_active,
+            ipc::launchpad_commands::launchpad_list_for_repo,
+            ipc::launchpad_commands::launchpad_set_pinned,
+            ipc::launchpad_commands::launchpad_set_snooze,
+            ipc::launchpad_commands::launchpad_cleanup_defaults,
+            ipc::launchpad_commands::launchpad_list_views,
+            ipc::launchpad_commands::launchpad_save_view,
+            ipc::launchpad_commands::launchpad_delete_view,
+            ipc::alias_commands::list_all_repo_aliases,
+            ipc::alias_commands::resolve_repo_alias,
+            ipc::alias_commands::set_repo_alias,
+            ipc::alias_commands::unset_repo_alias,
             ipc::profile_commands::list_profiles,
             ipc::profile_commands::create_profile,
             ipc::profile_commands::update_profile,

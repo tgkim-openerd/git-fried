@@ -78,6 +78,13 @@ impl Db {
 pub trait DbExt {
     async fn list_workspaces(&self) -> AppResult<Vec<Workspace>>;
     async fn create_workspace(&self, name: &str, color: Option<&str>) -> AppResult<Workspace>;
+    async fn update_workspace(
+        &self,
+        id: i64,
+        name: Option<&str>,
+        color: Option<&str>,
+    ) -> AppResult<Workspace>;
+    async fn delete_workspace(&self, id: i64) -> AppResult<()>;
     async fn list_repos(&self, workspace_id: Option<i64>) -> AppResult<Vec<Repo>>;
     async fn add_repo(
         &self,
@@ -117,6 +124,56 @@ impl DbExt for Db {
         Ok(out)
     }
 
+    async fn update_workspace(
+        &self,
+        id: i64,
+        name: Option<&str>,
+        color: Option<&str>,
+    ) -> AppResult<Workspace> {
+        // 둘 다 None 이면 no-op fetch.
+        if let Some(n) = name {
+            sqlx::query("UPDATE workspaces SET name = ? WHERE id = ?")
+                .bind(n)
+                .bind(id)
+                .execute(&self.pool)
+                .await
+                .map_err(AppError::Db)?;
+        }
+        if let Some(c) = color {
+            sqlx::query("UPDATE workspaces SET color = ? WHERE id = ?")
+                .bind(c)
+                .bind(id)
+                .execute(&self.pool)
+                .await
+                .map_err(AppError::Db)?;
+        }
+        let r = sqlx::query(
+            "SELECT id, name, color, forge_kind, created_at FROM workspaces WHERE id = ?",
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(AppError::Db)?
+        .ok_or(AppError::WorkspaceNotFound(id))?;
+        Ok(Workspace {
+            id: r.try_get("id")?,
+            name: r.try_get("name")?,
+            color: r.try_get("color")?,
+            forge_kind: r.try_get("forge_kind")?,
+            created_at: r.try_get("created_at")?,
+        })
+    }
+
+    async fn delete_workspace(&self, id: i64) -> AppResult<()> {
+        // FK ON DELETE SET NULL 가 repos.workspace_id 자동 정리.
+        sqlx::query("DELETE FROM workspaces WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::Db)?;
+        Ok(())
+    }
+
     async fn create_workspace(&self, name: &str, color: Option<&str>) -> AppResult<Workspace> {
         let now = chrono::Utc::now().timestamp();
         let id = sqlx::query(
@@ -140,12 +197,10 @@ impl DbExt for Db {
 
     async fn list_repos(&self, workspace_id: Option<i64>) -> AppResult<Vec<Repo>> {
         let rows = if let Some(wid) = workspace_id {
-            sqlx::query(
-                "SELECT * FROM repos WHERE workspace_id = ? ORDER BY is_pinned DESC, name",
-            )
-            .bind(wid)
-            .fetch_all(&self.pool)
-            .await
+            sqlx::query("SELECT * FROM repos WHERE workspace_id = ? ORDER BY is_pinned DESC, name")
+                .bind(wid)
+                .fetch_all(&self.pool)
+                .await
         } else {
             sqlx::query("SELECT * FROM repos ORDER BY is_pinned DESC, name")
                 .fetch_all(&self.pool)

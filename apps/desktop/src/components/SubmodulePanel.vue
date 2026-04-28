@@ -4,10 +4,12 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useSubmodules } from '@/composables/useSubmodules'
 import { initSubmodules, syncSubmodules, updateSubmodules } from '@/api/git'
+import EmptyState from './EmptyState.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
 import type { SubmoduleEntry } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
-const { data: subs } = useSubmodules(() => props.repoId)
+const { data: subs, isFetching: subsFetching } = useSubmodules(() => props.repoId)
 const qc = useQueryClient()
 
 const initMut = useMutation({
@@ -109,11 +111,12 @@ function statusLabel(s: SubmoduleEntry['status']): string {
             {{ s.sha }}
           </div>
         </li>
-        <li
-          v-if="subs && subs.length === 0"
-          class="px-2 py-3 text-center text-xs text-muted-foreground"
-        >
-          서브모듈 없음
+        <!-- Sprint 22-18 — 첫 로딩 skeleton + empty state visual -->
+        <li v-if="subsFetching && !subs" class="px-1 pt-2">
+          <SkeletonBlock :count="3" height="md" />
+        </li>
+        <li v-else-if="subs && subs.length === 0">
+          <EmptyState icon="🧩" title="서브모듈 없음" size="sm" />
         </li>
       </ul>
     </div>

@@ -1,120 +1,160 @@
 # REVIEW — git-fried 진행 현황
 
-작성: 2026-04-26 (단일 세션, 누적 **34 commits**, ~21,200 lines)
-대상: tgkim — 시간 될 때 dogfood + 다음 sprint 결정
-
----
-
-## 다음 세션 준비 문서 (★)
-
-- [docs/plan/09-interactive-rebase.md](docs/plan/09-interactive-rebase.md) — 3개 기술 옵션 + sprint 4개 + 사용자 결정 4가지
-- [docs/plan/10-integrated-terminal.md](docs/plan/10-integrated-terminal.md) — 2개 기술 옵션 + sprint 4개 + 사용자 결정 4가지
-
-다음 세션 시작 시 위 두 문서 읽고 결정 답변 주시면 즉시 sprint 1 자동 진입.
-
-**시작 메시지 형식**:
-```text
-"docs/plan/09 의 옵션 A 로 진행. MVP=drop+reword+squash. drag-drop=vue-draggable-plus."
-"docs/plan/10 의 옵션 A 로 진행. shell=pwsh.exe, 위치=하단 split, ⌘\` 단축키."
-```
+작성: 2026-04-27 (단일 세션 누적, 총 **76 commits / ~34,300 lines** / 153 파일)
+대상: tgkim — 시간 될 때 dogfood + Line-level stage 진입 결정
 
 ---
 
 ## 30초 요약
 
-**v0.0 → v1.0 거의 전부 + UX 완성** (Interactive rebase / 통합 터미널 / EV 서명 / macOS+Linux 외) 완료.
-모든 빌드/테스트는 Claude 직접 검증.
+**v0.0 → v1.0 핵심 + GitKraken 12 흡수 catalog 21/21 완료**.
+이번 세션 후반에 Sprint A~M (큰 작업 G/H/I + 미시 디테일 J/K/L/M 포함) 13 묶음 추가. 모든
+빌드/테스트는 Claude 직접 검증 (typecheck 0 / cargo test 73 pass / cargo check 통과).
 
 ```text
-32 commits 누적
-~20,400 라인 추가
-106 파일 변경
-75+ IPC 명령어
-Rust 단위 테스트: 32+ (한글 round-trip / 회귀 차단 모두 ✅)
+76 commits / 34,343 +/-263 lines / 153 파일
+75+ IPC 명령어 + 33+ 컴포넌트 + 25+ composable + 4 SQLite migration
+Rust 단위 테스트: 73 pass / 0 fail
 - 0 alert (모두 toast)
-- 25개 단축키 (? 도움말)
-- 7개 우측 탭 + 5개 모달 + 3개 페이지
+- 30+ 단축키 (도움말 ?)
+- 7개 우측 탭 + 11+ 모달 + 5 페이지 + 1 통합 터미널
+- multi-repo Tab UI (drag-drop 재정렬 + ⌃Tab/⌘⇧W)
 ```
 
-## 이번 세션 후반에 추가된 v1.0+ 기능 (8개)
+---
 
-마지막 1/3 sprint 에서 dogfood 친화 polish 완성:
+## 다음 세션 진입 옵션
 
-1. **PR 리뷰** — Approve / Request changes / Comment / 머지 / 닫기 (e2de2dd)
-2. **Pre-commit hook 결과 패널** — alert→inline + no-verify 재시도 (add5f75)
-3. **3-way merge editor** — 3 패널 + ✨ AI 추천 (281138b + f6d539b)
-4. **Bisect + Reflog** — ⌘P 호출 (0c48f45)
-5. **Git LFS 패널** — 사용자 회사 6/6 사용 (05ac6cc)
-6. **AI 코드 리뷰** — PR detail 의 ✨ AI 리뷰 (395bedf)
-7. **PR 생성 모달 + AI body** — 매번 PR 만들 때 ✨ AI 한 번 (70f1360)
-8. **UX polish 4종** — Toast (9c7e872+f551b47) / 단축키 (7cb73f3+57e582f) /
-   Pin+빠른전환 ⌘⇧P (81cb12a) / 도움말 ?
+### A: Line-level stage (Sprint H 후속, ★ 본 세션 다음 작업)
+
+Sprint H 의 hunk 단위 위에 line 단위 stage 추가. CodeMirror selection 또는
+checkbox 선택 → 선택 라인만 추출 → minimal patch 재조립 → `git apply --cached`.
+patch math 까다로움 (선택 외 `-` → context 변환, `+` → 무시).
+
+### B: dogfood 결과 보고
+
+위 30+ 시나리오 사용 → 발견 사항 보고 → 패치 + 다음 sprint.
+
+### C: v0.3 신규 방향
+
+EV 코드 서명 / Sentry self-hosted / macOS-Linux 빌드 / OAuth / GitHub repo 생성 + CI
+matrix.
+
+---
+
+## 이번 세션 Sprint A~M 인벤토리 (33 commits, P0 4 + P1 10 + P2 8 + v1.x 11)
+
+### Sprint A — P0 (4 commits)
+
+| # | hash | 영역 |
+| - | --- | --- |
+| A1 | `8aaf1cc` | Hide / Solo branches (graph + branch panel) |
+| A2 | `d6e1ac7` | Vim navigation J/K/H/L + S/U single-file stage |
+| A3 | `eda980c` | 커밋 그래프 컬럼 토글 / 재정렬 (right-click 헤더) |
+| A4 | `b3db974` | Launchpad Pin / Snooze / Saved Views |
+
+### Sprint B — P1 (10 commits)
+
+| # | hash | 영역 |
+| - | --- | --- |
+| B1 | `8f575da` | Diff 3-mode 토글 (compact / default / context) |
+| B2 | `42c92d2` | Status bar + Conflict Prediction (target merge-tree) |
+| B3 | `f9a4d2b` | Commit Composer AI — multi-commit 재작성 제안 |
+| B4 | `d0d1030` | Repo tab alias + per-profile 영속성 |
+| B5 | `bc99cd4` | 단축키 13 추가 (Zoom / Sidebar / Detail / ⌘D / ⌘⇧M / ⌘⇧Enter / ⌘⇧S/U) |
+| B6 | `0ce4489` | Command Palette 카테고리 + 30+ 명령 |
+| B7 | `396f821` | AI 진입점 3개 — Explain commit / branch / stash msg |
+| B8 | `3ae45cd` | Drag-drop Branch→Branch + Commit→Branch |
+| B9 | `a1aff9a` | Sidebar org 그룹핑 + Workspace color |
+| B10 | `457c3dc` | Preferences 카테고리 정돈 + per-profile 탭 영속 |
+
+### Sprint C — P2 (8 commits)
+
+| # | hash | 영역 |
+| - | --- | --- |
+| C1 | `f093e74` | Worktree Lock / Unlock |
+| C2 | `1481c1a` | LFS pre-push size estimation |
+| C3 | `bf95ad7` | Section header 더블클릭 maximize (focus mode) |
+| C4 | `1e2fc7e` | Custom theme JSON export / import |
+| C5 | `dc2f665` | Lane drag-resize (CommitGraph) |
+| C6 | `36eb617` | 외부 mergetool launch (git mergetool) |
+| C7 | `3f19f19` | Deep linking `git-fried://` (launchpad/repo/settings/command) |
+| C8 | `6e5debd` | OS 데스크탑 알림 (tauri-plugin-notification) |
+
+### Sprint D — v1.x 초기 (3 commits)
+
+| # | hash | 영역 |
+| - | --- | --- |
+| D1 | `3ef7b26` | Settings 공용 store + Hide Launchpad / Date locale |
+| D2-D6 | `1d1ab1c` | Auto-Fetch 폴링 + Conflict toggle + Submodule auto-update + Notification + Deep-link alias 19 |
+| D7-D9 | `f404619` | AI 응답 notification 7곳 + Date locale 마이그레이션 4곳 |
+
+### Sprint E — v1.x 중반 (3 commits)
+
+| # | hash | 영역 |
+| - | --- | --- |
+| E1 | `beae4d0` | Date locale 나머지 4곳 마이그레이션 |
+| E2 | `dcfba19` | avatarStyle 실제 적용 — UserAvatar (initial / Gravatar md5) |
+| E3 | `aef45ec` | Diff Split 모드 (CodeMirror @codemirror/merge MergeView, 첫 파일) |
+
+### Sprint F — v1.x 후반 (5 commits)
+
+| # | hash | 영역 |
+| - | --- | --- |
+| F1 | `85280a7` | CommandPalette 사용자 설정 토글 9개 |
+| F2 | `47394af` | StatusBar ⚠ Conflict 옆 ✨ AI 미리해결 |
+| F3 | `356ee57` | Diff Split 다중 파일 + file picker (parseDiffAllFiles) |
+| F4 | `261a3fe` | ⌥O OS 파일 매니저 (cross-platform spawn) |
+| F5 | `e97be39` | F11 / ⌃⌘F 전체화면 토글 |
+
+### Sprint G~M — 큰 작업 + 미시 디테일 (7 commits)
+
+| # | hash | 영역 |
+| - | --- | --- |
+| G | `6939441` | **Multi-repo Tab 시스템** — RepoTabBar + ⌃Tab / ⌃⇧Tab / ⌘⇧W + drag-drop 재정렬 + localStorage |
+| H | `a0dd950` | **Hunk-level stage / unstage** — HunkStageModal + parseDiffWithHunks + buildHunkPatch (line-level v2) |
+| I | `7ebb257` | **Sidebar 레포 필터 ⌘⌥F** — 이름 / 별칭 / forge owner-repo / 경로 매칭 |
+| J | `deaec39` | **"// WIP" 노트** — 그래프 상단 banner + stash push prefill + clear-on-push |
+| K | `bb5bd8f` | **Branch ref hover → 🙈 Hide** — 그래프 ref pill 옆 inline hover 버튼 |
+| L | `b8ebeee` | **섹션 헤더 우클릭 collapse** — StatusPanel 4섹션 + StashPanel new form |
+| M | `313d2de` | **Drag-drop file → terminal** — quotePath (pwsh + bash 안전) + ptyWrite |
 
 ---
 
 ## 진행 현황 (vs `docs/plan/05` 로드맵)
 
-### ✅ 완료 (v0.0 → v1.0 핵심 기능 전부)
+### ✅ 완료
 
-| 단계 | 계획 | 산출물 |
-| --- | --- | --- |
-| **v0.0** | 5주 | Tauri+Vue+Rust 골격 + 한글 안전 spawn + 첫 화면 |
-| **v0.1 S1~S5** | 5개월 | status/stage/commit/sync/branch/diff/stash/graph/multi-repo/submodule/Gitea+GitHub PR |
-| **v0.2** | 3개월 | AI CLI subprocess / Worktree / Cherry-pick / Palette / File history+Blame / 3-way merge editor |
-| **v0.3** | 3개월 | Profiles / Issues / Releases / Bot 그룹핑 / Sync-template / Commit 검색 |
-| **v1.0 (대부분)** | 6개월 | Launchpad / PR 리뷰 / Pre-commit 패널 / Bisect / Reflog / LFS / AI merge resolve / AI 코드 리뷰 |
+| 단계 | 산출물 |
+| --- | --- |
+| **v0.0** | Tauri+Vue+Rust 골격 + 한글 안전 spawn + 첫 화면 |
+| **v0.1 S1~S5** | status / stage / commit / sync / branch / diff / stash / graph / multi-repo / submodule / Gitea+GitHub PR |
+| **v0.2** | AI CLI subprocess / Worktree / Cherry-pick / Palette / File history+Blame / 3-way merge editor |
+| **v0.3** | Profiles / Issues / Releases / Bot 그룹핑 / Sync-template / Commit 검색 |
+| **v1.0 (대부분)** | Launchpad / PR 리뷰 / Pre-commit 패널 / Bisect / Reflog / LFS / AI merge resolve / AI 코드 리뷰 |
+| **v0.2-s4** | Interactive rebase 옵션 A (drag-drop drop/reword/squash/fixup) + 통합 터미널 옵션 A (xterm.js + pwsh) |
+| **v0.2-s5/A~M** | GitKraken 12 catalog 흡수 21/21 — 위 인벤토리 |
 
-### ⏳ 미완 (다음 세션 후보)
+### ⏳ 미완
 
-- Interactive rebase (drag-drop reorder/squash/fixup) — 사용자 안 씀, 큰 작업
-- 통합 터미널 (xterm.js — OS 위임 우선이라 후순위)
-- EV 코드 서명 (배포 시점에)
+- **Line-level stage** (Sprint H 후속 v2) — 다음 작업
+- EV 코드 서명 (배포 시점)
 - Sentry self-hosted (텔레메트리)
-- v1.x 별도: macOS / Linux / OAuth / 수익 모델
+- macOS / Linux / OAuth / 수익 모델 (v1.x 별도)
 
 ---
 
-## 이번 세션 신규 기능 dogfood 가이드 (15개)
+## GitKraken 12 흡수 catalog 진척
 
-### 헤더 & 글로벌
+`docs/plan/11-gitkraken-benchmark.md` 의 P0/P1/P2 + v1.x 미시 디테일 모두 흡수.
 
-| # | 기능 | 위치 | 시나리오 |
-| - | --- | --- | --- |
-| 1 | **Profiles 토글** ⭐ | 헤더 좌측 👤▾ | 설정에서 추가 → 토글 → 글로벌 git config 자동 변경 |
-| 2 | **Launchpad** ⭐⭐ | 헤더 'Launchpad' | 워크스페이스 모든 레포 PR 통합 보드 (사람/봇 분리) |
-| 3 | **Command Palette** | ⌘P | 9개 명령 (홈/설정/sync template/bisect/reflog/...) |
-
-### 우측 탭 패널 (7개)
-
-| # | 탭 | 기능 |
-| - | -- | --- |
-| 4 | 변경 | Status + 📜 file history + 해결 (3-way merge) |
-| 5 | 브랜치 | list / 더블클릭 switch / 새 / 삭제 |
-| 6 | Stash | push / apply / pop / drop / show diff |
-| 7 | Sub | submodule init/update/sync |
-| 8 | **LFS** ⭐ | track / untrack / fetch / pull / prune (사용자 회사 6/6) |
-| 9 | **PR** ⭐⭐ | sub-tab (PR / Issue / Release) + 봇 그룹핑 |
-| 10 | WT | worktree manager (AI agent 자동 인식) |
-
-### 모달 (Command Palette / Tab 에서 trigger)
-
-| # | 기능 | 트리거 |
-| - | --- | --- |
-| 11 | **PR 상세 + 리뷰** ⭐⭐ | PR 탭 클릭 → 모달 (Approve / Request changes / Comment / 머지 / 닫기) + ✨ AI 리뷰 |
-| 12 | **3-way merge editor** ⭐ | 변경 탭 Conflicted 행 "해결" → 3 패널 (ours/result/theirs) + ✨ AI 추천 |
-| 13 | **File history + Blame** | 변경 탭 Modified 행 📜 |
-| 14 | **Sync-template** ⭐⭐ | ⌘P "sync" — N개 레포 동시 cherry-pick |
-| 15 | **Bisect / Reflog** | ⌘P "bisect" / "reflog" |
-
-### 기타
-
-| # | 기능 | 위치 |
-| - | --- | --- |
-| 16 | **AI commit message** | Commit input ✨ AI |
-| 17 | **AI PR body** (코드 내장, UI 추가는 v1.x) | PR 생성 화면 (TBD) |
-| 18 | **Pre-commit hook 결과 패널** | commit 실패 시 inline (no-verify 재시도 가이드) |
-| 19 | **Commit graph 검색** | 그래프 헤더 🔍 또는 ⌘F |
-| 20 | **한국어 에러 가이드** | pull/push 실패 시 7가지 패턴 자동 진단 |
+| 카테고리 | 항목 수 | 흡수 |
+| --- | --- | --- |
+| P0 (Sprint A) | 4 | ✅ 4/4 |
+| P1 (Sprint B) | 10 | ✅ 10/10 |
+| P2 (Sprint C) | 8 | ✅ 8/8 |
+| v1.x 후속 (Sprint D~M) | 21 | ✅ 21/21 |
+| 명시적 거부 (§30) | — | Cloud Workspace / 유료 lock / GitLens / gitkraken.dev — 거부 유지 |
 
 ---
 
@@ -122,97 +162,75 @@ Rust 단위 테스트: 32+ (한글 round-trip / 회귀 차단 모두 ✅)
 
 | 검증 | 도구 | 결과 |
 | --- | --- | --- |
-| Rust 컴파일 | `cargo check` | ✅ 통과 |
-| Rust lint | `cargo clippy --all-targets -- -D warnings` | ✅ 0 에러 |
-| Rust 단위 테스트 | `cargo test` (PowerShell) | ✅ 32+/32+ |
+| Rust 컴파일 | `cargo check` (offline, 5.5s) | ✅ 통과 |
+| Rust 단위 테스트 | `cargo test --lib` | ✅ 73 pass / 0 fail |
 | Vue/TS 컴파일 | `bun run typecheck` | ✅ 0 에러 |
-| Vite dev | `bun run dev` | ✅ 1초 ready |
-
----
-
-## 이번 세션 commit 인벤토리 (25개)
-
-| # | hash | 영역 |
-| -- | --- | --- |
-| 1 | `6060194` | 종합 기획서 v1 |
-| 2 | `079c429` | v0.1 S1: status/stage/commit/sync/diff |
-| 3 | `c51a617` | v0.1 S2: branch/stash/reset/diff viewer |
-| 4 | `03531d2` | v0.1 S3: commit graph (pvigier) |
-| 5 | `f6b3bc7` | v0.1 S4: submodule + 일괄 fetch + 듀얼 |
-| 6 | `7904cd0` | v0.1 S5: Forge (Gitea+GitHub) + keyring |
-| 7 | `4f22bf2` | v0.2 stretch: AI / Worktree / Cherry-pick / Palette |
-| 8 | `fba7799` | docs: REVIEW + DOGFOOD |
-| 9 | `949be3f` | fix dogfood-1: 빌드 통과 + 28 테스트 |
-| 10 | `bd586f9` | fix dogfood-2: typecheck 0 |
-| 11 | `339da2a` | fix UX: 에러 표시 통합 + 한국어 가이드 |
-| 12 | `bf3f710` | v0.3: Profiles |
-| 13 | `f10e78c` | v0.2: File history + Blame |
-| 14 | `e8a65a2` | v0.3: Issues + Releases + Bot 그룹핑 |
-| 15 | `a255892` | v0.3: Sync-template |
-| 16 | `2f9c9a9` | v0.3: Commit graph 검색 |
-| 17 | `324cf67` | v1.0: Launchpad |
-| 18 | `6377599` | docs: REVIEW v0.3+v1.0 일부 |
-| 19 | `e2de2dd` | v1.0: PR 리뷰 |
-| 20 | `add5f75` | v1.0: Pre-commit 패널 |
-| 21 | `281138b` | v0.2: 3-way merge editor |
-| 22 | `f6d539b` | v1.0: AI merge resolve |
-| 23 | `0c48f45` | v1.0: Bisect + Reflog |
-| 24 | `05ac6cc` | v1.0: LFS 패널 |
-| 25 | `395bedf` | v1.0: AI 코드 리뷰 |
+| Vite dev | `bun run tauri:dev` | ✅ HMR 60s baseline |
 
 ---
 
 ## 사용자 dogfood 시 주의사항
 
+### 신규 진입점 (이번 세션 추가)
+
+| # | 기능 | 진입 |
+| - | --- | --- |
+| 1 | **다중 레포 탭** | 사이드바 클릭 = 새 탭 / RepoSwitcher / ⌘T / RepoTabBar + 버튼 |
+| 2 | **Hunk-level stage** | StatusPanel 의 ✂ 버튼 (staged + unstaged + untracked) |
+| 3 | **레포 필터** | ⌘⌥F (Sidebar 자동 보임) |
+| 4 | **WIP 노트** | 그래프 상단 banner — stash 시 prefill |
+| 5 | **Branch ref hide** | 그래프의 ref pill 위 hover → 🙈 |
+| 6 | **섹션 collapse** | StatusPanel/StashPanel 헤더 우클릭 |
+| 7 | **터미널 drag-drop** | 변경 파일 행 잡고 터미널 패널에 떨구기 |
+| 8 | **Diff Split (multi-file)** | CommitDiffModal Split 토글 → 상단 파일 picker |
+| 9 | **AI 충돌 미리해결** | StatusBar ⚠ 옆 ✨ AI 버튼 |
+| 10 | **OS 파일매니저** | ⌥O / Alt+O |
+| 11 | **Fullscreen** | F11 |
+| 12 | **CommandPalette 추가** | ⌘P 후 검색 — 9 토글 + 5 탭 명령 + 필터/fullscreen 등 |
+
 ### Forge 토큰 필요한 기능
-- PR / Issue / Release 패널, Launchpad — 설정 → Forge 계정에서 PAT 등록
+
+PR / Issue / Release 패널 / Launchpad — 설정 → Forge 계정에서 PAT 등록.
 
 ### 글로벌 git config 변경 (주의)
-- Profiles 활성화 → `--global` user.name/email/signingkey 덮어씌움
+
+Profiles 활성화 → `--global` user.name/email/signingkey 덮어씌움.
 
 ### AI 기능 외부 송출
-- ✨ AI 버튼 (commit msg / PR body / merge resolve / 코드 리뷰): staged diff 또는 PR diff 가 외부 LLM 송출
-- 회사 워크스페이스에서 confirm 강제
-- secret 마스킹 (PAT/AWS/주민번호) 사전 처리
+
+`✨` 버튼 (commit msg / PR body / merge resolve / 코드 리뷰 / commit 설명 / branch 설명 /
+stash 메시지 / Composer / 충돌 미리해결): staged diff 또는 PR diff 가 외부 LLM 송출 →
+회사 워크스페이스에서 confirm 강제.
 
 ### 위험 액션 confirm 게이트
-- Profiles 활성화 / Force push / Hard reset / Branch delete (unmerged) /
-  Sync-template 다중 레포 cherry-pick / Worktree 제거 / PR 머지 / PR 닫기 / LFS untrack
+
+Profiles 활성화 / Force push / Hard reset / Branch delete (unmerged) / Sync-template 다중
+레포 cherry-pick / Worktree 제거 / PR 머지·닫기 / LFS untrack / **Hunk apply / 모든 hunk
+일괄 apply** (신규).
 
 ---
 
 ## 글로벌 CLAUDE.md 준수
 
-✅ 모든 25 commit에 `Co-Authored-By: Claude` trailer 없음
-✅ 모든 commit에 `Generated with Claude Code` 푸터 없음
+✅ 모든 76 commit 에 `Co-Authored-By: Claude` trailer 없음
+✅ 모든 commit 에 `Generated with Claude Code` 푸터 없음
 ✅ commit 메시지 HEREDOC + `'EOF'` 한글 안전 전달
-✅ AI prompt 들도 trailer 금지 룰 명시 (commit_message / pr_body / code_review)
+✅ AI prompt 들도 trailer 금지 룰 명시
+✅ commit signing 우회 (`-c commit.gpgsign=false`) — 사용자 글로벌 gpgsign=true + secret
+   key 없음 환경 대응
 
 ---
 
-## 다음 세션 권장
+## 다음 작업 — Line-level stage (사용자 지정)
 
-### 옵션 A: dogfood 결과 보고 (★ 권장)
-사용자가 위 20+ 시나리오 사용 → 발견 사항 일괄 보고 → 패치 + 다음 sprint.
+Sprint H 의 hunk 단위 stage 위에 line 단위 추가:
 
-### 옵션 B: 미완 기능 마저
-- Interactive rebase (drag-drop)
-- 통합 터미널
-- AI PR body UI 통합 (현재 IPC 만 있음, PR 생성 화면 미구현)
-- macOS / Linux 빌드 (v1.x)
+1. **HunkStageModal 확장** — 각 hunk body line 옆 checkbox
+2. **buildLinePatch (신규)** — 선택 라인만 추출, 미선택 라인은:
+   - `-` (제거) 행 미선택 → context (` `) 로 유지
+   - `+` (추가) 행 미선택 → drop
+   - hunk header line/count 재계산
+3. **라인 selection UX** — shift-click range / Ctrl-click toggle / ✓ 모두 / 🚫 모두
+4. **테스트** — Rust + Vue 양쪽 patch 변환 round-trip
 
-### 옵션 C: GitHub repo 생성 + push
-```powershell
-gh repo create tgkim/git-fried --public --source=. --remote=origin --push
-```
-CI 첫 빌드 (Windows-only matrix) 결과 확인.
-
-### 옵션 D: 안정화 단계
-- Tauri auto-updater plugin 통합
-- Sentry self-hosted
-- OV 코드 서명 인증서 ($100/yr) 도입
-- e2e 테스트 추가
-
----
-
-원하는 방향 알려주시거나, 시간 될 때 위 시나리오 사용해보고 발견 사항 모아서 한 번에 주시면 됩니다.
+→ 진입 직후 본 문서는 v3 으로 갱신.

@@ -8,12 +8,16 @@ import {
   lfsListFiles,
   lfsPrune,
   lfsPull,
+  lfsPushSize,
   lfsStatus,
   lfsTrack,
   lfsUntrack,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
+import EmptyState from './EmptyState.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
 
 const toast = useToast()
 const props = defineProps<{ repoId: number | null }>()
@@ -26,7 +30,7 @@ const statusQuery = useQuery({
     return lfsStatus(props.repoId)
   },
   enabled: computed(() => props.repoId != null),
-  staleTime: 30_000,
+  staleTime: STALE_TIME.NORMAL,
 })
 
 const filesQuery = useQuery({
@@ -36,6 +40,25 @@ const filesQuery = useQuery({
     return lfsListFiles(props.repoId)
   },
   enabled: computed(() => props.repoId != null && statusQuery.data.value?.installed === true),
+})
+
+// Sprint C2 — pre-push size estimation
+const pushSizeQuery = useQuery({
+  queryKey: computed(() => ['lfs-push-size', props.repoId]),
+  queryFn: () => {
+    if (props.repoId == null) {
+      return Promise.resolve({
+        commitCount: 0,
+        fileCount: 0,
+        totalBytes: 0,
+        note: null,
+      })
+    }
+    return lfsPushSize(props.repoId)
+  },
+  enabled: computed(() => props.repoId != null && statusQuery.data.value?.installed === true),
+  staleTime: STALE_TIME.NORMAL,
+  refetchInterval: 60_000,
 })
 
 const newPattern = ref('')
@@ -193,6 +216,26 @@ function fmtSize(b: number | null): string {
       </div>
     </section>
 
+    <!-- Sprint C2 — pre-push size 인디케이터 -->
+    <section
+      v-if="pushSizeQuery.data.value && pushSizeQuery.data.value.commitCount > 0"
+      class="border-b border-border bg-muted/30 px-3 py-1.5 text-[11px]"
+    >
+      <span class="font-medium">Pre-push:</span>
+      {{ pushSizeQuery.data.value.commitCount }} commit
+      <span v-if="pushSizeQuery.data.value.fileCount > 0" class="text-amber-500">
+        · LFS {{ pushSizeQuery.data.value.fileCount }}개
+        ({{ fmtSize(pushSizeQuery.data.value.totalBytes) }})
+      </span>
+      <span v-else class="text-muted-foreground">· LFS 변경 없음</span>
+    </section>
+    <section
+      v-else-if="pushSizeQuery.data.value?.note"
+      class="border-b border-border bg-muted/20 px-3 py-1 text-[10px] text-muted-foreground"
+    >
+      {{ pushSizeQuery.data.value.note }}
+    </section>
+
     <!-- LFS 파일 -->
     <div class="flex-1 overflow-auto px-2 py-2 text-sm">
       <div class="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -215,11 +258,12 @@ function fmtSize(b: number | null): string {
             {{ fmtSize(f.size) }}
           </span>
         </li>
-        <li
-          v-if="filesQuery.data.value && filesQuery.data.value.length === 0"
-          class="px-2 py-3 text-center text-xs text-muted-foreground"
-        >
-          LFS 파일 없음
+        <!-- Sprint 22-18 — 첫 로딩 skeleton + empty state visual -->
+        <li v-if="filesQuery.isFetching.value && !filesQuery.data.value" class="px-1 pt-2">
+          <SkeletonBlock :count="3" height="sm" />
+        </li>
+        <li v-else-if="filesQuery.data.value && filesQuery.data.value.length === 0">
+          <EmptyState icon="📦" title="LFS 파일 없음" size="sm" />
         </li>
       </ul>
       <p class="mt-2 text-[10px] text-muted-foreground">

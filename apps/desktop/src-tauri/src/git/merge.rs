@@ -71,11 +71,7 @@ pub fn read_conflicted(path: &Path, file_path: &str) -> AppResult<ConflictedFile
 }
 
 /// 충돌 해결된 내용을 working tree 에 쓰고 stage 추가.
-pub async fn write_resolved(
-    path: &Path,
-    file_path: &str,
-    content: &str,
-) -> AppResult<()> {
+pub async fn write_resolved(path: &Path, file_path: &str, content: &str) -> AppResult<()> {
     let wt_path = path.join(file_path);
     if let Some(parent) = wt_path.parent() {
         std::fs::create_dir_all(parent).map_err(AppError::Io)?;
@@ -87,6 +83,30 @@ pub async fn write_resolved(
         .await?
         .into_ok()?;
     Ok(())
+}
+
+/// 외부 merge tool 실행 (Sprint C6 — `docs/plan/11 §9`).
+///
+/// `git mergetool` 호출. git config 의 `merge.tool` 사용 (Beyond Compare /
+/// P4Merge / Kaleidoscope / vimdiff 등). 사용자 사전 설정 필수.
+///
+/// `tool` 명시 시 `--tool=<name>` 사용. `file` 명시 시 단일 파일만.
+/// blocking 동작 — 도구가 종료될 때까지 대기.
+pub async fn launch_mergetool(
+    path: &Path,
+    tool: Option<&str>,
+    file: Option<&str>,
+) -> AppResult<crate::git::runner::GitOutput> {
+    let mut args: Vec<String> = vec!["mergetool".into(), "--no-prompt".into()];
+    if let Some(t) = tool.filter(|s| !s.trim().is_empty()) {
+        args.push(format!("--tool={t}"));
+    }
+    if let Some(f) = file.filter(|s| !s.trim().is_empty()) {
+        args.push("--".into());
+        args.push(f.into());
+    }
+    let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+    git_run(path, &refs, &GitRunOpts::default()).await
 }
 
 /// 충돌 해결을 포기하고 ours 또는 theirs 버전으로 덮어쓰기.
@@ -134,6 +154,12 @@ mod tests {
             .unwrap();
         std::process::Command::new("git")
             .args(["config", "user.email", "x@x"])
+            .current_dir(&path)
+            .status()
+            .unwrap();
+        // 글로벌 commit.gpgsign=true 환경에서 테스트 안전성 확보.
+        std::process::Command::new("git")
+            .args(["config", "commit.gpgsign", "false"])
             .current_dir(&path)
             .status()
             .unwrap();

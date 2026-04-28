@@ -1,17 +1,72 @@
 <script setup lang="ts">
 // Forge issue 목록 (Gitea + GitHub).
 // v0.3 단계: read-only. 코멘트/생성은 v1.0+.
+// Sprint 22 V-11: row click → IssueDetailModal (외부 link 만 → 자체 modal).
+// Sprint 22-10 CM-13: 우클릭 메뉴 (Open in browser / Copy URL / Copy number).
+import { ref, useTemplateRef } from 'vue'
 import { useIssues } from '@/composables/useIssuesReleases'
 import { describeError } from '@/api/errors'
+import { formatDateLocalized } from '@/composables/useUserSettings'
+import { useToast } from '@/composables/useToast'
+import UserAvatar from './UserAvatar.vue'
+import IssueDetailModal from './IssueDetailModal.vue'
+import EmptyState from './EmptyState.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
+import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import type { ForgeIssue } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: issues, isFetching, error } = useIssues(() => props.repoId)
 
+const selected = ref<ForgeIssue | null>(null)
+const toast = useToast()
+
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleDateString('ko-KR', {
+  return formatDateLocalized(unix, {
     month: '2-digit',
     day: '2-digit',
   })
+}
+
+// === Sprint 22-10 CM-13 — 우클릭 ContextMenu ===
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+
+async function copyText(text: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success('복사', label)
+  } catch (e) {
+    toast.error('복사 실패', describeError(e))
+  }
+}
+
+function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const items: ContextMenuItem[] = [
+    {
+      label: 'Open detail',
+      icon: '📋',
+      action: () => (selected.value = i),
+    },
+    {
+      label: 'Open in browser',
+      icon: '🔗',
+      action: () => window.open(i.htmlUrl, '_blank', 'noopener'),
+    },
+    { divider: true },
+    {
+      label: 'Copy URL',
+      icon: '📋',
+      action: () => void copyText(i.htmlUrl, i.htmlUrl),
+    },
+    {
+      label: 'Copy issue number',
+      icon: '#',
+      action: () => void copyText(`#${i.number}`, `#${i.number}`),
+    },
+  ]
+  ctxMenu.value?.openAt(ev, items)
 }
 </script>
 
@@ -29,42 +84,55 @@ function fmtDate(unix: number): string {
     </div>
 
     <div class="flex-1 overflow-auto px-2 py-1 text-sm">
-      <div v-if="isFetching" class="px-2 py-3 text-xs text-muted-foreground">불러오는 중...</div>
+      <!-- Sprint 22-18 — 첫 로딩 skeleton (LoadingSpinner 대체) -->
+      <SkeletonBlock v-if="isFetching && !issues" :count="5" height="md" class="mt-2" />
 
       <ul>
         <li
           v-for="i in issues"
           :key="i.number"
-          class="rounded px-2 py-1.5 hover:bg-accent/40"
+          class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
+          @click="selected = i"
+          @contextmenu="onIssueContextMenu($event, i)"
         >
-          <a :href="i.htmlUrl" target="_blank" rel="noopener" class="block">
-            <div class="flex items-center justify-between">
-              <span class="font-mono text-xs text-muted-foreground">#{{ i.number }}</span>
-              <span class="text-[10px] text-muted-foreground">{{ fmtDate(i.updatedAt) }}</span>
-            </div>
-            <div class="truncate text-sm">{{ i.title }}</div>
-            <div class="text-[11px] text-muted-foreground">
-              {{ i.author.username }} · 💬 {{ i.comments }}
-            </div>
-            <div v-if="i.labels.length" class="mt-0.5 flex flex-wrap gap-1">
-              <span
-                v-for="l in i.labels"
-                :key="l.name"
-                class="rounded px-1 py-0.5 text-[10px]"
-                :style="{ backgroundColor: l.color + '33', color: l.color }"
-              >
-                {{ l.name }}
-              </span>
-            </div>
-          </a>
-        </li>
-        <li
-          v-if="issues && issues.length === 0 && !isFetching"
-          class="px-2 py-3 text-center text-xs text-muted-foreground"
-        >
-          Open issue 없음
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-xs text-muted-foreground">#{{ i.number }}</span>
+            <span class="text-[10px] text-muted-foreground">{{ fmtDate(i.updatedAt) }}</span>
+          </div>
+          <div class="truncate text-sm">{{ i.title }}</div>
+          <div class="text-[11px] text-muted-foreground">
+            <UserAvatar
+              :username="i.author.username"
+              :avatar-url="i.author.avatarUrl"
+              size-class="w-3.5 h-3.5"
+            />
+            {{ i.author.username }} · 💬 {{ i.comments }}
+          </div>
+          <div v-if="i.labels.length" class="mt-0.5 flex flex-wrap gap-1">
+            <span
+              v-for="l in i.labels"
+              :key="l.name"
+              class="rounded px-1 py-0.5 text-[10px]"
+              :style="{ backgroundColor: l.color + '33', color: l.color }"
+            >
+              {{ l.name }}
+            </span>
+          </div>
         </li>
       </ul>
+      <EmptyState
+        v-if="issues && issues.length === 0 && !isFetching"
+        icon="📭"
+        title="Open issue 없음"
+        size="sm"
+      />
     </div>
+
+    <IssueDetailModal
+      :issue="selected"
+      :open="selected != null"
+      @close="selected = null"
+    />
+    <ContextMenu ref="ctxMenu" />
   </div>
 </template>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // 파일 단위 history + blame 모달.
 // 좌: 커밋 리스트 (시간 역순), 우: 선택 커밋의 blame 또는 파일 내용.
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useFileBlame, useFileHistory } from '@/composables/useFileHistory'
 import { describeError } from '@/api/errors'
+import { formatDateLocalized } from '@/composables/useUserSettings'
+import BaseModal from './BaseModal.vue'
 import type { CommitSummary } from '@/types/git'
 
 const props = defineProps<{
@@ -12,6 +14,8 @@ const props = defineProps<{
   open: boolean
 }>()
 const emit = defineEmits<{ close: [] }>()
+
+const isOpen = computed(() => props.open && props.path != null)
 
 const tab = ref<'history' | 'blame'>('history')
 const selected = ref<CommitSummary | null>(null)
@@ -26,7 +30,7 @@ const blame = useFileBlame(
 )
 
 function fmtDate(unix: number): string {
-  return new Date(unix * 1000).toLocaleString('ko-KR', {
+  return formatDateLocalized(unix, {
     year: '2-digit',
     month: '2-digit',
     day: '2-digit',
@@ -37,40 +41,32 @@ function fmtDate(unix: number): string {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open && path"
-      class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-6"
-      @click.self="emit('close')"
-    >
-      <div class="flex h-full w-full max-w-6xl flex-col rounded-lg border border-border bg-card shadow-xl">
-        <header class="flex items-center justify-between border-b border-border px-4 py-2">
-          <div class="flex items-center gap-3">
-            <h2 class="font-mono text-sm">
-              <span class="text-muted-foreground">파일:</span>
-              <span class="ml-1 font-semibold">{{ path }}</span>
-            </h2>
-            <nav class="flex gap-1 text-xs">
-              <button
-                v-for="t in ['history', 'blame'] as const"
-                :key="t"
-                type="button"
-                class="rounded-md px-2 py-0.5"
-                :class="tab === t ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/40'"
-                @click="tab = t"
-              >
-                {{ t === 'history' ? 'History' : 'Blame' }}
-              </button>
-            </nav>
-          </div>
+  <BaseModal
+    :open="isOpen"
+    max-width="6xl"
+    panel-class="h-[90vh]"
+    @close="emit('close')"
+  >
+    <template #header>
+      <div class="flex items-center gap-3">
+        <h2 class="font-mono text-sm">
+          <span class="text-muted-foreground">파일:</span>
+          <span class="ml-1 font-semibold">{{ path }}</span>
+        </h2>
+        <nav class="flex gap-1 text-xs">
           <button
+            v-for="t in ['history', 'blame'] as const"
+            :key="t"
             type="button"
-            class="text-muted-foreground hover:text-foreground"
-            @click="emit('close')"
+            class="rounded-md px-2 py-0.5"
+            :class="tab === t ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/40'"
+            @click="tab = t"
           >
-            ✕
+            {{ t === 'history' ? 'History' : 'Blame' }}
           </button>
-        </header>
+        </nav>
+      </div>
+    </template>
 
         <!-- History 탭 -->
         <div v-if="tab === 'history'" class="flex flex-1 overflow-hidden">
@@ -150,9 +146,7 @@ function fmtDate(unix: number): string {
                 </td>
               </tr>
             </tbody>
-          </table>
-        </div>
-      </div>
+    </table>
     </div>
-  </Teleport>
+  </BaseModal>
 </template>

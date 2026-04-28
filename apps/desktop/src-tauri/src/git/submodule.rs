@@ -96,7 +96,9 @@ pub async fn update_submodules(repo: &Path, remote: bool) -> AppResult<()> {
     if remote {
         args.push("--remote");
     }
-    git_run(repo, &args, &GitRunOpts::default()).await?.into_ok()?;
+    git_run(repo, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 

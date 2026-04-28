@@ -46,7 +46,18 @@ function kindIcon(kind: ToastKind): string {
           <div class="flex items-start gap-2 px-3 py-2">
             <span class="mt-0.5 shrink-0 font-bold">{{ kindIcon(t.kind) }}</span>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold">{{ t.title }}</div>
+              <div class="flex items-center gap-1.5 text-sm font-semibold">
+                <span class="truncate">{{ t.title }}</span>
+                <!-- Sprint 22-12 Q-6 — dedup count badge ("같은 메시지 +N") -->
+                <span
+                  v-if="t.count > 1"
+                  class="shrink-0 rounded-full bg-current/20 px-1.5 text-[10px] font-bold tabular-nums"
+                  :title="`같은 메시지 ${t.count}회 누적 (1초 내 dedup)`"
+                  :aria-label="`${t.count}회 누적`"
+                >
+                  +{{ t.count - 1 }}
+                </span>
+              </div>
               <pre
                 v-if="t.message"
                 class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] opacity-90"
@@ -55,6 +66,7 @@ function kindIcon(kind: ToastKind): string {
             <button
               type="button"
               class="shrink-0 text-xs opacity-60 hover:opacity-100"
+              aria-label="알림 닫기"
               @click="dismiss(t.id)"
             >
               ✕
@@ -67,9 +79,21 @@ function kindIcon(kind: ToastKind): string {
 </template>
 
 <style scoped>
-.toast-enter-active,
+/* Sprint 22-12 Q-5 — Toast slide-in transition (CSS var 통합, design 04 §6).
+ * 200ms enter / 100ms exit + slide right + opacity.
+ */
+.toast-enter-active {
+  transition:
+    opacity var(--transition-slow) var(--ease-out),
+    transform var(--transition-slow) var(--ease-out);
+}
 .toast-leave-active {
-  transition: all 0.2s ease;
+  transition:
+    opacity 100ms var(--ease-in),
+    transform 100ms var(--ease-in);
+  position: absolute;
+  right: 0;
+  width: 100%;
 }
 .toast-enter-from {
   opacity: 0;
@@ -78,10 +102,5 @@ function kindIcon(kind: ToastKind): string {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(20px);
-}
-.toast-leave-active {
-  position: absolute;
-  right: 0;
-  width: 100%;
 }
 </style>

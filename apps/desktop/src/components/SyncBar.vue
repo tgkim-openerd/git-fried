@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // Push / Pull / Fetch + ahead/behind 표시.
 import { useMutation } from '@tanstack/vue-query'
-import { fetchAll, pull, push } from '@/api/git'
+import { fetchAll, pull, push, updateSubmodules } from '@/api/git'
+import { useGeneralSettings } from '@/composables/useUserSettings'
 import { describeError, humanizeGitError } from '@/api/errors'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useToast } from '@/composables/useToast'
@@ -34,12 +35,22 @@ const fetchMut = useMutation({
   },
   onError: (e) => toast.error('Fetch 호출 실패', describeError(e)),
 })
+const general = useGeneralSettings()
 const pullMut = useMutation({
   mutationFn: (id: number) => pull({ repoId: id }),
-  onSuccess: (res) => {
+  onSuccess: async (res) => {
     invalidate(props.repoId)
     if (res.success) {
       toast.success('Pull 완료')
+      // Sprint D5 — autoUpdateSubmodules 옵션 시 후속 호출.
+      if (general.value.autoUpdateSubmodules && props.repoId != null) {
+        try {
+          await updateSubmodules(props.repoId, false)
+          toast.success('Submodule update 완료', '')
+        } catch (e) {
+          toast.error('Submodule update 실패', describeError(e))
+        }
+      }
     } else {
       toast.error(
         `Pull 실패 (exit ${res.exitCode})`,

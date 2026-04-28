@@ -17,6 +17,7 @@ export type ShortcutAction =
   | 'newPr'
   | 'commit'
   | 'help'
+  | 'terminal'
   | 'tab1'
   | 'tab2'
   | 'tab3'
@@ -24,6 +25,37 @@ export type ShortcutAction =
   | 'tab5'
   | 'tab6'
   | 'tab7'
+  // Vim nav (Sprint A2 — `docs/plan/11 §27`).
+  // input focus 가 아닐 때만 발화 (modifier 없이 단일 키).
+  | 'vimDown' // J — CommitGraph 다음 행
+  | 'vimUp' // K — 이전 행
+  | 'vimRight' // L — Enter (선택 commit 확장)
+  | 'vimLeft' // H — Escape (선택 해제)
+  | 'stageCurrent' // S — StatusPanel 의 selected 파일 stage
+  | 'unstageCurrent' // U — selected 파일 unstage
+  // Sprint B5 — 단축키 12+ (`docs/plan/11 §27`).
+  | 'stageAllExplicit' // ⌘⇧S
+  | 'unstageAll' // ⌘⇧U
+  | 'stageAndCommit' // ⌘⇧Enter
+  | 'focusMessage' // ⌘⇧M
+  | 'showDiff' // ⌘D — 선택 commit diff (modal)
+  | 'toggleInlineDiff' // ⌘⇧D — inline diff panel 토글 (Sprint c25-4.5)
+  | 'prevHunk' // Alt+↑ — diff 이전 hunk (inline + modal, Sprint c26-3)
+  | 'nextHunk' // Alt+↓ — diff 다음 hunk
+  | 'closeModal' // ⌘W — 활성 모달 닫기
+  | 'zoomIn' // ⌘=
+  | 'zoomOut' // ⌘-
+  | 'zoomReset' // ⌘0
+  | 'toggleSidebar' // ⌘J
+  | 'toggleDetail' // ⌘K
+  | 'fileHistorySearch' // ⌘⇧H
+  | 'newTab' // ⌘T — Repo Switcher (⌘⇧P alias)
+  | 'openInExplorer' // ⌥O — OS 파일 매니저 (Sprint F4)
+  | 'toggleFullscreen' // F11 — 전체화면 토글 (Sprint F5)
+  | 'nextTab' // ⌃Tab — 다음 레포 탭 (Sprint G)
+  | 'prevTab' // ⌃⇧Tab — 이전 레포 탭 (Sprint G)
+  | 'closeTab' // ⌘⇧W — 활성 레포 탭 닫기 (Sprint G)
+  | 'filterRepos' // ⌘⌥F — Sidebar 레포 필터 focus (Sprint I)
 
 type Handler = () => void
 
@@ -74,6 +106,147 @@ function installGlobal() {
       return
     }
 
+    // Vim nav (modifier 없이 단일 키, input focus 시 비활성).
+    // J/K/H/L = nav, S/U = stage/unstage current.
+    if (
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !e.shiftKey &&
+      !isInputFocused()
+    ) {
+      let vimAction: ShortcutAction | null = null
+      switch (e.key) {
+        case 'j':
+          vimAction = 'vimDown'
+          break
+        case 'k':
+          vimAction = 'vimUp'
+          break
+        case 'l':
+          vimAction = 'vimRight'
+          break
+        case 'h':
+          vimAction = 'vimLeft'
+          break
+        case 's':
+          vimAction = 'stageCurrent'
+          break
+        case 'u':
+          vimAction = 'unstageCurrent'
+          break
+      }
+      if (vimAction) {
+        const set = bus.handlers.get(vimAction)
+        if (set && set.size > 0) {
+          e.preventDefault()
+          for (const fn of set) {
+            try {
+              fn()
+            } catch {
+              /* ignore */
+            }
+          }
+          return
+        }
+      }
+    }
+
+    // Alt+↑ / Alt+↓ — diff hunk navigation (Sprint c26-3). modifier=alt 단독.
+    // ARCH-001 fix — input/textarea 안에서 발화 시 텍스트 편집 (커서 이동) 충돌 방지.
+    if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && !isInputFocused()) {
+      let hunkAction: ShortcutAction | null = null
+      if (e.key === 'ArrowUp') hunkAction = 'prevHunk'
+      else if (e.key === 'ArrowDown') hunkAction = 'nextHunk'
+      if (hunkAction) {
+        const set = bus.handlers.get(hunkAction)
+        if (set && set.size > 0) {
+          e.preventDefault()
+          for (const fn of set) {
+            try {
+              fn()
+            } catch {
+              /* ignore */
+            }
+          }
+          return
+        }
+      }
+    }
+
+    // Alt+O — OS 파일 매니저 (Sprint F4). modifier=alt 단독.
+    if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'o') {
+      const set = bus.handlers.get('openInExplorer')
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+        return
+      }
+    }
+
+    // ⌃Tab / ⌃⇧Tab — 레포 탭 전환 (Sprint G). browser-default Tab 키 충돌 방지.
+    if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Tab') {
+      const action: ShortcutAction = e.shiftKey ? 'prevTab' : 'nextTab'
+      const set = bus.handlers.get(action)
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+        return
+      }
+    }
+
+    // ⌘⌥F / Ctrl+Alt+F — Sidebar 레포 필터 focus (Sprint I).
+    if (
+      e.altKey &&
+      (e.metaKey || e.ctrlKey) &&
+      !e.shiftKey &&
+      e.key.toLowerCase() === 'f'
+    ) {
+      const set = bus.handlers.get('filterRepos')
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+        return
+      }
+    }
+
+    // F11 (또는 ⌃⌘F) — Fullscreen 토글 (Sprint F5).
+    if (
+      (e.key === 'F11' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) ||
+      (e.metaKey && e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f')
+    ) {
+      const set = bus.handlers.get('toggleFullscreen')
+      if (set && set.size > 0) {
+        e.preventDefault()
+        for (const fn of set) {
+          try {
+            fn()
+          } catch {
+            /* ignore */
+          }
+        }
+        return
+      }
+    }
+
     const meta = e.metaKey || e.ctrlKey
     if (!meta) return
     const k = e.key.toLowerCase()
@@ -84,7 +257,9 @@ function installGlobal() {
     else if (k === 'k' && e.shiftKey) action = 'push'
     else if (k === 'b' && !e.shiftKey) action = 'newBranch'
     else if (k === 'n' && !e.shiftKey) action = 'newPr'
+    else if (k === 'enter' && e.shiftKey) action = 'stageAndCommit'
     else if (k === 'enter') action = 'commit'
+    else if (e.key === '`' || e.code === 'Backquote') action = 'terminal'
     else if (e.key === '1') action = 'tab1'
     else if (e.key === '2') action = 'tab2'
     else if (e.key === '3') action = 'tab3'
@@ -92,6 +267,21 @@ function installGlobal() {
     else if (e.key === '5') action = 'tab5'
     else if (e.key === '6') action = 'tab6'
     else if (e.key === '7') action = 'tab7'
+    // Sprint B5 — 단축키 12+
+    else if (k === 's' && e.shiftKey) action = 'stageAllExplicit'
+    else if (k === 'u' && e.shiftKey) action = 'unstageAll'
+    else if (k === 'm' && e.shiftKey) action = 'focusMessage'
+    else if (k === 'h' && e.shiftKey) action = 'fileHistorySearch'
+    else if (k === 'd' && !e.shiftKey) action = 'showDiff'
+    else if (k === 'd' && e.shiftKey) action = 'toggleInlineDiff'
+    else if (k === 'w' && !e.shiftKey) action = 'closeModal'
+    else if (k === 'w' && e.shiftKey) action = 'closeTab'
+    else if (k === 'j' && !e.shiftKey) action = 'toggleSidebar'
+    else if (k === 'k' && !e.shiftKey) action = 'toggleDetail'
+    else if (k === 't' && !e.shiftKey) action = 'newTab'
+    else if ((e.key === '=' || e.key === '+') && !e.altKey) action = 'zoomIn'
+    else if (e.key === '-' && !e.altKey) action = 'zoomOut'
+    else if (e.key === '0' && !e.altKey) action = 'zoomReset'
 
     if (!action) return
     const set = bus.handlers.get(action)
@@ -121,4 +311,21 @@ export function useShortcut(action: ShortcutAction, handler: Handler) {
     const set = bus.handlers.get(action)
     if (set) set.delete(handler)
   })
+}
+
+/**
+ * 등록된 모든 핸들러 즉시 호출 (Command Palette 가 사용).
+ * 키보드 이벤트 우회 — 등록된 핸들러가 0 개면 no-op.
+ */
+export function dispatchShortcut(action: ShortcutAction): boolean {
+  const set = bus.handlers.get(action)
+  if (!set || set.size === 0) return false
+  for (const fn of set) {
+    try {
+      fn()
+    } catch {
+      /* ignore */
+    }
+  }
+  return true
 }

@@ -74,6 +74,31 @@ export function humanizeGitError(rawMessage: string): string {
       '   - PAT 가 만료되지 않았는지 (설정 → Forge 계정)\n' +
       '   - SSH 키가 ssh-agent 에 추가됐는지\n' +
       '   - credential.helper 가 정상 동작하는지'
+  } else if (
+    // Sprint 22-6 F-I2: Forge HTTP 401 / 403 (PAT 만료 / 권한 부족)
+    m.includes('401 Unauthorized') ||
+    m.includes('HTTP 401') ||
+    m.includes('"status":401') ||
+    /\bstatus\s*[=:]\s*401\b/.test(m) ||
+    m.includes('Bad credentials') ||
+    m.includes('token expired') ||
+    m.includes('invalid token')
+  ) {
+    hint =
+      '⚠ Forge 인증 만료 — PAT (Personal Access Token) 를 재발급/갱신하세요.\n' +
+      '   - 설정 → Forge 계정 → 새 토큰 입력\n' +
+      '   - GitHub: Settings → Developer settings → Personal access tokens\n' +
+      '   - Gitea: 우상단 프로필 → Settings → Applications → Generate Token'
+  } else if (
+    m.includes('403 Forbidden') ||
+    m.includes('HTTP 403') ||
+    m.includes('"status":403') ||
+    /\bstatus\s*[=:]\s*403\b/.test(m)
+  ) {
+    hint =
+      '⚠ 권한 부족 (403) — 토큰의 scope 또는 레포 접근 권한 확인.\n' +
+      '   - GitHub PAT: `repo` scope 필요 (private 레포)\n' +
+      '   - Gitea PAT: `repo` + `write:issue` 등 필요 작업별 scope 추가'
   } else if (m.includes('CONFLICT')) {
     hint =
       '⚠ 머지 충돌 발생. 변경사항 패널에서 충돌 파일을 해결하고 stage + commit.'
