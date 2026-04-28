@@ -213,4 +213,22 @@ mod tests {
     // 가 silent fail 하는 케이스가 있어 (`run_sync` 가 status 미검증) 회귀 차단을
     // production 사용자 dogfood 로 위임. apply_stash_file 자체는 단순 한 줄 git
     // 호출 (`git checkout stash@{n} -- <path>`) 라 production 위험 낮음.
+
+    /// StashEntry serde — camelCase (createdAt) + 한글 message 안전.
+    #[test]
+    fn test_stash_entry_serde() {
+        let e = StashEntry {
+            index: 0,
+            sha: "abc1234".to_string(),
+            message: "WIP on feature/한글: 한글 ellipsis 좌측 잘림 실험".to_string(),
+            branch: Some("feature/한글".to_string()),
+            created_at: 1_700_000_000,
+        };
+        let json = serde_json::to_string(&e).unwrap();
+        assert!(json.contains("\"createdAt\":1700000000"));
+        assert!(!json.contains("created_at"));
+        // 한글 그대로 (escape 없이).
+        assert!(json.contains("한글 ellipsis 좌측 잘림"));
+        assert!(json.contains("feature/한글"));
+    }
 }

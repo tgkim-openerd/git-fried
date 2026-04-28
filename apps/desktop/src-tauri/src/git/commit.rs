@@ -102,3 +102,52 @@ pub async fn last_commit_message(repo: &Path) -> AppResult<String> {
         .into_ok()?;
     Ok(out.trim_end().to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 빈 메시지 / whitespace-only 는 validation error.
+    #[tokio::test]
+    async fn test_commit_empty_message_rejected() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let res = commit(tmp.path(), "", CommitOpts::default()).await;
+        assert!(res.is_err());
+        let res2 = commit(tmp.path(), "   \n  ", CommitOpts::default()).await;
+        assert!(res2.is_err());
+    }
+
+    /// CommitOpts serde — camelCase (allowEmpty / noVerify).
+    #[test]
+    fn test_commit_opts_serde_camel_case() {
+        let opts = CommitOpts {
+            amend: true,
+            allow_empty: false,
+            no_verify: true,
+            signoff: false,
+            author: Some("이름 <a@b.c>".to_string()),
+        };
+        let json = serde_json::to_string(&opts).unwrap();
+        assert!(json.contains("\"allowEmpty\""));
+        assert!(json.contains("\"noVerify\""));
+        assert!(!json.contains("allow_empty"));
+        // 한글 author 이름 그대로 (escape 없이).
+        assert!(json.contains("이름"));
+    }
+
+    /// CommitResult serde — camelCase (exitCode / newSha) + 한글 stderr.
+    #[test]
+    fn test_commit_result_serde_camel_case_korean() {
+        let r = CommitResult {
+            success: false,
+            stdout: "".to_string(),
+            stderr: "error: 커밋 메시지가 비었습니다.".to_string(),
+            exit_code: Some(1),
+            new_sha: None,
+        };
+        let json = serde_json::to_string(&r).unwrap();
+        assert!(json.contains("\"exitCode\":1"));
+        assert!(json.contains("\"newSha\":null"));
+        assert!(json.contains("커밋 메시지가 비었습니다"));
+    }
+}
