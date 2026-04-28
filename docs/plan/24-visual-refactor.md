@@ -258,16 +258,47 @@
     - **Q-6 Toast dedup** (Sprint B B-6 의도) — useToast Map<id, timer> + count badge "+N"
     - **E-9 v0.4 placeholder 패턴** (Sprint E E-9 / design §8-4 hard constraint) — `PlaceholderButton.vue` 신규 + Sidebar Integrations slot (3 placeholder) — design §8-3 / §8-6 Cloud-Free 시각화 부분 흡수
 
-### 11-3. Sprint A 외 적용 현황 요약 (2026-04-28)
+### 11-3. Sprint A 외 적용 현황 요약 (2026-04-28 22-9 ~ 22-20 진행 후)
 
-| Sprint | 영역 | 상태 |
+| Sprint | 영역 | 상태 (변경) |
 |--------|------|------|
-| A | Foundation 토큰 | ✅ 95% (transition spec 만 22-12 에 흡수) |
-| B | Primitives + reka-ui | ❌ 보류 (Q-6 Toast dedup 만 22-12 에 흡수) |
-| C | Hub Screens | ⚠️ 40% (V-3/V-2/V-5/F-P3 점진 적용. 5 frame / Onboarding / Tab overflow / Settings 2-level 미적용) |
-| D | Modal Audit | ✅ 90% (BaseModal 18/18 + ContextMenu 14/14 + Modal size tier. 미캡처 5 신규 visual refactor 만 잔여) |
-| E | UX Polish | ⚠️ 30% (E-9 placeholder + E-2 EmptyState 부분 + E-3 DnD 1/4. Skeleton/Long-running/motion 일부/a11y 22-25/Plugin slot 부분 잔여) |
-| F | 검증 (visual diff audit) | ❌ |
+| A | Foundation 토큰 | ✅ **97%** (Q-5 transition + reduced-motion 22-12 흡수 / Q-7 HSL 검증 22-16) |
+| B | Primitives + reka-ui | ⚠️ **15%** (보류 결정 유효, 다만 Q-6 Toast dedup 22-12 흡수 / S-4 motion 정책 22-12 흡수) |
+| C | Hub Screens | ⚠️ **70%** (V-3/V-2/V-5/F-P3 점진 + C-6 Tab overflow 22-14 + C-7 Settings 2-level 6 그룹 22-15 + C-5 Onboarding minimal 22-20. 5 frame visual / 5-step full Onboarding 잔여) |
+| D | Modal Audit | ✅ **100%** (BaseModal 18/18 + ContextMenu **14/14** 22-10에서 catalog 종료 + Modal size tier. 미캡처 5 신규 visual refactor 만 잔여) |
+| E | UX Polish | ⚠️ **70%** (E-9 placeholder 22-12 + E-2 EmptyState **8 panel** + E-3 DnD 1/4 + E-1 Skeleton **8 화면** 22-17/22-18 + E-6 a11y **47/47** 22-13/22-18 + E-7 motion 22-12 + E-8 Plugin slot **3/3** 22-19. Skeleton 잔여 3 화면 / Long-running / DnD 잔여 3) |
+| F | 검증 (visual diff audit) | ❌ (별도 sprint, 36 PNG 재캡처 + Figma 60+ 아트보드 visual diff) |
+
+### 11-4. Design hard constraint (§8) 충족 현황
+
+| # | 제약 | 본 세션 |
+|---|------|--------|
+| §8-1 Layout extensibility | ✅ Tab overflow 22-14 + Settings 2-level 22-15 (CommandPalette grouping 추가 22-19) |
+| §8-2 Density (IDE-grade) | ✅ 기존 충족 |
+| §8-3 Plugin/Integration slot | ✅ **3/3 100%** Sidebar 22-12 + Settings 22-19 + CommandPalette 22-19 |
+| §8-4 v0.4 placeholder | ✅ PlaceholderButton 22-12 + 사용처 8 항목 (Sidebar 3 + Settings 5) + Palette 3 |
+| §8-5 AI CLI 시각 | ✅ 기존 충족 |
+| §8-6 Cloud-Free 시각 | ✅ Sidebar Integrations slot 22-12 + Settings Plugin Cloud-Free 명시 22-19 |
+| §8-7 Onboarding 격상 | ⚠️ **부분** (22-20 detect + toast 안내. 5-step full modal 별도 sprint) |
+
+**design hard constraint 7/7 부분 이상 도달** (전부 ❌ 0개).
+
+### 11-5. 본 세션 commits (Sprint 22-9 ~ 22-20)
+
+| Commit | Sprint | 영역 |
+|--------|--------|------|
+| `90e57ab` | 22-9 | P2 viewer 4건 (V-7 hover / V-8 stash diff / V-9 ref solo / V-10 worktree click) |
+| `5d0529e` | 22-10 | P2 ContextMenu 3건 (CM-12/13/14) — §3 catalog 100% |
+| `accffaf` | 22-11 | F-P3 Sidebar ahead/behind preview + cargo 환경 이슈 해결 (chocolatey rustc 1.60 PATH shadow) |
+| `bceaa87` | 22-12 | Q-5 transition + Q-6 toast dedup + E-9 placeholder + Sidebar Integrations slot |
+| `470607f` | 22-13 | a11y wrap S-1 21 건 (43/47) |
+| `8e7960a` | 22-14 | M3 Tab overflow scrollIntoView + fade gradient + ⌘T hint |
+| `9a87634` | 22-15 | M1 Settings 2-level 6 그룹 |
+| `3d6fd44` | 22-16 | M6 Q-7 HSL 검증 (vitest 13→29) |
+| `ef3e532` | 22-17 | E-1 SkeletonBlock + BranchPanel/PrPanel |
+| `9e2fc42` | 22-18 | polish wrap (aria 4 + EmptyState 4 + Skeleton 6) |
+| `650a00c` | 22-19 | E-8 Plugin/Integration 3 slot (Settings + CommandPalette) |
+| `c5bf36f` | 22-20 | Onboarding GitKrakenImport detect minimal |
 
 ## 11. Sprint B~F implementation 진입 조건 (재개 트리거)
 
