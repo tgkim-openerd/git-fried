@@ -266,6 +266,17 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-20 — Onboarding GitKrakenImport detect minimal (design §8-7) ✅ (2026-04-28, frontend-only)
+
+design §8-7 hard constraint 부분 흡수. 7번째 / 마지막 hard constraint 부분 도달 (전체 5-step onboarding flow 는 별도 sprint).
+
+- ✅ **App.vue onMounted hook** — 첫 실행 (`localStorage 'git-fried.onboarded.v1'` 부재) 시 `importGitKrakenDetect()` IPC 호출
+- ✅ **toast.info 안내** — `repoCount > 0` 시 "GitKraken 데이터 발견 — N 레포 (워크스페이스 M / 즐겨찾기 K / 탭 L). Settings → 시작·마이그레이션 → GitKraken 가져오기 에서 진행". 12s duration
+- ✅ **modal 자동 open 안 함** — 사용자 friction 최소화. 실 import 는 사용자 명시 트리거
+- ✅ **silent error** — detect 실패 시 localStorage 마킹 안 함 (다음 실행 재시도)
+- 미적용: 5-step onboarding flow (full screen modal — design Sprint C C-5 본격 작업), GitKraken 외 (Sourcetree / Fork / GitUp / SmartGit) detect
+- 검증: typecheck 0 / lint 0 / vitest 29 pass
+
 ### Sprint 22-19 — E-8 Plugin/Integration 3 slot 완성 (design §8-3) ✅ (2026-04-28, frontend-only)
 
 design §8-3 hard constraint **3/3 100% 충족** (Sidebar 22-12 + Settings 본 sprint + CommandPalette 본 sprint).

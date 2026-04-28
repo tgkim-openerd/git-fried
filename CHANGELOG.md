@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-20 — Onboarding GitKrakenImport detect minimal (plan/24 Sprint C C-5 / design §8-7 hard constraint, frontend-only):
+  - **App.vue onMounted hook 신규** — 첫 실행 시 (`localStorage 'git-fried.onboarded.v1'` 부재) `importGitKrakenDetect()` IPC 호출
+  - **toast.info 안내** — `repoCount > 0` 시 "GitKraken 데이터 발견 — N 레포 (워크스페이스 M개 / 즐겨찾기 K개 / 탭 L개). Settings → 시작·마이그레이션 → GitKraken 가져오기 에서 진행". 12s duration
+  - **modal 자동 open 안 함** — 사용자 friction 최소화. 실 import 는 사용자 명시 트리거 (Settings 카테고리 진입)
+  - **silent error** — detect 실패 시 toast 없음 + localStorage 마킹 안 함 (다음 실행 재시도)
+  - design §8-7 hard constraint **부분 흡수** (전체 onboarding flow 5-step 은 별도 sprint, 본 sprint 는 detect + 안내까지). design hard constraint **7/7 부분 도달**
+  - 검증: typecheck 0 / lint 0 / vitest 29 pass
 - Sprint 22-19 — E-8 Plugin/Integration 3 slot 완성 (plan/24 Sprint E E-8 / design §8-3 hard constraint, frontend-only):
   - **Settings 'Plugin' 카테고리 신규** — CATEGORY_GROUPS 7번째 그룹 (계정 / 워크스페이스 / 에디터·터미널 / UI / 유지보수 / **Plugin** / 시작·마이그레이션). content section: 5 placeholder (GitHub Actions v0.4 / Linear·Jira v0.5 / Discord 알림 v0.5 / Slack 알림 v0.5 / GPG 서명 v0.6) + Cloud-Free 정체성 명시 ("❌ 의도적 제외: Cloud Workspace / Cloud AI / 자체 LLM / Diagram"). PlaceholderButton size=md
   - **CommandPalette 'integration' 카테고리 신규** — `Category` union 확장 + CATEGORY_LABELS "Integration (외부 도구)" + CATEGORY_ORDER 끝에 추가. 3 placeholder commands (GitHub Actions / Linear·Jira / Discord·Slack) — disabled state 대신 click 시 toast.info ("v0.4 예정. 진행 상황: docs/plan/05")
