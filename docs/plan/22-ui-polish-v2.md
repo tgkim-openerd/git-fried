@@ -266,6 +266,15 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-19 — E-8 Plugin/Integration 3 slot 완성 (design §8-3) ✅ (2026-04-28, frontend-only)
+
+design §8-3 hard constraint **3/3 100% 충족** (Sidebar 22-12 + Settings 본 sprint + CommandPalette 본 sprint).
+
+- ✅ **Settings 'Plugin' 카테고리 신규** — CATEGORY_GROUPS 7번째 (`{id:'plugin', label:'Plugin', items:[{id:'plugin', label:'외부 도구 연결 (v0.5 예정)'}]}`). content section: 5 placeholder (GitHub Actions v0.4 / Linear·Jira v0.5 / Discord·Slack 알림 v0.5 / GPG 서명 v0.6) + Cloud-Free 정체성 명시
+- ✅ **CommandPalette 'integration' 카테고리 신규** — `Category` union + CATEGORY_LABELS "Integration (외부 도구)" + CATEGORY_ORDER. 3 placeholder commands (click 시 toast.info "v0.4 예정. 진행 상황: docs/plan/05")
+- ✅ **Cmd action signature 확장** `() => void | Promise<unknown>` (이전 `Promise<void>`) — toast.info의 number / router.push의 NavigationFailure 반환 모두 호환
+- 검증: typecheck 0 / lint 0 / vitest 29 pass
+
 ### Sprint 22-18 — polish wrap (aria 4 + EmptyState 4 + Skeleton 6) ✅ (2026-04-28, frontend-only)
 
 §7 S-1 카탈로그 47/47 ≥ 100% + plan/24 Sprint E E-1/E-2/E-6 부분.

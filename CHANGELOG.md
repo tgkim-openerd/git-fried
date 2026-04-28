@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-19 — E-8 Plugin/Integration 3 slot 완성 (plan/24 Sprint E E-8 / design §8-3 hard constraint, frontend-only):
+  - **Settings 'Plugin' 카테고리 신규** — CATEGORY_GROUPS 7번째 그룹 (계정 / 워크스페이스 / 에디터·터미널 / UI / 유지보수 / **Plugin** / 시작·마이그레이션). content section: 5 placeholder (GitHub Actions v0.4 / Linear·Jira v0.5 / Discord 알림 v0.5 / Slack 알림 v0.5 / GPG 서명 v0.6) + Cloud-Free 정체성 명시 ("❌ 의도적 제외: Cloud Workspace / Cloud AI / 자체 LLM / Diagram"). PlaceholderButton size=md
+  - **CommandPalette 'integration' 카테고리 신규** — `Category` union 확장 + CATEGORY_LABELS "Integration (외부 도구)" + CATEGORY_ORDER 끝에 추가. 3 placeholder commands (GitHub Actions / Linear·Jira / Discord·Slack) — disabled state 대신 click 시 toast.info ("v0.4 예정. 진행 상황: docs/plan/05")
+  - **Cmd action signature 확장** `() => void | Promise<unknown>` (이전 `Promise<void>`) — toast.info 의 number 반환 + router.push 의 NavigationFailure 반환 모두 호환. Cmd 실행 결과는 swallow
+  - design §8-3 Sidebar Integrations slot (Sprint 22-12) + Settings Plugin (본 sprint) + CommandPalette Integration (본 sprint) → **3 slot 100% 충족**
+  - 검증: typecheck 0 / lint 0 / vitest 29 pass
 - Sprint 22-18 — polish wrap (잔여 aria-label 4건 + EmptyState 4 panel + SkeletonBlock 6 panel, plan/22 §7 + plan/24 Sprint E E-1/E-2/E-6, frontend-only):
   - **aria-label 잔여 4건** — BranchPanel header (filter local/remote/all + `aria-pressed` + Remote 관리 🔗) / Sidebar workspace 그룹 토글 (directory/org + `aria-pressed`) / Sidebar Clone 버튼. 누적 **43 → 47 ≥ 100%** 카탈로그 도달
   - **EmptyState 4 panel 추가** — StashPanel `📦 stash 없음` / SubmodulePanel `🧩 서브모듈 없음` / LfsPanel `📦 LFS 파일 없음` / TagPanel `🏷 tag 없음`. 기존 단순 `<li class="text-center muted">X 없음</li>` → `<EmptyState icon title size="sm">` (visual 일관)

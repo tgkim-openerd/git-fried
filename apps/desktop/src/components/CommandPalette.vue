@@ -25,13 +25,18 @@ type Category =
   | 'history'
   | 'ai'
   | 'settings'
+  // Sprint 22-19 E-8 — design §8-3 Plugin/Integration slot.
+  // 외부 도구 연결 (CI / 이슈 트래커 / 알림). 현재 placeholder 상태 (v0.4+).
+  | 'integration'
 
 interface Cmd {
   id: string
   category: Category
   label: string
   hint?: string
-  action: () => void | Promise<void>
+  // Sprint 22-19 — Promise<unknown> 도 허용 (router.push 의 NavigationFailure return 등).
+  // void / Promise<void> 가 dominant. 결과는 swallow.
+  action: () => void | Promise<unknown>
 }
 
 const router = useRouter()
@@ -538,6 +543,45 @@ const allCommands = computed<Cmd[]>(() => {
       hint: '/settings',
       action: () => router.push('/settings'),
     },
+
+    // Sprint 22-19 E-8 — Integration placeholder (design §8-3).
+    // disabled state: action 은 toast.info ("v0.4 예정") 만. 실 plugin 도입 시 본 항목 채워짐.
+    {
+      id: 'integration.github-actions',
+      category: 'integration',
+      label: '🔜 GitHub Actions CI status (v0.4 예정)',
+      hint: 'placeholder',
+      action: () => {
+        toast.info(
+          'GitHub Actions — v0.4 예정',
+          'CI run 상태 인디케이터 (per-branch / per-PR).\n진행 상황: docs/plan/05',
+        )
+      },
+    },
+    {
+      id: 'integration.linear-jira',
+      category: 'integration',
+      label: '🔜 Linear / Jira 이슈 매핑 (v0.5 예정)',
+      hint: 'placeholder',
+      action: () => {
+        toast.info(
+          'Linear / Jira — v0.5 예정',
+          'commit / branch 이름 → 이슈 자동 매핑.\n진행 상황: docs/plan/05',
+        )
+      },
+    },
+    {
+      id: 'integration.discord-slack',
+      category: 'integration',
+      label: '🔜 Discord / Slack 알림 (v0.5 예정)',
+      hint: 'placeholder',
+      action: () => {
+        toast.info(
+          'Discord / Slack 알림 — v0.5 예정',
+          'bulk fetch / push / PR 머지 결과 webhook.\n진행 상황: docs/plan/05',
+        )
+      },
+    },
   ]
   return list
 })
@@ -551,6 +595,8 @@ const CATEGORY_LABELS: Record<Category, string> = {
   history: 'History',
   ai: 'AI',
   settings: 'Settings',
+  // Sprint 22-19 E-8 — design §8-3
+  integration: 'Integration (외부 도구)',
 }
 const CATEGORY_ORDER: Category[] = [
   'repo',
@@ -561,6 +607,7 @@ const CATEGORY_ORDER: Category[] = [
   'history',
   'ai',
   'settings',
+  'integration',
 ]
 
 function score(cmd: Cmd, q: string): number {
