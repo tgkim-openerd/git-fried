@@ -115,6 +115,7 @@ pub fn run() {
             ipc::commands::reset,
             ipc::commands::revert,
             ipc::commands::undo_last_action,
+            ipc::commands::redo_last_action,
             ipc::commands::get_graph,
             ipc::commands::search_commits_by_message,
             ipc::commands::list_submodules,

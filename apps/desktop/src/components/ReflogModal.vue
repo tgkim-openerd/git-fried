@@ -43,12 +43,31 @@ function fmtDate(unix: number): string {
 }
 
 function actionColor(action: string): string {
+  // Phase 1 (plan-reflog-undo) — destructive 액션 강조 (working tree / branch 영향 큼).
+  if (isDestructive(action)) return 'text-destructive font-semibold'
   if (action.includes('commit')) return 'text-emerald-500'
   if (action.includes('reset')) return 'text-amber-500'
   if (action.includes('rebase')) return 'text-violet-500'
   if (action.includes('merge')) return 'text-sky-500'
   if (action.includes('checkout')) return 'text-muted-foreground'
   return 'text-foreground'
+}
+
+/**
+ * Phase 1 — destructive 매칭 (`reset --hard`, `branch -D`, `push --force`, `gc`).
+ * 단순 `reset` (soft/mixed) 은 destructive 아님. message body 는 `--format=%gs` 의 subject 라
+ * subject 에 `--hard` 가 들어있는 경우는 git 의 reflog message 형식상 거의 없으나,
+ * action prefix 자체에 `reset` 단독 매칭 후 message 에 hard 키워드 검사로 보강.
+ */
+function isDestructive(action: string): boolean {
+  const a = action.toLowerCase()
+  return (
+    a === 'reset --hard' ||
+    a.startsWith('branch: -d') ||
+    a.startsWith('branch -d') ||
+    a === 'gc' ||
+    a.includes('force')
+  )
 }
 
 // === Sprint 22-4 V-6: row click 선택 highlight ===
@@ -86,7 +105,10 @@ async function restoreHeadTo(sha: string) {
 
 async function createBranchHere(sha: string) {
   if (repoId.value == null) return
-  const name = window.prompt(`복구 브랜치 이름 (from ${sha.slice(0, 8)}):`, 'recover/' + sha.slice(0, 8))
+  const name = window.prompt(
+    `복구 브랜치 이름 (from ${sha.slice(0, 8)}):`,
+    'recover/' + sha.slice(0, 8),
+  )
   if (!name?.trim()) return
   try {
     await createBranch(repoId.value, name.trim(), sha)
@@ -176,7 +198,15 @@ function onRowContextMenu(ev: MouseEvent, e: ReflogEntry) {
         >
           <td class="px-3 py-1 font-mono">{{ e.refLabel }}</td>
           <td class="px-3 py-1 font-mono text-muted-foreground">{{ e.shortSha }}</td>
-          <td :class="['px-3 py-1', actionColor(e.action)]">{{ e.action }}</td>
+          <td :class="['px-3 py-1', actionColor(e.action)]">
+            <span
+              v-if="isDestructive(e.action)"
+              class="mr-1"
+              title="위험 액션 — 복구 시 working tree 영향 가능"
+              aria-label="destructive action"
+              >⚠</span
+            >{{ e.action }}
+          </td>
           <td class="px-3 py-1 truncate">{{ e.subject }}</td>
           <td class="px-3 py-1 text-muted-foreground">{{ fmtDate(e.at) }}</td>
         </tr>

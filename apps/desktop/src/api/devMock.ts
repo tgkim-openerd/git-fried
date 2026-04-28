@@ -1128,6 +1128,15 @@ const HANDLERS: Record<string, MockHandler> = {
     newHeadSha: 'mock-undo-' + Date.now().toString(16).slice(-7),
   }),
 
+  // Phase 1 (plan-reflog-undo) — Redo last action mock.
+  redo_last_action: () => ({
+    action: 'reset',
+    message: 'moving to HEAD@{1}',
+    executed: true,
+    rejectionReason: null,
+    newHeadSha: 'mock-redo-' + Date.now().toString(16).slice(-7),
+  }),
+
   // Diff
   get_diff: () => SAMPLE_DIFF,
   get_commit_diff: () => SAMPLE_DIFF,

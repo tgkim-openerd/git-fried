@@ -13,7 +13,16 @@
 
 import { computed } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { fetchAll, popStash, pull, pushStash, push, undoLastAction, updateSubmodules } from '@/api/git'
+import {
+  fetchAll,
+  popStash,
+  pull,
+  pushStash,
+  push,
+  redoLastAction,
+  undoLastAction,
+  updateSubmodules,
+} from '@/api/git'
 import { useStash } from '@/composables/useStash'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useStatusCounts } from '@/composables/useStatusCounts'
@@ -122,6 +131,29 @@ const undoMut = useMutation({
   onError: (e) => toast.error('Undo 실패', describeError(e)),
 })
 
+// Phase 1 (plan-reflog-undo) — Redo last action.
+const redoMut = useMutation({
+  mutationFn: (id: number) => redoLastAction(id),
+  onSuccess: (res) => {
+    if (res.executed) {
+      invalidate(props.repoId)
+      const preview = res.message
+        .split(/\r?\n/)[0]
+        .slice(0, 50)
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\x00-\x1f]/g, '')
+      toast.success(`Redo: ${res.action}`, preview ? `'${preview}' 다시 적용` : '다시 적용 완료')
+    } else {
+      toast.warning(
+        `Redo 거부 (${res.action})`,
+        (res.rejectionReason ?? '') + ' — Reflog 모달에서 직접 처리하세요.',
+      )
+      window.gitFriedOpenReflog?.()
+    }
+  },
+  onError: (e) => toast.error('Redo 실패', describeError(e)),
+})
+
 // === Stash / Pop (toolbar 자체 mutation) ===
 const stashMut = useMutation({
   mutationFn: (id: number) => pushStash(id, null, false),
@@ -163,10 +195,22 @@ function onUndo() {
   undoMut.mutate(props.repoId)
 }
 function onRedo() {
-  toast.info(
-    'Redo 준비중',
-    'docs/plan/25 c25-1.5 — reflog forward 추적으로 구현 예정',
-  )
+  if (props.repoId == null) {
+    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    return
+  }
+  if (
+    !confirm(
+      '마지막 undo 를 되돌립니다.\n\n' +
+        '• 직전 reflog action 이 reset/checkout 일 때만 자동 처리\n' +
+        '• 그 외는 ReflogModal 안내\n' +
+        '• checkout redo 는 working tree clean 필수\n\n' +
+        '진행하시겠습니까?',
+    )
+  ) {
+    return
+  }
+  redoMut.mutate(props.repoId)
 }
 function onFetch() {
   if (props.repoId != null) fetchMut.mutate(props.repoId)
@@ -258,17 +302,25 @@ useShortcut('push', onPush)
           @click="onUndo"
         >
           <span class="text-base leading-none">↶</span>
-          <span class="text-[10px] leading-tight">{{ undoMut.isPending.value ? '...' : 'Undo' }}</span>
+          <span class="text-[10px] leading-tight">{{
+            undoMut.isPending.value ? '...' : 'Undo'
+          }}</span>
         </button>
         <button
           type="button"
           class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId"
-          title="Redo — c25-1.5 에서 구현 예정"
+          :disabled="!repoId || redoMut.isPending.value"
+          :title="
+            redoMut.isPending.value
+              ? 'Redo 진행 중...'
+              : 'Redo — 직전 undo 되돌리기 (reset/checkout 만, working tree 보존)'
+          "
           @click="onRedo"
         >
           <span class="text-base leading-none">↷</span>
-          <span class="text-[10px] leading-tight">Redo</span>
+          <span class="text-[10px] leading-tight">{{
+            redoMut.isPending.value ? '...' : 'Redo'
+          }}</span>
         </button>
       </div>
 
@@ -284,7 +336,9 @@ useShortcut('push', onPush)
           @click="onPull"
         >
           <span class="text-base leading-none">⇩</span>
-          <span class="text-[10px] leading-tight">{{ pullMut.isPending.value ? '...' : 'Pull' }}</span>
+          <span class="text-[10px] leading-tight">{{
+            pullMut.isPending.value ? '...' : 'Pull'
+          }}</span>
         </button>
         <button
           type="button"
@@ -294,7 +348,9 @@ useShortcut('push', onPush)
           @click="onPush"
         >
           <span class="text-base leading-none">⇧</span>
-          <span class="text-[10px] leading-tight">{{ pushMut.isPending.value ? '...' : 'Push' }}</span>
+          <span class="text-[10px] leading-tight">{{
+            pushMut.isPending.value ? '...' : 'Push'
+          }}</span>
         </button>
       </div>
 
@@ -320,13 +376,15 @@ useShortcut('push', onPush)
             !hasChanges
               ? 'Stash 할 working tree 변경 없음'
               : stashMut.isPending.value
-              ? 'Stash 진행 중...'
-              : 'Stash — 현재 변경사항 즉시 stash (메시지 없이)'
+                ? 'Stash 진행 중...'
+                : 'Stash — 현재 변경사항 즉시 stash (메시지 없이)'
           "
           @click="onStash"
         >
           <span class="text-base leading-none">⤓</span>
-          <span class="text-[10px] leading-tight">{{ stashMut.isPending.value ? '...' : 'Stash' }}</span>
+          <span class="text-[10px] leading-tight">{{
+            stashMut.isPending.value ? '...' : 'Stash'
+          }}</span>
         </button>
         <button
           type="button"
@@ -336,8 +394,8 @@ useShortcut('push', onPush)
             stashCount === 0
               ? 'pop 할 stash 없음'
               : popMut.isPending.value
-              ? 'Pop 진행 중...'
-              : `Pop — 가장 최근 stash@{0} apply + drop (총 ${stashCount}개)`
+                ? 'Pop 진행 중...'
+                : `Pop — 가장 최근 stash@{0} apply + drop (총 ${stashCount}개)`
           "
           @click="onPop"
         >
@@ -369,7 +427,11 @@ useShortcut('push', onPush)
         type="button"
         class="rounded-md px-2 py-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
         :disabled="!repoId || fetchMut.isPending.value"
-        :title="fetchMut.isPending.value ? 'Fetch 진행 중...' : 'Fetch (⌘L) — origin 만 가져오기 (merge 없음)'"
+        :title="
+          fetchMut.isPending.value
+            ? 'Fetch 진행 중...'
+            : 'Fetch (⌘L) — origin 만 가져오기 (merge 없음)'
+        "
         @click="onFetch"
       >
         {{ fetchMut.isPending.value ? '...' : 'Fetch' }}

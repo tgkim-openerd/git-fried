@@ -100,6 +100,10 @@ export interface UndoResult {
 export const undoLastAction = (repoId: number): Promise<UndoResult> =>
   invoke('undo_last_action', { args: { repoId } })
 
+/** Redo last undo (Phase 1) — 직전 reflog action 이 reset/checkout 일 때만 inverse 적용. */
+export const redoLastAction = (repoId: number): Promise<UndoResult> =>
+  invoke('redo_last_action', { args: { repoId } })
+
 // --- Sync ---
 export const fetchAll = (repoId: number): Promise<SyncResult> => invoke('fetch_all', { repoId })
 

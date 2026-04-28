@@ -785,6 +785,15 @@ pub async fn undo_last_action(
     git_reset::undo_last_action(&path).await
 }
 
+#[tauri::command]
+pub async fn redo_last_action(
+    args: UndoLastActionArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_reset::UndoResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_reset::redo_last_action(&path).await
+}
+
 // ====== Submodule ======
 
 #[tauri::command]

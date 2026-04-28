@@ -164,6 +164,16 @@ test.describe('git-fried smoke', () => {
     await expect(filter).toBeFocused({ timeout: 1_000 })
   })
 
+  test('Toolbar Redo button → confirm → toast (Phase 1 reflog-undo)', async ({ page }) => {
+    // confirm dialog 자동 수락.
+    page.on('dialog', (d) => d.accept())
+    const redoBtn = page.getByRole('button', { name: /Redo$/ })
+    await expect(redoBtn).toBeVisible()
+    await redoBtn.click()
+    // devMock 의 redo_last_action 가 executed=true 응답 → toast.success "Redo: reset"
+    await expect(page.getByText(/Redo:\s*reset/i)).toBeVisible({ timeout: 2_000 })
+  })
+
   test('console.error 0건', async ({ page }) => {
     const errors: string[] = []
     page.on('console', (msg) => {
