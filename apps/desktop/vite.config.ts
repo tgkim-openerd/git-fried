@@ -93,14 +93,14 @@ export default defineConfig({
         'src/main.ts',
         'src/router/**',
       ],
-      // Threshold 전략 — global 베이스라인 보호만 (현재 3.26% 기준 약간 buffer).
-      // per-file 강제는 보류 — 실측이 모듈마다 편차 큼 (useCustomTheme 33% / useToast 100% / utils 84%).
-      // follow-up: 다음 sprint 마다 global +1~2pt 상승 (3 → 5 → 10 → 25 → 40).
+      // Threshold 전략 — global 베이스라인 보호 (실측 +0.5pt buffer).
+      // 진행도: 3% (eefc99e) → 5% (현재, 실측 5.53% lines / 65.45% branches / 38.5% functions / 5.53% statements).
+      // follow-up: composables / utils 80%+ 단계적 상승. 신규 사이클 마다 +1~2pt 글로벌.
       thresholds: {
-        lines: 3,
-        statements: 3,
-        functions: 3,
-        branches: 3,
+        lines: 5,
+        statements: 5,
+        functions: 30,
+        branches: 60,
       },
     },
   },
