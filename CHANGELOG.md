@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Sprint c25 그룹 — GitKraken 레이아웃 흡수 (PR #1, 17 commits, +2400 LOC)** — 사용자 본인 dogfood 캡처 (GitKraken 12.0) 의 빨간 동그라미 3 영역 + 후속 polish 흡수. 모든 변경 typecheck + vitest 83 tests pass + Playwright dogfood 8/8 시나리오 통과:
+- **Sprint c25 그룹 — GitKraken 레이아웃 흡수 (PR #1 머지 `ae0cafe`, 22 commits, +2900 LOC)** — 사용자 본인 dogfood 캡처 (GitKraken 12.0) 의 빨간 동그라미 3 영역 + 후속 polish + /code-review 자율 수정 + c27 follow-up 흡수. 모든 변경 typecheck + vitest 83 tests pass + Playwright dogfood 9/9 시나리오 통과:
   - **c25-1** — 상단 8-button Action Toolbar (`GitKrakenToolbar.vue`): Undo · Redo · Pull · Push · Branch · Stash · Pop³(count) · Terminal · Fetch. SyncBar 보존 (단계적 마이그레이션)
   - **c25-1.5** — Undo 백엔드 (`reset.rs::undo_last_action`): reflog HEAD subject 파싱 → commit/amend 화이트리스트 → `git reset --soft HEAD@{1}`. 비지원 액션은 ReflogModal 자동 진입. confirm dialog + toast
   - **c25-2** — 우측 패널 영구 commit panel: `ChangeCountBadge.vue` (탭 무관 'N file changes on {branch}' + staged/mod/new/conflicted 색 코드) + `CommitMessageInput` Amend 체크박스 + last_commit_message prefill + 'Stage Changes to Commit' emerald CTA
@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **c26-1** — Sidebar mini section 4종 collapsible (긴 sidebar 압박 해소, ▼/▶ 토글 + localStorage `active-repo-quick.{name}`)
   - **c26-2** — `useCommitDiff` composable 추출 (CommitDiffModal/Panel 공통 로직 단일 진실원천, 250+ LOC 중복 제거)
   - **c26-3** — Alt+↑/↓ hunk 키보드 단축키 (review flow 가속, inline + modal 양쪽 동등 작동)
+  - **c25-review (Phase 1/2/3)** — /code-review 자율 수정 23/29 이슈 (High 6 + Medium 11 + Low 6). SEC-008 (Gitea custom host) / ARCH-013 (markdownlint) / TYPE-005 (c27 이연) 4건 의도적 유지 또는 follow-up
+  - **c27-1** — God component 해소: ActiveRepoQuickActions 446→120 LOC (73% 감소), MiniSection.vue + 4 sub-list (MiniBranchList / MiniStashList / MiniWorktreeList / MiniPrList) 분리
+  - **c27-2** — flattenTree generic 통합: FlatTreeRow<T> 표준화 후 4 섹션 (Modified/Staged/Untracked/Conflicted) 단일 helper
   - 신규 plan/25 (`docs/plan/25-gitkraken-layout-migration.md`)
 - Sprint 22-21 — TDD-lite 정착 + Playwright MCP 글로벌 + 신규 컴포넌트 vitest 시범 (사용자 정책 변경: dogfood 최소화):
   - **Playwright MCP user scope 설치** — `claude mcp add -s user playwright -- npx -y @playwright/mcp@latest`. `~/.claude.json` 등록 + 모든 프로젝트에서 사용 가능. Claude 가 `bun run dev` (vite 1420) + devMock 환경에서 직접 E2E 시나리오 실행 가능 (browser_navigate / browser_click / browser_snapshot / browser_screenshot)

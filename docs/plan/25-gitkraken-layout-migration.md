@@ -183,5 +183,11 @@ GitKraken 의 좌측 sidebar 처럼 **Workspace · Branches · Tags · Stash · 
 - **c26-1** — Sidebar mini section 4종 collapsible (긴 sidebar 압박 해소)
 - **c26-2** — useCommitDiff composable 추출 (Modal/Panel DRY, 코드 중복 0)
 - **c26-3** — Alt+↑/↓ hunk navigation 키보드 단축키 (review flow 가속, inline + modal)
+- **c25-review (Phase 1/2/3)** — /code-review 결과 23/29 이슈 자율 수정. High 6 (TYPE-001 진단오류 원복 / ARCH-001 Alt 가드 / ARCH-002 Panel shortcut enabledRef / SEC-001-2 Stash·Pop confirm / SEC-003 Reset hard type-to-confirm) + Medium 11/14 (TYPE-002/004, ARCH-005-8/011, SEC-004-7) + Low 6/9 (TYPE-006/007, SEC-009, ARCH-009/010). 의도적 유지: SEC-008 (Gitea custom host) / ARCH-013 (markdownlint scope 외).
+- **c27-1 (ARCH-003 follow-up)** — God component 해소: MiniSection.vue + 4 sub-list (MiniBranchList/Stash/Worktree/Pr) 분리. ActiveRepoQuickActions 446→120 LOC (73% 감소).
+- **c27-2 (TYPE-005 follow-up)** — flattenTree generic 통합: FlatTreeRow<T> 표준화 후 4 섹션 단일 helper.
+- **PR #1 main 머지** — 2026-04-28 `ae0cafe` merge commit. 22 commits 통합 (c25-1~4.5 + c26-1~3 + c25-review Phase 1/2/3 + c27). feature 브랜치 정리 완료.
 
-c25 sprint 그룹 완성 — 14 commits / +2400 추정 / 83 tests pass / Playwright dogfood 8/8 시나리오 통과.
+c25 sprint 그룹 완성 — 22 commits / +2900 LOC / 83 tests pass / Playwright dogfood 9/9 시나리오 통과.
+
+다음 세션: Tauri 실 환경 dogfood (사용자 cargo update 후) 또는 plan/14 (잔여 GitKraken 22 항목) 진입.
