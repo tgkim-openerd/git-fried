@@ -2,7 +2,14 @@
 //
 // patch math 는 git apply 가 strict 하므로 보수적 테스트 — 핵심 케이스만.
 import { describe, expect, it } from 'vitest'
-import { buildHunkPatch, buildLinePatch, parseDiffAllFiles, parseDiffWithHunks } from './parseDiff'
+import {
+  buildHunkPatch,
+  buildLinePatch,
+  isStageableLine,
+  parseDiffAllFiles,
+  parseDiffFirstFile,
+  parseDiffWithHunks,
+} from './parseDiff'
 
 // Source 4 라인 (a, b, c, g) → Target 5 라인 (a, d, e, f, g).
 const SAMPLE = `diff --git a/foo.txt b/foo.txt
@@ -181,6 +188,34 @@ describe('buildLinePatch', () => {
     expect(out).not.toBeNull()
     // weird prefix 라인이 context (' ' 추가) 로 변환되어 oldCount 에 포함
     expect(out!).toContain(' ?weird prefix')
+  })
+})
+
+describe('parseDiffFirstFile', () => {
+  it('빈 patch → null', () => {
+    expect(parseDiffFirstFile('')).toBe(null)
+  })
+  it('단일 파일 → 첫 결과', () => {
+    const f = parseDiffFirstFile(SAMPLE)
+    expect(f?.fileName).toBe('foo.txt')
+  })
+})
+
+describe('isStageableLine', () => {
+  it('+ 라인 → true', () => {
+    expect(isStageableLine('+new content')).toBe(true)
+  })
+  it('- 라인 → true', () => {
+    expect(isStageableLine('-old content')).toBe(true)
+  })
+  it('context (space prefix) → false', () => {
+    expect(isStageableLine(' context line')).toBe(false)
+  })
+  it('빈 문자열 → false', () => {
+    expect(isStageableLine('')).toBe(false)
+  })
+  it('"\\ No newline" → false', () => {
+    expect(isStageableLine('\\ No newline at end of file')).toBe(false)
   })
 })
 
