@@ -172,4 +172,16 @@ GitKraken 의 좌측 sidebar 처럼 **Workspace · Branches · Tags · Stash · 
   - Rust `reset.rs::undo_last_action()` — `git reflog HEAD -1 --format=%gs` 파싱 → action prefix 화이트리스트 (commit / commit (amend) / commit (initial) / commit (merge)) → `reset --soft HEAD@{1}` → UndoResult 반환
   - IPC `undo_last_action` 등록, api/git.ts `undoLastAction()` 타입 추가, devMock.ts mock
   - GitKrakenToolbar `onUndo` — confirm dialog → undoMut → toast (`Undid: commit` / 거부 시 ReflogModal 자동 오픈)
-- 다음: c25-3 (좌측 sidebar 통합) — Tauri dev dogfood 검증 후 진입 권장
+- **c25-2.1 / 2.2 / 2.3** — StatusPanel Path/Tree 토글 (utils/pathTree + 9 unit tests, 4 섹션 일관 적용)
+- **c25-3 step1~5** — Sidebar 7 sub-section 풍부화:
+  - step1: ActiveRepoQuickActions (status badge + 5 quick btn)
+  - step2: 로컬 브랜치 mini (top 5 + ● HEAD + ↑↓)
+  - step3: Stash mini (top 3 + apply/pop)
+  - step4: Worktree mini (top 4 + ★ main + 🔒 lock)
+  - step5: Open PR mini (active-repo, top 3 + 💬)
+- **c25-4.5** — Diff 인라인화 (CommitDiffPanel.vue 신규 + pages/index.vue 좌측 vertical split + ⌘⇧D 토글). 좌측 60% / Diff 40%, localStorage 영속.
+- **c26-1** — Sidebar mini section 4종 collapsible (긴 sidebar 압박 해소)
+- **c26-2** — useCommitDiff composable 추출 (Modal/Panel DRY, 코드 중복 0)
+- **c26-3** — Alt+↑/↓ hunk navigation 키보드 단축키 (review flow 가속, inline + modal)
+
+c25 sprint 그룹 완성 — 14 commits / +2400 추정 / 83 tests pass / Playwright dogfood 8/8 시나리오 통과.

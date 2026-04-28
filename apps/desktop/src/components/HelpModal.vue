@@ -45,6 +45,8 @@ const groups: Group[] = [
       { keys: '⌘N', desc: '새 PR 모달' },
       { keys: '⌘B', desc: 'Branch 탭으로 이동' },
       { keys: '⌘D', desc: '선택 commit diff 모달' },
+      { keys: '⌘⇧D', desc: 'Inline diff panel 토글 (Sprint c25-4.5)' },
+      { keys: 'Alt+↑ / Alt+↓', desc: 'Diff 이전/다음 hunk 점프 (Sprint c26-3)' },
       { keys: '⌘⇧H', desc: 'File history (현재 파일)' },
     ],
   },
