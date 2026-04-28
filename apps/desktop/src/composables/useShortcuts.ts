@@ -38,7 +38,8 @@ export type ShortcutAction =
   | 'unstageAll' // ⌘⇧U
   | 'stageAndCommit' // ⌘⇧Enter
   | 'focusMessage' // ⌘⇧M
-  | 'showDiff' // ⌘D — 선택 commit diff
+  | 'showDiff' // ⌘D — 선택 commit diff (modal)
+  | 'toggleInlineDiff' // ⌘⇧D — inline diff panel 토글 (Sprint c25-4.5)
   | 'closeModal' // ⌘W — 활성 모달 닫기
   | 'zoomIn' // ⌘=
   | 'zoomOut' // ⌘-
@@ -248,6 +249,7 @@ function installGlobal() {
     else if (k === 'm' && e.shiftKey) action = 'focusMessage'
     else if (k === 'h' && e.shiftKey) action = 'fileHistorySearch'
     else if (k === 'd' && !e.shiftKey) action = 'showDiff'
+    else if (k === 'd' && e.shiftKey) action = 'toggleInlineDiff'
     else if (k === 'w' && !e.shiftKey) action = 'closeModal'
     else if (k === 'w' && e.shiftKey) action = 'closeTab'
     else if (k === 'j' && !e.shiftKey) action = 'toggleSidebar'

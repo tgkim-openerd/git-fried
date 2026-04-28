@@ -20,6 +20,8 @@ import WorktreePanel from '@/components/WorktreePanel.vue'
 import InteractiveRebaseModal from '@/components/InteractiveRebaseModal.vue'
 import TerminalPanel from '@/components/TerminalPanel.vue'
 import CommitDiffModal from '@/components/CommitDiffModal.vue'
+// Sprint c25-4.5 — inline diff panel (CommitGraph 와 vertical split).
+import CommitDiffPanel from '@/components/CommitDiffPanel.vue'
 import WipBanner from '@/components/WipBanner.vue'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
@@ -89,6 +91,27 @@ useShortcut('showDiff', () => {
   if (selectedSha.value) diffModalOpen.value = true
 })
 
+// Sprint c25-4.5 — ⌘⇧D = inline diff panel 토글.
+// (⌘D 는 모달, ⌘⇧D 는 inline — 사용자 선택권)
+useShortcut('toggleInlineDiff', () => setInlineDiff(!inlineDiffVisible.value))
+
+// Sprint c25-4.5 — Inline diff panel (좌측 영역 vertical split).
+// row 단일 클릭으로 selectedSha set → inline diff 자동 노출. ⌘D 모달은 그대로 유지.
+// localStorage 'git-fried.inline-diff.visible' 영속 — 사용자가 ✕ 닫으면 다음 세션도 닫힘.
+const INLINE_DIFF_KEY = 'git-fried.inline-diff.visible'
+function loadInlineDiff(): boolean {
+  if (typeof localStorage === 'undefined') return true
+  return localStorage.getItem(INLINE_DIFF_KEY) !== '0'
+}
+const inlineDiffVisible = ref(loadInlineDiff())
+function setInlineDiff(visible: boolean) {
+  inlineDiffVisible.value = visible
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(INLINE_DIFF_KEY, visible ? '1' : '0')
+  }
+}
+const inlineDiffActive = computed(() => inlineDiffVisible.value && selectedSha.value != null)
+
 // CommandPalette 에서 호출되는 외부 트리거.
 function externalToggleTerminal() {
   terminalOpen.value = !terminalOpen.value
@@ -128,13 +151,24 @@ onUnmounted(() => {
           : 'grid-cols-[1fr_0]'
       "
     >
-      <!-- 좌측: 커밋 그래프 + 로그 (focusMode 시 숨김) -->
-      <CommitGraph
+      <!-- 좌측: 커밋 그래프 + Sprint c25-4.5 inline diff vertical split (focusMode 시 숨김) -->
+      <div
         v-if="!focusMode"
-        :repo-id="store.activeRepoId"
-        @select-commit="onSelectCommit"
-        @show-diff="onShowDiff"
-      />
+        class="grid min-h-0 overflow-hidden"
+        :class="inlineDiffActive ? 'grid-rows-[1fr_minmax(140px,40%)]' : 'grid-rows-[1fr_0]'"
+      >
+        <CommitGraph
+          :repo-id="store.activeRepoId"
+          @select-commit="onSelectCommit"
+          @show-diff="onShowDiff"
+        />
+        <CommitDiffPanel
+          v-if="inlineDiffActive"
+          :repo-id="store.activeRepoId"
+          :sha="selectedSha"
+          @close="setInlineDiff(false)"
+        />
+      </div>
       <div v-else />
 
       <!-- 우측: 영구 ChangeCountBadge + 탭 (Status / Branches / Stash) + 하단 commit input -->
