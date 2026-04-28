@@ -28,6 +28,12 @@ const toast = useToast()
 const invalidate = useInvalidateRepoQueries()
 const collapsed = useSectionCollapse('active-repo-quick')
 
+// c26-1 — 각 mini section 별 collapse 영속 (긴 sidebar 압박 해소).
+const collapsedBranches = useSectionCollapse('active-repo-quick.branches')
+const collapsedStash = useSectionCollapse('active-repo-quick.stash')
+const collapsedWorktree = useSectionCollapse('active-repo-quick.worktree')
+const collapsedPrs = useSectionCollapse('active-repo-quick.pr')
+
 const repoIdRef = computed(() => store.activeRepoId)
 const { data: status } = useStatus(repoIdRef)
 // c25-3 step 2 — 활성 레포의 로컬 브랜치 mini list (top 5, current HEAD ✓).
@@ -222,11 +228,20 @@ const QUICK_TABS = [
         </button>
       </div>
 
-      <!-- c25-3 step 2 — 로컬 브랜치 mini list (top 5, 클릭 시 switch). -->
+      <!-- c25-3 step 2 — 로컬 브랜치 mini list (top 5, 클릭 시 switch). c26-1 — collapsible. -->
       <div v-if="miniBranches.length > 0" class="mt-1 space-y-0.5">
         <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-          <span>로컬 브랜치 ({{ localBranches.length }})</span>
           <button
+            type="button"
+            class="flex flex-1 items-center gap-1 hover:text-foreground"
+            :title="`로컬 브랜치 섹션 ${collapsedBranches ? '펴기' : '접기'}`"
+            @click="collapsedBranches = !collapsedBranches"
+          >
+            <span class="text-[9px]">{{ collapsedBranches ? '▶' : '▼' }}</span>
+            <span>로컬 브랜치 ({{ localBranches.length }})</span>
+          </button>
+          <button
+            v-if="!collapsedBranches"
             type="button"
             class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
             title="전체 브랜치 패널 (⌘B)"
@@ -235,7 +250,7 @@ const QUICK_TABS = [
             전체 →
           </button>
         </div>
-        <ul class="space-y-0.5">
+        <ul v-if="!collapsedBranches" class="space-y-0.5">
           <li
             v-for="b in miniBranches"
             :key="`mb-${b.name}`"
@@ -268,11 +283,20 @@ const QUICK_TABS = [
         </ul>
       </div>
 
-      <!-- c25-3 step 3 — Stash mini list (recent 3, apply / pop). -->
+      <!-- c25-3 step 3 — Stash mini list (recent 3, apply / pop). c26-1 — collapsible. -->
       <div v-if="miniStashes.length > 0" class="mt-1 space-y-0.5">
         <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-          <span>Stash ({{ stashes?.length ?? 0 }})</span>
           <button
+            type="button"
+            class="flex flex-1 items-center gap-1 hover:text-foreground"
+            :title="`Stash 섹션 ${collapsedStash ? '펴기' : '접기'}`"
+            @click="collapsedStash = !collapsedStash"
+          >
+            <span class="text-[9px]">{{ collapsedStash ? '▶' : '▼' }}</span>
+            <span>Stash ({{ stashes?.length ?? 0 }})</span>
+          </button>
+          <button
+            v-if="!collapsedStash"
             type="button"
             class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
             title="Stash 패널 (⌘3)"
@@ -281,7 +305,7 @@ const QUICK_TABS = [
             전체 →
           </button>
         </div>
-        <ul class="space-y-0.5">
+        <ul v-if="!collapsedStash" class="space-y-0.5">
           <li
             v-for="s in miniStashes"
             :key="`ms-${s.index}`"
@@ -320,11 +344,20 @@ const QUICK_TABS = [
         </ul>
       </div>
 
-      <!-- c25-3 step 4 — Worktree mini list (recent 4, main ★ + lock indicator). -->
+      <!-- c25-3 step 4 — Worktree mini list (recent 4, main ★ + lock indicator). c26-1 — collapsible. -->
       <div v-if="miniWorktrees.length > 1" class="mt-1 space-y-0.5">
         <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-          <span>Worktree ({{ sortedWorktrees.length }})</span>
           <button
+            type="button"
+            class="flex flex-1 items-center gap-1 hover:text-foreground"
+            :title="`Worktree 섹션 ${collapsedWorktree ? '펴기' : '접기'}`"
+            @click="collapsedWorktree = !collapsedWorktree"
+          >
+            <span class="text-[9px]">{{ collapsedWorktree ? '▶' : '▼' }}</span>
+            <span>Worktree ({{ sortedWorktrees.length }})</span>
+          </button>
+          <button
+            v-if="!collapsedWorktree"
             type="button"
             class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
             title="Worktree 패널 (⌘7)"
@@ -333,7 +366,7 @@ const QUICK_TABS = [
             전체 →
           </button>
         </div>
-        <ul class="space-y-0.5">
+        <ul v-if="!collapsedWorktree" class="space-y-0.5">
           <li
             v-for="w in miniWorktrees"
             :key="`mw-${w.path}`"
@@ -359,11 +392,20 @@ const QUICK_TABS = [
         </ul>
       </div>
 
-      <!-- c25-3 step 5 — Open PR mini list (active repo, recent 3). -->
+      <!-- c25-3 step 5 — Open PR mini list (active repo, recent 3). c26-1 — collapsible. -->
       <div v-if="miniPrs.length > 0" class="mt-1 space-y-0.5">
         <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-          <span>Open PR ({{ prs?.length ?? 0 }})</span>
           <button
+            type="button"
+            class="flex flex-1 items-center gap-1 hover:text-foreground"
+            :title="`Open PR 섹션 ${collapsedPrs ? '펴기' : '접기'}`"
+            @click="collapsedPrs = !collapsedPrs"
+          >
+            <span class="text-[9px]">{{ collapsedPrs ? '▶' : '▼' }}</span>
+            <span>Open PR ({{ prs?.length ?? 0 }})</span>
+          </button>
+          <button
+            v-if="!collapsedPrs"
             type="button"
             class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
             title="PR 패널 (⌘6)"
@@ -372,7 +414,7 @@ const QUICK_TABS = [
             전체 →
           </button>
         </div>
-        <ul class="space-y-0.5">
+        <ul v-if="!collapsedPrs" class="space-y-0.5">
           <li
             v-for="p in miniPrs"
             :key="`mp-${p.number}`"
