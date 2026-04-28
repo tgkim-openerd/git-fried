@@ -4,14 +4,13 @@
 // 기존 CommitGraph 가 selectCommit emit 하는 sha 를 받아 fetch + DiffViewer 로 렌더.
 // 모드 토글 (Hunk/Inline/Context) 은 git -U<n> 옵션으로 backend 에 직접 적용 —
 // CodeMirror 의 mode 가 아니라 patch 자체가 변함.
-import { computed, ref, useTemplateRef } from 'vue'
-import { useMutation, useQuery } from '@tanstack/vue-query'
-import { aiExplainCommit, getCommitDiff, type ResetMode } from '@/api/git'
+//
+// Sprint c26-2 — 공통 로직을 useCommitDiff composable 로 추출 (DRY).
+
+import { computed, useTemplateRef } from 'vue'
 import { describeError } from '@/api/errors'
-import { STALE_TIME } from '@/api/queryClient'
-import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
-import { useCommitActions } from '@/composables/useCommitActions'
-import { useDiffMode, DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
+import { DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
+import { useCommitDiff } from '@/composables/useCommitDiff'
 import AiResultModal from './AiResultModal.vue'
 import BaseModal from './BaseModal.vue'
 import DiffViewer from './DiffViewer.vue'
@@ -24,113 +23,27 @@ const props = defineProps<{
 }>()
 defineEmits<{ close: [] }>()
 
-const diffMode = useDiffMode()
-
-const { data, isFetching, error } = useQuery({
-  queryKey: computed(
-    () => ['commit-diff', props.repoId, props.sha, diffMode.mode.value] as const,
-  ),
-  queryFn: () => {
-    if (props.repoId == null || props.sha == null) {
-      return Promise.resolve('')
-    }
-    return getCommitDiff(props.repoId, props.sha, diffMode.contextLines.value)
-  },
-  enabled: computed(
-    () =>
-      props.open &&
-      props.repoId != null &&
-      props.sha != null &&
-      props.sha.length > 0,
-  ),
-  staleTime: STALE_TIME.STATIC,
+const cd = useCommitDiff({
+  repoId: () => props.repoId,
+  sha: () => props.sha,
+  enabled: () => props.open,
 })
-
-// AI Explain 진입점 (Sprint B7).
-const ai = useAiCli()
-const explainOpen = ref(false)
-const explainContent = ref('')
-const explainError = ref<string | null>(null)
-
-const explainMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || props.sha == null) {
-      return Promise.reject(new Error('레포/sha 미선택'))
-    }
-    if (ai.available.value == null) {
-      return Promise.reject(new Error('Claude/Codex CLI 미설치'))
-    }
-    if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
-    return aiExplainCommit(props.repoId, ai.available.value, props.sha, true)
-  },
-  onSuccess: (out) => {
-    if (out.success) {
-      explainContent.value = out.text
-      explainError.value = null
-      notifyAiDone('AI commit 설명', props.sha?.slice(0, 7))
-    } else {
-      explainContent.value = ''
-      explainError.value = out.stderr || out.text || '응답 실패'
-    }
-  },
-  onError: (e) => {
-    const m = describeError(e)
-    if (m.includes('cancelled')) {
-      explainOpen.value = false
-      return
-    }
-    explainContent.value = ''
-    explainError.value = m
-  },
-})
-
-function explain() {
-  explainOpen.value = true
-  explainContent.value = ''
-  explainError.value = null
-  explainMut.mutate()
-}
 
 const MODES: DiffMode[] = ['compact', 'default', 'context', 'split']
+const isSplit = computed(() => cd.diffMode.mode.value === 'split')
 
-// Sprint c25-4 — Hunk ↑↓ 네비게이션 (split 모드 외에서만 활성).
+// Hunk navigation (split 모드 외에서만 활성).
 type DiffViewerExpose = {
   nextHunk: () => void
   prevHunk: () => void
   hunkCount: () => number
 }
 const diffRef = useTemplateRef<DiffViewerExpose>('diffRef')
-
-// patch 자체에서 `@@` 라인 카운트 (DiffViewer.hunkCount() 는 reactive 하지 않음).
-const commitHunkCount = computed(() => {
-  const patch = data.value
-  if (!patch) return 0
-  const m = patch.match(/^@@\s/gm)
-  return m ? m.length : 0
-})
-const commitHunkNavDisabled = computed(() => commitHunkCount.value <= 1)
-
 function onPrevHunk() {
-  if (commitHunkNavDisabled.value) return
-  diffRef.value?.prevHunk()
+  if (!cd.hunkNavDisabled.value) diffRef.value?.prevHunk()
 }
 function onNextHunk() {
-  if (commitHunkNavDisabled.value) return
-  diffRef.value?.nextHunk()
-}
-
-// === Sprint 22-4 V-3: header action buttons (cherry-pick / revert / reset) ===
-const commitActions = useCommitActions(() => props.repoId)
-const resetMode = ref<ResetMode>('mixed')
-
-function onCherryPick() {
-  if (props.sha) void commitActions.cherryPick(props.sha)
-}
-function onRevert() {
-  if (props.sha) void commitActions.revert(props.sha)
-}
-function onReset() {
-  if (props.sha) void commitActions.reset(props.sha, resetMode.value)
+  if (!cd.hunkNavDisabled.value) diffRef.value?.nextHunk()
 }
 </script>
 
@@ -147,23 +60,23 @@ function onReset() {
         <h2 class="font-mono text-sm">
           commit
           <span v-if="sha" class="ml-1 text-muted-foreground">{{ sha.slice(0, 12) }}</span>
-          <span v-if="isFetching" class="ml-2 text-xs text-muted-foreground">불러오는 중...</span>
+          <span v-if="cd.isFetching.value" class="ml-2 text-xs text-muted-foreground">불러오는 중...</span>
         </h2>
         <div class="flex items-center gap-2">
             <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (split 모드 제외, 1-hunk 이하 disabled) -->
             <div
-              v-if="diffMode.mode.value !== 'split'"
+              v-if="!isSplit"
               class="flex items-center gap-0.5 rounded-md border border-border bg-muted/40 px-0.5"
               :title="
-                commitHunkNavDisabled
+                cd.hunkNavDisabled.value
                   ? '이 commit 은 hunk 1개 이하 — nav 불필요'
-                  : `${commitHunkCount}개 hunk — ↑↓ 로 이동`
+                  : `${cd.hunkCount.value}개 hunk — ↑↓ 로 이동`
               "
             >
               <button
                 type="button"
                 class="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
-                :disabled="commitHunkNavDisabled"
+                :disabled="cd.hunkNavDisabled.value"
                 title="이전 hunk"
                 aria-label="이전 hunk"
                 @click="onPrevHunk"
@@ -173,7 +86,7 @@ function onReset() {
               <button
                 type="button"
                 class="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
-                :disabled="commitHunkNavDisabled"
+                :disabled="cd.hunkNavDisabled.value"
                 title="다음 hunk"
                 aria-label="다음 hunk"
                 @click="onNextHunk"
@@ -189,7 +102,7 @@ function onReset() {
                 type="button"
                 class="rounded px-1.5 py-0.5"
                 :class="
-                  diffMode.mode.value === m
+                  cd.diffMode.mode.value === m
                     ? 'bg-accent text-accent-foreground font-semibold'
                     : 'text-muted-foreground hover:bg-accent/40'
                 "
@@ -202,7 +115,7 @@ function onReset() {
                     ? '확장 컨텍스트 25 라인 (-U25)'
                     : 'Split — side-by-side (다중 파일 picker)'
                 "
-                @click="diffMode.setMode(m)"
+                @click="cd.diffMode.setMode(m)"
               >
                 {{ DIFF_MODE_LABELS[m] }}
               </button>
@@ -216,7 +129,7 @@ function onReset() {
                 type="button"
                 class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40"
                 title="현재 HEAD 에 cherry-pick"
-                @click="onCherryPick"
+                @click="cd.onCherryPick"
               >
                 🍒 Cherry-pick
               </button>
@@ -224,13 +137,13 @@ function onReset() {
                 type="button"
                 class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40"
                 title="이 commit 을 revert (새 commit 생성)"
-                @click="onRevert"
+                @click="cd.onRevert"
               >
                 ↩ Revert
               </button>
               <div class="flex items-center gap-0.5 rounded border border-border bg-muted/40 p-0.5">
                 <select
-                  v-model="resetMode"
+                  v-model="cd.resetMode.value"
                   class="rounded bg-transparent px-1 text-[10px] text-muted-foreground focus:outline-none"
                   title="Reset 모드 선택"
                 >
@@ -241,23 +154,23 @@ function onReset() {
                 <button
                   type="button"
                   class="rounded px-1.5 py-0.5 text-[11px] hover:bg-accent/40"
-                  :class="resetMode === 'hard' ? 'text-destructive' : ''"
+                  :class="cd.resetMode.value === 'hard' ? 'text-destructive' : ''"
                   title="HEAD reset to this commit"
-                  @click="onReset"
+                  @click="cd.onReset"
                 >
                   ⏮ Reset
                 </button>
               </div>
             </div>
             <button
-              v-if="sha && ai.available.value"
+              v-if="sha && cd.ai.available.value"
               type="button"
               class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40 disabled:opacity-50"
-              :disabled="explainMut.isPending.value"
-              :title="`✨ ${ai.available.value} 로 설명`"
-              @click="explain"
+              :disabled="cd.explainMut.isPending.value"
+              :title="`✨ ${cd.ai.available.value} 로 설명`"
+              @click="cd.explain"
             >
-              ✨ {{ explainMut.isPending.value ? '...' : '설명' }}
+              ✨ {{ cd.explainMut.isPending.value ? '...' : '설명' }}
             </button>
             <button
               type="button"
@@ -272,10 +185,10 @@ function onReset() {
     </template>
     <div class="h-full">
           <p
-            v-if="error"
+            v-if="cd.error.value"
             class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs"
           >
-            {{ describeError(error) }}
+            {{ describeError(cd.error.value) }}
           </p>
           <p
             v-else-if="!sha"
@@ -284,20 +197,20 @@ function onReset() {
             먼저 그래프에서 commit 을 선택하세요. (J/K 또는 클릭)
           </p>
           <DiffSplitView
-            v-else-if="data && diffMode.mode.value === 'split'"
-            :patch="data"
+            v-else-if="cd.data.value && isSplit"
+            :patch="cd.data.value"
             class="h-full"
           />
-          <DiffViewer v-else-if="data" ref="diffRef" :patch="data" class="h-full" />
+          <DiffViewer v-else-if="cd.data.value" ref="diffRef" :patch="cd.data.value" class="h-full" />
     </div>
   </BaseModal>
 
   <AiResultModal
-    :open="explainOpen"
+    :open="cd.explainOpen.value"
     title="Commit 설명"
-    :content="explainContent"
-    :loading="explainMut.isPending.value"
-    :error="explainError"
-    @close="explainOpen = false"
+    :content="cd.explainContent.value"
+    :loading="cd.explainMut.isPending.value"
+    :error="cd.explainError.value"
+    @close="cd.explainOpen.value = false"
   />
 </template>
