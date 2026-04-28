@@ -68,8 +68,21 @@ export function useCommitActions(getRepoId: () => number | null) {
   async function reset(sha: string, mode: ResetMode) {
     const id = repoIdOrToast()
     if (id == null) return
-    const warn = mode === 'hard' ? '⚠ HARD reset = working tree 영구 손실. ' : ''
-    if (!window.confirm(`${warn}Reset --${mode} → ${sha.slice(0, 8)}?`)) return
+    // SEC-003 fix — hard 모드는 type-to-confirm (working tree 영구 손실 방지).
+    if (mode === 'hard') {
+      const expected = `reset --hard ${sha.slice(0, 8)}`
+      const input = window.prompt(
+        `⚠ HARD reset — working tree + index 영구 손실\n\n` +
+          `진행하려면 다음 정확히 입력:\n\n${expected}`,
+      )
+      if (input?.trim() !== expected) {
+        toast.info('Reset 취소', '입력이 일치하지 않아 취소됨')
+        return
+      }
+    } else {
+      // soft / mixed / keep — 단순 confirm 으로 충분 (working tree 보존).
+      if (!window.confirm(`Reset --${mode} → ${sha.slice(0, 8)}?`)) return
+    }
     try {
       await ipcReset(id, mode, sha)
       toast.success(`Reset --${mode} 완료`, sha.slice(0, 8))

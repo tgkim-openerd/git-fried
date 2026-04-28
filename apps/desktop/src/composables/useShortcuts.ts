@@ -153,7 +153,8 @@ function installGlobal() {
     }
 
     // Alt+↑ / Alt+↓ — diff hunk navigation (Sprint c26-3). modifier=alt 단독.
-    if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+    // ARCH-001 fix — input/textarea 안에서 발화 시 텍스트 편집 (커서 이동) 충돌 방지.
+    if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey && !isInputFocused()) {
       let hunkAction: ShortcutAction | null = null
       if (e.key === 'ArrowUp') hunkAction = 'prevHunk'
       else if (e.key === 'ArrowDown') hunkAction = 'nextHunk'

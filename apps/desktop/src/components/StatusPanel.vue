@@ -7,14 +7,8 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
-import DiffViewer from './DiffViewer.vue'
-
-// Sprint c25-4 — DiffViewer expose 타입 (defineExpose 결과).
-type DiffViewerExpose = {
-  nextHunk: () => void
-  prevHunk: () => void
-  hunkCount: () => number
-}
+// TYPE-003 / ARCH-004 fix — DiffViewer 가 export 하는 공통 expose 타입 import.
+import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
 import {
   discardPaths,
   getDiff,

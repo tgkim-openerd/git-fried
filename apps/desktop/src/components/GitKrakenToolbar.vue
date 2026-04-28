@@ -196,6 +196,17 @@ function onStash() {
     toast.info('Stash 할 변경사항 없음')
     return
   }
+  // SEC-001 fix — destructive 액션 confirm (메시지 없이 즉시 stash).
+  if (
+    !confirm(
+      '현재 working tree 변경사항을 stash 합니다.\n\n' +
+        '• 메시지 없이 즉시 stash\n' +
+        '• stash list 에 stash@{0} 으로 push\n\n' +
+        '진행하시겠습니까?',
+    )
+  ) {
+    return
+  }
   stashMut.mutate(props.repoId)
 }
 function onPop() {
@@ -205,6 +216,17 @@ function onPop() {
   }
   if (stashCount.value === 0) {
     toast.info('Stash 없음', 'pop 할 stash 가 없습니다.')
+    return
+  }
+  // SEC-001 fix — pop 은 apply + drop 자동, conflict 시 working tree 더러워짐.
+  if (
+    !confirm(
+      `stash@{0} 을 pop 합니다.\n\n` +
+        `• working tree 에 적용 + stash 제거\n` +
+        `• conflict 발생 시 stash 만 남고 working tree 가 더러워질 수 있음\n\n` +
+        `진행하시겠습니까? (남은 stash: ${stashCount.value})`,
+    )
+  ) {
     return
   }
   popMut.mutate(props.repoId)

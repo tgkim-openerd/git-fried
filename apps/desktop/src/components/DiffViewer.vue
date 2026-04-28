@@ -163,7 +163,15 @@ function hunkCount(): number {
   return findHunkLines().length
 }
 
-defineExpose({ nextHunk, prevHunk, hunkCount })
+// TYPE-003 / ARCH-004 fix — expose 타입 SoT.
+// 호출자 (StatusPanel / CommitDiffModal / CommitDiffPanel) 가 import 해서 useTemplateRef 에 사용.
+export type DiffViewerExpose = {
+  nextHunk: () => void
+  prevHunk: () => void
+  hunkCount: () => number
+}
+
+defineExpose<DiffViewerExpose>({ nextHunk, prevHunk, hunkCount })
 </script>
 
 <template>

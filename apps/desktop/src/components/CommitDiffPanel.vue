@@ -2,13 +2,12 @@
 // Sprint c25-4.5 (`docs/plan/25 §5-2`) — CommitDiffModal 의 inline 버전.
 // Sprint c26-2 — 공통 로직을 useCommitDiff composable 로 추출 (DRY).
 
-import { computed, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { describeError } from '@/api/errors'
 import { DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import { useCommitDiff } from '@/composables/useCommitDiff'
-import { useShortcut } from '@/composables/useShortcuts'
 import AiResultModal from './AiResultModal.vue'
-import DiffViewer from './DiffViewer.vue'
+import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
 import DiffSplitView from './DiffSplitView.vue'
 
 const props = defineProps<{
@@ -24,12 +23,7 @@ const cd = useCommitDiff({
 
 const MODES: DiffMode[] = ['compact', 'default', 'context', 'split']
 
-// Hunk navigation (DiffViewer expose).
-type DiffViewerExpose = {
-  nextHunk: () => void
-  prevHunk: () => void
-  hunkCount: () => number
-}
+// Hunk navigation (DiffViewer expose — TYPE-003 / ARCH-004 fix: 공통 type 사용).
 const diffRef = useTemplateRef<DiffViewerExpose>('diffRef')
 function onPrevHunk() {
   if (!cd.hunkNavDisabled.value) diffRef.value?.prevHunk()
@@ -38,9 +32,9 @@ function onNextHunk() {
   if (!cd.hunkNavDisabled.value) diffRef.value?.nextHunk()
 }
 
-// c26-3 — Alt+↑/↓ 키보드 단축키 (panel 마운트 시 등록).
-useShortcut('prevHunk', onPrevHunk)
-useShortcut('nextHunk', onNextHunk)
+// c26-3 / ARCH-002 fix — panel 마운트 자체가 active 의미 (selectedSha 있을 때만 mount).
+const panelActive = ref(true)
+cd.registerHunkNavShortcut(diffRef, panelActive)
 
 const isSplit = computed(() => cd.diffMode.mode.value === 'split')
 </script>

@@ -11,10 +11,10 @@ import { computed, useTemplateRef } from 'vue'
 import { describeError } from '@/api/errors'
 import { DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import { useCommitDiff } from '@/composables/useCommitDiff'
-import { useShortcut } from '@/composables/useShortcuts'
+import { toRef } from 'vue'
 import AiResultModal from './AiResultModal.vue'
 import BaseModal from './BaseModal.vue'
-import DiffViewer from './DiffViewer.vue'
+import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
 import DiffSplitView from './DiffSplitView.vue'
 
 const props = defineProps<{
@@ -33,12 +33,7 @@ const cd = useCommitDiff({
 const MODES: DiffMode[] = ['compact', 'default', 'context', 'split']
 const isSplit = computed(() => cd.diffMode.mode.value === 'split')
 
-// Hunk navigation (split 모드 외에서만 활성).
-type DiffViewerExpose = {
-  nextHunk: () => void
-  prevHunk: () => void
-  hunkCount: () => number
-}
+// Hunk navigation (split 모드 외에서만 활성, TYPE-003/ARCH-004 fix: 공통 expose 타입).
 const diffRef = useTemplateRef<DiffViewerExpose>('diffRef')
 function onPrevHunk() {
   if (!cd.hunkNavDisabled.value) diffRef.value?.prevHunk()
@@ -47,13 +42,9 @@ function onNextHunk() {
   if (!cd.hunkNavDisabled.value) diffRef.value?.nextHunk()
 }
 
-// c26-3 — Alt+↑/↓ 단축키 (modal open 시에만 작동).
-useShortcut('prevHunk', () => {
-  if (props.open) onPrevHunk()
-})
-useShortcut('nextHunk', () => {
-  if (props.open) onNextHunk()
-})
+// c26-3 / ARCH-002 fix — modal 의 open 을 enabledRef 로 캡슐화 (Panel 과 동시 mount 시 충돌 방지).
+const openRef = toRef(props, 'open')
+cd.registerHunkNavShortcut(diffRef, openRef)
 </script>
 
 <template>

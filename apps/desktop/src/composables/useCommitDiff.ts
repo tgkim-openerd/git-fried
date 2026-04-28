@@ -11,6 +11,7 @@ import { STALE_TIME } from '@/api/queryClient'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import { useCommitActions } from '@/composables/useCommitActions'
 import { useDiffMode } from '@/composables/useDiffMode'
+import { useShortcut } from '@/composables/useShortcuts'
 
 export interface UseCommitDiffOptions {
   repoId: () => number | null
@@ -106,13 +107,41 @@ export function useCommitDiff(options: UseCommitDiffOptions) {
   }
 
   // === Hunk navigation (patch text 기준 카운트, DiffViewer ref 는 호출자가 보유) ===
+  // ARCH-012 fix — `^@@ -\d` 으로 hunk header signature 까지 매칭 (false positive 방지).
   const hunkCount: ComputedRef<number> = computed(() => {
     const patch = data.value
     if (!patch) return 0
-    const m = patch.match(/^@@\s/gm)
+    const m = patch.match(/^@@ -\d/gm)
     return m ? m.length : 0
   })
   const hunkNavDisabled = computed(() => hunkCount.value <= 1)
+
+  /**
+   * ARCH-002 fix — Modal/Panel 가 동시에 mount 된 상태에서 양쪽 hunk nav shortcut 가
+   * 충돌하지 않도록 enabledRef 로 활성 여부를 캡슐화.
+   *
+   * 호출자가 DiffViewer ref + enabledRef 를 넘기면 Alt+↑/↓ 단축키 등록.
+   * enabledRef false 시 핸들러는 no-op — 한 시점에 한 instance 만 작동 보장.
+   */
+  type DiffViewerExposeLike = {
+    nextHunk: () => void
+    prevHunk: () => void
+  }
+  function registerHunkNavShortcut(
+    diffRef: Ref<DiffViewerExposeLike | null>,
+    enabledRef: Ref<boolean> | ComputedRef<boolean>,
+  ) {
+    useShortcut('prevHunk', () => {
+      if (!enabledRef.value) return
+      if (hunkNavDisabled.value) return
+      diffRef.value?.prevHunk()
+    })
+    useShortcut('nextHunk', () => {
+      if (!enabledRef.value) return
+      if (hunkNavDisabled.value) return
+      diffRef.value?.nextHunk()
+    })
+  }
 
   return {
     // Diff
@@ -135,5 +164,6 @@ export function useCommitDiff(options: UseCommitDiffOptions) {
     // Hunk
     hunkCount,
     hunkNavDisabled,
+    registerHunkNavShortcut,
   }
 }

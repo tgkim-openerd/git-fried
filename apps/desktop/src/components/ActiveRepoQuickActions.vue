@@ -107,6 +107,17 @@ function onApplyStash(idx: number) {
 }
 function onPopStash(idx: number) {
   if (store.activeRepoId == null) return
+  // SEC-002 fix — hover-only 버튼 우발 클릭 방지 + pop 의 destructive 의미 안내.
+  if (
+    !confirm(
+      `stash@{${idx}} 을 pop 합니다.\n\n` +
+        `• working tree 에 적용 + stash 제거\n` +
+        `• conflict 발생 시 stash 만 남고 working tree 가 더러워질 수 있음\n\n` +
+        `진행하시겠습니까?`,
+    )
+  ) {
+    return
+  }
   popStashMut.mutate({ id: store.activeRepoId, idx })
 }
 
