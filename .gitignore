@@ -66,3 +66,8 @@ coverage/
 plan.md
 plan-*.md
 post-commit-*.yml
+
+# Playwright MCP dogfood/audit screenshots (local-only)
+audit-*.png
+audit-*.yml
+.claude/agent-memory/
