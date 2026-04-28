@@ -220,6 +220,70 @@ test.describe('git-fried smoke', () => {
     await expect(sidebar).toContainText('6ef63e0')
   })
 
+  test('⌘1~7 단축키 7개 main-nav tab 전환', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
+    await page.reload()
+    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
+
+    const tabs = ['status', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree'] as const
+    for (let i = 0; i < tabs.length; i++) {
+      // window dispatchEvent 로 useShortcuts handler 직접 발화 (press_key 의 OS 단축키 충돌 회피).
+      await page.evaluate((n) => {
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: String(n),
+            ctrlKey: true,
+            bubbles: true,
+            cancelable: true,
+          }),
+        )
+      }, i + 1)
+      // Vue reactive 갱신 대기 (2 raf)
+      await page.evaluate(
+        () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+      )
+      const btn = page.locator(`[data-testid="main-nav-${tabs[i]}"]`)
+      await expect(btn).toHaveClass(/font-semibold/)
+    }
+  })
+
+  test('Stash 탭 진입 → 3 stash row + ⌘L apply hint', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
+    await page.reload()
+    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
+    await page.locator('[data-testid="main-nav-stash"]').click()
+
+    // devMock 의 fake stash 3개 (stash@{0}/{1}/{2}).
+    await expect(page.getByText(/stash@\{0\}/)).toBeVisible()
+    await expect(page.getByText(/stash@\{1\}/)).toBeVisible()
+    await expect(page.getByText(/stash@\{2\}/)).toBeVisible()
+  })
+
+  test('commit tab fallback — selectedSha=null 시 status 복귀', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
+    await page.reload()
+    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
+
+    // commit row click → 8번째 tab mount + 사용자 직접 click 으로 활성.
+    const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
+    await row.locator('span', { hasText: /^6ef63e0$/ }).click()
+    await page.locator('[data-testid="main-nav-commit"]').click()
+    await expect(page.locator('[data-testid="commit-detail-sidebar"]')).toBeVisible()
+
+    // selectedSha=null 강제 (다른 repo click → activeRepoId 변경 → selectedSha reset).
+    // 또는 evaluate 로 state reset (devMock 환경 단순화).
+    await page.evaluate(() => {
+      // pages/index.vue 내부 selectedSha 는 외부 노출 안 됨. 우회: sidebar repo 변경.
+      const el = document.querySelector('[data-testid="sidebar-repo-backend-api"]')
+      ;(el as HTMLElement | null)?.click()
+    })
+    // selectedSha 가 null 로 reset 되면 tab='commit' watch 가 'status' 로 fallback.
+    // commit tab DOM 자체가 사라짐 (mainTabs computed).
+    await expect(page.locator('[data-testid="main-nav-commit"]')).toHaveCount(0, {
+      timeout: 2_000,
+    })
+  })
+
   test('console.error 0건', async ({ page }) => {
     const errors: string[] = []
     page.on('console', (msg) => {

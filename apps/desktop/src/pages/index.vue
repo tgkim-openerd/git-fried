@@ -89,6 +89,14 @@ const mainTabs = computed<Tab[]>(() => {
 watch(selectedSha, (v) => {
   if (v == null && tab.value === 'commit') tab.value = 'status'
 })
+
+// Phase 1 (Sprint c29-5) — activeRepoId 변경 시 selectedSha reset (graph 가 바뀌어 의미 잃음).
+watch(
+  () => store.activeRepoId,
+  () => {
+    selectedSha.value = null
+  },
+)
 function onShowDiff(sha: string) {
   selectedSha.value = sha
   diffModalOpen.value = true
