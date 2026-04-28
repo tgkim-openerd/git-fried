@@ -15,6 +15,7 @@ import { useCommitDiff } from '@/composables/useCommitDiff'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { parsePatchStats } from '@/utils/patchStats'
 
 const props = defineProps<{
   repoId: number | null
@@ -37,11 +38,7 @@ const commit = computed(() => {
 const fileStats = computed(() => {
   const patch = cd.data.value
   if (!patch) return null
-  // 단순 파싱 — '+'/'-' 시작 라인 (header '+++'/'---' 제외).
-  const adds = (patch.match(/^\+[^+]/gm) ?? []).length
-  const dels = (patch.match(/^-[^-]/gm) ?? []).length
-  const files = (patch.match(/^diff --git /gm) ?? []).length
-  return { adds, dels, files }
+  return parsePatchStats(patch)
 })
 
 const authorInitial = computed(() => commit.value?.authorName?.charAt(0)?.toUpperCase() ?? '?')
