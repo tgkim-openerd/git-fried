@@ -114,6 +114,7 @@ pub fn run() {
             ipc::commands::compare_refs,
             ipc::commands::reset,
             ipc::commands::revert,
+            ipc::commands::undo_last_action,
             ipc::commands::get_graph,
             ipc::commands::list_submodules,
             ipc::commands::init_submodules,

@@ -165,4 +165,11 @@ GitKraken 의 좌측 sidebar 처럼 **Workspace · Branches · Tags · Stash · 
   - `StatusPanel.vue` inline diff 헤더 — Hunk ↑↓ 그룹 + 📜 History 버튼 (기존 FileHistoryModal 재사용) 추가. `useTemplateRef<DiffViewerExpose>('inlineDiff')`
   - `CommitDiffModal.vue` 헤더 — Hunk ↑↓ 그룹 추가 (split 모드는 자체 file picker 라서 hidden)
   - Edit This File / Blame inline 진입은 unified diff 텍스트 컨텍스트 모호로 후속 sprint 이연
+- **c25-4.1** — 1-hunk 이하 patch 시 Hunk ↑↓ disabled + tooltip + .gitignore Playwright artifacts
+- **c25-2.1** — StatusPanel Path/Tree 토글 (`apps/desktop/src/utils/pathTree.ts` + 9 unit tests). Modified 섹션만 tree 지원, single-child 체인 압축, localStorage 영속
+- **c25-2.2** — Staged 섹션도 Tree 모드 확장 (Modified 와 동일 패턴, action='-' unstage)
+- **c25-1.5** — Undo 백엔드 + 자동 처리:
+  - Rust `reset.rs::undo_last_action()` — `git reflog HEAD -1 --format=%gs` 파싱 → action prefix 화이트리스트 (commit / commit (amend) / commit (initial) / commit (merge)) → `reset --soft HEAD@{1}` → UndoResult 반환
+  - IPC `undo_last_action` 등록, api/git.ts `undoLastAction()` 타입 추가, devMock.ts mock
+  - GitKrakenToolbar `onUndo` — confirm dialog → undoMut → toast (`Undid: commit` / 거부 시 ReflogModal 자동 오픈)
 - 다음: c25-3 (좌측 sidebar 통합) — Tauri dev dogfood 검증 후 진입 권장

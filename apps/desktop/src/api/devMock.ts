@@ -298,6 +298,15 @@ const HANDLERS: Record<string, MockHandler> = {
   }),
   last_commit_message: () => COMMIT_SUMMARIES[0]?.subject ?? '',
 
+  // Sprint c25-1.5 — Undo last action mock.
+  undo_last_action: () => ({
+    action: 'commit',
+    message: COMMIT_SUMMARIES[0]?.subject ?? '',
+    executed: true,
+    rejectionReason: null,
+    newHeadSha: 'mock-undo-' + Date.now().toString(16).slice(-7),
+  }),
+
   // Diff
   get_diff: () => SAMPLE_DIFF,
   get_commit_diff: () => SAMPLE_DIFF,

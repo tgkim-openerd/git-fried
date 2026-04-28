@@ -13,7 +13,7 @@
 
 import { computed } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { fetchAll, popStash, pull, pushStash, push, updateSubmodules } from '@/api/git'
+import { fetchAll, popStash, pull, pushStash, push, undoLastAction, updateSubmodules } from '@/api/git'
 import { useStash } from '@/composables/useStash'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useGeneralSettings } from '@/composables/useUserSettings'
@@ -101,6 +101,30 @@ const pushMut = useMutation({
   onError: (e) => toast.error('Push 호출 실패', describeError(e)),
 })
 
+// === Sprint c25-1.5 — Undo last action ===
+// commit / amend 만 자동 reset --soft, 나머지는 ReflogModal 진입 권유.
+const undoMut = useMutation({
+  mutationFn: (id: number) => undoLastAction(id),
+  onSuccess: (res) => {
+    if (res.executed) {
+      invalidate(props.repoId)
+      const preview = res.message.split(/\r?\n/)[0].slice(0, 50)
+      toast.success(
+        `Undid: ${res.action}`,
+        preview ? `'${preview}' 되돌림 (--soft, working tree 보존)` : '되돌림 완료',
+      )
+    } else {
+      toast.warning(
+        `${res.action} 은 자동 undo 미지원`,
+        (res.rejectionReason ?? '') + ' — Reflog 모달에서 직접 처리하세요.',
+      )
+      // 거부된 경우 ReflogModal 자동 오픈 — 사용자 후속 액션 가이드.
+      window.gitFriedOpenReflog?.()
+    }
+  },
+  onError: (e) => toast.error('Undo 실패', describeError(e)),
+})
+
 // === Stash / Pop (toolbar 자체 mutation) ===
 const stashMut = useMutation({
   mutationFn: (id: number) => pushStash(id, null, false),
@@ -127,8 +151,19 @@ function onUndo() {
     toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
     return
   }
-  // ReflogModal 의 'HEAD restore' 가 GitKraken Undo 의 의미를 가장 가깝게 표현.
-  window.gitFriedOpenReflog?.()
+  // Sprint c25-1.5 — confirm 후 reset --soft HEAD@{1}.
+  // commit/amend 만 자동 처리, 다른 액션은 backend 가 거부 + ReflogModal 자동 오픈.
+  if (
+    !confirm(
+      '마지막 작업을 되돌립니다.\n\n' +
+        '• commit / amend 만 자동 처리 (`reset --soft HEAD@{1}` — working tree 보존)\n' +
+        '• merge / rebase / branch switch 등은 ReflogModal 로 안내\n\n' +
+        '진행하시겠습니까?',
+    )
+  ) {
+    return
+  }
+  undoMut.mutate(props.repoId)
 }
 function onRedo() {
   toast.info(
@@ -195,12 +230,16 @@ useShortcut('push', onPush)
         <button
           type="button"
           class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId"
-          title="Undo — 마지막 작업 되돌리기 (Reflog 진입)"
+          :disabled="!repoId || undoMut.isPending.value"
+          :title="
+            undoMut.isPending.value
+              ? 'Undo 진행 중...'
+              : 'Undo — 마지막 commit/amend 되돌리기 (--soft, working tree 보존)'
+          "
           @click="onUndo"
         >
           <span class="text-base leading-none">↶</span>
-          <span class="text-[10px] leading-tight">Undo</span>
+          <span class="text-[10px] leading-tight">{{ undoMut.isPending.value ? '...' : 'Undo' }}</span>
         </button>
         <button
           type="button"

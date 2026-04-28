@@ -732,6 +732,17 @@ pub async fn revert(args: RevertArgs, state: tauri::State<'_, Arc<AppState>>) ->
     git_reset::revert(&path, &args.sha, args.no_commit).await
 }
 
+// ====== Sprint c25-1.5 — Undo last action ======
+
+#[tauri::command]
+pub async fn undo_last_action(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_reset::UndoResult> {
+    let path = repo_path(&state, repo_id).await?;
+    git_reset::undo_last_action(&path).await
+}
+
 // ====== Submodule ======
 
 #[tauri::command]

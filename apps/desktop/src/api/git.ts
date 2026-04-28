@@ -100,6 +100,22 @@ export const commit = (args: CommitArgs): Promise<CommitResult> =>
 export const lastCommitMessage = (repoId: number): Promise<string> =>
   invoke('last_commit_message', { repoId })
 
+// --- Sprint c25-1.5 — Undo last action ---
+export interface UndoResult {
+  /** reflog action prefix (e.g., 'commit', 'commit (amend)', 'merge', ...). */
+  action: string
+  /** action 뒤 메시지 (e.g., 'feat: 구현'). */
+  message: string
+  /** 실제 reset 실행 여부 (commit/amend 만 true). */
+  executed: boolean
+  /** 거부 사유 (executed=false 시). */
+  rejectionReason: string | null
+  /** reset 후 새 HEAD SHA (executed=true 시). */
+  newHeadSha: string | null
+}
+export const undoLastAction = (repoId: number): Promise<UndoResult> =>
+  invoke('undo_last_action', { repoId })
+
 // --- Sync ---
 export const fetchAll = (repoId: number): Promise<SyncResult> =>
   invoke('fetch_all', { repoId })
