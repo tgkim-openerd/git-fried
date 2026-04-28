@@ -1,188 +1,37 @@
 <script setup lang="ts">
 // Sprint c25-3 step 1 (`docs/plan/25 §4`) — 좌측 Sidebar 하단 mini section.
+// Sprint c27-1 (ARCH-003 fix) — God component 해소. 4 mini list 는 별도 sub-component 로 분리.
 //
-// GitKraken 의 "좌측 sidebar 가 풍부한 정보를 담는다" 방향성의 첫 step.
-// 활성 레포의 핵심 상태 (branch, ahead/behind, changes count) + 7-tab 으로
-// 1-click 진입할 수 있는 단축 버튼만 모음. 7-tab 자체는 우측 패널에 그대로 유지
-// (대규모 layout swap 은 별도 sprint 로 이연).
-//
-// 의도: Sidebar 의 footer 위, repo list 아래에 collapsible details 로 배치.
-// 영속화: localStorage `git-fried.active-repo-quick.collapsed`.
+// 본 컴포넌트의 책임 = 활성 레포 status header + 5 quick tab btn 만.
+// Branch / Stash / Worktree / PR 리스트는 각각 MiniXxxList.vue 가 자체 data + UI 책임.
+
 import { computed } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
-import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useStatus } from '@/composables/useStatus'
 import { useStatusCounts } from '@/composables/useStatusCounts'
-import { useBranches } from '@/composables/useBranches'
-import { useStash } from '@/composables/useStash'
-import { useWorktrees } from '@/composables/useWorktrees'
-import { usePullRequests } from '@/composables/usePullRequests'
 import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
-import { useQueryClient } from '@tanstack/vue-query'
-import { applyStash, popStash, switchBranch } from '@/api/git'
-import { describeError } from '@/api/errors'
-import { useToast } from '@/composables/useToast'
+import MiniBranchList from './MiniBranchList.vue'
+import MiniStashList from './MiniStashList.vue'
+import MiniWorktreeList from './MiniWorktreeList.vue'
+import MiniPrList from './MiniPrList.vue'
 
 const store = useReposStore()
-const toast = useToast()
-const invalidate = useInvalidateRepoQueries()
 const collapsed = useSectionCollapse('active-repo-quick')
 
-// c26-1 — 각 mini section 별 collapse 영속 (긴 sidebar 압박 해소).
-const collapsedBranches = useSectionCollapse('active-repo-quick.branches')
-const collapsedStash = useSectionCollapse('active-repo-quick.stash')
-const collapsedWorktree = useSectionCollapse('active-repo-quick.worktree')
-const collapsedPrs = useSectionCollapse('active-repo-quick.pr')
-
 const repoIdRef = computed(() => store.activeRepoId)
-// ARCH-006 fix — useStatusCounts 단일 진실원천. status 는 branch/upstream/ahead 만 별도 사용.
 const { data: status } = useStatus(repoIdRef)
+// ARCH-006 — useStatusCounts 단일 진실원천.
 const { counts } = useStatusCounts(repoIdRef)
-// c25-3 step 2 — 활성 레포의 로컬 브랜치 mini list (top 5, current HEAD ✓).
-const { data: branches } = useBranches(repoIdRef)
-const localBranches = computed(() => {
-  const all = branches.value ?? []
-  return all.filter((b) => b.kind === 'local')
-})
-// HEAD branch 우선, 그 다음 최근 정렬 순.
-const miniBranches = computed(() => {
-  const list = [...localBranches.value]
-  list.sort((a, b) => {
-    if (a.isHead && !b.isHead) return -1
-    if (b.isHead && !a.isHead) return 1
-    return 0
-  })
-  return list.slice(0, 5)
-})
-const moreBranchesCount = computed(() =>
-  Math.max(0, localBranches.value.length - miniBranches.value.length),
-)
-
-const switchMut = useMutation({
-  mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name),
-  onSuccess: (_res, vars) => {
-    invalidate(store.activeRepoId)
-    toast.success(`브랜치 전환`, vars.name)
-  },
-  onError: (e) => toast.error('브랜치 전환 실패', describeError(e)),
-})
-function onSwitchBranch(name: string, isHead: boolean) {
-  if (isHead) return
-  if (store.activeRepoId == null) return
-  // SEC-009 fix — dirty working tree 시 git checkout 거부 가능성 안내.
-  // counts.value.total > 0 이면 확인 dialog (Tauri git2 가 거부할 가능성 큼).
-  if (counts.value.total > 0) {
-    if (
-      !confirm(
-        `변경사항 있음 (${counts.value.total} files) — '${name}' 으로 체크아웃 진행?\n\n` +
-          `• git checkout 이 거부할 수 있음 (overwrite 위험)\n` +
-          `• 안전하게 진행하려면 stash 먼저 권장\n\n` +
-          `그래도 시도하시겠습니까?`,
-      )
-    ) {
-      return
-    }
-  }
-  switchMut.mutate({ id: store.activeRepoId, name })
-}
-
-// === c25-3 step 3 — Stash mini list ===
-const queryClient = useQueryClient()
-const { data: stashes } = useStash(repoIdRef)
-const miniStashes = computed(() => (stashes.value ?? []).slice(0, 3))
-const moreStashesCount = computed(() =>
-  Math.max(0, (stashes.value?.length ?? 0) - miniStashes.value.length),
-)
-
-function invalidateStash() {
-  queryClient.invalidateQueries({ queryKey: ['stash', store.activeRepoId] })
-}
-
-const applyStashMut = useMutation({
-  mutationFn: ({ id, idx }: { id: number; idx: number }) => applyStash(id, idx),
-  onSuccess: () => {
-    invalidate(store.activeRepoId)
-    invalidateStash()
-    toast.success('Stash apply 완료', 'working tree 에 적용됨 (stash 보존)')
-  },
-  onError: (e) => toast.error('Stash apply 실패', describeError(e)),
-})
-const popStashMut = useMutation({
-  mutationFn: ({ id, idx }: { id: number; idx: number }) => popStash(id, idx),
-  onSuccess: () => {
-    invalidate(store.activeRepoId)
-    invalidateStash()
-    toast.success('Stash pop 완료', 'apply + 제거')
-  },
-  onError: (e) => toast.error('Stash pop 실패', describeError(e)),
-})
-
-function onApplyStash(idx: number) {
-  if (store.activeRepoId == null) return
-  applyStashMut.mutate({ id: store.activeRepoId, idx })
-}
-function onPopStash(idx: number) {
-  if (store.activeRepoId == null) return
-  // SEC-002 fix — hover-only 버튼 우발 클릭 방지 + pop 의 destructive 의미 안내.
-  if (
-    !confirm(
-      `stash@{${idx}} 을 pop 합니다.\n\n` +
-        `• working tree 에 적용 + stash 제거\n` +
-        `• conflict 발생 시 stash 만 남고 working tree 가 더러워질 수 있음\n\n` +
-        `진행하시겠습니까?`,
-    )
-  ) {
-    return
-  }
-  popStashMut.mutate({ id: store.activeRepoId, idx })
-}
-
-// === c25-3 step 4 — Worktree mini list (사용자 본인 8 worktree 환경 직격) ===
-// Worktree 경로 직접 열기는 IPC 부재 — 상세는 WorktreePanel (⌘7) 에서 처리.
-// mini 는 정보 표현 (path tail + branch + isMain ★ + lock) + 진입 단축만.
-const { data: worktrees } = useWorktrees(repoIdRef)
-// main worktree 우선, 그 다음 path 알파벳.
-const sortedWorktrees = computed(() => {
-  const list = [...(worktrees.value ?? [])]
-  list.sort((a, b) => {
-    if (a.isMain && !b.isMain) return -1
-    if (b.isMain && !a.isMain) return 1
-    return a.path.localeCompare(b.path)
-  })
-  return list
-})
-const miniWorktrees = computed(() => sortedWorktrees.value.slice(0, 4))
-const moreWorktreesCount = computed(() =>
-  Math.max(0, sortedWorktrees.value.length - miniWorktrees.value.length),
-)
-function worktreeName(path: string): string {
-  // path tail 만 표시 (e.g., 'C:/work/opnd/frontend' → 'frontend').
-  const trimmed = path.replace(/[/\\]+$/, '')
-  const segs = trimmed.split(/[/\\]/)
-  return segs[segs.length - 1] || path
-}
-
-// === c25-3 step 5 — PR mini list (활성 레포의 open PR top 3) ===
-// Launchpad 가 cross-repo 통합인 반면 sidebar mini PR 은 active-repo-only.
-// 클릭 시 PrDetailModal 가 PrPanel 의 modal state — sidebar 에서 직접 띄우려면 window 트리거 필요.
-// 단순화: 클릭 시 dispatchShortcut('tab6') → PrPanel 진입 (사용자가 거기서 detail).
-const { data: prs } = usePullRequests(repoIdRef, () => 'open')
-const miniPrs = computed(() => (prs.value ?? []).slice(0, 3))
-const morePrsCount = computed(() =>
-  Math.max(0, (prs.value?.length ?? 0) - miniPrs.value.length),
-)
 
 const branch = computed(() => status.value?.branch ?? null)
 const upstream = computed(() => status.value?.upstream ?? null)
 const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
-// ARCH-006 fix — counts 는 useStatusCounts (위) 에서 import.
-
 // 7-tab 단축 버튼 — pages/index.vue 의 useShortcut('tab1'~'tab7') 로 dispatch.
 // (변경/브랜치/Stash/Sub/LFS/PR/WT 매핑)
-// TYPE-006 fix — key: ShortcutAction 명시. QUICK_TABS 에 잘못된 key 추가 시 컴파일 에러 보장.
+// TYPE-006 — key: ShortcutAction 명시.
 const QUICK_TABS: ReadonlyArray<{
   key: ShortcutAction
   icon: string
@@ -254,219 +103,11 @@ const QUICK_TABS: ReadonlyArray<{
         </button>
       </div>
 
-      <!-- c25-3 step 2 — 로컬 브랜치 mini list (top 5, 클릭 시 switch). c26-1 — collapsible. -->
-      <div v-if="miniBranches.length > 0" class="mt-1 space-y-0.5">
-        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-          <button
-            type="button"
-            class="flex flex-1 items-center gap-1 hover:text-foreground"
-            :title="`로컬 브랜치 섹션 ${collapsedBranches ? '펴기' : '접기'}`"
-            @click="collapsedBranches = !collapsedBranches"
-          >
-            <span class="text-[9px]">{{ collapsedBranches ? '▶' : '▼' }}</span>
-            <span>로컬 브랜치 ({{ localBranches.length }})</span>
-          </button>
-          <button
-            v-if="!collapsedBranches"
-            type="button"
-            class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
-            title="전체 브랜치 패널 (⌘B)"
-            @click="dispatchShortcut('newBranch')"
-          >
-            전체 →
-          </button>
-        </div>
-        <ul v-if="!collapsedBranches" class="space-y-0.5">
-          <li
-            v-for="b in miniBranches"
-            :key="`mb-${b.name}`"
-            class="group flex items-center gap-1 rounded px-1 py-0.5 text-[11px]"
-            :class="
-              b.isHead
-                ? 'bg-emerald-500/10 text-emerald-500'
-                : 'text-foreground hover:bg-accent/40 cursor-pointer'
-            "
-            :title="
-              b.isHead
-                ? '현재 HEAD (체크아웃 됨)'
-                : `${b.name} 으로 체크아웃 (clean working tree 권장)`
-            "
-            @click="onSwitchBranch(b.name, b.isHead)"
-          >
-            <span class="shrink-0 w-3 text-center">{{ b.isHead ? '●' : '' }}</span>
-            <span class="flex-1 truncate font-mono">{{ b.name }}</span>
-            <span v-if="b.ahead || b.behind" class="text-[9px]">
-              <span v-if="b.ahead" class="text-emerald-500">↑{{ b.ahead }}</span>
-              <span v-if="b.behind" class="ml-0.5 text-rose-500">↓{{ b.behind }}</span>
-            </span>
-          </li>
-          <li
-            v-if="moreBranchesCount > 0"
-            class="px-1 py-0.5 text-[10px] text-muted-foreground"
-          >
-            ⋯ +{{ moreBranchesCount }}개 더 (전체 → 클릭)
-          </li>
-        </ul>
-      </div>
-
-      <!-- c25-3 step 3 — Stash mini list (recent 3, apply / pop). c26-1 — collapsible. -->
-      <div v-if="miniStashes.length > 0" class="mt-1 space-y-0.5">
-        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-          <button
-            type="button"
-            class="flex flex-1 items-center gap-1 hover:text-foreground"
-            :title="`Stash 섹션 ${collapsedStash ? '펴기' : '접기'}`"
-            @click="collapsedStash = !collapsedStash"
-          >
-            <span class="text-[9px]">{{ collapsedStash ? '▶' : '▼' }}</span>
-            <span>Stash ({{ stashes?.length ?? 0 }})</span>
-          </button>
-          <button
-            v-if="!collapsedStash"
-            type="button"
-            class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
-            title="Stash 패널 (⌘3)"
-            @click="dispatchShortcut('tab3')"
-          >
-            전체 →
-          </button>
-        </div>
-        <ul v-if="!collapsedStash" class="space-y-0.5">
-          <li
-            v-for="s in miniStashes"
-            :key="`ms-${s.index}`"
-            class="group flex items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-accent/30"
-            :title="`stash@{${s.index}} on ${s.branch ?? 'unknown'} — ${s.message}`"
-          >
-            <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
-              @{{ s.index }}
-            </span>
-            <span class="flex-1 truncate">{{ s.message || '(no message)' }}</span>
-            <button
-              type="button"
-              class="opacity-0 group-hover:opacity-100 rounded border border-border px-1 py-0 text-[9px] text-muted-foreground hover:bg-accent/40"
-              title="apply (working tree 에 적용, stash 보존)"
-              :disabled="applyStashMut.isPending.value"
-              @click="onApplyStash(s.index)"
-            >
-              apply
-            </button>
-            <button
-              type="button"
-              class="opacity-0 group-hover:opacity-100 rounded border border-border px-1 py-0 text-[9px] text-muted-foreground hover:bg-accent/40"
-              title="pop (apply + 제거)"
-              :disabled="popStashMut.isPending.value"
-              @click="onPopStash(s.index)"
-            >
-              pop
-            </button>
-          </li>
-          <li
-            v-if="moreStashesCount > 0"
-            class="px-1 py-0.5 text-[10px] text-muted-foreground"
-          >
-            ⋯ +{{ moreStashesCount }}개 더 (전체 → 클릭)
-          </li>
-        </ul>
-      </div>
-
-      <!-- c25-3 step 4 — Worktree mini list (recent 4, main ★ + lock indicator). c26-1 — collapsible. -->
-      <div v-if="miniWorktrees.length > 1" class="mt-1 space-y-0.5">
-        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-          <button
-            type="button"
-            class="flex flex-1 items-center gap-1 hover:text-foreground"
-            :title="`Worktree 섹션 ${collapsedWorktree ? '펴기' : '접기'}`"
-            @click="collapsedWorktree = !collapsedWorktree"
-          >
-            <span class="text-[9px]">{{ collapsedWorktree ? '▶' : '▼' }}</span>
-            <span>Worktree ({{ sortedWorktrees.length }})</span>
-          </button>
-          <button
-            v-if="!collapsedWorktree"
-            type="button"
-            class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
-            title="Worktree 패널 (⌘7)"
-            @click="dispatchShortcut('tab7')"
-          >
-            전체 →
-          </button>
-        </div>
-        <ul v-if="!collapsedWorktree" class="space-y-0.5">
-          <li
-            v-for="w in miniWorktrees"
-            :key="`mw-${w.path}`"
-            class="flex items-center gap-1 rounded px-1 py-0.5 text-[11px]"
-            :title="`${w.path}${w.branch ? ' [' + w.branch + ']' : ''}${w.isLocked ? ' (locked)' : ''}`"
-          >
-            <span class="shrink-0 w-3 text-center text-[10px]">
-              <span v-if="w.isMain" class="text-amber-500" title="main worktree">★</span>
-              <span v-else-if="w.isLocked" class="text-rose-500" title="locked">🔒</span>
-              <span v-else class="text-muted-foreground">·</span>
-            </span>
-            <span class="flex-1 truncate font-mono">{{ worktreeName(w.path) }}</span>
-            <span v-if="w.branch" class="truncate text-[9px] text-muted-foreground" :style="{ maxWidth: '80px' }">
-              {{ w.branch }}
-            </span>
-          </li>
-          <li
-            v-if="moreWorktreesCount > 0"
-            class="px-1 py-0.5 text-[10px] text-muted-foreground"
-          >
-            ⋯ +{{ moreWorktreesCount }}개 더 (전체 → 클릭)
-          </li>
-        </ul>
-      </div>
-
-      <!-- c25-3 step 5 — Open PR mini list (active repo, recent 3). c26-1 — collapsible. -->
-      <div v-if="miniPrs.length > 0" class="mt-1 space-y-0.5">
-        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
-          <button
-            type="button"
-            class="flex flex-1 items-center gap-1 hover:text-foreground"
-            :title="`Open PR 섹션 ${collapsedPrs ? '펴기' : '접기'}`"
-            @click="collapsedPrs = !collapsedPrs"
-          >
-            <span class="text-[9px]">{{ collapsedPrs ? '▶' : '▼' }}</span>
-            <span>Open PR ({{ prs?.length ?? 0 }})</span>
-          </button>
-          <button
-            v-if="!collapsedPrs"
-            type="button"
-            class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
-            title="PR 패널 (⌘6)"
-            @click="dispatchShortcut('tab6')"
-          >
-            전체 →
-          </button>
-        </div>
-        <ul v-if="!collapsedPrs" class="space-y-0.5">
-          <li
-            v-for="p in miniPrs"
-            :key="`mp-${p.number}`"
-            class="flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-accent/30"
-            :title="`#${p.number} ${p.title}\nby ${p.author.username} — ${p.headBranch} → ${p.baseBranch}`"
-            @click="dispatchShortcut('tab6')"
-          >
-            <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
-              #{{ p.number }}
-            </span>
-            <span v-if="p.draft" class="shrink-0 rounded bg-muted/50 px-1 text-[9px] text-muted-foreground">
-              draft
-            </span>
-            <span class="flex-1 truncate">{{ p.title }}</span>
-            <span v-if="p.comments > 0" class="text-[9px] text-muted-foreground">
-              💬{{ p.comments }}
-            </span>
-          </li>
-          <li
-            v-if="morePrsCount > 0"
-            class="px-1 py-0.5 text-[10px] text-muted-foreground"
-          >
-            ⋯ +{{ morePrsCount }}개 더 (전체 → 클릭)
-          </li>
-        </ul>
-      </div>
+      <!-- c27-1 (ARCH-003 fix) — 4 mini list 는 sub-component 로 분리. -->
+      <MiniBranchList />
+      <MiniStashList />
+      <MiniWorktreeList />
+      <MiniPrList />
     </div>
   </details>
 </template>

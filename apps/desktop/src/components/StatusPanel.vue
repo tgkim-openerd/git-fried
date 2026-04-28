@@ -341,17 +341,19 @@ const filteredUnstaged = computed(() =>
   (status.value?.unstaged ?? []).filter((f) => matchFilter(f.path)),
 )
 
-// Sprint c25-2.1 — Modified 섹션의 tree 변환.
-// collapsedDirs 에 포함된 디렉토리 노드는 children 숨김 (visible flag).
-type UnstagedTreeRow =
+// Sprint c25-2.1 / c27-2 (TYPE-005 fix) — generic 트리 평탄화.
+// Modified / Staged / Untracked / Conflicted 4 섹션 공통 사용.
+// row 의 meta 는 호출자 generic <T> — FileChange (Modified/Staged) 또는 string (Untracked/Conflicted).
+// path / name 은 두 mode 모두 노출 (file row 의 SoT).
+type FlatTreeRow<T> =
   | { kind: 'dir'; path: string; name: string; depth: number; collapsed: boolean }
-  | { kind: 'file'; file: FileChange; depth: number }
+  | { kind: 'file'; path: string; name: string; depth: number; meta: T }
 
-function flattenTree(
-  nodes: TreeNode<FileChange>[],
+function flattenTree<T>(
+  nodes: TreeNode<T>[],
   collapsed: Set<string>,
-  out: UnstagedTreeRow[] = [],
-): UnstagedTreeRow[] {
+  out: FlatTreeRow<T>[] = [],
+): FlatTreeRow<T>[] {
   for (const n of nodes) {
     if (n.kind === 'dir') {
       const isCollapsed = collapsed.has(n.path)
@@ -364,61 +366,41 @@ function flattenTree(
       })
       if (!isCollapsed) flattenTree(n.children, collapsed, out)
     } else {
-      out.push({ kind: 'file', file: n.meta, depth: n.depth })
+      out.push({ kind: 'file', path: n.path, name: n.name, depth: n.depth, meta: n.meta })
     }
   }
   return out
 }
 
-const unstagedTreeRows = computed<UnstagedTreeRow[]>(() => {
+type FileChangeTreeRow = FlatTreeRow<FileChange>
+type StringTreeRow = FlatTreeRow<string>
+
+const unstagedTreeRows = computed<FileChangeTreeRow[]>(() => {
   if (viewMode.value !== 'tree') return []
   const items = filteredUnstaged.value.map((f) => ({ path: f.path, meta: f }))
   const tree = buildPathTree(items, { collapseSingleChild: true })
   return flattenTree(tree, collapsedDirs.value)
 })
 
-// c25-2.2 — Staged 섹션도 Tree 지원 (Modified 와 동일 row 타입).
-const stagedTreeRows = computed<UnstagedTreeRow[]>(() => {
+const stagedTreeRows = computed<FileChangeTreeRow[]>(() => {
   if (viewMode.value !== 'tree') return []
   const items = filteredStaged.value.map((f) => ({ path: f.path, meta: f }))
   const tree = buildPathTree(items, { collapseSingleChild: true })
   return flattenTree(tree, collapsedDirs.value)
 })
 
-// c25-2.3 — untracked / conflicted 섹션도 Tree 지원 (string[] meta).
-type StringTreeRow =
-  | { kind: 'dir'; path: string; name: string; depth: number; collapsed: boolean }
-  | { kind: 'file'; path: string; name: string; depth: number }
-
-function flattenStringTree(
-  nodes: TreeNode<string>[],
-  collapsed: Set<string>,
-  out: StringTreeRow[] = [],
-): StringTreeRow[] {
-  for (const n of nodes) {
-    if (n.kind === 'dir') {
-      const isCollapsed = collapsed.has(n.path)
-      out.push({ kind: 'dir', path: n.path, name: n.name, depth: n.depth, collapsed: isCollapsed })
-      if (!isCollapsed) flattenStringTree(n.children, collapsed, out)
-    } else {
-      out.push({ kind: 'file', path: n.path, name: n.name, depth: n.depth })
-    }
-  }
-  return out
-}
-
 const untrackedTreeRows = computed<StringTreeRow[]>(() => {
   if (viewMode.value !== 'tree') return []
   const items = filteredUntracked.value.map((p) => ({ path: p, meta: p }))
   const tree = buildPathTree(items, { collapseSingleChild: true })
-  return flattenStringTree(tree, collapsedDirs.value)
+  return flattenTree(tree, collapsedDirs.value)
 })
 
 const conflictedTreeRows = computed<StringTreeRow[]>(() => {
   if (viewMode.value !== 'tree') return []
   const items = filteredConflicted.value.map((p) => ({ path: p, meta: p }))
   const tree = buildPathTree(items, { collapseSingleChild: true })
-  return flattenStringTree(tree, collapsedDirs.value)
+  return flattenTree(tree, collapsedDirs.value)
 })
 const filteredUntracked = computed(() =>
   (status.value?.untracked ?? []).filter((p) => matchFilter(p)),
@@ -605,23 +587,23 @@ function onNextHunk() {
             <li
               v-else
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-              :class="isSelected(row.file.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+              :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
               :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              @click="selectPath(row.file.path)"
-              @contextmenu="onFileContextMenu($event, row.file.path, true)"
+              @click="selectPath(row.path)"
+              @contextmenu="onFileContextMenu($event, row.path, true)"
             >
-              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.file.status)]">
-                {{ statusLabel(row.file.status) }}
+              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.meta.status)]">
+                {{ statusLabel(row.meta.status) }}
               </span>
-              <span class="flex-1 truncate font-mono text-xs" :title="row.file.path">
-                {{ row.file.path.split('/').pop() }}
+              <span class="flex-1 truncate font-mono text-xs" :title="row.path">
+                {{ row.path.split('/').pop() }}
               </span>
               <button
                 type="button"
                 class="text-[10px] text-muted-foreground/70 hover:text-foreground"
                 title="Hunk-level unstage"
-                :aria-label="`'${row.file.path}' hunk 단위 unstage`"
-                @click.stop="openHunk(row.file.path, true)"
+                :aria-label="`'${row.path}' hunk 단위 unstage`"
+                @click.stop="openHunk(row.path, true)"
               >
                 ✂ hunk
               </button>
@@ -629,8 +611,8 @@ function onNextHunk() {
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="unstage"
-                :aria-label="`'${row.file.path}' unstage`"
-                @click.stop="onUnstageOne(row.file.path)"
+                :aria-label="`'${row.path}' unstage`"
+                @click.stop="onUnstageOne(row.path)"
               >
                 −
               </button>
@@ -730,25 +712,25 @@ function onNextHunk() {
             <li
               v-else
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-              :class="isSelected(row.file.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+              :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
               :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
               draggable="true"
-              @click="selectPath(row.file.path)"
-              @contextmenu="onFileContextMenu($event, row.file.path, false)"
-              @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.file.path)"
+              @click="selectPath(row.path)"
+              @contextmenu="onFileContextMenu($event, row.path, false)"
+              @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.path)"
             >
-              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.file.status)]">
-                {{ statusLabel(row.file.status) }}
+              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.meta.status)]">
+                {{ statusLabel(row.meta.status) }}
               </span>
-              <span class="flex-1 truncate font-mono text-xs" :title="row.file.path">
-                {{ row.file.path.split('/').pop() }}
+              <span class="flex-1 truncate font-mono text-xs" :title="row.path">
+                {{ row.path.split('/').pop() }}
               </span>
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="file history / blame"
-                :aria-label="`'${row.file.path}' history / blame`"
-                @click.stop="openHistory(row.file.path)"
+                :aria-label="`'${row.path}' history / blame`"
+                @click.stop="openHistory(row.path)"
               >
                 📜
               </button>
@@ -756,8 +738,8 @@ function onNextHunk() {
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="discard"
-                :aria-label="`'${row.file.path}' 변경 폐기`"
-                @click.stop="onDiscardOne(row.file.path)"
+                :aria-label="`'${row.path}' 변경 폐기`"
+                @click.stop="onDiscardOne(row.path)"
               >
                 ⤺
               </button>
@@ -765,8 +747,8 @@ function onNextHunk() {
                 type="button"
                 class="text-[10px] text-muted-foreground/70 hover:text-foreground"
                 title="Hunk-level stage"
-                :aria-label="`'${row.file.path}' hunk 단위 stage`"
-                @click.stop="openHunk(row.file.path, false)"
+                :aria-label="`'${row.path}' hunk 단위 stage`"
+                @click.stop="openHunk(row.path, false)"
               >
                 ✂ hunk
               </button>
@@ -774,8 +756,8 @@ function onNextHunk() {
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="stage"
-                :aria-label="`'${row.file.path}' stage`"
-                @click.stop="onStageOne(row.file.path)"
+                :aria-label="`'${row.path}' stage`"
+                @click.stop="onStageOne(row.path)"
               >
                 +
               </button>
