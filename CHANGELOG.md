@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-12 — P0 polish 묶음 (Q-5 Transition + Q-6 Toast dedup + E-9 v0.4 placeholder, plan/22 §6+§7 / plan/24 §3+§7 / design 01 §7+04 §6+§7+§8-3+§8-4+§8-6):
+  - **Q-5 Transition 정책 + S-4 Micro-interaction 문서화** — `main.css` 에 CSS variables 도입 (`--transition-fast 75ms` / `--transition-base 150ms` / `--transition-slow 200ms` / `--transition-instant 0ms` + `--ease-out` / `--ease-in` cubic-bezier). 정책 문서화 코멘트 + `@media (prefers-reduced-motion: reduce)` 전역 폴백 (WCAG 2.3.3 + E-7 부분 흡수)
+  - **BaseModal enter/exit transition** — backdrop fade 150ms / panel scale-fade (0.97→1) 150ms. exit 100ms (ease-in). 18 modal 모두 자동 적용
+  - **ToastContainer transition CSS var 통합** — slide-in 200ms (ease-out) / slide-out 100ms (ease-in). 기존 `0.2s ease` → CSS variables
+  - **Q-6 Toast dedup** — `useToast.ts` 에 dedup window 1s + Map<id, timer> 추가. 같은 `(kind, title)` 1초 내 재호출 시 새 toast 생성 X, 기존 toast `count++` + duration 갱신. ToastContainer 에 `+N` badge 표시 (title attribute "같은 메시지 N회 누적 (1초 내 dedup)" + aria-label). 사용자 회사 50+ Gitea 레포 환경 같은 에러 반복 방지
+  - **E-9 v0.4 placeholder 패턴** — 신규 `components/PlaceholderButton.vue` (props: label / eta / detail / icon / size / showToast). disabled 회색 + 점선 border + `🔜 v0.4` 뱃지 + tooltip ("v0.4 예정 — {detail}\n진행 상황: docs/plan/05") + click 시 toast.info. design §8-4 hard constraint (placeholder 표시 정책) 충족
+  - **Sidebar Integrations slot 신규** — design §8-3 / §8-6 (Cloud-Free 시각화 대체) 부분 흡수. 하단 collapsed `<details>` 섹션 + 3 placeholder (`GitHub Actions v0.4` / `Linear/Jira v0.5` / `Discord 알림 v0.5`). GitKraken Pro 의 Cloud Workspace 위치를 로컬-우선 / CLI-위임 plugin slot 으로 채움
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
 - Sprint 22-11 — F-P3 Sidebar repo ahead/behind preview (plan/22 §5-2):
   - **`bulk_quick_status` IPC 신설** — Rust 백엔드 `git/status.rs::read_quick_status` (branch + upstream + ahead/behind 만, file walk 생략) + `git/bulk.rs::bulk_quick_status` (워크스페이스 전체 병렬 spawn_blocking, BulkResult). `bulk_status` 대비 ~50× 빠름 (50+ repo: ~5s → ~50~250ms). `lib.rs` invoke_handler 등록. **누적 159 IPC**
   - **`useBulkQuickStatus` composable 신설** — Vue Query (`@tanstack/vue-query`) + `staleTime: STATIC` (사용자 fetch 시점 외 변경 거의 없음) + `Map<repoId, QuickStatus>` 가공 → Sidebar v-for 안에서 O(1) lookup

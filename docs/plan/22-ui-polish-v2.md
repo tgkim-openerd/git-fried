@@ -266,6 +266,21 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-12 — P0 polish 묶음 (Q-5 + Q-6 + E-9) ✅ (2026-04-28, frontend-only)
+
+§6 Q-5/Q-6 + §7 S-4 + plan/24 Sprint E E-9 묶음 처리. design 01 §7 + 04 §6+§7 + §8-3+§8-4+§8-6 hard constraint 부분 흡수.
+
+- ✅ **Q-5 Transition 정책 + S-4 Micro-interaction 문서화** —
+  - `main.css` CSS variables: `--transition-fast 75ms` / `--transition-base 150ms` / `--transition-slow 200ms` / `--transition-instant 0ms` + `--ease-out` / `--ease-in` cubic-bezier
+  - `@media (prefers-reduced-motion: reduce)` 전역 폴백 (WCAG 2.3.3, E-7 부분 흡수) — animation/transition duration 0.01ms 강제
+  - 정책 문서화 코멘트 (각 변수 사용처 + cubic-bezier 의미)
+- ✅ **BaseModal enter/exit transition** — backdrop fade + panel scale-fade (0.97→1) 모두 enter 150ms (ease-out) / exit 100ms (ease-in). `<Transition appear>` wrapper 2단 (backdrop + panel). 18 modal 자동 적용
+- ✅ **ToastContainer transition CSS var 통합** — slide-in 200ms (ease-out) / slide-out 100ms (ease-in). 기존 `0.2s ease` → CSS variables
+- ✅ **Q-6 Toast dedup** — `useToast.ts` 에 dedup window 1s + Map<id, timer>. 같은 `(kind, title)` 1초 내 재호출 시 새 toast 생성 X, 기존 toast `count++` + duration 갱신. ToastContainer 에 `+N` badge (title="같은 메시지 N회 누적" + aria-label). 50+ Gitea 레포 환경 같은 에러 반복 방지
+- ✅ **E-9 v0.4 placeholder 패턴** — 신규 `components/PlaceholderButton.vue` (props: label / eta / detail / icon / size / showToast). disabled 회색 + 점선 border + `🔜 v0.4` 뱃지 + tooltip + click 시 toast.info. design §8-4 (placeholder 표시 정책) 충족
+- ✅ **Sidebar Integrations slot 신규** — design §8-3 / §8-6 (Cloud-Free 시각화 대체) 부분 흡수. 하단 collapsed `<details>` 섹션 + 3 placeholder (`GitHub Actions v0.4` / `Linear/Jira v0.5` / `Discord 알림 v0.5`). GitKraken Pro 의 Cloud Workspace 위치를 로컬-우선 / CLI-위임 plugin slot 으로 채움
+- 검증: typecheck 0 / lint 0 / vitest 13 pass
+
 ### Sprint 22-11 — F-P3 Sidebar repo ahead/behind preview ✅ (2026-04-28, backend+frontend)
 
 §5-2 F-P3 처리. cargo build 환경 이슈(next_session_entry 알려진 위험) 해결 후 첫 backend 변경 commit.

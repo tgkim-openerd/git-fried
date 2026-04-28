@@ -34,6 +34,7 @@ import LoadingSpinner from './LoadingSpinner.vue'
 import EmptyState from './EmptyState.vue'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 import { useBulkQuickStatus } from '@/composables/useBulkQuickStatus'
+import PlaceholderButton from './PlaceholderButton.vue'
 import type { Repo } from '@/types/git'
 
 // Sprint C14-2 (`docs/plan/14 §6 E1+E2`): Clone with sparse/shallow options.
@@ -823,6 +824,38 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
         </li>
       </ul>
     </section>
+
+    <!-- Sprint 22-12 E-9 / design §8-3 §8-6 — Integrations slot (Cloud-Free 시각화 대체).
+         GitKraken Pro 의 Cloud Workspace 위치를 로컬-우선 / CLI-위임 plugin 슬롯으로 채움.
+         현재 placeholder 상태 — v0.4+ 에서 실 plugin 도입 시 본 영역 채워짐.
+    -->
+    <details class="border-t border-border px-3 py-2">
+      <summary
+        class="cursor-pointer text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+      >
+        Integrations
+      </summary>
+      <div class="mt-2 flex flex-wrap gap-1">
+        <PlaceholderButton
+          label="GitHub Actions"
+          eta="v0.4"
+          icon="⚡"
+          detail="CI run 상태 인디케이터 (per-branch / per-PR)"
+        />
+        <PlaceholderButton
+          label="Linear / Jira"
+          eta="v0.5"
+          icon="🔗"
+          detail="commit / branch 이름 → 이슈 자동 매핑"
+        />
+        <PlaceholderButton
+          label="Discord 알림"
+          eta="v0.5"
+          icon="🔔"
+          detail="bulk fetch / push 결과 webhook"
+        />
+      </div>
+    </details>
 
     <footer
       class="border-t border-border px-3 py-2 text-[11px] text-muted-foreground"

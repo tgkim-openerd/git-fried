@@ -249,6 +249,25 @@
   - `5ffe151` `feat(c24-A)` — Sprint A Foundation 토큰 (Pretendard self-host + Color Q2 분리 + Status semantic + Elevation tier 3 + Z-index 6 layer + plan/24 본문 + CHANGELOG)
   - `3bffe5d` `chore(rust)` — Cargo.lock criterion bench deps drift 동기화 (Sprint A 무관, 별도 commit)
   - 검증: typecheck 0 / lint 0 / vitest 13 pass (재확인). Sprint B~F 보류 결정 유효 — § 11 재개 트리거 미충족.
+- **2026-04-28 본 세션 추가 sprint (점진 디자인 적용 — Sprint B~F implementation 보류 상태에서 plan/22 sprint 로 디자인 hard constraint 부분 흡수)**:
+  - `90e57ab` `feat(c22-9)` — P2 viewer 4건 (V-7 BranchPanel hover tooltip / V-8 StashPanel CodeMirror diff / V-9 CommitGraph ref-pill solo toggle / V-10 WorktreePanel row click highlight). plan/22 §4-3 P2 viewer 100%
+  - `5d0529e` `feat(c22-10)` — P2 ContextMenu 3건 (CM-12 RemoteManageModal / CM-13 IssuesPanel / CM-14 ReleasesPanel). plan/22 §3 ContextMenu catalog 14/14 ✅ (Sprint D D-3 100% 충족)
+  - `accffaf` `feat(c22-11)` — F-P3 Sidebar repo ahead/behind preview (`bulk_quick_status` IPC 신설 + `useBulkQuickStatus` composable + Sidebar inline ↑↓). 누적 159 IPC. cargo 환경 이슈 해결 동반 (chocolatey rustc 1.60 PATH shadow → solutions DB)
+  - **Sprint 22-12** (예정) — P0 polish 묶음:
+    - **Q-5 Transition 정책** (Sprint A 토큰 Transition 항목 잔여) — `main.css` CSS variables (--transition-fast/base/slow/instant + ease-out/in) + reduced-motion 폴백 (E-7 부분 흡수) + BaseModal enter/exit + ToastContainer CSS var 통합
+    - **Q-6 Toast dedup** (Sprint B B-6 의도) — useToast Map<id, timer> + count badge "+N"
+    - **E-9 v0.4 placeholder 패턴** (Sprint E E-9 / design §8-4 hard constraint) — `PlaceholderButton.vue` 신규 + Sidebar Integrations slot (3 placeholder) — design §8-3 / §8-6 Cloud-Free 시각화 부분 흡수
+
+### 11-3. Sprint A 외 적용 현황 요약 (2026-04-28)
+
+| Sprint | 영역 | 상태 |
+|--------|------|------|
+| A | Foundation 토큰 | ✅ 95% (transition spec 만 22-12 에 흡수) |
+| B | Primitives + reka-ui | ❌ 보류 (Q-6 Toast dedup 만 22-12 에 흡수) |
+| C | Hub Screens | ⚠️ 40% (V-3/V-2/V-5/F-P3 점진 적용. 5 frame / Onboarding / Tab overflow / Settings 2-level 미적용) |
+| D | Modal Audit | ✅ 90% (BaseModal 18/18 + ContextMenu 14/14 + Modal size tier. 미캡처 5 신규 visual refactor 만 잔여) |
+| E | UX Polish | ⚠️ 30% (E-9 placeholder + E-2 EmptyState 부분 + E-3 DnD 1/4. Skeleton/Long-running/motion 일부/a11y 22-25/Plugin slot 부분 잔여) |
+| F | 검증 (visual diff audit) | ❌ |
 
 ## 11. Sprint B~F implementation 진입 조건 (재개 트리거)
 

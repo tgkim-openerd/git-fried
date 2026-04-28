@@ -95,22 +95,29 @@ function onKeydown(e: KeyboardEvent) {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex justify-center bg-black/50 p-4"
-      :class="align === 'top' ? 'items-start pt-24' : 'items-center'"
-      @click.self="onBackdrop"
-      @keydown="onKeydown"
-    >
+    <!-- Sprint 22-12 Q-5 — modal enter/exit transition (design 01 §7).
+         backdrop fade 150ms / panel scale-fade 150ms (in) + 100ms (out).
+         prefers-reduced-motion 시 main.css 전역 폴백으로 자동 0ms.
+    -->
+    <Transition name="modal-backdrop" appear>
       <div
-        ref="rootRef"
-        role="dialog"
-        aria-modal="true"
-        :aria-labelledby="titleId"
-        tabindex="-1"
-        class="flex max-h-[90vh] w-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xl outline-none"
-        :class="[maxWidthClass, panelClass]"
+        v-if="open"
+        class="fixed inset-0 z-50 flex justify-center bg-black/50 p-4"
+        :class="align === 'top' ? 'items-start pt-24' : 'items-center'"
+        @click.self="onBackdrop"
+        @keydown="onKeydown"
       >
+        <Transition name="modal-panel" appear>
+          <div
+            v-if="open"
+            ref="rootRef"
+            role="dialog"
+            aria-modal="true"
+            :aria-labelledby="titleId"
+            tabindex="-1"
+            class="flex max-h-[90vh] w-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xl outline-none"
+            :class="[maxWidthClass, panelClass]"
+          >
         <!-- 헤더: header slot 우선, 없으면 title prop -->
         <header
           v-if="$slots.header || title || showCloseButton"
@@ -146,7 +153,46 @@ function onKeydown(e: KeyboardEvent) {
         >
           <slot name="footer" />
         </footer>
+          </div>
+        </Transition>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+/* Sprint 22-12 Q-5 — modal enter/exit transition.
+ * - backdrop: fade 150ms (in) / 100ms (out)
+ * - panel:    scale 0.97→1 + fade 150ms (in) / 100ms (out)
+ * design 01 §7 + 04 §6.
+ */
+.modal-backdrop-enter-active,
+.modal-backdrop-leave-active {
+  transition:
+    opacity var(--transition-base) var(--ease-out);
+}
+.modal-backdrop-leave-active {
+  transition-duration: 100ms;
+  transition-timing-function: var(--ease-in);
+}
+.modal-backdrop-enter-from,
+.modal-backdrop-leave-to {
+  opacity: 0;
+}
+
+.modal-panel-enter-active,
+.modal-panel-leave-active {
+  transition:
+    opacity var(--transition-base) var(--ease-out),
+    transform var(--transition-base) var(--ease-out);
+}
+.modal-panel-leave-active {
+  transition-duration: 100ms;
+  transition-timing-function: var(--ease-in);
+}
+.modal-panel-enter-from,
+.modal-panel-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+</style>
