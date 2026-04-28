@@ -2,12 +2,7 @@
 //
 // patch math 는 git apply 가 strict 하므로 보수적 테스트 — 핵심 케이스만.
 import { describe, expect, it } from 'vitest'
-import {
-  buildHunkPatch,
-  buildLinePatch,
-  parseDiffAllFiles,
-  parseDiffWithHunks,
-} from './parseDiff'
+import { buildHunkPatch, buildLinePatch, parseDiffAllFiles, parseDiffWithHunks } from './parseDiff'
 
 // Source 4 라인 (a, b, c, g) → Target 5 라인 (a, d, e, f, g).
 const SAMPLE = `diff --git a/foo.txt b/foo.txt
@@ -137,5 +132,76 @@ describe('buildLinePatch', () => {
     expect(linePatch!).toMatch(/@@ -1,4 \+1,5 @@/)
     expect(linePatch!).toContain('-line b')
     expect(linePatch!).toContain('+line d')
+  })
+
+  it('"\\ No newline at end of file" 라인 보존', () => {
+    const sample = `diff --git a/x.txt b/x.txt
+--- a/x.txt
++++ b/x.txt
+@@ -1,1 +1,1 @@
+-old
+\\ No newline at end of file
++new
+\\ No newline at end of file
+`
+    const f = parseDiffWithHunks(sample)[0]
+    // 모든 변경 선택
+    const all = new Set([0, 1, 2, 3])
+    const out = buildLinePatch(f, f.hunks[0], all)
+    expect(out).not.toBeNull()
+    expect(out!).toContain('\\ No newline at end of file')
+  })
+
+  it('invalid hunk header (regex 매칭 실패) → null', () => {
+    const f = parseDiffWithHunks(SAMPLE)[0]
+    const brokenHunk = { header: '@@ broken header @@', bodyLines: ['+line x'] }
+    const out = buildLinePatch(f, brokenHunk, new Set([0]))
+    expect(out).toBeNull()
+  })
+
+  it('빈 줄 (hunk 사이 분리) drop', () => {
+    const f = parseDiffWithHunks(SAMPLE)[0]
+    const hunkWithEmpty = {
+      header: '@@ -1,1 +1,1 @@',
+      bodyLines: [' line a', '', '+line b'],
+    }
+    const out = buildLinePatch(f, hunkWithEmpty, new Set([2]))
+    expect(out).not.toBeNull()
+    // 빈 줄 drop 확인 — body 에 '\n\n' 패턴 없음 (header 와 첫 line 사이 \n 1개).
+    expect(out!).not.toMatch(/\n\n.* line a/)
+  })
+
+  it('기타 prefix 라인은 context 로 처리', () => {
+    const f = parseDiffWithHunks(SAMPLE)[0]
+    const weirdHunk = {
+      header: '@@ -1,1 +1,1 @@',
+      bodyLines: ['?weird prefix', '-line x'],
+    }
+    const out = buildLinePatch(f, weirdHunk, new Set([1]))
+    expect(out).not.toBeNull()
+    // weird prefix 라인이 context (' ' 추가) 로 변환되어 oldCount 에 포함
+    expect(out!).toContain(' ?weird prefix')
+  })
+})
+
+describe('parseDiffAllFiles — multi-file diff', () => {
+  it('두 파일 분리 + 각자 hunks', () => {
+    const sample = `diff --git a/a.txt b/a.txt
+--- a/a.txt
++++ b/a.txt
+@@ -1,1 +1,1 @@
+-old a
++new a
+diff --git a/b.txt b/b.txt
+--- a/b.txt
++++ b/b.txt
+@@ -1,1 +1,1 @@
+-old b
++new b
+`
+    const files = parseDiffAllFiles(sample)
+    expect(files).toHaveLength(2)
+    expect(files[0].fileName).toBe('a.txt')
+    expect(files[1].fileName).toBe('b.txt')
   })
 })
