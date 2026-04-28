@@ -35,6 +35,8 @@ import EmptyState from './EmptyState.vue'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 import { useBulkQuickStatus } from '@/composables/useBulkQuickStatus'
 import PlaceholderButton from './PlaceholderButton.vue'
+// Sprint c25-3 step 1 — 좌측 sidebar 풍부화의 첫 진입 (uy `docs/plan/25 §4`).
+import ActiveRepoQuickActions from './ActiveRepoQuickActions.vue'
 import type { Repo } from '@/types/git'
 
 // Sprint C14-2 (`docs/plan/14 §6 E1+E2`): Clone with sparse/shallow options.
@@ -859,6 +861,9 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
         />
       </div>
     </details>
+
+    <!-- Sprint c25-3 step 1 — 활성 레포 mini quick actions (collapsible) -->
+    <ActiveRepoQuickActions />
 
     <footer
       class="border-t border-border px-3 py-2 text-[11px] text-muted-foreground"
