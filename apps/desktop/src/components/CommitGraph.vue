@@ -98,6 +98,9 @@ const DEFAULT_LANE_W = 16
 const LANE_W_KEY = 'git-fried.commit-graph-lane-width'
 const LANE_W_MIN = 8
 const LANE_W_MAX = 36
+// Phase 1 (plan-commit-graph-ux v2) — graphWidth hard cap 으로 message column 압박 해소.
+// lane 이 cap 보다 많으면 우측 lane 은 잘림 (zoom out 으로 회피). Phase 2 에서 graph/message 별도 element.
+const MAX_GRAPH_WIDTH = 320
 
 function loadLaneW(): number {
   if (typeof localStorage === 'undefined') return DEFAULT_LANE_W
@@ -122,7 +125,17 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 const rows = computed<GraphRow[]>(() => graph.value?.rows ?? [])
 const maxLane = computed(() => graph.value?.maxLane ?? 1)
-const graphWidth = computed(() => Math.max(1, maxLane.value) * laneW.value + 16)
+const graphWidth = computed(() =>
+  Math.min(Math.max(1, maxLane.value) * laneW.value + 16, MAX_GRAPH_WIDTH),
+)
+
+// Phase 1 zoom +/- 핸들러 (vue template multi-statement 회피 — 함수 추출).
+function zoomIn() {
+  laneW.value = Math.min(LANE_W_MAX, laneW.value + 2)
+}
+function zoomOut() {
+  laneW.value = Math.max(LANE_W_MIN, laneW.value - 2)
+}
 
 const virtualizer = useVirtualizer(
   computed(() => ({
@@ -409,6 +422,30 @@ onUnmounted(() => {
     <header class="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
       <h2 class="text-sm font-semibold">커밋 그래프</h2>
       <div class="flex flex-1 items-center justify-end gap-2">
+        <!-- Phase 1 (plan-commit-graph-ux v2) — Zoom +/- button. drag handle 보완. -->
+        <div
+          class="flex items-center gap-0.5 rounded border border-border bg-muted/40 p-0.5"
+          title="그래프 lane 폭 조절 (drag handle 보완)"
+        >
+          <button
+            type="button"
+            class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
+            :disabled="laneW <= LANE_W_MIN"
+            :aria-label="`그래프 축소 (현재 lane width: ${laneW}px)`"
+            @click="zoomOut"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
+            :disabled="laneW >= LANE_W_MAX"
+            :aria-label="`그래프 확대 (현재 lane width: ${laneW}px)`"
+            @click="zoomIn"
+          >
+            +
+          </button>
+        </div>
         <div v-if="searchOpen" class="flex items-center gap-1">
           <input
             ref="searchInputRef"

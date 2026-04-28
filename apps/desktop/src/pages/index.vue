@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 메인 페이지 — GitKrakenToolbar + 좌측(로그/그래프) + 우측 탭 패널 + 하단(commit input + 통합 터미널).
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
 import CommitGraph from '@/components/CommitGraph.vue'
@@ -22,6 +22,7 @@ import TerminalPanel from '@/components/TerminalPanel.vue'
 import CommitDiffModal from '@/components/CommitDiffModal.vue'
 // Sprint c25-4.5 — inline diff panel (CommitGraph 와 vertical split).
 import CommitDiffPanel from '@/components/CommitDiffPanel.vue'
+import CommitDetailSidebar from '@/components/CommitDetailSidebar.vue'
 import WipBanner from '@/components/WipBanner.vue'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
@@ -35,7 +36,8 @@ const upstream = computed(() => status.value?.upstream ?? null)
 const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
-type Tab = 'status' | 'branches' | 'stash' | 'submodule' | 'lfs' | 'pr' | 'worktree'
+// Phase 1 (plan-commit-graph-ux v2) — 8번째 'commit' tab 추가 (selectedSha 시 조건부 mount).
+type Tab = 'status' | 'branches' | 'stash' | 'submodule' | 'lfs' | 'pr' | 'worktree' | 'commit'
 const tab = ref<Tab>('status')
 
 // Sprint B10 — per-profile 탭 영속화.
@@ -76,6 +78,17 @@ const diffModalOpen = ref(false)
 function onSelectCommit(sha: string) {
   selectedSha.value = sha
 }
+
+// Phase 1 (plan-commit-graph-ux v2) — main-nav 8번째 'commit' tab 조건부 mount.
+const mainTabs = computed<Tab[]>(() => {
+  const base: Tab[] = ['status', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree']
+  return selectedSha.value ? [...base, 'commit'] : base
+})
+
+// Phase 1 — selectedSha=null 트랜지션 시 tab='commit' 이면 status fallback.
+watch(selectedSha, (v) => {
+  if (v == null && tab.value === 'commit') tab.value = 'status'
+})
 function onShowDiff(sha: string) {
   selectedSha.value = sha
   diffModalOpen.value = true
@@ -185,15 +198,7 @@ onUnmounted(() => {
           @dblclick="toggleFocusMode"
         >
           <button
-            v-for="t in [
-              'status',
-              'branches',
-              'stash',
-              'submodule',
-              'lfs',
-              'pr',
-              'worktree',
-            ] as Tab[]"
+            v-for="t in mainTabs"
             :key="t"
             type="button"
             :data-testid="`main-nav-${t}`"
@@ -218,7 +223,9 @@ onUnmounted(() => {
                         ? 'LFS'
                         : t === 'pr'
                           ? 'PR'
-                          : 'WT'
+                          : t === 'worktree'
+                            ? 'WT'
+                            : '📄 ' + (selectedSha?.slice(0, 7) ?? '')
             }}
           </button>
           <button
@@ -259,7 +266,16 @@ onUnmounted(() => {
             class="h-full border-l-0"
           />
           <ForgePanel v-else-if="tab === 'pr'" :repo-id="store.activeRepoId" class="h-full" />
-          <WorktreePanel v-else :repo-id="store.activeRepoId" class="h-full border-l-0" />
+          <WorktreePanel
+            v-else-if="tab === 'worktree'"
+            :repo-id="store.activeRepoId"
+            class="h-full border-l-0"
+          />
+          <CommitDetailSidebar
+            v-else-if="tab === 'commit' && selectedSha"
+            :repo-id="store.activeRepoId"
+            :sha="selectedSha"
+          />
         </div>
 
         <CommitMessageInput :repo-id="store.activeRepoId" :ahead="ahead" :behind="behind" />

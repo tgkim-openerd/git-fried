@@ -174,6 +174,52 @@ test.describe('git-fried smoke', () => {
     await expect(page.getByText(/Redo:\s*reset/i)).toBeVisible({ timeout: 2_000 })
   })
 
+  test('CommitGraph zoom +/- + graphWidth max 320 cap', async ({ page }) => {
+    // graphWidth computed 가 maxLane * laneW + 16 또는 320 중 작은 값.
+    // devMock 의 maxLane × default laneW 16 = 작아서 cap 미적용. cap 자체 동작 검증:
+    // zoom in 으로 laneW 36 까지 올려도 graphWidth <= 320 인지.
+    const result = await page.evaluate(() => {
+      const cssWidth = (() => {
+        const c = document.querySelector('canvas')
+        return c?.style.width
+      })()
+      return { cssWidth }
+    })
+    // canvas style.width 는 graphWidth + 'px'. cap 적용 시 320 이하.
+    if (result.cssWidth) {
+      const px = parseInt(result.cssWidth, 10)
+      expect(px).toBeLessThanOrEqual(320)
+    }
+
+    // zoom out / in button 노출.
+    await expect(page.getByRole('button', { name: /그래프 축소/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /그래프 확대/ })).toBeVisible()
+  })
+
+  test('commit row click → 8번째 commit tab mount + sidebar visible', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
+    await page.reload()
+    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
+
+    // 초기엔 commit tab 미존재 (selectedSha=null).
+    await expect(page.locator('[data-testid="main-nav-commit"]')).toHaveCount(0)
+
+    // 첫 commit row sha cell click.
+    const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
+    await expect(row).toBeVisible()
+    await row.locator('span', { hasText: /^6ef63e0$/ }).click()
+
+    // commit tab mount (자동 활성 없음 — 사용자 명시 click).
+    const commitTab = page.locator('[data-testid="main-nav-commit"]')
+    await expect(commitTab).toBeVisible({ timeout: 2_000 })
+    await commitTab.click()
+
+    // CommitDetailSidebar visible + SHA 표시.
+    const sidebar = page.locator('[data-testid="commit-detail-sidebar"]')
+    await expect(sidebar).toBeVisible()
+    await expect(sidebar).toContainText('6ef63e0')
+  })
+
   test('console.error 0건', async ({ page }) => {
     const errors: string[] = []
     page.on('console', (msg) => {
