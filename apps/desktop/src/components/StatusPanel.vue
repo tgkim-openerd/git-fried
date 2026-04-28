@@ -377,6 +377,14 @@ const unstagedTreeRows = computed<UnstagedTreeRow[]>(() => {
   const tree = buildPathTree(items, { collapseSingleChild: true })
   return flattenTree(tree, collapsedDirs.value)
 })
+
+// c25-2.2 — Staged 섹션도 Tree 지원 (Modified 와 동일 row 타입).
+const stagedTreeRows = computed<UnstagedTreeRow[]>(() => {
+  if (viewMode.value !== 'tree') return []
+  const items = filteredStaged.value.map((f) => ({ path: f.path, meta: f }))
+  const tree = buildPathTree(items, { collapseSingleChild: true })
+  return flattenTree(tree, collapsedDirs.value)
+})
 const filteredUntracked = computed(() =>
   (status.value?.untracked ?? []).filter((p) => matchFilter(p)),
 )
@@ -518,7 +526,7 @@ function onNextHunk() {
             {{ collapsedStaged ? '▶' : '▼' }} Staged ({{ status.staged.length }})
           </span>
         </div>
-        <ul v-if="!collapsedStaged">
+        <ul v-if="!collapsedStaged && viewMode === 'path'">
           <FileRow
             v-for="f in filteredStaged"
             :key="`s-${f.path}`"
@@ -544,6 +552,55 @@ function onNextHunk() {
               </button>
             </template>
           </FileRow>
+        </ul>
+
+        <!-- c25-2.2 — Tree 모드: Staged (Modified 와 동일 패턴, action='-' unstage) -->
+        <ul v-else-if="!collapsedStaged && viewMode === 'tree'">
+          <template v-for="(row, idx) in stagedTreeRows" :key="`st-${idx}`">
+            <li
+              v-if="row.kind === 'dir'"
+              class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
+              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+              @click="toggleDir(row.path)"
+            >
+              <span class="text-[10px] text-muted-foreground">{{ row.collapsed ? '▶' : '▼' }}</span>
+              <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
+            </li>
+            <li
+              v-else
+              class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+              :class="isSelected(row.file.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              @click="selectPath(row.file.path)"
+              @contextmenu="onFileContextMenu($event, row.file.path, true)"
+            >
+              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.file.status)]">
+                {{ statusLabel(row.file.status) }}
+              </span>
+              <span class="flex-1 truncate font-mono text-xs" :title="row.file.path">
+                {{ row.file.path.split('/').pop() }}
+              </span>
+              <button
+                type="button"
+                class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                title="Hunk-level unstage"
+                :aria-label="`'${row.file.path}' hunk 단위 unstage`"
+                @click.stop="openHunk(row.file.path, true)"
+              >
+                ✂ hunk
+              </button>
+              <button
+                type="button"
+                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                title="unstage"
+                :aria-label="`'${row.file.path}' unstage`"
+                @click.stop="onUnstageOne(row.file.path)"
+              >
+                −
+              </button>
+            </li>
+          </template>
         </ul>
       </div>
 
