@@ -27,6 +27,11 @@ vi.mock('@/api/git', () => ({
   listBranches: vi.fn(() => Promise.resolve(['main'])),
   listPullRequests: vi.fn((_id: number, _state: unknown) => Promise.resolve([])),
   getGraph: vi.fn(() => Promise.resolve({ rows: [], maxLane: 0 })),
+  getFileHistory: vi.fn(() => Promise.resolve([])),
+  getFileBlame: vi.fn(() => Promise.resolve([])),
+  getStatus: vi.fn(() => Promise.resolve({ branch: 'main' })),
+  listForgeIssues: vi.fn(() => Promise.resolve([])),
+  listForgeReleases: vi.fn(() => Promise.resolve([])),
 }))
 
 vi.mock('@/api/queryClient', () => ({
@@ -39,6 +44,9 @@ import { useWorktrees } from './useWorktrees'
 import { useBranches } from './useBranches'
 import { usePullRequests } from './usePullRequests'
 import { useGraph } from './useGraph'
+import { useFileBlame, useFileHistory } from './useFileHistory'
+import { useStatus } from './useStatus'
+import { useIssues, useReleases } from './useIssuesReleases'
 
 function lastCall(): UseQueryArgs {
   const calls = useQuerySpy.mock.calls
@@ -139,6 +147,84 @@ describe('query wrapper composables', () => {
       expect(args.enabled.value).toBe(false)
       const data = await args.queryFn()
       expect(data).toEqual({ rows: [], maxLane: 0 })
+    })
+  })
+
+  describe('useFileHistory / useFileBlame', () => {
+    it('useFileHistory — repoId+path 모두 있어야 enabled', () => {
+      useFileHistory(
+        () => 1,
+        () => 'src/foo.ts',
+      )
+      const args = lastCall()
+      expect(args.queryKey.value).toEqual(['file-history', 1, 'src/foo.ts'])
+      expect(args.enabled.value).toBe(true)
+    })
+
+    it('useFileHistory — path null → enabled false + 빈 배열', async () => {
+      useFileHistory(
+        () => 1,
+        () => null,
+      )
+      const args = lastCall()
+      expect(args.enabled.value).toBe(false)
+      expect(await args.queryFn()).toEqual([])
+    })
+
+    it('useFileBlame — repoId null → enabled false', async () => {
+      useFileBlame(
+        () => null,
+        () => 'a.ts',
+      )
+      const args = lastCall()
+      expect(args.enabled.value).toBe(false)
+      expect(await args.queryFn()).toEqual([])
+    })
+
+    it('useFileBlame — 빈 path → enabled false', () => {
+      useFileBlame(
+        () => 1,
+        () => '',
+      )
+      const args = lastCall()
+      expect(args.enabled.value).toBe(false)
+    })
+  })
+
+  describe('useStatus', () => {
+    it('queryKey = ["status", repoId]', () => {
+      useStatus(() => 9)
+      const args = lastCall()
+      expect(args.queryKey.value).toEqual(['status', 9])
+    })
+
+    it('repoId null → enabled false + queryFn reject', async () => {
+      useStatus(() => null)
+      const args = lastCall()
+      expect(args.enabled.value).toBe(false)
+      await expect(args.queryFn()).rejects.toThrow(/no repo/)
+    })
+  })
+
+  describe('useIssues / useReleases', () => {
+    it('useIssues queryKey + null fallback', async () => {
+      useIssues(() => 3)
+      let args = lastCall()
+      expect(args.queryKey.value).toEqual(['issues', 3])
+      useIssues(() => null)
+      args = lastCall()
+      expect(args.enabled.value).toBe(false)
+      expect(await args.queryFn()).toEqual([])
+    })
+
+    it('useReleases queryKey + null fallback', async () => {
+      useReleases(() => 4)
+      let args = lastCall()
+      expect(args.queryKey.value).toEqual(['releases', 4])
+      useReleases(() => null)
+      args = lastCall()
+      expect(args.enabled.value).toBe(false)
+      expect(await args.queryFn()).toEqual([])
     })
   })
 })
