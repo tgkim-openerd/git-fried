@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-14 — M3 Tab overflow (plan/24 Sprint C C-6 / design §8-1 hard constraint, frontend-only):
+  - **활성 탭 자동 scrollIntoView** — `watch(store.activeRepoId)` + `nextTick` → `[data-tab-id]` 검색 → `scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })`. ⌘T / RepoSwitcher 로 active 변경 시 viewport 밖이면 자동 노출
+  - **8 탭 초과 시 overflow indicator** — `OVERFLOW_THRESHOLD = 8`. 초과 시 `.has-overflow` class 추가:
+    - 좌/우 끝 fade gradient (`linear-gradient(to right/left, hsl(var(--muted) / 0.6), transparent)` width 12px) — 스크롤 가능 인지
+    - 우측 점선 hint 버튼 `▾ N+` (N = 가려진 탭 수) — click → RepoSwitcher (⌘T) 열림. title/aria-label 한국어 ("N개+ 탭이 가려져 있음. ⌘T 로 검색·전환")
+  - 본격 "더 보기" dropdown (모든 탭 list + 검색 input) 은 reka-ui Popover 도입 (Sprint B B-1) 후
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
 - Sprint 22-13 — a11y wrap (S-1 잔여 aria-label 21 건, plan/22 §7 / plan/24 Sprint E E-6, frontend-only):
   - **StashPanel action button 5건** — show / apply / pop / edit msg / drop 모두 동적 `stash@{N} ...` 형식 aria-label
   - **WorktreePanel action button 4건** — prune (header) + lock / unlock / remove 동적 `worktree '${path}' ...` 형식
