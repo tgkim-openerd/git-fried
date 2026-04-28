@@ -25,6 +25,7 @@ import { humanizeGitError, describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
+import { useSidebarFilter } from '@/composables/useSidebarFilter'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useNotification } from '@/composables/useNotification'
 import BulkFetchResultModal from './BulkFetchResultModal.vue'
@@ -184,24 +185,11 @@ function groupKey(r: Repo): string {
   return parentDirName(r.localPath) ?? '__solo__'
 }
 
-// Sprint I — Sidebar 레포 필터 (⌘⌥F).
-const repoFilter = ref('')
+// Sprint I — Sidebar 레포 필터 (⌘⌥F). composables/useSidebarFilter.ts 로 추출 (Sidebar God comp 1/N).
 const filterInputRef = useTemplateRef<HTMLInputElement>('filterInput')
-
-const filteredRepos = computed<Repo[]>(() => {
-  if (!repos.value) return []
-  const q = repoFilter.value.trim().toLowerCase()
-  if (!q) return repos.value
-  return repos.value.filter((r) => {
-    if (r.name.toLowerCase().includes(q)) return true
-    const alias = aliases.resolveLocal(r.id, r.name).display
-    if (alias.toLowerCase().includes(q)) return true
-    if (r.forgeOwner?.toLowerCase().includes(q)) return true
-    if (r.forgeRepo?.toLowerCase().includes(q)) return true
-    if (r.localPath.toLowerCase().includes(q)) return true
-    return false
-  })
-})
+const { repoFilter, filteredRepos } = useSidebarFilter(repos, (id, fallback) =>
+  aliases.resolveLocal(id, fallback),
+)
 
 // 외부 (App.vue) 에서 호출 가능 — sidebar 가 hidden 일 때 App.vue 가 toggle 후 호출.
 function focusRepoFilter() {
