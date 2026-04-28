@@ -28,12 +28,13 @@ import AiResultModal from './AiResultModal.vue'
 import RemoteManageModal from './RemoteManageModal.vue'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useBranchActions, localBranchName } from '@/composables/useBranchActions'
+import SkeletonBlock from './SkeletonBlock.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
 const toast = useToast()
 
 const props = defineProps<{ repoId: number | null }>()
-const { data: branches } = useBranches(() => props.repoId)
+const { data: branches, isFetching: branchesFetching } = useBranches(() => props.repoId)
 const invalidate = useInvalidateRepoQueries()
 
 const newBranchName = ref('')
@@ -456,7 +457,14 @@ async function onExplainBranch(b: BranchInfo) {
     />
 
     <div class="flex-1 overflow-auto px-1 py-2">
-      <ul>
+      <!-- Sprint 22-17 E-1: 첫 로딩 시 skeleton (branches 데이터 부재 + fetching) -->
+      <SkeletonBlock
+        v-if="branchesFetching && (!branches || branches.length === 0)"
+        :count="6"
+        height="sm"
+        class="px-2"
+      />
+      <ul v-else>
         <li
           v-for="(b, idx) in filtered"
           :key="`${b.kind}-${b.name}`"

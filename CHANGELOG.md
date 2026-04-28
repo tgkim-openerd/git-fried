@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-17 — E-1 Skeleton component + BranchPanel/PrPanel 시범 적용 (plan/24 Sprint E E-1 / design 04 §4-2, frontend-only):
+  - **`SkeletonBlock.vue` 신규** — props (count: number / height: 'sm'|'md'|'lg' / widthRange: [min,max]). animate-pulse + bg-muted + deterministic width per index (sin pseudo-noise — reload 시 안정). a11y: `role="status"` + `aria-live="polite"` + sr-only "데이터 불러오는 중..."
+  - **BranchPanel** — `useBranches({ isFetching })` 추가, branches 부재 + fetching 시 SkeletonBlock count=6 height=sm 표시 (기존 `<ul>` v-else)
+  - **PrPanel** — 기존 LoadingSpinner 대체 → SkeletonBlock count=5 height=md. import dead code 정리
+  - 잔여 화면 (CommitGraph / StatusPanel / PrDetail / 기타 panel) — virtualizer 영향 큼 / 별도 sprint
+  - 검증: typecheck 0 / lint 0 / vitest 29 pass
 - Sprint 22-16 — M6 Q-7 Custom theme HSL 검증 (plan/22 §6 / plan/24 Sprint A A-2 잔여 / design 01 §10, frontend-only):
   - **`validateHsl(value)` 신규 export** (`composables/useCustomTheme.ts`) — shadcn-vue 표준 `<hue> <saturation>% <lightness>%` 형식 검증. 정규식 + Hue 0~360 / Saturation 0~100% / Lightness 0~100% 범위 체크. 한국어 에러 메시지 ("HSL 형식 아님 (예: ...)" / "Hue 범위 0~360 초과" / "Saturation 범위 0~100% 초과")
   - **`importJson` HSL 검증 통합** — JSON 파싱 후 var 별 `validateHsl` 적용. 1개라도 실패 시 reject + `잘못된 HSL 값 N개:\n${var}: ${error}` 형식 (앞 3개 + `...외 N개 더`). settings UI 의 toast.error 가 자동 표시

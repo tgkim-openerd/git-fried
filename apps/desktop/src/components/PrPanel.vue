@@ -11,7 +11,7 @@ import PrDetailModal from './PrDetailModal.vue'
 import CreatePrModal from './CreatePrModal.vue'
 import UserAvatar from './UserAvatar.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
-import LoadingSpinner from './LoadingSpinner.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
 import EmptyState from './EmptyState.vue'
 import type { PrState, PullRequest } from '@/api/git'
 
@@ -199,7 +199,9 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
     </div>
 
     <div class="flex-1 overflow-auto px-2 py-1 text-sm">
-      <LoadingSpinner v-if="isFetching && !prs" label="PR 목록 불러오는 중..." size="sm" />
+      <!-- Sprint 22-17 E-1: 첫 로딩 시 skeleton row (LoadingSpinner 대체).
+           재페칭은 silent. SkeletonBlock 자체에 role="status" + sr-only 텍스트 포함. -->
+      <SkeletonBlock v-if="isFetching && !prs" :count="5" height="md" class="mt-2" />
 
       <!-- 사람이 만든 PR -->
       <ul v-if="humanPrs.length">

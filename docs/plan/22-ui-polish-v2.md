@@ -266,6 +266,16 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-17 — E-1 Skeleton 시범 (BranchPanel/PrPanel) ✅ (2026-04-28, frontend-only)
+
+plan/24 Sprint E E-1 부분 흡수. design 04 §4-2 spec 만족.
+
+- ✅ **`SkeletonBlock.vue` 신규** — props (count / height sm·md·lg / widthRange). animate-pulse + bg-muted + deterministic width (sin pseudo-noise reload 안정). `role="status" aria-live="polite"` + sr-only
+- ✅ **BranchPanel** — `useBranches({ isFetching })` + `<SkeletonBlock count=6 height=sm v-if="branchesFetching && !branches">` / `<ul v-else>`
+- ✅ **PrPanel** — LoadingSpinner 대체 → SkeletonBlock count=5 height=md. dead code import 정리
+- 잔여: CommitGraph / StatusPanel / PrDetail / 기타 panel (Stash / Worktree / LFS / Submodule / Issues / Releases / Tag) — virtualizer 영향 큼 / 별도 sprint
+- 검증: typecheck 0 / lint 0 / vitest 29 pass
+
 ### Sprint 22-16 — M6 Q-7 Custom theme HSL 검증 (design 01 §10) ✅ (2026-04-28, frontend-only)
 
 §6 Q-7 처리. design 01 §10 "Custom theme JSON 사용자 입력 검증" 의도 충족.
