@@ -13,8 +13,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --ext .ts,.vue",
+    "lint:files": "eslint --fix",
     "typecheck": "vue-tsc --noEmit",
-    "fmt": "prettier --write \"src/**/*.{ts,vue,css}\""
+    "fmt": "prettier --write \"src/**/*.{ts,vue,css}\"",
+    "fmt:files": "prettier --write"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.0",

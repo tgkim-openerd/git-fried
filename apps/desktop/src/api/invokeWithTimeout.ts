@@ -9,6 +9,10 @@
 
 import { invoke as nativeInvoke } from '@tauri-apps/api/core'
 import { isMockEnabled, mockInvoke } from './devMock'
+import {
+  registerOperation as registerLongOp,
+  completeOperation as completeLongOp,
+} from '@/composables/useLongRunningProgress'
 
 const DEFAULT_TIMEOUT_MS = 30_000
 const LONG_TIMEOUT_MS = 5 * 60_000
@@ -31,6 +35,12 @@ function isLongRunning(cmd: string): boolean {
 export interface InvokeOptions {
   /** 0 = no timeout (사용자 명시 long-running). undefined = 자동 (30s 또는 5min) */
   timeoutMs?: number
+  /**
+   * Long-running progress banner 라벨 (Sprint E-4).
+   * undefined 면 long-running prefix 자동 감지 시 cmd 를 라벨로 사용.
+   * empty string ('') = 자동 감지도 비활성 (banner 표시 안 함).
+   */
+  progressLabel?: string
 }
 
 export function invoke<T>(
@@ -44,12 +54,22 @@ export function invoke<T>(
     return mockInvoke<T>(cmd, args)
   }
 
-  const t =
-    opts?.timeoutMs ?? (isLongRunning(cmd) ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
+  const long = isLongRunning(cmd)
+  const t = opts?.timeoutMs ?? (long ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
+
+  // Long-running banner 등록 (Sprint E-4 / docs/plan/24 §7-1 E-4)
+  const label = opts?.progressLabel === '' ? null : (opts?.progressLabel ?? (long ? cmd : null))
+  const opId = label != null ? registerLongOp(label) : null
+
+  const finalize = () => {
+    if (opId != null) completeLongOp(opId)
+  }
 
   // timeout 0 = 비활성
   if (t === 0) {
-    return nativeInvoke<T>(cmd, args)
+    const p = nativeInvoke<T>(cmd, args)
+    p.finally(finalize)
+    return p
   }
 
   return new Promise<T>((resolve, reject) => {
@@ -57,6 +77,7 @@ export function invoke<T>(
     const timer = setTimeout(() => {
       if (settled) return
       settled = true
+      finalize()
       reject(
         new Error(
           `IPC timeout: '${cmd}' 가 ${(t / 1000).toFixed(0)}초 안에 응답하지 않았습니다. ` +
@@ -69,12 +90,14 @@ export function invoke<T>(
         if (settled) return
         settled = true
         clearTimeout(timer)
+        finalize()
         resolve(v)
       })
       .catch((e) => {
         if (settled) return
         settled = true
         clearTimeout(timer)
+        finalize()
         reject(e)
       })
   })

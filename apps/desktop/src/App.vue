@@ -9,6 +9,7 @@ import SyncTemplateModal from './components/SyncTemplateModal.vue'
 import BisectModal from './components/BisectModal.vue'
 import ReflogModal from './components/ReflogModal.vue'
 import ToastContainer from './components/ToastContainer.vue'
+import LongRunningBanner from './components/LongRunningBanner.vue'
 import RepoSwitcherModal from './components/RepoSwitcherModal.vue'
 import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
@@ -261,5 +262,6 @@ window.gitFriedOpenCompare = openCompare
     />
     <HelpModal :open="helpOpen" @close="helpOpen = false" />
     <ToastContainer />
+    <LongRunningBanner />
   </div>
 </template>

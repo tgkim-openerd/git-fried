@@ -13,11 +13,13 @@ pre-commit:
   commands:
     eslint:
       glob: "apps/desktop/src/**/*.{ts,vue,js}"
-      run: bunx --bun eslint --fix {staged_files}
+      # bunx 의 임시 캐시 fresh install 회피 — workspace 내 binary 직접 사용 (.exe Windows native)
+      # lefthook 가 root cwd 에서 실행 → eslint flat config 자동 탐색이 root 에서 실패하므로 --config 명시
+      run: apps/desktop/node_modules/.bin/eslint --config apps/desktop/eslint.config.js --fix {staged_files}
       stage_fixed: true
     prettier:
       glob: "apps/desktop/src/**/*.{ts,vue,css,md,json}"
-      run: bunx --bun prettier --write {staged_files}
+      run: apps/desktop/node_modules/.bin/prettier --write {staged_files}
       stage_fixed: true
     cargo-fmt-check:
       glob: "apps/desktop/src-tauri/src/**/*.rs"
