@@ -16,8 +16,12 @@ const useQuerySpy = vi.fn<(args: UseQueryArgs) => { data: Ref<unknown> }>(() => 
   data: ref(undefined),
 }))
 
+const invalidateQueriesMock = vi.fn()
+const useQueryClientMock = vi.fn(() => ({ invalidateQueries: invalidateQueriesMock }))
+
 vi.mock('@tanstack/vue-query', () => ({
   useQuery: (args: UseQueryArgs) => useQuerySpy(args),
+  useQueryClient: () => useQueryClientMock(),
 }))
 
 vi.mock('@/api/git', () => ({
@@ -203,6 +207,27 @@ describe('query wrapper composables', () => {
       const args = lastCall()
       expect(args.enabled.value).toBe(false)
       await expect(args.queryFn()).rejects.toThrow(/no repo/)
+    })
+  })
+
+  describe('useInvalidateRepoQueries', () => {
+    it('factory 반환 함수 — 3개 queryKey invalidate (status / log / repos)', async () => {
+      const m = await import('./useStatus')
+      invalidateQueriesMock.mockClear()
+      const invalidate = m.useInvalidateRepoQueries()
+      invalidate(42)
+      expect(invalidateQueriesMock).toHaveBeenCalledTimes(3)
+      expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['status', 42] })
+      expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['log', 42] })
+      expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['repos'] })
+    })
+
+    it('repoId null 도 처리 (invalidate 호출 그대로 발화)', async () => {
+      const m = await import('./useStatus')
+      invalidateQueriesMock.mockClear()
+      const invalidate = m.useInvalidateRepoQueries()
+      invalidate(null)
+      expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['status', null] })
     })
   })
 
