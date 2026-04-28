@@ -279,3 +279,66 @@ pub async fn cherry_pick_sha(
     }
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// BranchKindLite serde — lowercase mapping (frontend 의 union 'local'|'remote' 와 일치).
+    #[test]
+    fn test_branch_kind_lite_serde_lowercase() {
+        let local = serde_json::to_string(&BranchKindLite::Local).unwrap();
+        let remote = serde_json::to_string(&BranchKindLite::Remote).unwrap();
+        assert_eq!(local, "\"local\"");
+        assert_eq!(remote, "\"remote\"");
+    }
+
+    /// BranchInfo serde — camelCase (lastCommitSha / lastCommitSubject).
+    #[test]
+    fn test_branch_info_serde_camel_case() {
+        let b = BranchInfo {
+            name: "main".to_string(),
+            kind: BranchKindLite::Local,
+            is_head: true,
+            upstream: Some("origin/main".to_string()),
+            last_commit_sha: Some("abc1234".to_string()),
+            last_commit_subject: Some("feat: init".to_string()),
+            ahead: 3,
+            behind: 1,
+        };
+        let json = serde_json::to_string(&b).unwrap();
+        assert!(json.contains("\"isHead\""));
+        assert!(json.contains("\"lastCommitSha\""));
+        assert!(json.contains("\"lastCommitSubject\""));
+        assert!(!json.contains("is_head"));
+        assert!(!json.contains("last_commit_sha"));
+    }
+
+    /// 한글 브랜치명 + upstream 직렬화 (한글 안전).
+    #[test]
+    fn test_branch_info_korean_name() {
+        let b = BranchInfo {
+            name: "feature/한글-브랜치".to_string(),
+            kind: BranchKindLite::Local,
+            is_head: false,
+            upstream: Some("origin/feature/한글-브랜치".to_string()),
+            last_commit_sha: None,
+            last_commit_subject: Some("feat: 한글 커밋".to_string()),
+            ahead: 0,
+            behind: 0,
+        };
+        let json = serde_json::to_string(&b).unwrap();
+        // 한글 그대로 — escape 없음.
+        assert!(json.contains("한글-브랜치"));
+        assert!(json.contains("한글 커밋"));
+    }
+
+    /// 빈 path 는 list_branches 가 git2 Git error 반환.
+    #[test]
+    fn test_list_branches_invalid_path() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        // git init 안 한 빈 디렉토리.
+        let res = list_branches(tmp.path());
+        assert!(res.is_err());
+    }
+}

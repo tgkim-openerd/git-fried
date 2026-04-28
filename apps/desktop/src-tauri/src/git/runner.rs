@@ -159,3 +159,46 @@ pub async fn commit_with_message(repo: &Path, message: &str) -> AppResult<GitOut
     let path = f.path().to_string_lossy().into_owned();
     git_run(repo, &["commit", "-F", &path], &Default::default()).await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// UTF-8 한글 정상 디코드 (가장 일반).
+    #[test]
+    fn test_decode_lossy_utf8_korean() {
+        let bytes = "커밋 메시지".as_bytes();
+        assert_eq!(decode_lossy(bytes), "커밋 메시지");
+    }
+
+    /// 빈 byte slice 는 빈 string.
+    #[test]
+    fn test_decode_lossy_empty() {
+        assert_eq!(decode_lossy(&[]), "");
+    }
+
+    /// ASCII 는 무영향.
+    #[test]
+    fn test_decode_lossy_ascii() {
+        assert_eq!(decode_lossy(b"git --version"), "git --version");
+    }
+
+    /// NFC 정규화 — 자모 분리 ("ㅎ" + "ㅏ" + "ㄴ") 가 결합 ("한") 으로.
+    /// 실제로 분리된 자모 byte sequence: \u{1100} (ᄒ) + \u{1161} (ᅡ) + \u{11AB} (ᆫ).
+    #[test]
+    fn test_decode_lossy_nfc_normalization() {
+        // 분리형 (NFD) 한글
+        let nfd = "\u{1112}\u{1161}\u{11AB}\u{1100}\u{1173}\u{11AF}";
+        let bytes = nfd.as_bytes();
+        let decoded = decode_lossy(bytes);
+        // NFC 후에는 결합형 "한글" 이어야 함.
+        assert_eq!(decoded, "한글");
+    }
+
+    /// 한글 commit message 가 ASCII 와 mixed.
+    #[test]
+    fn test_decode_lossy_mixed_korean_ascii() {
+        let bytes = "feat: 한글 커밋 메시지 (CJK=2 cell)".as_bytes();
+        assert_eq!(decode_lossy(bytes), "feat: 한글 커밋 메시지 (CJK=2 cell)");
+    }
+}

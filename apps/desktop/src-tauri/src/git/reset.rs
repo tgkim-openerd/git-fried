@@ -362,4 +362,35 @@ mod tests {
         assert!(json.contains("\"newHeadSha\""));
         assert!(!json.contains("rejection_reason"));
     }
+
+    /// 한글 메시지 포함 UndoResult 직렬화 (한글 안전).
+    #[test]
+    fn test_undo_result_korean_message() {
+        let r = UndoResult {
+            action: "commit".to_string(),
+            message: "feat: 한글 커밋 메시지".to_string(),
+            executed: true,
+            rejection_reason: None,
+            new_head_sha: Some("abc1234".to_string()),
+        };
+        let json = serde_json::to_string(&r).unwrap();
+        // 한글 그대로 직렬화 (escape 없이).
+        assert!(json.contains("한글 커밋 메시지"));
+    }
+
+    /// ResetMode serde — lowercase mapping (frontend 와 일치, soft/mixed/hard/keep).
+    #[test]
+    fn test_reset_mode_serde_lowercase() {
+        let modes = [
+            ResetMode::Soft,
+            ResetMode::Mixed,
+            ResetMode::Hard,
+            ResetMode::Keep,
+        ];
+        let expected = ["\"soft\"", "\"mixed\"", "\"hard\"", "\"keep\""];
+        for (m, e) in modes.iter().zip(expected.iter()) {
+            let json = serde_json::to_string(m).unwrap();
+            assert_eq!(&json, e);
+        }
+    }
 }
