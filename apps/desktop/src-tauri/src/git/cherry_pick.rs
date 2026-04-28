@@ -115,3 +115,53 @@ async fn cherry_pick_one(
         conflicted,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// CherryPickStrategy serde — lowercase (default / mainlineParent).
+    #[test]
+    fn test_strategy_serde_lowercase() {
+        let d = serde_json::to_string(&CherryPickStrategy::Default).unwrap();
+        let m = serde_json::to_string(&CherryPickStrategy::MainlineParent).unwrap();
+        assert_eq!(d, "\"default\"");
+        // serde rename_all = lowercase 는 enum variant 를 그대로 lowercase. 'MainlineParent' →
+        // 'mainlineparent' (camel 아님). 이게 frontend 와 일치하는지 검증.
+        assert_eq!(m, "\"mainlineparent\"");
+    }
+
+    /// CherryPickResult serde — camelCase (repoId / repoName).
+    #[test]
+    fn test_result_serde_camel_case() {
+        let r = CherryPickResult {
+            repo_id: 42,
+            repo_name: "frontend".to_string(),
+            success: true,
+            stdout: "".to_string(),
+            stderr: "".to_string(),
+            conflicted: false,
+        };
+        let json = serde_json::to_string(&r).unwrap();
+        assert!(json.contains("\"repoId\":42"));
+        assert!(json.contains("\"repoName\":\"frontend\""));
+        assert!(!json.contains("repo_id"));
+        assert!(!json.contains("repo_name"));
+    }
+
+    /// 한글 repo_name + stderr 직렬화 (한글 안전).
+    #[test]
+    fn test_result_korean_repo_name() {
+        let r = CherryPickResult {
+            repo_id: 1,
+            repo_name: "한글프론트".to_string(),
+            success: false,
+            stdout: "".to_string(),
+            stderr: "error: 머지 충돌 (CONFLICT)".to_string(),
+            conflicted: true,
+        };
+        let json = serde_json::to_string(&r).unwrap();
+        assert!(json.contains("한글프론트"));
+        assert!(json.contains("머지 충돌"));
+    }
+}

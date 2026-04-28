@@ -347,4 +347,44 @@ mod tests {
         let list = list_hidden(&db, repo_id).await.unwrap();
         assert!(list.is_empty(), "repo 삭제 시 hidden 도 cascade 삭제");
     }
+
+    /// HiddenRefKind serde — lowercase mapping (frontend union 'branch'|'remote'|'tag'|'stash').
+    #[test]
+    fn test_kind_serde_lowercase() {
+        let cases = [
+            (HiddenRefKind::Branch, "\"branch\""),
+            (HiddenRefKind::Remote, "\"remote\""),
+            (HiddenRefKind::Tag, "\"tag\""),
+            (HiddenRefKind::Stash, "\"stash\""),
+        ];
+        for (k, expected) in cases {
+            let json = serde_json::to_string(&k).unwrap();
+            assert_eq!(json, expected);
+        }
+    }
+
+    /// HiddenRefKind::parse / as_str round-trip — 모든 variant 가 self-consistent.
+    #[test]
+    fn test_kind_parse_as_str_round_trip() {
+        let kinds = [
+            HiddenRefKind::Branch,
+            HiddenRefKind::Remote,
+            HiddenRefKind::Tag,
+            HiddenRefKind::Stash,
+        ];
+        for k in kinds {
+            let s = k.as_str();
+            let parsed = HiddenRefKind::parse(s).expect("round-trip");
+            assert_eq!(k, parsed);
+        }
+    }
+
+    /// HiddenRefKind::parse 의 unknown 입력은 validation error.
+    #[test]
+    fn test_kind_parse_unknown() {
+        let res = HiddenRefKind::parse("unknown");
+        assert!(res.is_err());
+        let res2 = HiddenRefKind::parse("");
+        assert!(res2.is_err());
+    }
 }
