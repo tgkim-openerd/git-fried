@@ -68,12 +68,7 @@ fn parse_remote_v(s: &str) -> Vec<RemoteInfo> {
 }
 
 pub async fn add_remote(repo: &Path, name: &str, url: &str) -> AppResult<()> {
-    git_run(
-        repo,
-        &["remote", "add", name, url],
-        &GitRunOpts::default(),
-    )
-    .await?;
+    git_run(repo, &["remote", "add", name, url], &GitRunOpts::default()).await?;
     Ok(())
 }
 

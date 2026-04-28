@@ -60,7 +60,12 @@ const KEYS: &[&str] = &[
 async fn read_one(repo: &Path, key: &str) -> AppResult<Option<String>> {
     // `git config --local --get <key>` — 미설정 시 exit 1.
     // git_run 은 non-zero 도 Err 가 아닌 GitOutput 으로 반환하므로 exit_code 직접 검사.
-    let out = git_run(repo, &["config", "--local", "--get", key], &GitRunOpts::default()).await?;
+    let out = git_run(
+        repo,
+        &["config", "--local", "--get", key],
+        &GitRunOpts::default(),
+    )
+    .await?;
     if out.exit_code == Some(0) {
         Ok(Some(out.stdout.trim_end().to_string()))
     } else {
@@ -102,13 +107,9 @@ fn assign_field(snap: &mut RepoConfigSnapshot, key: &str, v: Option<String>) {
 pub async fn set_one(repo: &Path, key: &str, value: Option<&str>) -> AppResult<()> {
     let trimmed = value.map(|s| s.trim()).filter(|s| !s.is_empty());
     if let Some(v) = trimmed {
-        git_run(
-            repo,
-            &["config", "--local", key, v],
-            &GitRunOpts::default(),
-        )
-        .await?
-        .into_ok()?;
+        git_run(repo, &["config", "--local", key, v], &GitRunOpts::default())
+            .await?
+            .into_ok()?;
     } else {
         // unset — 미존재 시 exit 5. into_ok 호출 안 하면 무시됨.
         let _ = git_run(
@@ -122,18 +123,45 @@ pub async fn set_one(repo: &Path, key: &str, value: Option<&str>) -> AppResult<(
 }
 
 /// 여러 키를 한 번의 IPC 호출로 적용 (form save).
-pub async fn apply_snapshot(
-    repo: &Path,
-    snap: &RepoConfigSnapshot,
-) -> AppResult<()> {
+pub async fn apply_snapshot(repo: &Path, snap: &RepoConfigSnapshot) -> AppResult<()> {
     set_one(repo, "core.hooksPath", snap.hooks_path.as_deref()).await?;
     set_one(repo, "i18n.commitEncoding", snap.commit_encoding.as_deref()).await?;
-    set_one(repo, "i18n.logOutputEncoding", snap.log_output_encoding.as_deref()).await?;
-    set_one(repo, "gitflow.branch.master", snap.gitflow_branch_master.as_deref()).await?;
-    set_one(repo, "gitflow.branch.develop", snap.gitflow_branch_develop.as_deref()).await?;
-    set_one(repo, "gitflow.prefix.feature", snap.gitflow_prefix_feature.as_deref()).await?;
-    set_one(repo, "gitflow.prefix.release", snap.gitflow_prefix_release.as_deref()).await?;
-    set_one(repo, "gitflow.prefix.hotfix", snap.gitflow_prefix_hotfix.as_deref()).await?;
+    set_one(
+        repo,
+        "i18n.logOutputEncoding",
+        snap.log_output_encoding.as_deref(),
+    )
+    .await?;
+    set_one(
+        repo,
+        "gitflow.branch.master",
+        snap.gitflow_branch_master.as_deref(),
+    )
+    .await?;
+    set_one(
+        repo,
+        "gitflow.branch.develop",
+        snap.gitflow_branch_develop.as_deref(),
+    )
+    .await?;
+    set_one(
+        repo,
+        "gitflow.prefix.feature",
+        snap.gitflow_prefix_feature.as_deref(),
+    )
+    .await?;
+    set_one(
+        repo,
+        "gitflow.prefix.release",
+        snap.gitflow_prefix_release.as_deref(),
+    )
+    .await?;
+    set_one(
+        repo,
+        "gitflow.prefix.hotfix",
+        snap.gitflow_prefix_hotfix.as_deref(),
+    )
+    .await?;
     set_one(repo, "commit.gpgsign", snap.commit_gpgsign.as_deref()).await?;
     set_one(repo, "user.signingkey", snap.user_signingkey.as_deref()).await?;
     set_one(repo, "gpg.format", snap.gpg_format.as_deref()).await?;

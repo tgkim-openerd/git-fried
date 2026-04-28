@@ -329,12 +329,7 @@ impl ForgeClient for GiteaClient {
         Ok(())
     }
 
-    async fn list_pr_files(
-        &self,
-        owner: &str,
-        repo: &str,
-        number: u64,
-    ) -> AppResult<Vec<PrFile>> {
+    async fn list_pr_files(&self, owner: &str, repo: &str, number: u64) -> AppResult<Vec<PrFile>> {
         // Sprint 22-3 V-2 — Gitea `GET /repos/{o}/{r}/pulls/{n}/files`.
         // Gitea swagger schema 는 GitHub 와 호환 (filename / status / additions / deletions / changes / patch).
         let url = self.url(&format!(

@@ -134,11 +134,7 @@ pub async fn show_stash(repo: &Path, index: usize) -> AppResult<String> {
 ///
 /// 결과: 같은 commit (= 같은 변경) 을 새 메시지로 stash@{0} 에 보유. 순서 변경 발생.
 /// store 가 reflog entry 를 만든 뒤 drop 하므로 SHA unreachable 위험 없음.
-pub async fn edit_stash_message(
-    repo: &Path,
-    index: usize,
-    new_message: &str,
-) -> AppResult<()> {
+pub async fn edit_stash_message(repo: &Path, index: usize, new_message: &str) -> AppResult<()> {
     if new_message.trim().is_empty() {
         return Err(crate::error::AppError::validation("메시지 비어있음"));
     }
@@ -162,13 +158,9 @@ pub async fn edit_stash_message(
     .into_ok()?;
     // 3) 원본 drop — store 후 stash@{0} 이 새 entry, 원본은 +1 로 이동
     let original = format!("stash@{{{}}}", index + 1);
-    git_run(
-        repo,
-        &["stash", "drop", &original],
-        &GitRunOpts::default(),
-    )
-    .await?
-    .into_ok()?;
+    git_run(repo, &["stash", "drop", &original], &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 
@@ -194,13 +186,9 @@ pub async fn apply_stash_file(repo: &Path, index: usize, path: &str) -> AppResul
     // stash 의 다중 parent 구조에서 비결정적. `git checkout` 은 stash 의 그 시점
     // 그대로를 가져오는 가장 직관적 방식 — GitKraken 의 "Apply this file" 의미와
     // 정확히 일치. dirty working tree 면 git 이 자체 보호 (overwrite 거부).
-    git_run(
-        repo,
-        &["checkout", &r, "--", path],
-        &GitRunOpts::default(),
-    )
-    .await?
-    .into_ok()?;
+    git_run(repo, &["checkout", &r, "--", path], &GitRunOpts::default())
+        .await?
+        .into_ok()?;
     Ok(())
 }
 

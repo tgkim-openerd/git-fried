@@ -80,10 +80,20 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
     if let Some(d) = opts.depth.filter(|&d| d > 0) {
         args.push(format!("--depth={d}"));
     }
-    if let Some(s) = opts.shallow_since.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+    if let Some(s) = opts
+        .shallow_since
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
         args.push(format!("--shallow-since={s}"));
     }
-    if let Some(b) = opts.single_branch.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+    if let Some(b) = opts
+        .single_branch
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
         args.push("--single-branch".into());
         args.push(format!("--branch={b}"));
     }
@@ -99,10 +109,7 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
     let clone_out = git_run(parent, &arg_refs, &GitRunOpts::default()).await?;
     if clone_out.exit_code != Some(0) {
         return Err(AppError::GitCli {
-            message: format!(
-                "git clone 실패 (exit={:?})",
-                clone_out.exit_code
-            ),
+            message: format!("git clone 실패 (exit={:?})", clone_out.exit_code),
             exit_code: clone_out.exit_code,
             stderr: clone_out.stderr,
         });
@@ -111,11 +118,7 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
     let mut combined_stderr = clone_out.stderr.clone();
 
     // === sparse paths 적용 + checkout ===
-    if let Some(paths) = opts
-        .sparse_paths
-        .as_ref()
-        .filter(|v| !v.is_empty())
-    {
+    if let Some(paths) = opts.sparse_paths.as_ref().filter(|v| !v.is_empty()) {
         // (이미 --sparse + --no-checkout 으로 시작했으므로 init 은 자동.
         //  안전하게 sparse-checkout init --cone 도 호출.)
         let _ = git_run(
@@ -133,10 +136,7 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
         combined_stderr.push_str(&set_out.stderr);
         if set_out.exit_code != Some(0) {
             return Err(AppError::GitCli {
-                message: format!(
-                    "sparse-checkout set 실패 (exit={:?})",
-                    set_out.exit_code
-                ),
+                message: format!("sparse-checkout set 실패 (exit={:?})", set_out.exit_code),
                 exit_code: set_out.exit_code,
                 stderr: set_out.stderr,
             });

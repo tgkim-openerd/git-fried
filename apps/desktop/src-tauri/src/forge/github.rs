@@ -247,9 +247,8 @@ impl ForgeClient for GithubClient {
             c.to_string()
         } else {
             let pr = self.get_pull_request(owner, repo, number).await?;
-            pr.head_sha.ok_or_else(|| {
-                crate::error::AppError::validation("PR head SHA 추출 실패")
-            })?
+            pr.head_sha
+                .ok_or_else(|| crate::error::AppError::validation("PR head SHA 추출 실패"))?
         };
         let url = self.url(&format!("/repos/{owner}/{repo}/pulls/{number}/comments"));
         self.http
@@ -340,12 +339,7 @@ impl ForgeClient for GithubClient {
         Ok(())
     }
 
-    async fn list_pr_files(
-        &self,
-        owner: &str,
-        repo: &str,
-        number: u64,
-    ) -> AppResult<Vec<PrFile>> {
+    async fn list_pr_files(&self, owner: &str, repo: &str, number: u64) -> AppResult<Vec<PrFile>> {
         // Sprint 22-3 V-2 — GitHub `GET /repos/{o}/{r}/pulls/{n}/files`.
         // per_page=100 (최대) — 100+ 파일 PR 은 흔치 않으므로 1페이지만 조회.
         let url = self.url(&format!(

@@ -230,10 +230,7 @@ pub fn detect_summary() -> AppResult<Option<DetectResult>> {
 // ====== Plan / Apply 공통 ======
 
 /// 입력 path → 가장 길게 매칭되는 syncPath 의 project name.
-fn assign_workspace<'a>(
-    repo_path: &Path,
-    projects: &'a [(String, PathBuf)],
-) -> Option<&'a str> {
+fn assign_workspace<'a>(repo_path: &Path, projects: &'a [(String, PathBuf)]) -> Option<&'a str> {
     let repo_str = repo_path.to_string_lossy().to_lowercase();
     let mut best: Option<(&str, usize)> = None;
     for (name, sync) in projects {
@@ -344,8 +341,11 @@ pub async fn apply(db: &Db, payload: &Payload) -> AppResult<ApplyResult> {
     let mut workspaces_created = 0usize;
 
     for (orig_name, sync_path) in &payload.projects {
-        let final_name =
-            resolve_name_conflict(orig_name, &existing_names, &std::collections::HashSet::new());
+        let final_name = resolve_name_conflict(
+            orig_name,
+            &existing_names,
+            &std::collections::HashSet::new(),
+        );
         existing_names.insert(final_name.clone());
         match db.create_workspace(&final_name, None).await {
             Ok(ws) => {
@@ -353,9 +353,7 @@ pub async fn apply(db: &Db, payload: &Payload) -> AppResult<ApplyResult> {
                 workspaces_created += 1;
             }
             Err(e) => {
-                warnings.push(format!(
-                    "Workspace 생성 실패 (name='{final_name}'): {e}"
-                ));
+                warnings.push(format!("Workspace 생성 실패 (name='{final_name}'): {e}"));
             }
         }
     }
@@ -405,7 +403,14 @@ pub async fn apply(db: &Db, payload: &Payload) -> AppResult<ApplyResult> {
                 ),
                 Err(e) => {
                     warnings.push(format!("detect_meta 실패 ({path_str}): {e}"));
-                    (fallback_name, None, None, ForgeKindLite::Unknown, None, None)
+                    (
+                        fallback_name,
+                        None,
+                        None,
+                        ForgeKindLite::Unknown,
+                        None,
+                        None,
+                    )
                 }
             };
 
@@ -493,10 +498,7 @@ mod tests {
     fn assign_workspace_uses_longest_prefix() {
         let projects = vec![
             ("Outer".to_string(), PathBuf::from("D:/01.Work")),
-            (
-                "Inner".to_string(),
-                PathBuf::from("D:/01.Work/01.Projects"),
-            ),
+            ("Inner".to_string(), PathBuf::from("D:/01.Work/01.Projects")),
         ];
         let repo = PathBuf::from("D:/01.Work/01.Projects/foo");
         assert_eq!(assign_workspace(&repo, &projects), Some("Inner"));
@@ -528,10 +530,7 @@ mod tests {
             .into_iter()
             .map(|s| canonical_repo_path(&s))
             .collect();
-        assert_eq!(
-            canon,
-            vec![PathBuf::from("D:/a"), PathBuf::from("C:/b")]
-        );
+        assert_eq!(canon, vec![PathBuf::from("D:/a"), PathBuf::from("C:/b")]);
     }
 
     #[test]

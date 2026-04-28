@@ -112,12 +112,7 @@ pub trait ForgeClient: Send + Sync {
     /// GitHub : `GET /repos/{o}/{r}/pulls/{n}/files` (per_page 100, 필요 시 페이지네이션).
     /// Gitea  : 동일 endpoint, 동일 스키마.
     /// 응답에는 file 별 unified diff `patch` 포함 (대용량은 None 가능).
-    async fn list_pr_files(
-        &self,
-        owner: &str,
-        repo: &str,
-        number: u64,
-    ) -> AppResult<Vec<PrFile>>;
+    async fn list_pr_files(&self, owner: &str, repo: &str, number: u64) -> AppResult<Vec<PrFile>>;
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

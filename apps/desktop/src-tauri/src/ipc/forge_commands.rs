@@ -12,8 +12,8 @@
 use crate::auth;
 use crate::error::{AppError, AppResult};
 use crate::forge::{
-    gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, Issue, MergeMethod,
-    PrComment, PrFile, PrState, PullRequest, Release, ReviewVerdict,
+    gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, Issue,
+    MergeMethod, PrComment, PrFile, PrState, PullRequest, Release, ReviewVerdict,
 };
 use crate::storage::DbExt;
 use crate::AppState;
@@ -444,4 +444,3 @@ pub async fn list_pr_files(
     let (client, owner, repo) = forge_client_for_repo(&state, args.repo_id).await?;
     client.list_pr_files(&owner, &repo, args.number).await
 }
-

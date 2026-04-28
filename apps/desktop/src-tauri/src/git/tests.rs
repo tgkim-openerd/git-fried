@@ -518,7 +518,9 @@ async fn test_worktree_lock_unlock_round_trip() {
     assert!(me.is_locked, "lock 후 is_locked=true");
 
     // unlock
-    super::worktree::unlock_worktree(&path, &wt_str).await.unwrap();
+    super::worktree::unlock_worktree(&path, &wt_str)
+        .await
+        .unwrap();
     let entries2 = super::worktree::list_worktrees(&path).await.unwrap();
     let me2 = entries2
         .iter()
@@ -542,7 +544,10 @@ async fn test_lfs_push_size_no_upstream() {
     assert_eq!(r.file_count, 0);
     assert_eq!(r.total_bytes, 0);
     assert!(
-        r.note.as_ref().map(|s| s.contains("upstream")).unwrap_or(false),
+        r.note
+            .as_ref()
+            .map(|s| s.contains("upstream"))
+            .unwrap_or(false),
         "upstream 미설정 안내",
     );
 }
@@ -561,7 +566,8 @@ async fn test_stage_patch_partial_apply() {
 
     // 단일 hunk 의 일부만 stage 하는 patch 직접 작성.
     // index abc..def 부분은 git apply 가 복원 가능 (--recount 없이도 OK).
-    let patch = "diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -2,1 +2,2 @@\n line2\n+added3\n";
+    let patch =
+        "diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -2,1 +2,2 @@\n line2\n+added3\n";
     super::stage::stage_patch(&path, patch).await.unwrap();
 
     // staged 에 a.txt 가 modified 로 들어가야 함.

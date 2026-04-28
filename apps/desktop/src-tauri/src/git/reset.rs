@@ -129,9 +129,13 @@ pub async fn undo_last_action(path: &Path) -> AppResult<UndoResult> {
 
     // 5. soft reset — working tree / index 보존, branch 만 캡처된 SHA 로.
     //    HEAD@{1} 직접 사용 안 함 (race 방지).
-    git_run(path, &["reset", "--soft", &target_sha], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    git_run(
+        path,
+        &["reset", "--soft", &target_sha],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
 
     // 6. 새 HEAD SHA 조회.
     let new_sha = git_run(path, &["rev-parse", "HEAD"], &GitRunOpts::default())

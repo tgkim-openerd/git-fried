@@ -59,7 +59,12 @@ pub async fn compare_refs(repo: &Path, ref1: &str, ref2: &str) -> AppResult<Comp
             let author = parts.next()?.to_string();
             let at: i64 = parts.next()?.parse().ok()?;
             let summary = parts.next().unwrap_or("").to_string();
-            Some(CompareCommit { sha, author, author_at: at, summary })
+            Some(CompareCommit {
+                sha,
+                author,
+                author_at: at,
+                summary,
+            })
         })
         .collect();
 
@@ -86,7 +91,12 @@ pub async fn compare_refs(repo: &Path, ref1: &str, ref2: &str) -> AppResult<Comp
     let left_count: u32 = split.next().and_then(|s| s.parse().ok()).unwrap_or(0);
     let right_count: u32 = split.next().and_then(|s| s.parse().ok()).unwrap_or(0);
 
-    Ok(CompareResult { commits, diff, left_count, right_count })
+    Ok(CompareResult {
+        commits,
+        diff,
+        left_count,
+        right_count,
+    })
 }
 
 #[cfg(test)]

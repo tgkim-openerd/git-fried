@@ -102,4 +102,3 @@ pub async fn last_commit_message(repo: &Path) -> AppResult<String> {
         .into_ok()?;
     Ok(out.trim_end().to_string())
 }
-
