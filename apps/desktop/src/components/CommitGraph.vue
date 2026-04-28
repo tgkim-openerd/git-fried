@@ -425,6 +425,7 @@ onUnmounted(() => {
           <button
             type="button"
             class="text-xs text-muted-foreground hover:text-foreground"
+            aria-label="검색 닫기"
             @click="closeSearch"
           >
             ✕
@@ -435,6 +436,7 @@ onUnmounted(() => {
           type="button"
           class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent"
           title="⌘F / Ctrl+F"
+          aria-label="commit 검색 열기 (⌘F / Ctrl+F)"
           @click="openSearch"
         >
           🔍

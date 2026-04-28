@@ -171,6 +171,8 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
                   ? 'bg-accent text-accent-foreground'
                   : 'text-muted-foreground'
               "
+              :aria-label="`PR 상태 필터: ${s ?? '전체'}`"
+              :aria-pressed="stateFilter === s"
               @click="stateFilter = s"
             >
               {{ s ?? 'all' }}
@@ -180,6 +182,7 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
             type="button"
             class="rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground hover:opacity-90 disabled:opacity-50"
             :disabled="!repoId"
+            aria-label="새 Pull Request 생성"
             @click="createOpen = true"
           >
             + 새 PR

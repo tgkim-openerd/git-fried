@@ -182,6 +182,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
         type="button"
         class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent disabled:opacity-50"
         :disabled="!repoId || pruneMut.isPending.value"
+        aria-label="prunable worktree 정리 (디스크 정리)"
         @click="pruneMut.mutate()"
       >
         prune
@@ -241,6 +242,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
               type="button"
               class="text-[10px] text-amber-500 hover:underline"
               :disabled="lockMut.isPending.value"
+              :aria-label="`worktree '${t.path}' 잠금`"
               @click="onLock(t.path)"
             >
               lock
@@ -250,6 +252,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
               type="button"
               class="text-[10px] text-amber-500 hover:underline"
               :disabled="unlockMut.isPending.value"
+              :aria-label="`worktree '${t.path}' 잠금 해제`"
               @click="onUnlock(t.path)"
             >
               unlock
@@ -259,6 +262,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
               class="text-[10px] text-destructive hover:underline"
               :disabled="t.isLocked"
               :title="t.isLocked ? 'unlock 후 제거' : ''"
+              :aria-label="`worktree '${t.path}' 제거`"
               @click="confirmRemove(t.path)"
             >
               remove

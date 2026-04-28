@@ -226,17 +226,40 @@ const aiMut = useMutation({
           </div>
           <div class="truncate text-xs">{{ s.message }}</div>
           <div class="mt-1 flex gap-1 text-[11px]">
-            <button class="hover:underline" @click="onShow(s.index)">show</button>
-            <button class="hover:underline" @click="onApply(s.index)">apply</button>
-            <button class="hover:underline" @click="onPop(s.index)">pop</button>
+            <button
+              class="hover:underline"
+              :aria-label="`stash@{${s.index}} diff 보기`"
+              @click="onShow(s.index)"
+            >
+              show
+            </button>
+            <button
+              class="hover:underline"
+              :aria-label="`stash@{${s.index}} apply (working tree 에 적용)`"
+              @click="onApply(s.index)"
+            >
+              apply
+            </button>
+            <button
+              class="hover:underline"
+              :aria-label="`stash@{${s.index}} pop (apply + 제거)`"
+              @click="onPop(s.index)"
+            >
+              pop
+            </button>
             <button
               class="hover:underline"
               title="메시지 수정 (`docs/plan/14 §5 D2`)"
+              :aria-label="`stash@{${s.index}} 메시지 수정`"
               @click="onEditMessage(s.index, s.message)"
             >
               edit msg
             </button>
-            <button class="hover:underline text-destructive" @click="onDrop(s.index)">
+            <button
+              class="hover:underline text-destructive"
+              :aria-label="`stash@{${s.index}} 삭제`"
+              @click="onDrop(s.index)"
+            >
               drop
             </button>
           </div>

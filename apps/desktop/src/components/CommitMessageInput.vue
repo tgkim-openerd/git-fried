@@ -223,6 +223,8 @@ useShortcut('stageAndCommit', async () => {
           type="button"
           class="rounded-md border border-input px-2 py-0.5"
           :class="mode === 'conventional' ? 'bg-accent text-accent-foreground' : ''"
+          aria-label="Conventional Commits 모드 (type/scope/subject)"
+          :aria-pressed="mode === 'conventional'"
           @click="mode = 'conventional'"
         >
           Conventional
@@ -231,6 +233,8 @@ useShortcut('stageAndCommit', async () => {
           type="button"
           class="rounded-md border border-input px-2 py-0.5"
           :class="mode === 'free' ? 'bg-accent text-accent-foreground' : ''"
+          aria-label="자유 형식 commit 메시지 모드"
+          :aria-pressed="mode === 'free'"
           @click="mode = 'free'"
         >
           Free-form

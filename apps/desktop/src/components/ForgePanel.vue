@@ -32,6 +32,8 @@ const TAB_LABELS: Record<ForgeTab, string> = {
             ? 'bg-accent text-accent-foreground font-semibold'
             : 'text-muted-foreground hover:bg-accent/40'
         "
+        :aria-label="`${TAB_LABELS[t]} 탭`"
+        :aria-pressed="tab === t"
         @click="tab = t"
       >
         {{ TAB_LABELS[t] }}

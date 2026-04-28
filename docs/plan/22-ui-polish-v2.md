@@ -266,6 +266,19 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-13 — a11y wrap (S-1 잔여 21건) ✅ (2026-04-28, frontend-only)
+
+§7 S-1 카탈로그 47개 중 22 → 43 건 (~91%) 도달. hot path 6 컴포넌트 21건 추가.
+
+- ✅ **StashPanel action button 5건** — show / apply / pop / edit msg / drop 동적 `stash@{N} ...` aria-label
+- ✅ **WorktreePanel 4건** — prune (header) + lock / unlock / remove 동적 `worktree '${path}' ...`
+- ✅ **ForgePanel sub-tab 4건** — PR / Issue / Release / Tag tab + `aria-pressed` (현재 탭 시각 표시)
+- ✅ **CommitGraph search 2건** — 검색 열기 (⌘F/Ctrl+F) / 닫기
+- ✅ **PrPanel header 4건** — state filter (all / open / closed) + `aria-pressed` + 새 PR 생성
+- ✅ **CommitMessageInput 2건** — Conventional / Free-form 모드 + `aria-pressed`
+- 잔여 4건 (~9%): BranchPanel header (filter local/remote/all + Remote 관리 🔗) / Sidebar workspace 그룹 모드 / CommitTable column header — dogfood feedback 후 Sprint 22-14+
+- 검증: typecheck 0 / lint 0 / vitest 13 pass
+
 ### Sprint 22-12 — P0 polish 묶음 (Q-5 + Q-6 + E-9) ✅ (2026-04-28, frontend-only)
 
 §6 Q-5/Q-6 + §7 S-4 + plan/24 Sprint E E-9 묶음 처리. design 01 §7 + 04 §6+§7 + §8-3+§8-4+§8-6 hard constraint 부분 흡수.

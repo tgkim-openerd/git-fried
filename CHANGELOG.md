@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-13 — a11y wrap (S-1 잔여 aria-label 21 건, plan/22 §7 / plan/24 Sprint E E-6, frontend-only):
+  - **StashPanel action button 5건** — show / apply / pop / edit msg / drop 모두 동적 `stash@{N} ...` 형식 aria-label
+  - **WorktreePanel action button 4건** — prune (header) + lock / unlock / remove 동적 `worktree '${path}' ...` 형식
+  - **ForgePanel sub-tab 4건** — PR / Issue / Release / Tag tab + `aria-pressed` (현재 탭 표시)
+  - **CommitGraph search 2건** — 검색 열기 (⌘F/Ctrl+F) / 닫기
+  - **PrPanel header 4건** — state filter (all / open / closed) + `aria-pressed` + 새 PR 생성
+  - **CommitMessageInput 2건** — Conventional / Free-form 모드 토글 + `aria-pressed`
+  - 누적 aria-label **22 → 43 건** (47 카탈로그 중 ~91%). 잔여 4건은 dogfood feedback 후 Sprint 22-14+
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass
 - Sprint 22-12 — P0 polish 묶음 (Q-5 Transition + Q-6 Toast dedup + E-9 v0.4 placeholder, plan/22 §6+§7 / plan/24 §3+§7 / design 01 §7+04 §6+§7+§8-3+§8-4+§8-6):
   - **Q-5 Transition 정책 + S-4 Micro-interaction 문서화** — `main.css` 에 CSS variables 도입 (`--transition-fast 75ms` / `--transition-base 150ms` / `--transition-slow 200ms` / `--transition-instant 0ms` + `--ease-out` / `--ease-in` cubic-bezier). 정책 문서화 코멘트 + `@media (prefers-reduced-motion: reduce)` 전역 폴백 (WCAG 2.3.3 + E-7 부분 흡수)
   - **BaseModal enter/exit transition** — backdrop fade 150ms / panel scale-fade (0.97→1) 150ms. exit 100ms (ease-in). 18 modal 모두 자동 적용
