@@ -1,0 +1,332 @@
+<script setup lang="ts">
+// GitKraken 스타일 상단 Action Toolbar (8-button) — `docs/plan/25 §2`.
+//
+// 좌→우 그룹: [Undo·Redo] [Pull·Push] [Branch·Stash·Pop] [Terminal] / 우측: branch indicator.
+// SyncBar (Fetch/Pull/Push 3-button) 의 superset. 단계적 마이그레이션을 위해 SyncBar 는 보존.
+//
+// - Undo: ReflogModal 진입 (HEAD restore 버튼 활용)
+// - Redo: c25-1.5 에서 reflog forward 추적으로 구현 — 현재는 toast.info '준비중'
+// - Branch: BranchPanel 탭 활성 (dispatchShortcut('newBranch'))
+// - Stash: 즉시 push (메시지 없이) — working tree 변경 0개면 disabled
+// - Pop: stash@{0} pop — stash 0개면 disabled
+// - Terminal: terminal 토글 (dispatchShortcut('terminal'))
+
+import { computed } from 'vue'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { fetchAll, popStash, pull, pushStash, push, updateSubmodules } from '@/api/git'
+import { useStash } from '@/composables/useStash'
+import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useGeneralSettings } from '@/composables/useUserSettings'
+import { describeError, humanizeGitError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
+import { useShortcut, dispatchShortcut } from '@/composables/useShortcuts'
+
+const props = defineProps<{
+  repoId: number | null
+  branch: string | null
+  ahead: number
+  behind: number
+  upstream: string | null
+}>()
+
+const toast = useToast()
+const invalidate = useInvalidateRepoQueries()
+const queryClient = useQueryClient()
+const general = useGeneralSettings()
+
+const repoIdRef = computed(() => props.repoId)
+const { data: stashList } = useStash(repoIdRef)
+const { data: status } = useStatus(repoIdRef)
+
+const stashCount = computed(() => stashList.value?.length ?? 0)
+const hasChanges = computed(() => {
+  const s = status.value
+  if (!s) return false
+  return (
+    (s.staged?.length ?? 0) +
+      (s.unstaged?.length ?? 0) +
+      (s.untracked?.length ?? 0) +
+      (s.conflicted?.length ?? 0) >
+    0
+  )
+})
+
+// === Mutations (SyncBar 동작 동등) ===
+const fetchMut = useMutation({
+  mutationFn: (id: number) => fetchAll(id),
+  onSuccess: (res) => {
+    invalidate(props.repoId)
+    if (res.success) {
+      toast.success('Fetch 완료')
+    } else {
+      toast.error(`Fetch 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
+    }
+  },
+  onError: (e) => toast.error('Fetch 호출 실패', describeError(e)),
+})
+const pullMut = useMutation({
+  mutationFn: (id: number) => pull({ repoId: id }),
+  onSuccess: async (res) => {
+    invalidate(props.repoId)
+    if (res.success) {
+      toast.success('Pull 완료')
+      if (general.value.autoUpdateSubmodules && props.repoId != null) {
+        try {
+          await updateSubmodules(props.repoId, false)
+          toast.success('Submodule update 완료', '')
+        } catch (e) {
+          toast.error('Submodule update 실패', describeError(e))
+        }
+      }
+    } else {
+      toast.error(`Pull 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
+    }
+  },
+  onError: (e) => toast.error('Pull 호출 실패', describeError(e)),
+})
+const pushMut = useMutation({
+  mutationFn: (id: number) =>
+    push({
+      repoId: id,
+      setUpstream: !props.upstream,
+    }),
+  onSuccess: (res) => {
+    invalidate(props.repoId)
+    if (res.success) {
+      toast.success('Push 완료')
+    } else {
+      toast.error(`Push 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
+    }
+  },
+  onError: (e) => toast.error('Push 호출 실패', describeError(e)),
+})
+
+// === Stash / Pop (toolbar 자체 mutation) ===
+const stashMut = useMutation({
+  mutationFn: (id: number) => pushStash(id, null, false),
+  onSuccess: () => {
+    invalidate(props.repoId)
+    queryClient.invalidateQueries({ queryKey: ['stash', props.repoId] })
+    toast.success('Stash 완료', '메시지 없이 즉시 stash 됨')
+  },
+  onError: (e) => toast.error('Stash 실패', describeError(e)),
+})
+const popMut = useMutation({
+  mutationFn: (id: number) => popStash(id, 0),
+  onSuccess: () => {
+    invalidate(props.repoId)
+    queryClient.invalidateQueries({ queryKey: ['stash', props.repoId] })
+    toast.success('Pop 완료', '가장 최근 stash@{0} 적용')
+  },
+  onError: (e) => toast.error('Pop 실패', describeError(e)),
+})
+
+// === Handlers ===
+function onUndo() {
+  if (props.repoId == null) {
+    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    return
+  }
+  // ReflogModal 의 'HEAD restore' 가 GitKraken Undo 의 의미를 가장 가깝게 표현.
+  window.gitFriedOpenReflog?.()
+}
+function onRedo() {
+  toast.info(
+    'Redo 준비중',
+    'docs/plan/25 c25-1.5 — reflog forward 추적으로 구현 예정',
+  )
+}
+function onFetch() {
+  if (props.repoId != null) fetchMut.mutate(props.repoId)
+}
+function onPull() {
+  if (props.repoId != null) pullMut.mutate(props.repoId)
+}
+function onPush() {
+  if (props.repoId != null) pushMut.mutate(props.repoId)
+}
+function onBranch() {
+  if (props.repoId == null) {
+    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    return
+  }
+  dispatchShortcut('newBranch')
+}
+function onStash() {
+  if (props.repoId == null) {
+    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    return
+  }
+  if (!hasChanges.value) {
+    toast.info('Stash 할 변경사항 없음')
+    return
+  }
+  stashMut.mutate(props.repoId)
+}
+function onPop() {
+  if (props.repoId == null) {
+    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    return
+  }
+  if (stashCount.value === 0) {
+    toast.info('Stash 없음', 'pop 할 stash 가 없습니다.')
+    return
+  }
+  popMut.mutate(props.repoId)
+}
+function onTerminal() {
+  dispatchShortcut('terminal')
+}
+
+// 기존 단축키 유지 (SyncBar 동작 회귀 방지).
+useShortcut('fetch', onFetch)
+useShortcut('pull', onPull)
+useShortcut('push', onPush)
+</script>
+
+<template>
+  <header
+    class="flex items-center justify-between border-b border-border bg-card px-3 py-1.5 text-xs"
+  >
+    <!-- Action group — 좌측 8 button -->
+    <div class="flex items-center gap-0.5">
+      <!-- [history] Undo / Redo -->
+      <div class="flex items-center gap-0.5">
+        <button
+          type="button"
+          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          :disabled="!repoId"
+          title="Undo — 마지막 작업 되돌리기 (Reflog 진입)"
+          @click="onUndo"
+        >
+          <span class="text-base leading-none">↶</span>
+          <span class="text-[10px] leading-tight">Undo</span>
+        </button>
+        <button
+          type="button"
+          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          :disabled="!repoId"
+          title="Redo — c25-1.5 에서 구현 예정"
+          @click="onRedo"
+        >
+          <span class="text-base leading-none">↷</span>
+          <span class="text-[10px] leading-tight">Redo</span>
+        </button>
+      </div>
+
+      <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
+
+      <!-- [sync] Pull / Push -->
+      <div class="flex items-center gap-0.5">
+        <button
+          type="button"
+          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          :disabled="!repoId || pullMut.isPending.value"
+          :title="pullMut.isPending.value ? 'Pull 진행 중...' : 'Pull (⌘⇧L) — fetch + merge/rebase'"
+          @click="onPull"
+        >
+          <span class="text-base leading-none">⇩</span>
+          <span class="text-[10px] leading-tight">{{ pullMut.isPending.value ? '...' : 'Pull' }}</span>
+        </button>
+        <button
+          type="button"
+          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          :disabled="!repoId || pushMut.isPending.value"
+          :title="pushMut.isPending.value ? 'Push 진행 중...' : 'Push (⌘⇧K)'"
+          @click="onPush"
+        >
+          <span class="text-base leading-none">⇧</span>
+          <span class="text-[10px] leading-tight">{{ pushMut.isPending.value ? '...' : 'Push' }}</span>
+        </button>
+      </div>
+
+      <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
+
+      <!-- [branch] Branch / Stash / Pop -->
+      <div class="flex items-center gap-0.5">
+        <button
+          type="button"
+          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          :disabled="!repoId"
+          title="Branch (⌘B) — 브랜치 패널 전환 + 새 브랜치 입력"
+          @click="onBranch"
+        >
+          <span class="text-base leading-none">⎇</span>
+          <span class="text-[10px] leading-tight">Branch</span>
+        </button>
+        <button
+          type="button"
+          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          :disabled="!repoId || !hasChanges || stashMut.isPending.value"
+          :title="
+            !hasChanges
+              ? 'Stash 할 working tree 변경 없음'
+              : stashMut.isPending.value
+              ? 'Stash 진행 중...'
+              : 'Stash — 현재 변경사항 즉시 stash (메시지 없이)'
+          "
+          @click="onStash"
+        >
+          <span class="text-base leading-none">⤓</span>
+          <span class="text-[10px] leading-tight">{{ stashMut.isPending.value ? '...' : 'Stash' }}</span>
+        </button>
+        <button
+          type="button"
+          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          :disabled="!repoId || stashCount === 0 || popMut.isPending.value"
+          :title="
+            stashCount === 0
+              ? 'pop 할 stash 없음'
+              : popMut.isPending.value
+              ? 'Pop 진행 중...'
+              : `Pop — 가장 최근 stash@{0} apply + drop (총 ${stashCount}개)`
+          "
+          @click="onPop"
+        >
+          <span class="text-base leading-none">⤒</span>
+          <span class="text-[10px] leading-tight">
+            {{ popMut.isPending.value ? '...' : 'Pop' }}
+            <span v-if="stashCount > 0" class="ml-0.5 text-emerald-500">{{ stashCount }}</span>
+          </span>
+        </button>
+      </div>
+
+      <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
+
+      <!-- [shell] Terminal -->
+      <button
+        type="button"
+        class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        title="Terminal (⌘`) — 통합 터미널 토글"
+        @click="onTerminal"
+      >
+        <span class="text-base leading-none">▸_</span>
+        <span class="text-[10px] leading-tight">Terminal</span>
+      </button>
+
+      <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
+
+      <!-- Fetch — secondary, label only (Pull 옆 ▾ 대체 — 단순화) -->
+      <button
+        type="button"
+        class="rounded-md px-2 py-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+        :disabled="!repoId || fetchMut.isPending.value"
+        :title="fetchMut.isPending.value ? 'Fetch 진행 중...' : 'Fetch (⌘L) — origin 만 가져오기 (merge 없음)'"
+        @click="onFetch"
+      >
+        {{ fetchMut.isPending.value ? '...' : 'Fetch' }}
+      </button>
+    </div>
+
+    <!-- Branch indicator (우측, SyncBar 호환) -->
+    <div class="flex items-center gap-2 font-mono">
+      <span class="text-muted-foreground">on</span>
+      <span class="font-semibold text-foreground">{{ branch || '(no branch)' }}</span>
+      <span v-if="upstream" class="text-muted-foreground">→ {{ upstream }}</span>
+      <span v-if="ahead || behind" class="text-xs">
+        <span v-if="ahead" class="text-emerald-500">↑{{ ahead }}</span>
+        <span v-if="behind" class="ml-1 text-rose-500">↓{{ behind }}</span>
+      </span>
+    </div>
+  </header>
+</template>

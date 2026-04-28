@@ -1,11 +1,13 @@
 <script setup lang="ts">
-// 메인 페이지 — SyncBar + 좌측(로그/그래프) + 우측 탭 패널 + 하단(commit input + 통합 터미널).
+// 메인 페이지 — GitKrakenToolbar + 좌측(로그/그래프) + 우측 탭 패널 + 하단(commit input + 통합 터미널).
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
 import CommitGraph from '@/components/CommitGraph.vue'
 import StatusPanel from '@/components/StatusPanel.vue'
-import SyncBar from '@/components/SyncBar.vue'
+// Sprint c25-1 (`docs/plan/25 §2`) — SyncBar → GitKrakenToolbar 교체.
+// SyncBar 는 단계적 마이그레이션을 위해 보존 (c25-3 이후 deprecation 검토).
+import GitKrakenToolbar from '@/components/GitKrakenToolbar.vue'
 import CommitMessageInput from '@/components/CommitMessageInput.vue'
 import BranchPanel from '@/components/BranchPanel.vue'
 import StashPanel from '@/components/StashPanel.vue'
@@ -105,7 +107,7 @@ onUnmounted(() => {
     class="grid h-full overflow-hidden"
     :class="terminalOpen ? 'grid-rows-[auto_auto_minmax(0,1fr)_minmax(140px,30%)]' : 'grid-rows-[auto_auto_1fr]'"
   >
-    <SyncBar
+    <GitKrakenToolbar
       :repo-id="store.activeRepoId"
       :branch="branch"
       :upstream="upstream"
