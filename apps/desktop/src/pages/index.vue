@@ -260,7 +260,9 @@ onUnmounted(() => {
     />
 
     <InteractiveRebaseModal />
+    <!-- ARCH-009 fix — v-if mount 게이팅 (Panel 과 일치). useShortcut 메모리 잔존 방지 + 첫 렌더 비용 회피. -->
     <CommitDiffModal
+      v-if="diffModalOpen"
       :repo-id="store.activeRepoId"
       :sha="selectedSha"
       :open="diffModalOpen"

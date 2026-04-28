@@ -16,7 +16,7 @@ import { useBranches } from '@/composables/useBranches'
 import { useStash } from '@/composables/useStash'
 import { useWorktrees } from '@/composables/useWorktrees'
 import { usePullRequests } from '@/composables/usePullRequests'
-import { dispatchShortcut } from '@/composables/useShortcuts'
+import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import { useQueryClient } from '@tanstack/vue-query'
@@ -70,6 +70,20 @@ const switchMut = useMutation({
 function onSwitchBranch(name: string, isHead: boolean) {
   if (isHead) return
   if (store.activeRepoId == null) return
+  // SEC-009 fix — dirty working tree 시 git checkout 거부 가능성 안내.
+  // counts.value.total > 0 이면 확인 dialog (Tauri git2 가 거부할 가능성 큼).
+  if (counts.value.total > 0) {
+    if (
+      !confirm(
+        `변경사항 있음 (${counts.value.total} files) — '${name}' 으로 체크아웃 진행?\n\n` +
+          `• git checkout 이 거부할 수 있음 (overwrite 위험)\n` +
+          `• 안전하게 진행하려면 stash 먼저 권장\n\n` +
+          `그래도 시도하시겠습니까?`,
+      )
+    ) {
+      return
+    }
+  }
   switchMut.mutate({ id: store.activeRepoId, name })
 }
 
@@ -168,13 +182,19 @@ const behind = computed(() => status.value?.behind ?? 0)
 
 // 7-tab 단축 버튼 — pages/index.vue 의 useShortcut('tab1'~'tab7') 로 dispatch.
 // (변경/브랜치/Stash/Sub/LFS/PR/WT 매핑)
-const QUICK_TABS = [
+// TYPE-006 fix — key: ShortcutAction 명시. QUICK_TABS 에 잘못된 key 추가 시 컴파일 에러 보장.
+const QUICK_TABS: ReadonlyArray<{
+  key: ShortcutAction
+  icon: string
+  label: string
+  title: string
+}> = [
   { key: 'tab1', icon: '◇', label: '변경', title: '변경 탭 (⌘1)' },
   { key: 'tab2', icon: '⎇', label: '브랜치', title: '브랜치 탭 (⌘2 / ⌘B)' },
   { key: 'tab3', icon: '⤓', label: 'Stash', title: 'Stash 탭 (⌘3)' },
   { key: 'tab6', icon: '⇄', label: 'PR', title: 'PR 탭 (⌘6)' },
   { key: 'tab7', icon: '🌳', label: 'Worktree', title: 'Worktree 탭 (⌘7)' },
-] as const
+]
 </script>
 
 <template>

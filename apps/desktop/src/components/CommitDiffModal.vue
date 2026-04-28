@@ -57,8 +57,12 @@ cd.registerHunkNavShortcut(diffRef, openRef)
   >
     <template #header>
       <div class="flex w-full items-center justify-between gap-2">
-        <h2 class="font-mono text-sm">
-          commit
+        <h2 class="flex items-center gap-2 font-mono text-sm">
+          <!-- ARCH-010 fix — Modal/Panel badge 일관 정책 (둘 다 mode badge). -->
+          <span class="rounded bg-sky-500/15 px-1.5 text-[10px] font-bold text-sky-500">
+            MODAL DIFF
+          </span>
+          <span>commit</span>
           <span v-if="sha" class="ml-1 text-muted-foreground">{{ sha.slice(0, 12) }}</span>
           <span v-if="cd.isFetching.value" class="ml-2 text-xs text-muted-foreground">불러오는 중...</span>
         </h2>

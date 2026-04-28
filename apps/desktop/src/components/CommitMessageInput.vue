@@ -27,6 +27,7 @@ const toast = useToast()
 import {
   buildConventional,
   CONVENTIONAL_TYPES,
+  isConventionalType,
   type ConventionalType,
 } from '@/types/git'
 
@@ -82,8 +83,8 @@ watch(
       // 첫 줄 + 본문 분리 후 conventional 패턴 매칭 시도.
       const lines = last.split(/\r?\n/)
       const m = lines[0].match(/^(\w+)(?:\(([^)]+)\))?(!?):\s*(.+)$/)
-      if (m && CONVENTIONAL_TYPES.includes(m[1] as ConventionalType)) {
-        type.value = m[1] as ConventionalType
+      if (m && isConventionalType(m[1])) {
+        type.value = m[1]
         scope.value = m[2] || ''
         breaking.value = m[3] === '!'
         subject.value = m[4]
@@ -225,8 +226,8 @@ const aiMut = useMutation({
       freeMessage.value = out.text.trim()
       // conventional 모드 채울 수도 있음
       const m = lines[0].match(/^(\w+)(?:\(([^)]+)\))?(!?):\s*(.+)$/)
-      if (m && CONVENTIONAL_TYPES.includes(m[1] as ConventionalType)) {
-        type.value = m[1] as ConventionalType
+      if (m && isConventionalType(m[1])) {
+        type.value = m[1]
         scope.value = m[2] || ''
         breaking.value = m[3] === '!'
         subject.value = m[4]
