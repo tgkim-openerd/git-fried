@@ -12,10 +12,12 @@ import { computed } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useBranches } from '@/composables/useBranches'
+import { useStash } from '@/composables/useStash'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
-import { switchBranch } from '@/api/git'
+import { useQueryClient } from '@tanstack/vue-query'
+import { applyStash, popStash, switchBranch } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 
@@ -58,6 +60,46 @@ function onSwitchBranch(name: string, isHead: boolean) {
   if (isHead) return
   if (store.activeRepoId == null) return
   switchMut.mutate({ id: store.activeRepoId, name })
+}
+
+// === c25-3 step 3 — Stash mini list ===
+const queryClient = useQueryClient()
+const { data: stashes } = useStash(repoIdRef)
+const miniStashes = computed(() => (stashes.value ?? []).slice(0, 3))
+const moreStashesCount = computed(() =>
+  Math.max(0, (stashes.value?.length ?? 0) - miniStashes.value.length),
+)
+
+function invalidateStash() {
+  queryClient.invalidateQueries({ queryKey: ['stash', store.activeRepoId] })
+}
+
+const applyStashMut = useMutation({
+  mutationFn: ({ id, idx }: { id: number; idx: number }) => applyStash(id, idx),
+  onSuccess: () => {
+    invalidate(store.activeRepoId)
+    invalidateStash()
+    toast.success('Stash apply 완료', 'working tree 에 적용됨 (stash 보존)')
+  },
+  onError: (e) => toast.error('Stash apply 실패', describeError(e)),
+})
+const popStashMut = useMutation({
+  mutationFn: ({ id, idx }: { id: number; idx: number }) => popStash(id, idx),
+  onSuccess: () => {
+    invalidate(store.activeRepoId)
+    invalidateStash()
+    toast.success('Stash pop 완료', 'apply + 제거')
+  },
+  onError: (e) => toast.error('Stash pop 실패', describeError(e)),
+})
+
+function onApplyStash(idx: number) {
+  if (store.activeRepoId == null) return
+  applyStashMut.mutate({ id: store.activeRepoId, idx })
+}
+function onPopStash(idx: number) {
+  if (store.activeRepoId == null) return
+  popStashMut.mutate({ id: store.activeRepoId, idx })
 }
 
 const branch = computed(() => status.value?.branch ?? null)
@@ -185,6 +227,58 @@ const QUICK_TABS = [
             class="px-1 py-0.5 text-[10px] text-muted-foreground"
           >
             ⋯ +{{ moreBranchesCount }}개 더 (전체 → 클릭)
+          </li>
+        </ul>
+      </div>
+
+      <!-- c25-3 step 3 — Stash mini list (recent 3, apply / pop). -->
+      <div v-if="miniStashes.length > 0" class="mt-1 space-y-0.5">
+        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span>Stash ({{ stashes?.length ?? 0 }})</span>
+          <button
+            type="button"
+            class="rounded px-1 hover:bg-accent/40 hover:text-foreground"
+            title="Stash 패널 (⌘3)"
+            @click="dispatchShortcut('tab3')"
+          >
+            전체 →
+          </button>
+        </div>
+        <ul class="space-y-0.5">
+          <li
+            v-for="s in miniStashes"
+            :key="`ms-${s.index}`"
+            class="group flex items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-accent/30"
+            :title="`stash@{${s.index}} on ${s.branch ?? 'unknown'} — ${s.message}`"
+          >
+            <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
+              @{{ s.index }}
+            </span>
+            <span class="flex-1 truncate">{{ s.message || '(no message)' }}</span>
+            <button
+              type="button"
+              class="opacity-0 group-hover:opacity-100 rounded border border-border px-1 py-0 text-[9px] text-muted-foreground hover:bg-accent/40"
+              title="apply (working tree 에 적용, stash 보존)"
+              :disabled="applyStashMut.isPending.value"
+              @click="onApplyStash(s.index)"
+            >
+              apply
+            </button>
+            <button
+              type="button"
+              class="opacity-0 group-hover:opacity-100 rounded border border-border px-1 py-0 text-[9px] text-muted-foreground hover:bg-accent/40"
+              title="pop (apply + 제거)"
+              :disabled="popStashMut.isPending.value"
+              @click="onPopStash(s.index)"
+            >
+              pop
+            </button>
+          </li>
+          <li
+            v-if="moreStashesCount > 0"
+            class="px-1 py-0.5 text-[10px] text-muted-foreground"
+          >
+            ⋯ +{{ moreStashesCount }}개 더 (전체 → 클릭)
           </li>
         </ul>
       </div>
