@@ -266,6 +266,16 @@ Q-3 한글 너비 (2h) + Q-4 Spinner/Empty (2h) + F-I1 file filter (1h) + F-I2 t
 
 - ✅ **V-5 StatusPanel file row click → inline diff preview** — 선택 파일 하단 30% (min-height 140px) detail panel: file 경로 + STAGED/WORKDIR 뱃지 + + stage / − unstage / ✂ hunk / ⤺ discard / ✕ 닫기 quick action + DiffViewer (CodeMirror unified diff, getDiff IPC + STALE_TIME.REALTIME). focusMode 와 충돌 없음 (StatusPanel 내부 분할 — 우측 detail 영역 미점유).
 
+### Sprint 22-16 — M6 Q-7 Custom theme HSL 검증 (design 01 §10) ✅ (2026-04-28, frontend-only)
+
+§6 Q-7 처리. design 01 §10 "Custom theme JSON 사용자 입력 검증" 의도 충족.
+
+- ✅ **`validateHsl(value)` 신규 export** — shadcn-vue 표준 `<hue> <saturation>% <lightness>%` 형식. 정규식 + Hue 0~360 / Saturation 0~100% / Lightness 0~100% 범위 체크. 한국어 에러 메시지
+- ✅ **`importJson` HSL 검증 통합** — var 별 검증, 1개라도 실패 시 reject + `잘못된 HSL 값 N개:\n${var}: ${error}` (앞 3개 + `...외 N개 더`). settings UI toast.error 자동 표시
+- ✅ **vitest 16 신규** (`useCustomTheme.test.ts`) — 유효 / 형식 실패 / 범위 실패 / git-fried 실제 토큰 검증. 누적 **13 → 29 pass**
+- 미적용 (Sprint 22-17+): theme JSON 미리보기 (변경 전후 시각 비교) — design 01 §10 두 번째 의도
+- 검증: typecheck 0 / lint 0 / vitest 29 pass
+
 ### Sprint 22-15 — M1 Settings 2-level 6 그룹 (plan/24 C-7 / design §8-1) ✅ (2026-04-28, frontend-only)
 
 design §8-1 hard constraint 충족. v1.0 12+ 카테고리 확장 대비 평면 → grouping.

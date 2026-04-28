@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sprint 22-16 — M6 Q-7 Custom theme HSL 검증 (plan/22 §6 / plan/24 Sprint A A-2 잔여 / design 01 §10, frontend-only):
+  - **`validateHsl(value)` 신규 export** (`composables/useCustomTheme.ts`) — shadcn-vue 표준 `<hue> <saturation>% <lightness>%` 형식 검증. 정규식 + Hue 0~360 / Saturation 0~100% / Lightness 0~100% 범위 체크. 한국어 에러 메시지 ("HSL 형식 아님 (예: ...)" / "Hue 범위 0~360 초과" / "Saturation 범위 0~100% 초과")
+  - **`importJson` HSL 검증 통합** — JSON 파싱 후 var 별 `validateHsl` 적용. 1개라도 실패 시 reject + `잘못된 HSL 값 N개:\n${var}: ${error}` 형식 (앞 3개 + `...외 N개 더`). settings UI 의 toast.error 가 자동 표시
+  - **vitest 16 신규 테스트** (`useCustomTheme.test.ts`) — 유효 형식 (shadcn 표준 / trim / 소수) + 형식 실패 (CSS 색 이름 / hex / rgb 함수 / % 누락 / comma 구분 / 빈 문자열) + 범위 실패 (Hue/Saturation/Lightness 초과) + git-fried 실제 토큰 (light/dark/status semantic). 누적 vitest **13 → 29 pass**
+  - 검증: typecheck 0 / lint 0 / vitest 29 pass
 - Sprint 22-15 — M1 Settings 2-level 6 그룹 (plan/24 Sprint C C-7 / design §8-1 hard constraint, frontend-only):
   - **CATEGORY_GROUPS 6 그룹 재구조화** (Q1 답변 반영) — 평면 9 카테고리 → 2-level 6 그룹:
     - **계정** (account): Profiles / Forge 계정 (PAT)
