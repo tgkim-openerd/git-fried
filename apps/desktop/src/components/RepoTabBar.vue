@@ -8,7 +8,7 @@
 // Sprint 22-14 M3 Tab overflow (design §8-1 hard constraint):
 //  - 활성 탭 변경 시 자동 scrollIntoView (viewport 밖이면 보이게)
 //  - 8 탭 초과 시 우측 끝 hint ("⌘T 로 검색") + scroll fade gradient (좌우 끝)
-//  - 본격 "더 보기" dropdown 은 reka-ui Popover 도입 (Sprint B B-1) 후
+//  - 본격 "더 보기" dropdown 은 향후 primitive (Popover) 도입 후 — 현재 fade gradient 로 대체
 //
 // store.tabs ↔ Repo[] 매핑은 listRepos(null) 에서 (모든 workspace 통합).
 import { computed, nextTick, useTemplateRef, watch } from 'vue'

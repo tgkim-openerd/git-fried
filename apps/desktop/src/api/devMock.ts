@@ -133,7 +133,7 @@ const BRANCHES = [
 const STASHES = [
   { index: 0, sha: 'aaaa1111bbbb2222', message: 'WIP on feature/plan-23: 한글 ellipsis 좌측 잘림 실험', branch: 'feature/plan-23-design-system', createdAt: t(-30 * MINUTE) },
   { index: 1, sha: 'bbbb2222cccc3333', message: 'Tooltip delay 500ms 시도 — 디자이너 review 후 결정', branch: 'feature/plan-23-design-system', createdAt: t(-3 * HOUR) },
-  { index: 2, sha: 'cccc3333dddd4444', message: 'BaseModal POC — reka-ui Dialog 래핑', branch: 'main', createdAt: t(-2 * DAY) },
+  { index: 2, sha: 'cccc3333dddd4444', message: 'BaseModal POC — primitive 검토용 임시 stash', branch: 'main', createdAt: t(-2 * DAY) },
 ]
 
 const TAGS = [
