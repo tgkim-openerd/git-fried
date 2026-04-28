@@ -36,7 +36,34 @@ const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
 const collapsedUntracked = useSectionCollapse('status.untracked')
 const collapsedConflicted = useSectionCollapse('status.conflicted')
-import type { ChangeStatus } from '@/types/git'
+import type { ChangeStatus, FileChange } from '@/types/git'
+
+// Sprint c25-2.1 — Path/Tree 토글 (`docs/plan/25 §3-2`).
+// GitKraken Image #1 의 우측 패널 헤더 `Path | Tree` 흡수.
+// scope 최소화 — Modified (unstaged) 섹션만 tree 지원.
+import { buildPathTree, type TreeNode } from '@/utils/pathTree'
+
+type ViewMode = 'path' | 'tree'
+const VIEW_MODE_KEY = 'git-fried.status.viewMode'
+function loadViewMode(): ViewMode {
+  if (typeof localStorage === 'undefined') return 'path'
+  const v = localStorage.getItem(VIEW_MODE_KEY)
+  return v === 'tree' ? 'tree' : 'path'
+}
+const viewMode = ref<ViewMode>(loadViewMode())
+function setViewMode(m: ViewMode) {
+  viewMode.value = m
+  if (typeof localStorage !== 'undefined') localStorage.setItem(VIEW_MODE_KEY, m)
+}
+
+// Tree mode — 디렉토리 collapse 상태 (path 별 Set).
+const collapsedDirs = ref<Set<string>>(new Set())
+function toggleDir(path: string) {
+  const next = new Set(collapsedDirs.value)
+  if (next.has(path)) next.delete(path)
+  else next.add(path)
+  collapsedDirs.value = next
+}
 
 const props = defineProps<{ repoId: number | null }>()
 const toast = useToast()
@@ -314,6 +341,42 @@ const filteredStaged = computed(() =>
 const filteredUnstaged = computed(() =>
   (status.value?.unstaged ?? []).filter((f) => matchFilter(f.path)),
 )
+
+// Sprint c25-2.1 — Modified 섹션의 tree 변환.
+// collapsedDirs 에 포함된 디렉토리 노드는 children 숨김 (visible flag).
+type UnstagedTreeRow =
+  | { kind: 'dir'; path: string; name: string; depth: number; collapsed: boolean }
+  | { kind: 'file'; file: FileChange; depth: number }
+
+function flattenTree(
+  nodes: TreeNode<FileChange>[],
+  collapsed: Set<string>,
+  out: UnstagedTreeRow[] = [],
+): UnstagedTreeRow[] {
+  for (const n of nodes) {
+    if (n.kind === 'dir') {
+      const isCollapsed = collapsed.has(n.path)
+      out.push({
+        kind: 'dir',
+        path: n.path,
+        name: n.name,
+        depth: n.depth,
+        collapsed: isCollapsed,
+      })
+      if (!isCollapsed) flattenTree(n.children, collapsed, out)
+    } else {
+      out.push({ kind: 'file', file: n.meta, depth: n.depth })
+    }
+  }
+  return out
+}
+
+const unstagedTreeRows = computed<UnstagedTreeRow[]>(() => {
+  if (viewMode.value !== 'tree') return []
+  const items = filteredUnstaged.value.map((f) => ({ path: f.path, meta: f }))
+  const tree = buildPathTree(items, { collapseSingleChild: true })
+  return flattenTree(tree, collapsedDirs.value)
+})
 const filteredUntracked = computed(() =>
   (status.value?.untracked ?? []).filter((p) => matchFilter(p)),
 )
@@ -378,8 +441,36 @@ function onNextHunk() {
 <template>
   <section class="flex h-full flex-col border-l border-border bg-card">
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
-      <h3 class="text-sm font-semibold">변경사항</h3>
-      <span v-if="isFetching" class="text-xs text-muted-foreground">갱신 중...</span>
+      <div class="flex items-center gap-2">
+        <h3 class="text-sm font-semibold">변경사항</h3>
+        <span v-if="isFetching" class="text-xs text-muted-foreground">갱신 중...</span>
+      </div>
+      <!-- Sprint c25-2.1 — Path / Tree 토글 (Modified 섹션에 적용) -->
+      <div
+        class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5 text-[10px]"
+        title="Modified 파일 목록 표시 모드 (localStorage 영속)"
+      >
+        <button
+          type="button"
+          class="rounded px-1.5 py-0.5"
+          :class="viewMode === 'path' ? 'bg-accent text-accent-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'"
+          aria-label="평탄 path 모드"
+          title="Path — 전체 경로 한 줄 표시"
+          @click="setViewMode('path')"
+        >
+          Path
+        </button>
+        <button
+          type="button"
+          class="rounded px-1.5 py-0.5"
+          :class="viewMode === 'tree' ? 'bg-accent text-accent-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'"
+          aria-label="디렉토리 트리 모드"
+          title="Tree — 디렉토리 그룹핑 (collapse 가능)"
+          @click="setViewMode('tree')"
+        >
+          Tree
+        </button>
+      </div>
     </header>
 
     <div v-if="!repoId" class="p-4 text-center text-xs text-muted-foreground">
@@ -477,7 +568,7 @@ function onNextHunk() {
             모두 stage
           </button>
         </div>
-        <ul v-if="!collapsedUnstaged">
+        <ul v-if="!collapsedUnstaged && viewMode === 'path'">
           <li
             v-for="f in filteredUnstaged"
             :key="`u-${f.path}`"
@@ -529,6 +620,75 @@ function onNextHunk() {
               +
             </button>
           </li>
+        </ul>
+
+        <!-- Sprint c25-2.1 — Tree 모드: 디렉토리 collapse + indent. file row 액션 동등. -->
+        <ul v-else-if="!collapsedUnstaged && viewMode === 'tree'">
+          <template v-for="(row, idx) in unstagedTreeRows" :key="`ut-${idx}`">
+            <li
+              v-if="row.kind === 'dir'"
+              class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
+              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+              @click="toggleDir(row.path)"
+            >
+              <span class="text-[10px] text-muted-foreground">{{ row.collapsed ? '▶' : '▼' }}</span>
+              <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
+            </li>
+            <li
+              v-else
+              class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+              :class="isSelected(row.file.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
+              :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+              draggable="true"
+              @click="selectPath(row.file.path)"
+              @contextmenu="onFileContextMenu($event, row.file.path, false)"
+              @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.file.path)"
+            >
+              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.file.status)]">
+                {{ statusLabel(row.file.status) }}
+              </span>
+              <span class="flex-1 truncate font-mono text-xs" :title="row.file.path">
+                {{ row.file.path.split('/').pop() }}
+              </span>
+              <button
+                type="button"
+                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                title="file history / blame"
+                :aria-label="`'${row.file.path}' history / blame`"
+                @click.stop="openHistory(row.file.path)"
+              >
+                📜
+              </button>
+              <button
+                type="button"
+                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                title="discard"
+                :aria-label="`'${row.file.path}' 변경 폐기`"
+                @click.stop="onDiscardOne(row.file.path)"
+              >
+                ⤺
+              </button>
+              <button
+                type="button"
+                class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                title="Hunk-level stage"
+                :aria-label="`'${row.file.path}' hunk 단위 stage`"
+                @click.stop="openHunk(row.file.path, false)"
+              >
+                ✂ hunk
+              </button>
+              <button
+                type="button"
+                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                title="stage"
+                :aria-label="`'${row.file.path}' stage`"
+                @click.stop="onStageOne(row.file.path)"
+              >
+                +
+              </button>
+            </li>
+          </template>
         </ul>
       </div>
 
