@@ -244,6 +244,11 @@
   - Sprint A 완료 (Foundation 토큰 적용 + 검증 통과). Sprint B (Primitives + reka-ui + Tooltip) 부터 F (검증) 까지는 **plan 으로만 남기고 실제 코드 implementation 보류**.
   - 이유: plan/22 22-7 까지 진행하면서 BaseModal 14/18, aria-label 17, ContextMenu 11/17, V-5/F-I1/F-I2/Q-3/Q-4 등 점진적 적용이 이미 진행 중. plan/24 의 큰 visual refactor 보다 plan/22 점진 작업이 자연스러움. plan/24 는 향후 통합 visual refactor 가 필요한 시점에 참조용 SoT 로 보존.
   - § 11 implementation 진입 조건 (재개 트리거) 추가 — 하단 참조.
+- **2026-04-28 미커밋 자산 commit 정리 (3 commits)**:
+  - `f464545` `feat(c23)` — plan/23 Design System Extraction (docs/design-context/ 8 .md + 36 PNG + scripts/capture-screens.ts + apps/desktop/src/api/devMock.ts + invokeWithTimeout.ts isMockEnabled 분기 + root playwright devDep)
+  - `5ffe151` `feat(c24-A)` — Sprint A Foundation 토큰 (Pretendard self-host + Color Q2 분리 + Status semantic + Elevation tier 3 + Z-index 6 layer + plan/24 본문 + CHANGELOG)
+  - `3bffe5d` `chore(rust)` — Cargo.lock criterion bench deps drift 동기화 (Sprint A 무관, 별도 commit)
+  - 검증: typecheck 0 / lint 0 / vitest 13 pass (재확인). Sprint B~F 보류 결정 유효 — § 11 재개 트리거 미충족.
 
 ## 11. Sprint B~F implementation 진입 조건 (재개 트리거)
 
