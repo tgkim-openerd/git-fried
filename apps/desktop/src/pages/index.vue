@@ -410,7 +410,15 @@ onUnmounted(() => {
           />
         </div>
 
-        <CommitMessageInput :repo-id="store.activeRepoId" :ahead="ahead" :behind="behind" />
+        <!-- Sprint c30 / GitKraken UX (Phase 2c) — commit form 은 staging context 시에만.
+             GitKraken 동작: commit row 선택 시 우측 = commit detail (form 닫힘).
+             WIP row / status tab 일 때만 staging UI + form 표시. -->
+        <CommitMessageInput
+          v-if="tab === 'status'"
+          :repo-id="store.activeRepoId"
+          :ahead="ahead"
+          :behind="behind"
+        />
       </div>
     </div>
 

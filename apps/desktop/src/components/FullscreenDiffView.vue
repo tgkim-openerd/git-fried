@@ -9,16 +9,17 @@
 //   patch 는 getDiff(repoId, staged, path, rev?) 로 fetch
 //   ESC 또는 ✕ 버튼 → close
 //
-// 의도적으로 미구현 (Phase 3 minimal):
-//   - File View / Diff View 토글
-//   - Blame / History 버튼
-//   - Hunk ↑↓ 네비게이션 (DiffViewer 가 expose 하나 헤더 통합 안 함)
-//   Phase 4 에서 보강 예정.
+// Sprint c30 / GitKraken UX (Phase 4-1) — 헤더 강화:
+//   - Hunk ↑↓ + count badge (DiffViewer expose wire up)
+//   - History 버튼 (FileHistoryModal 재사용 — 파일별 commit 이력 + blame)
+//   - File View / Diff View 토글 (File View 는 Phase 5 placeholder)
+//   - Blame 버튼 → History modal 의 blame tab 진입 (placeholder)
 
-import { computed, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getDiff } from '@/api/git'
-import DiffViewer from './DiffViewer.vue'
+import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
+import FileHistoryModal from './FileHistoryModal.vue'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
@@ -78,6 +79,50 @@ const headerLabel = computed(() => {
   return `${cur.sha.slice(0, 7)} · ${cur.path}`
 })
 
+// Sprint c30 / GitKraken UX (Phase 4-1) — Hunk ↑↓ 네비게이션.
+// DiffViewer expose (nextHunk / prevHunk / hunkCount) wire up.
+const diffViewerRef = useTemplateRef<DiffViewerExpose>('diffViewer')
+
+// patch 의 hunk 헤더 카운트 — DiffViewer.hunkCount() 는 reactive 아님이므로 자체 셈.
+const hunkCount = computed(() => {
+  const p = patchQuery.data.value
+  if (!p) return 0
+  return (p.match(/^@@\s/gm) ?? []).length
+})
+const hunkNavDisabled = computed(() => hunkCount.value <= 1)
+
+function onPrevHunk() {
+  if (hunkNavDisabled.value) return
+  diffViewerRef.value?.prevHunk()
+}
+function onNextHunk() {
+  if (hunkNavDisabled.value) return
+  diffViewerRef.value?.nextHunk()
+}
+
+// Sprint c30 / GitKraken UX (Phase 4-1) — File History modal (FileHistoryModal 재사용).
+//   GitKraken 의 "History" 버튼 흡수 — 파일의 커밋 이력 + blame 표시.
+const historyOpen = ref(false)
+function openHistory() {
+  if (!fs.current.value) return
+  historyOpen.value = true
+}
+
+// Sprint c30 / GitKraken UX (Phase 4-1) — File View / Diff View 토글.
+//   File View 는 파일 raw content 표시 (별도 IPC 필요 — Phase 5).
+//   현재는 'diff' 활성, 'file' 클릭 시 toast 안내 (placeholder).
+type ViewMode = 'diff' | 'file'
+const viewMode = ref<ViewMode>('diff')
+function setViewMode(m: ViewMode) {
+  if (m === 'file') {
+    // Phase 5 — 파일 raw content read IPC 추가 시 활성화.
+    return
+  }
+  viewMode.value = m
+}
+
+const currentPath = computed(() => fs.current.value?.path ?? null)
+
 // Sprint c30 / GitKraken UX (Phase 3) — ESC 닫기.
 //   index.vue 의 onEscKey 가 selectedSha 만 처리 — fullscreen 우선.
 //   여기서 직접 listener 등록 (active 시에만).
@@ -126,6 +171,96 @@ watch(
         </span>
         <span class="ml-2">{{ headerLabel }}</span>
       </div>
+
+      <!-- Sprint c30 / GitKraken UX (Phase 4-1) — File View / Diff View 토글 -->
+      <div
+        class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5"
+        title="View 모드"
+      >
+        <button
+          type="button"
+          class="rounded px-1.5 py-0.5 text-[10px]"
+          :class="
+            viewMode === 'file'
+              ? 'bg-accent text-accent-foreground font-semibold'
+              : 'text-muted-foreground/50'
+          "
+          disabled
+          title="File View — 파일 raw content (Phase 5 후속)"
+          aria-label="File View (미구현)"
+          @click="setViewMode('file')"
+        >
+          File View
+        </button>
+        <button
+          type="button"
+          class="rounded px-1.5 py-0.5 text-[10px]"
+          :class="
+            viewMode === 'diff'
+              ? 'bg-accent text-accent-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground'
+          "
+          aria-label="Diff View"
+          @click="setViewMode('diff')"
+        >
+          Diff View
+        </button>
+      </div>
+
+      <!-- Sprint c30 / GitKraken UX (Phase 4-1) — Blame / History (placeholder + 활성) -->
+      <button
+        type="button"
+        class="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground/50"
+        disabled
+        title="Blame — File History modal 의 blame tab (Phase 5 통합)"
+        aria-label="Blame (미구현)"
+      >
+        Blame
+      </button>
+      <button
+        type="button"
+        class="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+        title="History — 파일 commit 이력"
+        aria-label="File history"
+        data-testid="fullscreen-diff-history"
+        @click="openHistory"
+      >
+        History
+      </button>
+
+      <!-- Sprint c30 / GitKraken UX (Phase 4-1) — Hunk ↑↓ 네비게이션 -->
+      <div class="flex items-center gap-0.5">
+        <button
+          type="button"
+          class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
+          :disabled="hunkNavDisabled"
+          title="이전 hunk (Alt+↑)"
+          aria-label="이전 hunk"
+          data-testid="fullscreen-diff-prev-hunk"
+          @click="onPrevHunk"
+        >
+          ↑
+        </button>
+        <span
+          v-if="hunkCount > 0"
+          class="rounded bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+          :title="`${hunkCount} hunk${hunkCount > 1 ? 's' : ''}`"
+        >
+          {{ hunkCount }}
+        </span>
+        <button
+          type="button"
+          class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
+          :disabled="hunkNavDisabled"
+          title="다음 hunk (Alt+↓)"
+          aria-label="다음 hunk"
+          data-testid="fullscreen-diff-next-hunk"
+          @click="onNextHunk"
+        >
+          ↓
+        </button>
+      </div>
+
       <button
         type="button"
         class="rounded px-2 py-0.5 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
@@ -156,6 +291,20 @@ watch(
     >
       변경사항 없음 — 다른 파일을 더블클릭하거나 ESC 로 닫으세요.
     </div>
-    <DiffViewer v-else :patch="patchQuery.data.value" class="flex-1 overflow-auto" />
+    <DiffViewer
+      v-else
+      ref="diffViewer"
+      :patch="patchQuery.data.value"
+      class="flex-1 overflow-auto"
+    />
+
+    <!-- Sprint c30 / GitKraken UX (Phase 4-1) — File History modal (재사용). -->
+    <FileHistoryModal
+      v-if="historyOpen && currentPath"
+      :repo-id="repoId"
+      :path="currentPath"
+      :open="historyOpen"
+      @close="historyOpen = false"
+    />
   </section>
 </template>
