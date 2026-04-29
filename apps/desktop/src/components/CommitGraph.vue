@@ -11,6 +11,8 @@ import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
+// Sprint c30 / GitKraken UX (Phase 8a) — graph 첫 row 에 WIP pseudo-row 직접 통합.
+import { useStatus } from '@/composables/useStatus'
 import { useHiddenRefMutations, useRefVisibility, useSoloRef } from '@/composables/useHiddenRefs'
 import type { HiddenRefKind } from '@/api/git'
 import { useShortcut } from '@/composables/useShortcuts'
@@ -20,8 +22,34 @@ import { formatDateLocalized } from '@/composables/useUserSettings'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import type { GraphRow } from '@/api/git'
 
-const props = defineProps<{ repoId: number | null }>()
+const props = defineProps<{
+  repoId: number | null
+  /** Sprint c30 / GitKraken UX (Phase 8a) — '__WIP__' 선택 시 WIP row 활성 highlight. */
+  selectedWip?: boolean
+}>()
 const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
+// Sprint c30 / GitKraken UX (Phase 8a) — working dir dirty 감지.
+const { data: status } = useStatus(() => props.repoId)
+const wipActive = computed(() => !!status.value && !status.value.isClean)
+const wipChangeCount = computed(() => {
+  const s = status.value
+  if (!s) return 0
+  return s.staged.length + s.unstaged.length + s.untracked.length + s.conflicted.length
+})
+
+/**
+ * virtualizer index → row 매핑.
+ * wipActive 시 idx=0 는 WIP, idx=1+ 는 rows[idx-1].
+ * 그 외 (clean) idx 그대로 rows[idx].
+ */
+function isWipIdx(idx: number): boolean {
+  return wipActive.value && idx === 0
+}
+function commitRowAt(idx: number): GraphRow | null {
+  if (isWipIdx(idx)) return null
+  const offset = wipActive.value ? idx - 1 : idx
+  return rows.value[offset] ?? null
+}
 const { visibleFn: visibleRef, soloRef } = useRefVisibility(() => props.repoId)
 const { hide: hideMut } = useHiddenRefMutations(() => props.repoId)
 const { setSolo } = useSoloRef(() => props.repoId)
@@ -143,9 +171,10 @@ function zoomOut() {
   laneW.value = Math.max(LANE_W_MIN, laneW.value - 2)
 }
 
+// Sprint c30 / GitKraken UX (Phase 8a) — wipActive 시 virtualizer count + 1.
 const virtualizer = useVirtualizer(
   computed(() => ({
-    count: rows.value.length,
+    count: rows.value.length + (wipActive.value ? 1 : 0),
     getScrollElement: () => containerRef.value,
     estimateSize: () => ROW_H,
     overscan: 12,
@@ -190,14 +219,50 @@ function drawGraph() {
   // 보이는 row 들에 대해서만 그리기
   for (const v of virtualItems.value) {
     const idx = v.index
-    const row = rows.value[idx]
-    if (!row) continue
-
     const y = v.start - scrollTop + ROW_H / 2
+    const lw = laneW.value
+
+    // Sprint c30 / GitKraken UX (Phase 8a) — WIP pseudo-row (idx=0 + wipActive).
+    if (isWipIdx(idx)) {
+      // WIP 는 lane 0 (HEAD lane). dashed circle.
+      const cxWip = lw / 2
+      ctx.strokeStyle = laneColor(0) // graph 첫 commit lane 색 매칭 (palette[0]=#22c55e)
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([3, 2])
+      ctx.beginPath()
+      ctx.arc(cxWip, y, 3.5, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // WIP → 다음 commit (idx=1 in display = rows[0]) 까지 dashed connector.
+      const firstCommit = rows.value[0]
+      if (firstCommit) {
+        const nextY = v.start - scrollTop + ROW_H + ROW_H / 2
+        const toX = firstCommit.lane * lw + lw / 2
+        ctx.strokeStyle = laneColor(firstCommit.lane)
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([3, 2])
+        ctx.beginPath()
+        if (firstCommit.lane === 0) {
+          ctx.moveTo(cxWip, y)
+          ctx.lineTo(toX, nextY)
+        } else {
+          ctx.moveTo(cxWip, y)
+          ctx.bezierCurveTo(cxWip, y + ROW_H / 2, toX, nextY - ROW_H / 2, toX, nextY)
+        }
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+      continue
+    }
+
+    // 일반 commit row — wipActive 시 idx-1 이 rows index.
+    const rowIdx = wipActive.value ? idx - 1 : idx
+    const row = rows.value[rowIdx]
+    if (!row) continue
 
     // 1. crossing lanes — vertical line
     for (const lane of row.crossingLanes) {
-      const lw = laneW.value
       const x = lane * lw + lw / 2
       ctx.strokeStyle = laneColor(lane)
       ctx.lineWidth = 1.5
@@ -208,10 +273,9 @@ function drawGraph() {
     }
 
     // 2. parent edges (curve to next row's parent_lane)
-    const nextRow = rows.value[idx + 1]
+    const nextRow = rows.value[rowIdx + 1]
     if (nextRow) {
       const nextY = v.start - scrollTop + ROW_H + ROW_H / 2
-      const lw = laneW.value
       const fromX = row.lane * lw + lw / 2
       for (const pl of row.parentLanes) {
         const toX = pl * lw + lw / 2
@@ -232,8 +296,7 @@ function drawGraph() {
     }
 
     // 3. node circle (이 commit 의 lane)
-    const lw3 = laneW.value
-    const cx = row.lane * lw3 + lw3 / 2
+    const cx = row.lane * lw + lw / 2
     ctx.fillStyle = laneColor(row.lane)
     ctx.beginPath()
     ctx.arc(cx, y, row.isMerge ? 4 : 3.5, 0, Math.PI * 2)
@@ -250,7 +313,7 @@ onMounted(() => {
   nextTick(() => drawGraph())
   window.addEventListener('keydown', onKeydown)
 })
-watch([rows, maxLane, virtualItems, laneW], () => nextTick(() => drawGraph()))
+watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
 import { onUnmounted } from 'vue'
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
@@ -269,15 +332,21 @@ function formatDate(unix: number): string {
 
 const emit = defineEmits<{
   selectCommit: [sha: string]
+  /** Sprint c30 / GitKraken UX (Phase 8a) — WIP row click. */
+  selectWip: []
   showDiff: [sha: string]
   compareWith: [sha: string]
   explainAi: [sha: string]
   openInForge: [sha: string]
 }>()
 const selectedSha = ref<string | null>(null)
-function selectRow(r: GraphRow) {
+function selectRow(r: GraphRow | null) {
+  if (!r) return
   selectedSha.value = r.commit.sha
   emit('selectCommit', r.commit.sha)
+}
+function selectWipRow() {
+  emit('selectWip')
 }
 
 // === Sprint 22-2 CM-1: row 우클릭 메뉴 ===
@@ -576,109 +645,142 @@ onUnmounted(() => {
           title="드래그로 그래프 폭 조절"
           @mousedown="onDragHandleStart"
         />
-        <!-- row 들 -->
-        <div
-          v-for="v in virtualItems"
-          :key="rows[v.index]?.commit.sha"
-          :style="{
-            position: 'absolute',
-            top: v.start + 'px',
-            left: graphWidth + 'px',
-            right: 0,
-            height: ROW_H + 'px',
-          }"
-          class="flex cursor-pointer items-center gap-2 px-2 text-sm hover:bg-accent/40 transition-opacity"
-          :class="[
-            selectedSha === rows[v.index]?.commit.sha ? 'bg-accent text-accent-foreground' : '',
-            searchQuery && rows[v.index] && !isMatch(rows[v.index], searchQuery)
-              ? 'opacity-25'
-              : '',
-          ]"
-          :data-testid="`commit-row-${rows[v.index]?.commit.sha?.slice(0, 7) ?? `idx-${v.index}`}`"
-          draggable="true"
-          @dragstart="
-            (ev: DragEvent) => {
-              const sha = rows[v.index]?.commit.sha
-              if (sha && ev.dataTransfer) {
-                ev.dataTransfer.setData('application/x-git-fried-commit', sha)
-                ev.dataTransfer.effectAllowed = 'copy'
+        <!-- Sprint c30 / GitKraken UX (Phase 8a) — virtualizer 의 idx=0 + wipActive = WIP row.
+             그 외 idx → commitRowAt(idx) (wipActive 시 idx-1 offset). -->
+        <template v-for="v in virtualItems" :key="`v-${v.index}`">
+          <!-- WIP pseudo-row -->
+          <div
+            v-if="isWipIdx(v.index)"
+            :style="{
+              position: 'absolute',
+              top: v.start + 'px',
+              left: graphWidth + 'px',
+              right: 0,
+              height: ROW_H + 'px',
+            }"
+            class="flex cursor-pointer items-center gap-2 border-b border-border/40 px-2 text-xs transition-colors"
+            :class="selectedWip ? 'bg-accent ring-1 ring-primary/40' : 'hover:bg-accent/30'"
+            data-testid="wip-row"
+            :title="`Working directory — ${wipChangeCount} change${wipChangeCount !== 1 ? 's' : ''}`"
+            @click="selectWipRow"
+          >
+            <span class="font-mono text-muted-foreground">// WIP</span>
+            <span
+              v-if="wipChangeCount > 0"
+              class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-600"
+            >
+              {{ wipChangeCount }}
+            </span>
+            <span class="text-[10px] text-muted-foreground/70">
+              (작업 중인 변경 — 클릭하면 우측 staging 패널)
+            </span>
+          </div>
+
+          <!-- commit row -->
+          <div
+            v-else
+            :style="{
+              position: 'absolute',
+              top: v.start + 'px',
+              left: graphWidth + 'px',
+              right: 0,
+              height: ROW_H + 'px',
+            }"
+            class="flex cursor-pointer items-center gap-2 px-2 text-sm hover:bg-accent/40 transition-opacity"
+            :class="[
+              selectedSha === commitRowAt(v.index)?.commit.sha
+                ? 'bg-accent text-accent-foreground'
+                : '',
+              searchQuery && commitRowAt(v.index) && !isMatch(commitRowAt(v.index)!, searchQuery)
+                ? 'opacity-25'
+                : '',
+            ]"
+            :data-testid="`commit-row-${commitRowAt(v.index)?.commit.sha?.slice(0, 7) ?? `idx-${v.index}`}`"
+            draggable="true"
+            @dragstart="
+              (ev: DragEvent) => {
+                const sha = commitRowAt(v.index)?.commit.sha
+                if (sha && ev.dataTransfer) {
+                  ev.dataTransfer.setData('application/x-git-fried-commit', sha)
+                  ev.dataTransfer.effectAllowed = 'copy'
+                }
               }
-            }
-          "
-          @click="selectRow(rows[v.index])"
-          @dblclick="onRowDblClick(rows[v.index])"
-          @contextmenu="onRowContextMenu($event, rows[v.index])"
-        >
-          <template v-for="col in cols.visibleColumns.value" :key="col.id">
-            <!-- sha -->
-            <span
-              v-if="col.id === 'sha'"
-              :class="[col.widthClass, 'truncate font-mono text-xs text-muted-foreground']"
-            >
-              {{ rows[v.index]?.commit.shortSha }}
-            </span>
-            <!-- message + refs -->
-            <span v-else-if="col.id === 'message'" :class="[col.widthClass, 'truncate']">
-              {{ rows[v.index]?.commit.subject }}
-              <template v-for="r in rows[v.index]?.commit.refs ?? []" :key="r">
-                <span
-                  v-if="visibleRef(r)"
-                  class="ref-pill ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
-                  :class="
-                    soloRef === r
-                      ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
-                      : 'bg-muted text-muted-foreground'
-                  "
-                >
-                  <button
-                    type="button"
-                    class="ref-pill-body cursor-pointer hover:underline"
-                    :title="
+            "
+            @click="selectRow(commitRowAt(v.index))"
+            @dblclick="onRowDblClick(commitRowAt(v.index) ?? undefined)"
+            @contextmenu="onRowContextMenu($event, commitRowAt(v.index) ?? undefined)"
+          >
+            <template v-for="col in cols.visibleColumns.value" :key="col.id">
+              <!-- sha -->
+              <span
+                v-if="col.id === 'sha'"
+                :class="[col.widthClass, 'truncate font-mono text-xs text-muted-foreground']"
+              >
+                {{ commitRowAt(v.index)?.commit.shortSha }}
+              </span>
+              <!-- message + refs -->
+              <span v-else-if="col.id === 'message'" :class="[col.widthClass, 'truncate']">
+                {{ commitRowAt(v.index)?.commit.subject }}
+                <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
+                  <span
+                    v-if="visibleRef(r)"
+                    class="ref-pill ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
+                    :class="
                       soloRef === r
-                        ? `Solo 해제: ${r}`
-                        : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
+                        ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
+                        : 'bg-muted text-muted-foreground'
                     "
-                    :aria-label="soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`"
-                    @click.stop="toggleSoloRef(r)"
                   >
-                    {{ r }}
-                  </button>
-                  <button
-                    type="button"
-                    class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
-                    :title="`그래프에서 숨김: ${r}`"
-                    :aria-label="`'${r}' 그래프에서 숨김`"
-                    @click.stop="hideRefByName(r)"
-                  >
-                    🙈
-                  </button>
-                </span>
-              </template>
-            </span>
-            <!-- author -->
-            <span
-              v-else-if="col.id === 'author'"
-              :class="[col.widthClass, 'truncate text-xs text-muted-foreground']"
-            >
-              {{ rows[v.index]?.commit.authorName }}
-            </span>
-            <!-- date -->
-            <span
-              v-else-if="col.id === 'date'"
-              :class="[col.widthClass, 'text-xs text-muted-foreground']"
-            >
-              {{ formatDate(rows[v.index]?.commit.authorAt ?? 0) }}
-            </span>
-            <!-- signed -->
-            <span
-              v-else-if="col.id === 'signed'"
-              :class="[col.widthClass, 'text-xs']"
-              :title="rows[v.index]?.commit.signed ? 'GPG 서명' : ''"
-            >
-              <span v-if="rows[v.index]?.commit.signed" class="text-emerald-500">✓</span>
-            </span>
-          </template>
-        </div>
+                    <button
+                      type="button"
+                      class="ref-pill-body cursor-pointer hover:underline"
+                      :title="
+                        soloRef === r
+                          ? `Solo 해제: ${r}`
+                          : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
+                      "
+                      :aria-label="soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`"
+                      @click.stop="toggleSoloRef(r)"
+                    >
+                      {{ r }}
+                    </button>
+                    <button
+                      type="button"
+                      class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
+                      :title="`그래프에서 숨김: ${r}`"
+                      :aria-label="`'${r}' 그래프에서 숨김`"
+                      @click.stop="hideRefByName(r)"
+                    >
+                      🙈
+                    </button>
+                  </span>
+                </template>
+              </span>
+              <!-- author -->
+              <span
+                v-else-if="col.id === 'author'"
+                :class="[col.widthClass, 'truncate text-xs text-muted-foreground']"
+              >
+                {{ commitRowAt(v.index)?.commit.authorName }}
+              </span>
+              <!-- date -->
+              <span
+                v-else-if="col.id === 'date'"
+                :class="[col.widthClass, 'text-xs text-muted-foreground']"
+              >
+                {{ formatDate(commitRowAt(v.index)?.commit.authorAt ?? 0) }}
+              </span>
+              <!-- signed -->
+              <span
+                v-else-if="col.id === 'signed'"
+                :class="[col.widthClass, 'text-xs']"
+                :title="commitRowAt(v.index)?.commit.signed ? 'GPG 서명' : ''"
+              >
+                <span v-if="commitRowAt(v.index)?.commit.signed" class="text-emerald-500">✓</span>
+              </span>
+            </template>
+          </div>
+        </template>
       </div>
     </div>
     <ContextMenu ref="ctxMenu" />

@@ -5,8 +5,7 @@ import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
 import { useGraph } from '@/composables/useGraph'
 import CommitGraph from '@/components/CommitGraph.vue'
-// Sprint c30 / GitKraken UX (Phase 2a) — graph 최상단 WIP pseudo-row.
-import WipRow from '@/components/WipRow.vue'
+// Sprint c30 / GitKraken UX (Phase 8a) — WIP pseudo-row 는 CommitGraph 에 직접 통합 (별도 mount 제거).
 import StatusPanel from '@/components/StatusPanel.vue'
 // Sprint c25-1 (`docs/plan/25 §2`) — SyncBar → GitKrakenToolbar 교체.
 // SyncBar 는 단계적 마이그레이션을 위해 보존 (c25-3 이후 deprecation 검토).
@@ -122,14 +121,8 @@ function onSelectWip() {
   selectedSha.value = WIP_SHA
 }
 
-// Sprint c30 / GitKraken UX (Phase 2a) — WipRow visibility + change count.
-//   working dir 의 staged + unstaged + untracked + conflicted 합산.
-const wipChangeCount = computed(() => {
-  const s = status.value
-  if (!s) return 0
-  return s.staged.length + s.unstaged.length + s.untracked.length + s.conflicted.length
-})
-const showWipRow = computed(() => !!status.value && !status.value.isClean)
+// Sprint c30 / GitKraken UX (Phase 8a) — WIP pseudo-row 는 CommitGraph 에 통합.
+//   wipChangeCount / showWipRow state 도 CommitGraph 내부에서 useStatus 로 계산.
 
 // Sprint c30 / GitKraken UX (Phase 3) — fullscreen diff 활성 시 좌측 graph 숨김.
 const fsDiff = useFullscreenDiff()
@@ -317,30 +310,18 @@ onUnmounted(() => {
 
         <!-- mainView 별 panel -->
         <div class="overflow-hidden">
-          <!-- graph (default) — WipRow + CommitGraph + (inline diff) -->
+          <!-- Sprint c30 / GitKraken UX (Phase 8a) — graph view: CommitGraph 가 WIP row 직접 통합.
+               (별도 WipRow mount 제거 — CommitGraph 의 virtualizer idx=0 + dirty 시 WIP row.) -->
           <div
             v-if="mainView === 'graph'"
             class="grid h-full min-h-0 overflow-hidden"
-            :class="
-              inlineDiffActive
-                ? showWipRow
-                  ? 'grid-rows-[auto_1fr_minmax(140px,40%)]'
-                  : 'grid-rows-[1fr_minmax(140px,40%)]'
-                : showWipRow
-                  ? 'grid-rows-[auto_1fr_0]'
-                  : 'grid-rows-[1fr_0]'
-            "
+            :class="inlineDiffActive ? 'grid-rows-[1fr_minmax(140px,40%)]' : 'grid-rows-[1fr_0]'"
           >
-            <WipRow
-              v-if="showWipRow"
-              :change-count="wipChangeCount"
-              :branch="branch"
-              :selected="selectedSha === WIP_SHA"
-              @select="onSelectWip"
-            />
             <CommitGraph
               :repo-id="store.activeRepoId"
+              :selected-wip="selectedSha === WIP_SHA"
               @select-commit="onSelectCommit"
+              @select-wip="onSelectWip"
               @show-diff="onShowDiff"
             />
             <CommitDiffPanel
