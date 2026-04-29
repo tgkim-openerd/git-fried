@@ -93,6 +93,50 @@ pub fn build(app: &AppHandle<Wry>) -> tauri::Result<tauri::menu::Menu<Wry>> {
         .item(&view_devtools)
         .build()?;
 
+    // Repository — daily git ops (fetch/pull/push/branch/stash)
+    let repo_fetch =
+        MenuItemBuilder::with_id("repo-fetch", "Fetch")
+            .accelerator("CmdOrCtrl+L")
+            .build(app)?;
+    let repo_pull =
+        MenuItemBuilder::with_id("repo-pull", "Pull")
+            .accelerator("CmdOrCtrl+Shift+L")
+            .build(app)?;
+    let repo_push =
+        MenuItemBuilder::with_id("repo-push", "Push")
+            .accelerator("CmdOrCtrl+Shift+K")
+            .build(app)?;
+    let repo_branch =
+        MenuItemBuilder::with_id("repo-branch", "New Branch / Branch View")
+            .accelerator("CmdOrCtrl+B")
+            .build(app)?;
+    let repo_stash = MenuItemBuilder::with_id("repo-stash-view", "Stash View")
+        .accelerator("CmdOrCtrl+3")
+        .build(app)?;
+    let repository = SubmenuBuilder::new(app, "Repository")
+        .item(&repo_fetch)
+        .item(&repo_pull)
+        .item(&repo_push)
+        .separator()
+        .item(&repo_branch)
+        .item(&repo_stash)
+        .build()?;
+
+    // History — reflog / bisect / compare (모두 모달, 기존 window 트리거 재사용)
+    let hist_reflog = MenuItemBuilder::with_id("open-reflog", "Reflog…").build(app)?;
+    let hist_bisect = MenuItemBuilder::with_id("open-bisect", "Bisect…").build(app)?;
+    let hist_compare = MenuItemBuilder::with_id("open-compare", "Compare…").build(app)?;
+    let hist_search = MenuItemBuilder::with_id("commit-search", "Search Commits…")
+        .accelerator("CmdOrCtrl+Shift+F")
+        .build(app)?;
+    let history = SubmenuBuilder::new(app, "History")
+        .item(&hist_reflog)
+        .item(&hist_bisect)
+        .item(&hist_compare)
+        .separator()
+        .item(&hist_search)
+        .build()?;
+
     // Help
     let help_shortcuts = MenuItemBuilder::with_id("show-shortcuts", "Keyboard Shortcuts")
         .accelerator("?")
@@ -115,6 +159,8 @@ pub fn build(app: &AppHandle<Wry>) -> tauri::Result<tauri::menu::Menu<Wry>> {
         .item(&file)
         .item(&edit)
         .item(&view)
+        .item(&repository)
+        .item(&history)
         .item(&help)
         .build()?;
 

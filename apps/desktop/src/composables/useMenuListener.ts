@@ -89,6 +89,17 @@ export function useMenuListener(): MenuPump {
     'toggle-theme',
     'show-shortcuts',
     'open-github',
+    // Repository
+    'repo-fetch',
+    'repo-pull',
+    'repo-push',
+    'repo-branch',
+    'repo-stash-view',
+    // History (모달 — window 트리거 재사용)
+    'open-reflog',
+    'open-bisect',
+    'open-compare',
+    'commit-search',
   ] as const
 
   async function attach() {
@@ -145,6 +156,54 @@ export function useMenuListener(): MenuPump {
           toast.error('브라우저 열기 실패', GITHUB_URL)
         })
         return
+      // Repository (toolbar 의 mutation 과 동일 — useShortcut('fetch'/'pull'/'push'))
+      case 'repo-fetch':
+        dispatchShortcut('fetch')
+        return
+      case 'repo-pull':
+        dispatchShortcut('pull')
+        return
+      case 'repo-push':
+        dispatchShortcut('push')
+        return
+      case 'repo-branch':
+        dispatchShortcut('newBranch')
+        return
+      case 'repo-stash-view':
+        dispatchShortcut('tab3')
+        return
+      // History (모달 트리거 — window.gitFriedOpen* 재사용)
+      case 'open-reflog': {
+        const fn = (window as unknown as { gitFriedOpenReflog?: () => void }).gitFriedOpenReflog
+        if (fn) fn()
+        return
+      }
+      case 'open-bisect': {
+        const fn = (window as unknown as { gitFriedOpenBisect?: () => void }).gitFriedOpenBisect
+        if (fn) fn()
+        return
+      }
+      case 'open-compare': {
+        const fn = (
+          window as unknown as {
+            gitFriedOpenCompare?: (a?: string | null, b?: string | null) => void
+          }
+        ).gitFriedOpenCompare
+        if (fn) fn()
+        return
+      }
+      case 'commit-search': {
+        // App.vue 의 ⌘⇧F 핸들러와 동등 — 별도 window 트리거 없으므로 키 이벤트로 dispatch.
+        const ev = new KeyboardEvent('keydown', {
+          key: 'f',
+          code: 'KeyF',
+          ctrlKey: true,
+          shiftKey: true,
+          bubbles: true,
+        })
+        window.dispatchEvent(ev)
+        return
+      }
       default:
       // undo-action / redo-action 은 onMenuAction 으로 등록 — 등록 없으면 안내.
     }
