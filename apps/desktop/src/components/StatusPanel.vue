@@ -24,6 +24,8 @@ import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import { useStatusFilter } from '@/composables/useStatusFilter'
 import { flattenTree, useStatusTreeView } from '@/composables/useStatusTreeView'
 import { statusColor, statusLabel } from '@/utils/statusFormat'
+// Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
+import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 
 const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
@@ -228,6 +230,12 @@ function selectPath(path: string) {
   selectedPath.value = selectedPath.value === path ? null : path
 }
 
+// Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
+const fsDiff = useFullscreenDiff()
+function openFullscreen(path: string, isStaged: boolean) {
+  fsDiff.openWip(path, isStaged)
+}
+
 // === Sprint 22-6 F-I1: 파일 필터 (50+ 파일 환경) ===
 // composables/useStatusFilter.ts 로 추출 (StatusPanel.vue God comp 분리 1차).
 const { fileFilter, filteredStaged, filteredUnstaged, filteredUntracked, filteredConflicted } =
@@ -416,6 +424,7 @@ function onNextHunk() {
               :selected="isSelected(f.path)"
               @select="selectPath(f.path)"
               @action="onUnstageOne(f.path)"
+              @dblclick="openFullscreen(f.path, true)"
               @contextmenu="onFileContextMenu($event, f.path, true)"
             >
               <template #extra>
@@ -503,7 +512,9 @@ function onNextHunk() {
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
               :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
+              title="더블클릭 — fullscreen diff"
               @click="selectPath(f.path)"
+              @dblclick="openFullscreen(f.path, false)"
               @contextmenu="onFileContextMenu($event, f.path, false)"
               @dragstart="
                 (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', f.path)
@@ -643,7 +654,9 @@ function onNextHunk() {
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
               :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
+              title="더블클릭 — fullscreen diff"
               @click="selectPath(p)"
+              @dblclick="openFullscreen(p, false)"
               @dragstart="
                 (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)
               "

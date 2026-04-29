@@ -26,6 +26,9 @@ import CommitDiffModal from '@/components/CommitDiffModal.vue'
 // Sprint c25-4.5 — inline diff panel (CommitGraph 와 vertical split).
 import CommitDiffPanel from '@/components/CommitDiffPanel.vue'
 import CommitDetailSidebar from '@/components/CommitDetailSidebar.vue'
+// Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 fullscreen.
+import FullscreenDiffView from '@/components/FullscreenDiffView.vue'
+import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 import WipBanner from '@/components/WipBanner.vue'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
@@ -120,6 +123,10 @@ const wipChangeCount = computed(() => {
   return s.staged.length + s.unstaged.length + s.untracked.length + s.conflicted.length
 })
 const showWipRow = computed(() => !!status.value && !status.value.isClean)
+
+// Sprint c30 / GitKraken UX (Phase 3) — fullscreen diff 활성 시 좌측 graph 숨김.
+const fsDiff = useFullscreenDiff()
+const fullscreenActive = computed(() => fsDiff.current.value != null)
 
 // Phase 1 (plan-commit-graph-ux v2) — main-nav 8번째 'commit' tab 조건부 mount.
 // Sprint c30 / GitKraken UX (Phase 2a) — selectedSha === WIP_SHA 시 'commit' tab 미추가
@@ -268,9 +275,12 @@ onUnmounted(() => {
       "
     >
       <!-- 좌측: 커밋 그래프 + Sprint c25-4.5 inline diff vertical split (focusMode 시 숨김)
-           Sprint c30 / GitKraken UX (Phase 2a) — graph 위 sticky WipRow (working dir dirty 시). -->
+           Sprint c30 / GitKraken UX (Phase 2a) — graph 위 sticky WipRow (working dir dirty 시).
+           Sprint c30 / GitKraken UX (Phase 3) — fullscreen diff 활성 시 graph 영역 전체를
+             FullscreenDiffView 로 교체 (focusMode 와 비슷한 토글 패턴). -->
+      <FullscreenDiffView v-if="!focusMode && fullscreenActive" :repo-id="store.activeRepoId" />
       <div
-        v-if="!focusMode"
+        v-else-if="!focusMode"
         class="grid min-h-0 overflow-hidden"
         :class="
           inlineDiffActive

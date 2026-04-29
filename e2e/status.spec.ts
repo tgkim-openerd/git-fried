@@ -68,6 +68,45 @@ test.describe('상태 패널 — Sidebar mini / ChangeCountBadge / Path-Tree / s
     await expect(wipRow).not.toHaveClass(/bg-accent/)
   })
 
+  // Sprint c30 / GitKraken UX (Phase 3) — 파일 row 더블클릭 → fullscreen diff
+  test('Status 파일 row 더블클릭 → fullscreen diff + ESC 닫기', async ({ page }) => {
+    await page.locator('[data-testid="main-nav-status"]').click()
+
+    // Modified 섹션의 첫 unstaged 파일 더블클릭 (devMock 의 fake unstaged file 5개).
+    // 정확한 file path 모르니 첫 .truncate.font-mono 의 unstaged li 를 더블클릭.
+    const firstUnstaged = page
+      .locator('[data-testid="main-nav-status"]')
+      .locator('..')
+      .locator('..')
+      .locator('li[draggable="true"]')
+      .first()
+    await expect(firstUnstaged).toBeVisible({ timeout: 2_000 })
+    await firstUnstaged.dblclick()
+
+    // fullscreen diff mount
+    const fs = page.locator('[data-testid="fullscreen-diff"]')
+    await expect(fs).toBeVisible({ timeout: 2_000 })
+
+    // ESC → close
+    await page.keyboard.press('Escape')
+    await expect(fs).toHaveCount(0, { timeout: 2_000 })
+  })
+
+  test('fullscreen diff ✕ 버튼 → close', async ({ page }) => {
+    await page.locator('[data-testid="main-nav-status"]').click()
+    const firstUnstaged = page
+      .locator('[data-testid="main-nav-status"]')
+      .locator('..')
+      .locator('..')
+      .locator('li[draggable="true"]')
+      .first()
+    await firstUnstaged.dblclick()
+    await expect(page.locator('[data-testid="fullscreen-diff"]')).toBeVisible({ timeout: 2_000 })
+
+    await page.locator('[data-testid="fullscreen-diff-close"]').click()
+    await expect(page.locator('[data-testid="fullscreen-diff"]')).toHaveCount(0)
+  })
+
   test('Status 4 section sticky + STAGED bulk-unstage button', async ({ page }) => {
     await ensureDetailVisible(page)
     await page.locator('[data-testid="main-nav-status"]').click()

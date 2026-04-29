@@ -18,6 +18,8 @@ import { useToast } from '@/composables/useToast'
 import { parsePatchStats, type PatchFile, type PatchFileChange } from '@/utils/patchStats'
 import { buildPathTree } from '@/utils/pathTree'
 import { flattenTree, type FlatTreeRow } from '@/composables/useStatusTreeView'
+// Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
+import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 
 const props = defineProps<{
   repoId: number | null
@@ -124,6 +126,13 @@ function changeColor(c: PatchFileChange): string {
     default:
       return 'text-amber-500'
   }
+}
+
+// Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff (commit context).
+const fsDiff = useFullscreenDiff()
+function openFullscreen(path: string) {
+  if (!props.sha) return
+  fsDiff.openCommit(props.sha, path)
 }
 </script>
 
@@ -274,8 +283,9 @@ function changeColor(c: PatchFileChange): string {
           <li
             v-for="f in fileStats.paths"
             :key="f.path"
-            class="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-            :title="f.oldPath ? `renamed from ${f.oldPath}` : f.path"
+            class="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+            :title="`${f.oldPath ? `renamed from ${f.oldPath} — ` : ''}더블클릭 — fullscreen diff`"
+            @dblclick="openFullscreen(f.path)"
           >
             <span :class="['shrink-0 w-3 text-center', changeColor(f.change)]">
               {{ changeIcon(f.change) }}
@@ -300,9 +310,10 @@ function changeColor(c: PatchFileChange): string {
             </li>
             <li
               v-else
-              class="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
+              class="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
               :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              :title="row.meta.oldPath ? `renamed from ${row.meta.oldPath}` : row.path"
+              :title="`${row.meta.oldPath ? `renamed from ${row.meta.oldPath} — ` : ''}더블클릭 — fullscreen diff`"
+              @dblclick="openFullscreen(row.path)"
             >
               <span :class="['shrink-0 w-3 text-center', changeColor(row.meta.change)]">
                 {{ changeIcon(row.meta.change) }}
