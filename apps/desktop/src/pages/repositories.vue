@@ -383,27 +383,29 @@ function workspaceName(id: number | null): string {
               <li
                 v-for="repo in g.repos"
                 :key="repo.id"
+                :data-testid="`repositories-repo-${repo.name}`"
                 class="group flex items-center justify-between gap-2 rounded px-2 py-1.5 hover:bg-accent/40"
               >
+                <!-- Phase 11-4 — nested button HTML 위반 회피: pin 은 sibling, 행 본체는 div + click. -->
+                <button
+                  type="button"
+                  class="text-xs"
+                  :class="
+                    repo.isPinned
+                      ? 'text-amber-500'
+                      : 'text-muted-foreground/40 group-hover:text-muted-foreground hover:text-amber-500'
+                  "
+                  :title="repo.isPinned ? 'Unpin' : 'Pin'"
+                  @click.stop="pinMut.mutate({ id: repo.id, pinned: !repo.isPinned })"
+                >
+                  {{ repo.isPinned ? '⭐' : '☆' }}
+                </button>
                 <button
                   type="button"
                   class="flex flex-1 items-center gap-2 text-left text-sm"
                   :class="store.activeRepoId === repo.id ? 'font-semibold text-foreground' : ''"
                   @click="openRepo(repo)"
                 >
-                  <button
-                    type="button"
-                    class="text-xs"
-                    :class="
-                      repo.isPinned
-                        ? 'text-amber-500'
-                        : 'text-muted-foreground/40 group-hover:text-muted-foreground hover:text-amber-500'
-                    "
-                    :title="repo.isPinned ? 'Unpin' : 'Pin'"
-                    @click.stop="pinMut.mutate({ id: repo.id, pinned: !repo.isPinned })"
-                  >
-                    {{ repo.isPinned ? '⭐' : '☆' }}
-                  </button>
                   <span class="flex-1 truncate">
                     {{ aliases.resolveLocal(repo.id, repo.name).display }}
                   </span>

@@ -70,5 +70,7 @@ post-commit-*.yml
 # Playwright MCP dogfood/audit screenshots (local-only)
 audit-*.png
 audit-*.yml
+git-fried-*.png
+snapshot-*.md
 .claude/agent-memory/
 checkpoint.md

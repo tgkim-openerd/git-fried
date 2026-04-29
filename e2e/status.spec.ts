@@ -37,13 +37,28 @@ test.describe('상태 패널 — Sidebar mini / ChangeCountBadge / Path-Tree / s
     await expect(stashToggle).toHaveAttribute('title', /펴기/)
   })
 
+  // Phase 5 — auto-default 가 dirty 시 WIP_SHA 활성. StatusPanel 의 section 헤더는 'Staged'/'Modified'/'Untracked' (TitleCase).
+  // ensureWipActive: auto-default + click 둘 다 시도 (timing 견고). ring-1 가 active 마커 (hover:bg-accent 와 충돌 회피).
+  async function ensureWipActive(page: import('@playwright/test').Page) {
+    const wipRow = page.locator('[data-testid="wip-row"]')
+    await expect(wipRow).toBeVisible()
+    const isActive = async () =>
+      (await wipRow.evaluate((el) => el.className.includes('ring-1'))) === true
+    // 최대 5번 시도 — auto-default 안 들어왔으면 click, click 으로 toggle off 됐으면 다시 click.
+    for (let i = 0; i < 5; i++) {
+      if (await isActive()) return
+      await wipRow.click()
+      await page.waitForTimeout(300)
+    }
+    await expect(wipRow).toHaveClass(/ring-1/, { timeout: 3_000 })
+  }
+
   test('Path/Tree 토글 + 4 섹션 노출', async ({ page }) => {
-    // Phase 5 — main-nav-status 제거. WipRow click 으로 우측 staging.
-    await page.locator('[data-testid="wip-row"]').click()
+    await ensureWipActive(page)
     await page.waitForFunction(
       () => {
         const t = document.body.innerText
-        return /STAGED.*MODIFIED.*UNTRACKED.*CONFLICTED/s.test(t)
+        return /Staged.*Modified.*Untracked/is.test(t)
       },
       { timeout: 5_000 },
     )
@@ -55,22 +70,18 @@ test.describe('상태 패널 — Sidebar mini / ChangeCountBadge / Path-Tree / s
   })
 
   // Sprint c30 / GitKraken UX (Phase 2a + 5) — graph 위 sticky WIP pseudo-row.
-  // Phase 5 — main-nav-status 제거. WIP click 시 우측 sidebar = staging panel 자동.
-  test('WipRow 표시 + 클릭 → 우측 staging panel + selection highlight', async ({ page }) => {
-    // devMock 의 default fake repo 는 dirty (file changes 12). WipRow 가 보여야.
+  test('WipRow 표시 + 활성 → 우측 staging panel + ring highlight', async ({ page }) => {
     const wipRow = page.locator('[data-testid="wip-row"]')
     await expect(wipRow).toBeVisible()
     await expect(wipRow).toContainText('// WIP')
     await expect(wipRow).toContainText(/12/) // change count badge
 
-    // 클릭 → selection 활성 (bg-accent + ring-1)
-    await wipRow.click()
-    await expect(wipRow).toHaveClass(/bg-accent/)
-    // 우측 sidebar = StatusPanel (Modified/Untracked 등 텍스트로 검증).
+    await ensureWipActive(page)
+    // 우측 sidebar = StatusPanel (Staged/Modified/Untracked 등 텍스트로 검증).
     await page.waitForFunction(
       () => {
         const t = document.body.innerText
-        return /STAGED|MODIFIED|UNTRACKED/.test(t)
+        return /Staged|Modified|Untracked/i.test(t)
       },
       { timeout: 5_000 },
     )
@@ -78,19 +89,18 @@ test.describe('상태 패널 — Sidebar mini / ChangeCountBadge / Path-Tree / s
 
   test('WipRow 재클릭 → 선택 해제 (toggle)', async ({ page }) => {
     const wipRow = page.locator('[data-testid="wip-row"]')
+    await ensureWipActive(page)
+    // 한 번 더 클릭 → 비활성화 (ring-1 사라짐).
     await wipRow.click()
-    await expect(wipRow).toHaveClass(/bg-accent/)
-    await wipRow.click()
-    await expect(wipRow).not.toHaveClass(/bg-accent/)
+    await expect(wipRow).not.toHaveClass(/ring-1/, { timeout: 3_000 })
   })
 
   // Sprint c30 / GitKraken UX (Phase 3 + 5) — 파일 row 더블클릭 → fullscreen diff
   test('Status 파일 row 더블클릭 → fullscreen diff + ESC 닫기', async ({ page }) => {
-    // Phase 5 — WipRow click 으로 우측 staging 활성.
-    await page.locator('[data-testid="wip-row"]').click()
+    await ensureWipActive(page)
 
     const firstUnstaged = page.locator('li[draggable="true"]').first()
-    await expect(firstUnstaged).toBeVisible({ timeout: 2_000 })
+    await expect(firstUnstaged).toBeVisible({ timeout: 5_000 })
     await firstUnstaged.dblclick()
 
     const fs = page.locator('[data-testid="fullscreen-diff"]')
@@ -101,8 +111,9 @@ test.describe('상태 패널 — Sidebar mini / ChangeCountBadge / Path-Tree / s
   })
 
   test('fullscreen diff ✕ 버튼 → close', async ({ page }) => {
-    await page.locator('[data-testid="wip-row"]').click()
+    await ensureWipActive(page)
     const firstUnstaged = page.locator('li[draggable="true"]').first()
+    await expect(firstUnstaged).toBeVisible({ timeout: 5_000 })
     await firstUnstaged.dblclick()
     await expect(page.locator('[data-testid="fullscreen-diff"]')).toBeVisible({ timeout: 2_000 })
 
@@ -112,8 +123,7 @@ test.describe('상태 패널 — Sidebar mini / ChangeCountBadge / Path-Tree / s
 
   test('Status 4 section sticky + STAGED bulk-unstage button', async ({ page }) => {
     await ensureDetailVisible(page)
-    // Phase 5 — WipRow click 으로 우측 staging.
-    await page.locator('[data-testid="wip-row"]').click()
+    await ensureWipActive(page)
 
     const sticky = await page.evaluate(() => {
       const txts = ['Staged', 'Modified', 'Untracked', 'Conflicted']

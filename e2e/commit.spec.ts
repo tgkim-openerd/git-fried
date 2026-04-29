@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { selectFrontendRepo } from './helpers'
+import { selectFrontendRepo, selectFrontendAndBackendRepos } from './helpers'
 
 test.describe('commit / graph — row click / inline-diff / 8번째 tab / fallback / zoom', () => {
   test.beforeEach(async ({ page }) => {
@@ -12,7 +12,6 @@ test.describe('commit / graph — row click / inline-diff / 8번째 tab / fallba
       localStorage.setItem('git-fried.inline-diff.visible', '1')
     })
     await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
 
     const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
     await expect(row).toBeVisible()
@@ -36,22 +35,20 @@ test.describe('commit / graph — row click / inline-diff / 8번째 tab / fallba
       // Sprint c30 — cap 320 → 480 (lane 많은 레포에서 graph 잘림 회피).
       expect(px).toBeLessThanOrEqual(480)
     }
-    await expect(page.getByRole('button', { name: /그래프 축소/ })).toBeVisible()
-    await expect(page.getByRole('button', { name: /그래프 확대/ })).toBeVisible()
+    // Phase 9-1 — aria-label "그래프 column 축소/확대 (현재 width: Npx)".
+    await expect(page.getByRole('button', { name: /그래프.*축소/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: /그래프.*확대/ })).toBeVisible()
   })
 
   // Sprint c30 / GitKraken UX (Phase 5) — commit row click 시 우측 sidebar 자동 commit detail.
-  // Phase 5 — main-nav-commit 제거. 우측 sidebar 가 selectedSha 기반 분기.
   test('commit row click → 우측 sidebar = commit detail (Phase 5)', async ({ page }) => {
     await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
     await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
 
     const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
     await expect(row).toBeVisible()
     await row.locator('span', { hasText: /^6ef63e0$/ }).click()
 
-    // CommitDetailSidebar 즉시 visible (자동 우측 sidebar 분기).
     const sidebar = page.locator('[data-testid="commit-detail-sidebar"]')
     await expect(sidebar).toBeVisible({ timeout: 2_000 })
     await expect(sidebar).toContainText('6ef63e0')
@@ -61,14 +58,12 @@ test.describe('commit / graph — row click / inline-diff / 8번째 tab / fallba
   test('ESC 키 → selectedSha=null → 우측 placeholder', async ({ page }) => {
     await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
     await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
 
     const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
     await row.locator('span', { hasText: /^6ef63e0$/ }).click()
     await expect(page.locator('[data-testid="commit-detail-sidebar"]')).toBeVisible()
 
     await page.keyboard.press('Escape')
-    // CommitDetailSidebar 사라지고 placeholder ("graph 에서 commit 또는 WIP 행을 선택") 표시.
     await expect(page.locator('[data-testid="commit-detail-sidebar"]')).toHaveCount(0, {
       timeout: 2_000,
     })
@@ -78,7 +73,6 @@ test.describe('commit / graph — row click / inline-diff / 8번째 tab / fallba
   test('같은 commit row 재클릭 → 선택 해제 (toggle)', async ({ page }) => {
     await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
     await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
 
     const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
     const shaCell = row.locator('span', { hasText: /^6ef63e0$/ })
@@ -93,25 +87,24 @@ test.describe('commit / graph — row click / inline-diff / 8번째 tab / fallba
   })
 
   // Sprint c30 / GitKraken UX (Phase 5) — repo 변경 시 selectedSha reset → 우측 placeholder.
+  // Phase 11-7: RepoTabBar 의 Row 2 (repo tab) 클릭으로 repo 전환.
   test('repo 변경 → selectedSha reset → 우측 placeholder', async ({ page }) => {
-    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
-    await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
+    // 두 레포 탭 동시 오픈 (frontend active, backend-api 탭에서 클릭으로 전환).
+    await selectFrontendAndBackendRepos(page)
 
     const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
     await row.locator('span', { hasText: /^6ef63e0$/ }).click()
     await expect(page.locator('[data-testid="commit-detail-sidebar"]')).toBeVisible()
 
-    // 다른 repo click → selectedSha reset → auto-default 다시 적용 (graph latest 또는 WIP)
-    await page.locator('[data-testid="sidebar-repo-backend-api"]').click()
-    // backend-api 의 첫 sha 가 6ef63e0 가 아닐 수 있으니 commit-detail-sidebar 가 mount 되었을 수 있고
-    // (auto-default 적용) 또는 placeholder. 둘 다 valid — 기존 6ef63e0 는 사라져야.
+    // RepoTabBar Row 2 (활성 프로젝트 'opnd' 의 repo 탭) — backend-api (id=3) 탭 클릭.
+    await page.locator('[data-tab-id="3"]').click()
+
+    // 6ef63e0 는 frontend repo 의 commit — backend-api 활성화 후 사라져야.
     const sidebarText = await page
       .locator('[data-testid="commit-detail-sidebar"]')
       .textContent({ timeout: 2_000 })
       .catch(() => null)
     if (sidebarText) {
-      // auto-default 가 적용된 경우 — 텍스트가 6ef63e0 와 다른지만 검증.
       expect(sidebarText).not.toContain('6ef63e0')
     }
   })

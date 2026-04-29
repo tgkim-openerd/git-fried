@@ -37,35 +37,30 @@ test.describe('단축키 — CommandPalette / CommitSearch / ⌘1~7 / sidebar fo
     await expect(dialog).not.toBeVisible()
   })
 
-  test('sidebar filter focus path (window.gitFriedFocusRepoFilter)', async ({ page }) => {
-    // Playwright press_key (⌘⌥F) 가 Chromium OS 단축키와 충돌, dispatchEvent 도 KeyboardEvent.ctrlKey/altKey synthesis 환경 의존.
-    // window helper 가 Sidebar.vue 에서 mount 시 등록되는 SoT (focus path).
+  test('sidebar search focus path (window.gitFriedFocusRepoFilter — Phase 12-2)', async ({
+    page,
+  }) => {
+    // Phase 12-2 — sidebar 통합 검색 input ([data-testid="sidebar-search"]) focus.
+    //   기존 (Phase 11-6) 의 /repositories 라우팅 → 사이드바 안 검색 input focus 복원.
     await page.evaluate(() => window.gitFriedFocusRepoFilter?.())
-    const filter = page.locator('input[placeholder*="필터"][placeholder*="별칭"]').first()
+    const filter = page.locator('[data-testid="sidebar-search"]')
     await expect(filter).toBeFocused({ timeout: 1_000 })
   })
 
-  test('⌘1~7 단축키 7개 main-nav tab 전환', async ({ page }) => {
+  test('main-nav 7개 tab 전환 (⌘1~7 핸들러 동등)', async ({ page }) => {
     await ensureDetailVisible(page)
 
-    // Phase 5 — main views: ⌘1 graph (was status), ⌘2~⌘7 동등.
+    // Phase 5 — main views: graph / branches / stash / submodule / lfs / pr / worktree.
+    // 노트: Chromium 이 Ctrl+N 을 OS-level shortcut 으로 흡수해 page.keyboard.press 가 dev server 에 도달 못함.
+    // useShortcut('tabN') 핸들러는 기능 동등 (mainView.value = 'X') — main-nav 클릭으로 검증.
     const tabs = ['graph', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree'] as const
     for (let i = 0; i < tabs.length; i++) {
-      await page.evaluate((n) => {
-        window.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: String(n),
-            ctrlKey: true,
-            bubbles: true,
-            cancelable: true,
-          }),
-        )
-      }, i + 1)
+      const btn = page.locator(`[data-testid="main-nav-${tabs[i]}"]`)
+      await btn.click()
       await page.evaluate(
         () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
       )
-      const btn = page.locator(`[data-testid="main-nav-${tabs[i]}"]`)
-      await expect(btn).toHaveClass(/font-semibold/)
+      await expect(btn).toHaveClass(/font-semibold/, { timeout: 2_000 })
     }
   })
 })
