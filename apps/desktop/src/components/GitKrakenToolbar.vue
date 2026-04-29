@@ -11,7 +11,7 @@
 // - Pop: stash@{0} pop — stash 0개면 disabled
 // - Terminal: terminal 토글 (dispatchShortcut('terminal'))
 
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import {
   fetchAll,
@@ -34,6 +34,7 @@ import { useToast } from '@/composables/useToast'
 import { useShortcut, dispatchShortcut } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
+import { onMenuAction } from '@/composables/useMenuListener'
 
 const props = defineProps<{
   repoId: number | null
@@ -308,6 +309,17 @@ function onTerminal() {
 useShortcut('fetch', onFetch)
 useShortcut('pull', onPull)
 useShortcut('push', onPush)
+
+// Phase 10-6 — 네이티브 메뉴 'Edit > Undo/Redo Last Git Action' bridge.
+let unbindMenu: Array<() => void> = []
+onMounted(() => {
+  unbindMenu.push(onMenuAction('undo-action', onUndo))
+  unbindMenu.push(onMenuAction('redo-action', onRedo))
+})
+onUnmounted(() => {
+  for (const u of unbindMenu) u()
+  unbindMenu = []
+})
 </script>
 
 <template>

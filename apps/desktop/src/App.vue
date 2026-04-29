@@ -20,6 +20,7 @@ import { useTheme } from '@/composables/useTheme'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
 import { useDeepLink } from '@/composables/useDeepLink'
+import { useMenuListener } from '@/composables/useMenuListener'
 import { useUiSettingsStore } from '@/composables/useUserSettings'
 import { useAutoFetch } from '@/composables/useAutoFetch'
 import { useReposStore } from '@/stores/repos'
@@ -188,6 +189,10 @@ window.gitFriedOpenSyncTemplate = openSyncTemplate
 window.gitFriedOpenBisect = () => (bisectOpen.value = true)
 window.gitFriedOpenReflog = () => (reflogOpen.value = true)
 window.gitFriedOpenCompare = openCompare
+
+// Phase 10-6 — 네이티브 메뉴 (Tauri menu) bridge.
+window.gitFriedToggleTheme = toggle
+useMenuListener()
 </script>
 
 <template>

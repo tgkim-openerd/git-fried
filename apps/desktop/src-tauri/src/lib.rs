@@ -18,6 +18,7 @@ pub mod git;
 pub mod importer;
 pub mod ipc;
 pub mod launchpad;
+pub mod menu;
 pub mod profiles;
 pub mod pty;
 pub mod storage;
@@ -69,6 +70,10 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
+        .menu(|handle| menu::build(handle))
+        .on_menu_event(|app, event| {
+            menu::handle_event(app, event.id().as_ref());
+        })
         .manage(state)
         .manage(runtime)
         .invoke_handler(tauri::generate_handler![

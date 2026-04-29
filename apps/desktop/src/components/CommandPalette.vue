@@ -9,10 +9,7 @@ import { useReposStore } from '@/stores/repos'
 import { useQueryClient } from '@tanstack/vue-query'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
-import {
-  useGeneralSettings,
-  useUiSettingsStore,
-} from '@/composables/useUserSettings'
+import { useGeneralSettings, useUiSettingsStore } from '@/composables/useUserSettings'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
 
@@ -418,10 +415,7 @@ const allCommands = computed<Cmd[]>(() => {
       action: () => {
         const root = document.documentElement
         root.classList.toggle('dark')
-        localStorage.setItem(
-          'git-fried.theme',
-          root.classList.contains('dark') ? 'dark' : 'light',
-        )
+        localStorage.setItem('git-fried.theme', root.classList.contains('dark') ? 'dark' : 'light')
       },
     },
     {
@@ -435,9 +429,7 @@ const allCommands = computed<Cmd[]>(() => {
       id: 'view.date-locale',
       category: 'view',
       label: `날짜 형식 순환 (현재: ${
-        uiSettings.value.dateLocale === 'auto'
-          ? 'OS 기본'
-          : uiSettings.value.dateLocale
+        uiSettings.value.dateLocale === 'auto' ? 'OS 기본' : uiSettings.value.dateLocale
       })`,
       hint: 'auto → ko-KR → en-US',
       action: cycleDateLocale,
@@ -735,8 +727,19 @@ function onKey(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', onKey))
-onUnmounted(() => window.removeEventListener('keydown', onKey))
+onMounted(() => {
+  window.addEventListener('keydown', onKey)
+  // Phase 10-6 — 네이티브 메뉴 'View > Command Palette' bridge.
+  window.gitFriedOpenCommandPalette = () => {
+    open.value = true
+    filter.value = ''
+    selected.value = 0
+  }
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKey)
+  delete window.gitFriedOpenCommandPalette
+})
 </script>
 
 <template>
@@ -790,7 +793,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
           </p>
         </div>
         <div class="border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
-          ↑↓ 탐색 · Enter 실행 · Esc 닫기 · 카테고리: Repo / Branch / File / View / Stash / History / AI / Settings
+          ↑↓ 탐색 · Enter 실행 · Esc 닫기 · 카테고리: Repo / Branch / File / View / Stash / History
+          / AI / Settings
         </div>
       </div>
     </div>

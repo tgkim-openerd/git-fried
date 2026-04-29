@@ -159,6 +159,14 @@ function focusRepoFilter() {
 }
 window.gitFriedFocusRepoFilter = focusRepoFilter
 
+// Phase 10-6 — 네이티브 메뉴 'File > Reload Repositories' bridge.
+window.gitFriedReloadRepos = () => {
+  qc.invalidateQueries({ queryKey: ['repos'] })
+  qc.invalidateQueries({ queryKey: ['repos-all-for-tabs'] })
+  qc.invalidateQueries({ queryKey: ['workspaces'] })
+  toast.success('레포 reload', '워크스페이스/레포 목록 갱신 중')
+}
+
 useShortcut('filterRepos', focusRepoFilter)
 
 // Sprint B9 — directory / org 그룹핑. composables/useSidebarGroups.ts 로 추출 (Sidebar 분리 2/N).

@@ -24,5 +24,11 @@ declare global {
     gitFriedFocusRepoFilter?: () => void
     /** pages/index.vue → CommitDiffModal trigger (Sprint 22-3 V-1 / 22-4 V-6). */
     gitFriedShowDiff?: (sha: string) => void
+    /** App.vue → 네이티브 메뉴 'View > Toggle Theme' (Phase 10-6). */
+    gitFriedToggleTheme?: () => void
+    /** CommandPalette → 네이티브 메뉴 'View > Command Palette' (Phase 10-6). */
+    gitFriedOpenCommandPalette?: () => void
+    /** Sidebar → 네이티브 메뉴 'File > Reload Repositories' (Phase 10-6). */
+    gitFriedReloadRepos?: () => void
   }
 }
