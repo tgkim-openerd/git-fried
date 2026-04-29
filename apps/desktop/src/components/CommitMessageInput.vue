@@ -121,6 +121,14 @@ const finalMessage = computed(() => {
 // ASCII=1, 한글/CJK/emoji=2 — terminal cell 기준. 한글 36자 ≈ 영문 72자.
 const subjectLength = computed(() => visualWidth(subject.value))
 const subjectWarn = computed(() => subjectLength.value > 72)
+// Phase 10 MEDIUM 1 — 50/72 char progress bar (Conventional commits convention)
+// ≤50: ideal (emerald), 51-72: warn (amber), >72: over (rose)
+const subjectZone = computed<'ideal' | 'warn' | 'over'>(() => {
+  if (subjectLength.value > 72) return 'over'
+  if (subjectLength.value > 50) return 'warn'
+  return 'ideal'
+})
+const subjectPct = computed(() => Math.min(100, Math.round((subjectLength.value / 72) * 100)))
 
 // commit 실패 결과 (hook 출력) — alert 대신 inline panel.
 // 사용자 lefthook + husky + lint-staged 출력이 stderr 로 옴.
@@ -353,9 +361,37 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         class="rounded-md border border-input bg-background px-2 py-1 text-sm"
         :class="subjectWarn ? 'border-amber-500' : ''"
       />
-      <div class="flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>형식: type(scope)!: subject</span>
-        <span :class="subjectWarn ? 'text-amber-500' : ''">{{ subjectLength }}/72</span>
+      <!-- Phase 10 MEDIUM 1 — 50/72 progress bar -->
+      <div class="flex flex-col gap-0.5">
+        <div class="relative h-1 w-full overflow-hidden rounded bg-muted">
+          <!-- 50/72 marker (≈69.4%) -->
+          <div
+            class="absolute top-0 bottom-0 w-px bg-foreground/30"
+            :style="{ left: 'calc(50 / 72 * 100%)' }"
+            aria-hidden="true"
+          ></div>
+          <div
+            class="h-full transition-all"
+            :class="{
+              'bg-emerald-500': subjectZone === 'ideal',
+              'bg-amber-500': subjectZone === 'warn',
+              'bg-rose-500': subjectZone === 'over',
+            }"
+            :style="{ width: `${subjectPct}%` }"
+          ></div>
+        </div>
+        <div class="flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>형식: type(scope)!: subject (이상 ≤50, 한계 ≤72)</span>
+          <span
+            :class="{
+              'text-emerald-500': subjectZone === 'ideal' && subjectLength > 0,
+              'text-amber-500': subjectZone === 'warn',
+              'text-rose-500': subjectZone === 'over',
+            }"
+          >
+            {{ subjectLength }}/72
+          </span>
+        </div>
       </div>
       <textarea
         v-model="body"
