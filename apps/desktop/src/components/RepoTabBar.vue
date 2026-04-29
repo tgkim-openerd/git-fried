@@ -1,14 +1,16 @@
 <script setup lang="ts">
-// Multi-repo Tab Bar — Sprint G (`docs/plan/11 §22`).
+// Multi-repo Tab Bar — Sprint G + Phase 11-7 (GitKraken parity issue #1).
 //
-// 상단에 가로로 열린 레포 탭 strip 표시. drag-drop 으로 재정렬, ✕ 로 닫기.
-// + 버튼 → RepoSwitcherModal 열어 새 탭 추가.
-// 우클릭 메뉴 (Sprint 22-4 CM-7): Close / Close others / Close all / Move left / Move right.
+// Phase 11-7: 2-level tab hierarchy.
+//   Row 1 — 프로젝트 탭 (parentDirName 기반 그룹). 클릭 → 그 프로젝트 의 활성 레포 활성화.
+//     Solo 레포 (그룹 없음) 는 단독으로 자기 자신 탭.
+//   Row 2 — 활성 프로젝트의 레포 탭 (drag-reorder, 우클릭 메뉴, ✕ 닫기). 단독 프로젝트면 미표시.
 //
-// Sprint 22-14 M3 Tab overflow (design §8-1 hard constraint):
-//  - 활성 탭 변경 시 자동 scrollIntoView (viewport 밖이면 보이게)
-//  - 8 탭 초과 시 우측 끝 hint ("⌘T 로 검색") + scroll fade gradient (좌우 끝)
-//  - 본격 "더 보기" dropdown 은 향후 primitive (Popover) 도입 후 — 현재 fade gradient 로 대체
+// 기존 (Sprint G + 22-4 + 22-14):
+//   - drag-drop 으로 재정렬 (Row 2 에서)
+//   - 우클릭 메뉴: Close / Close others / Close all / Move left / Move right
+//   - 8 탭 초과 시 overflow ▾ 인디케이터 + ⌘T RepoSwitcher
+//   - 활성 탭 자동 scrollIntoView
 //
 // store.tabs ↔ Repo[] 매핑은 listRepos(null) 에서 (모든 workspace 통합).
 import { computed, nextTick, useTemplateRef, watch } from 'vue'
@@ -19,10 +21,10 @@ import { STALE_TIME } from '@/api/queryClient'
 import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
+import { parentDirName } from '@/composables/useSidebarGroups'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import { visualWidth } from '@/utils/visualWidth'
 
-// Sprint 22-14 M3: 탭 8개 초과 시 overflow 안내 표시.
 const OVERFLOW_THRESHOLD = 8
 
 const store = useReposStore()
@@ -30,7 +32,6 @@ const aliases = useRepoAliases()
 
 defineEmits<{ openSwitcher: [] }>()
 
-// 모든 레포 — tab id 의 정보를 빠르게 조회.
 const reposQuery = useQuery({
   queryKey: ['repos-all-for-tabs'],
   queryFn: () => listRepos(null),
@@ -43,23 +44,10 @@ const repoMap = computed<Map<number, Repo>>(() => {
   return m
 })
 
-// VueDraggable 모델 — store.tabs 와 양방향. drag 끝나면 reorderTabs 호출.
-const draggableTabs = computed<number[]>({
-  get: () => store.tabs,
-  set: (v) => store.reorderTabs(v),
-})
-
 function tabLabel(id: number): string {
   const r = repoMap.value.get(id)
   if (!r) return `repo:${id}`
   return aliases.resolveLocal(id, r.name).display
-}
-
-// Sprint 22-7 Q-3: 한글 tab label 은 시각 폭이 영문의 ~2배 →
-// label visualWidth 가 일정 cell 초과 시 max-w 확장 (180px → 280px).
-function tabLabelClass(id: number): string {
-  const w = visualWidth(tabLabel(id))
-  return w > 24 ? 'max-w-[280px]' : 'max-w-[180px]'
 }
 
 function tabSubtitle(id: number): string {
@@ -67,6 +55,91 @@ function tabSubtitle(id: number): string {
   if (!r) return ''
   const fk = r.forgeKind
   return fk !== 'unknown' ? `${fk} · ${r.forgeOwner ?? ''}/${r.forgeRepo ?? ''}` : r.localPath
+}
+
+function tabLabelClass(id: number): string {
+  const w = visualWidth(tabLabel(id))
+  return w > 24 ? 'max-w-[280px]' : 'max-w-[180px]'
+}
+
+// === Phase 11-7 — 프로젝트 그룹화 ===
+//
+// 그룹 키 = parentDirName(localPath). 없으면 '__solo__' (각 레포 자체로 한 그룹).
+// 활성 프로젝트 = 활성 레포의 프로젝트 (없으면 첫 그룹).
+
+interface ProjectGroup {
+  key: string
+  label: string // 표시명 ('__solo__' 의 경우 레포 이름 사용)
+  tabIds: number[] // 프로젝트의 열린 탭 id (store.tabs 순서 보존)
+  isSolo: boolean // 레포 1개 + parentDir 그룹 없음 → label 미표시
+}
+
+const projectGroups = computed<readonly ProjectGroup[]>(() => {
+  const map = new Map<string, ProjectGroup>()
+  for (const id of store.tabs) {
+    const r = repoMap.value.get(id)
+    if (!r) continue
+    const dir = parentDirName(r.localPath)
+    // 부모 디렉토리 그룹 우선, 없으면 단독 그룹 (key=`solo:${id}`).
+    const key = dir ?? `__solo:${id}`
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        label: dir ?? aliases.resolveLocal(id, r.name).display,
+        tabIds: [],
+        isSolo: !dir,
+      })
+    }
+    map.get(key)!.tabIds.push(id)
+  }
+  // 1개짜리 디렉토리 그룹은 solo 로 격하 (label 부담 해소).
+  for (const g of map.values()) {
+    if (g.tabIds.length === 1 && !g.isSolo) {
+      const onlyId = g.tabIds[0]
+      const r = repoMap.value.get(onlyId)
+      if (r) {
+        g.isSolo = true
+        g.label = aliases.resolveLocal(onlyId, r.name).display
+      }
+    }
+  }
+  return Array.from(map.values())
+})
+
+const activeGroup = computed<ProjectGroup | null>(() => {
+  const groups = projectGroups.value
+  if (groups.length === 0) return null
+  if (store.activeRepoId == null) return groups[0]
+  return groups.find((g) => g.tabIds.includes(store.activeRepoId!)) ?? groups[0]
+})
+
+// VueDraggable 모델 — 활성 프로젝트의 탭들만 reorder.
+//   set 시 store.tabs 의 활성 그룹 부분만 새 순서로 교체.
+const activeGroupTabs = computed<number[]>({
+  get: () => activeGroup.value?.tabIds ?? [],
+  set: (v) => {
+    const g = activeGroup.value
+    if (!g) return
+    // store.tabs 에서 g.tabIds 위치들을 v 순서로 swap.
+    const oldOrder = store.tabs
+    const groupSet = new Set(g.tabIds)
+    const next: number[] = []
+    let vIdx = 0
+    for (const id of oldOrder) {
+      if (groupSet.has(id)) {
+        next.push(v[vIdx++])
+      } else {
+        next.push(id)
+      }
+    }
+    store.reorderTabs(next)
+  },
+})
+
+function activateProject(g: ProjectGroup) {
+  // 그룹 내 활성 레포 있으면 유지, 없으면 첫 레포 활성.
+  if (store.activeRepoId != null && g.tabIds.includes(store.activeRepoId)) return
+  if (g.tabIds.length > 0) store.setActiveRepo(g.tabIds[0])
 }
 
 function activate(id: number) {
@@ -79,14 +152,12 @@ function close(id: number, e: MouseEvent) {
 }
 
 function onMiddleClick(id: number, e: MouseEvent) {
-  // 중간 버튼 클릭 = 탭 닫기 (브라우저 표준).
   if (e.button === 1) {
     e.preventDefault()
     store.closeTab(id)
   }
 }
 
-// === Sprint 22-4 CM-7: tab 우클릭 메뉴 ===
 const tabCtxMenu = useTemplateRef<ContextMenuExpose>('tabCtxMenu')
 
 function moveTab(id: number, delta: -1 | 1) {
@@ -99,12 +170,9 @@ function moveTab(id: number, delta: -1 | 1) {
   store.reorderTabs(next)
 }
 
-// Sprint 22-14 M3 — overflow 인디케이터 + 활성 탭 자동 scrollIntoView.
 const tabContainerRef = useTemplateRef<HTMLElement>('tabContainerRef')
 const isOverflow = computed(() => store.tabs.length > OVERFLOW_THRESHOLD)
-const overflowHiddenCount = computed(() =>
-  Math.max(0, store.tabs.length - OVERFLOW_THRESHOLD),
-)
+const overflowHiddenCount = computed(() => Math.max(0, store.tabs.length - OVERFLOW_THRESHOLD))
 
 watch(
   () => store.activeRepoId,
@@ -113,7 +181,6 @@ watch(
     await nextTick()
     const container = tabContainerRef.value
     if (!container) return
-    // tab DOM 은 v-for 안에서 :key=id 로 렌더 — querySelector 로 활성 tab 검색.
     const el = container.querySelector<HTMLElement>(`[data-tab-id="${id}"]`)
     if (el && typeof el.scrollIntoView === 'function') {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
@@ -158,77 +225,130 @@ function onTabContextMenu(ev: MouseEvent, id: number) {
   ]
   tabCtxMenu.value?.openAt(ev, items)
 }
+
+function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
+  ev.preventDefault()
+  ev.stopPropagation()
+  const items: ContextMenuItem[] = [
+    {
+      label: `Close all in '${g.label}' (${g.tabIds.length})`,
+      icon: '✕',
+      destructive: g.tabIds.length > 1,
+      action: () => {
+        if (
+          g.tabIds.length === 1 ||
+          window.confirm(`'${g.label}' 그룹의 ${g.tabIds.length} 탭 모두 닫기?`)
+        ) {
+          for (const id of g.tabIds) store.closeTab(id)
+        }
+      },
+    },
+  ]
+  tabCtxMenu.value?.openAt(ev, items)
+}
 </script>
 
 <template>
   <div
     v-if="store.tabs.length > 0"
-    class="flex items-center gap-0.5 border-b border-border bg-muted/40 px-1 py-0.5"
+    class="flex flex-col border-b border-border bg-muted/40"
+    data-testid="repo-tab-bar"
   >
-    <!-- Sprint 22-14 M3: tab strip + overflow indicator (좌/우 fade + 우측 hint) -->
-    <div ref="tabContainerRef" class="repo-tab-strip relative min-w-0 flex-1" :class="isOverflow ? 'has-overflow' : ''">
+    <!-- Row 1 — 프로젝트 탭 (Phase 11-7).
+         그룹 1개 + solo 면 단순 평면 표시 (label = repo 이름). -->
+    <div class="flex items-center gap-0.5 px-1 pt-0.5">
+      <button
+        v-for="g in projectGroups"
+        :key="g.key"
+        type="button"
+        :data-testid="`project-tab-${g.label}`"
+        class="group flex shrink-0 cursor-pointer items-center gap-1 rounded-t border border-b-0 border-border px-2 py-0.5 text-[11px] hover:bg-accent/40"
+        :class="
+          activeGroup?.key === g.key
+            ? 'bg-card text-foreground font-semibold'
+            : 'bg-muted/20 text-muted-foreground'
+        "
+        :title="g.isSolo ? `${g.label} (단독)` : `프로젝트: ${g.label} (${g.tabIds.length} 레포)`"
+        @click="activateProject(g)"
+        @contextmenu="onProjectContextMenu($event, g)"
+      >
+        <span class="text-[10px]">{{ g.isSolo ? '📁' : '📦' }}</span>
+        <span class="truncate max-w-[180px]">{{ g.label }}</span>
+        <span
+          v-if="!g.isSolo && g.tabIds.length > 1"
+          class="rounded bg-muted px-1 text-[9px] text-muted-foreground"
+        >
+          {{ g.tabIds.length }}
+        </span>
+      </button>
+      <button
+        v-if="isOverflow"
+        type="button"
+        class="ml-1 shrink-0 rounded border border-dashed border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+        :title="`${overflowHiddenCount}+ 탭 — ⌘T 로 검색·전환`"
+        @click="$emit('openSwitcher')"
+      >
+        ▾ {{ overflowHiddenCount }}+
+      </button>
+      <button
+        type="button"
+        class="ml-1 shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
+        title="새 탭 (⌘T)"
+        aria-label="새 레포 탭 추가 (⌘T)"
+        @click="$emit('openSwitcher')"
+      >
+        +
+      </button>
+    </div>
+
+    <!-- Row 2 — 활성 프로젝트의 레포 탭. solo 그룹이면 미표시 (Row 1 이 곧 레포). -->
+    <div
+      v-if="activeGroup && !activeGroup.isSolo && activeGroup.tabIds.length > 0"
+      ref="tabContainerRef"
+      class="repo-tab-strip relative min-w-0 border-t border-border/50 bg-card/30 px-2 py-0.5"
+      :class="isOverflow ? 'has-overflow' : ''"
+      data-testid="active-project-repo-row"
+    >
       <VueDraggable
-        v-model="draggableTabs"
+        v-model="activeGroupTabs"
         :animation="150"
         class="flex items-center gap-0.5 overflow-x-auto"
         handle=".tab-handle"
       >
         <div
-          v-for="id in draggableTabs"
+          v-for="id in activeGroupTabs"
           :key="id"
           :data-tab-id="id"
-          class="tab-handle group flex shrink-0 cursor-pointer items-center gap-1 rounded-t border border-b-0 border-border px-2 py-1 text-[11px] hover:bg-accent/40"
+          class="tab-handle group flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border/60 px-2 py-0.5 text-[11px] hover:bg-accent/40"
           :class="
             store.activeRepoId === id
-              ? 'bg-card text-foreground font-semibold'
-              : 'bg-muted/20 text-muted-foreground'
+              ? 'bg-accent text-accent-foreground font-semibold'
+              : 'bg-card text-muted-foreground'
           "
           :title="tabSubtitle(id)"
           @click="activate(id)"
           @mousedown="onMiddleClick(id, $event)"
           @contextmenu="onTabContextMenu($event, id)"
         >
-        <span class="truncate" :class="tabLabelClass(id)">{{ tabLabel(id) }}</span>
-        <button
-          type="button"
-          class="rounded text-muted-foreground opacity-50 hover:bg-destructive/40 hover:text-destructive-foreground hover:opacity-100"
-          :title="`탭 닫기: ${tabLabel(id)}`"
-          :aria-label="`탭 닫기: ${tabLabel(id)}`"
-          @click="close(id, $event)"
-        >
-          ✕
-        </button>
-      </div>
-    </VueDraggable>
+          <span class="truncate" :class="tabLabelClass(id)">{{ tabLabel(id) }}</span>
+          <button
+            type="button"
+            class="rounded text-muted-foreground opacity-50 hover:bg-destructive/40 hover:text-destructive-foreground hover:opacity-100"
+            :title="`탭 닫기: ${tabLabel(id)}`"
+            :aria-label="`탭 닫기: ${tabLabel(id)}`"
+            @click="close(id, $event)"
+          >
+            ✕
+          </button>
+        </div>
+      </VueDraggable>
     </div>
-    <!-- Sprint 22-14 M3: 8개 초과 시 RepoSwitcher (⌘T) 안내 -->
-    <button
-      v-if="isOverflow"
-      type="button"
-      class="ml-1 shrink-0 rounded border border-dashed border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
-      :title="`${overflowHiddenCount}+ 탭 — ⌘T 로 검색·전환`"
-      :aria-label="`${overflowHiddenCount}개+ 탭이 가려져 있음. ⌘T 로 검색·전환`"
-      @click="$emit('openSwitcher')"
-    >
-      ▾ {{ overflowHiddenCount }}+
-    </button>
-    <button
-      type="button"
-      class="ml-1 shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
-      title="새 탭 (⌘T)"
-      aria-label="새 레포 탭 추가 (⌘T)"
-      @click="$emit('openSwitcher')"
-    >
-      +
-    </button>
+
     <ContextMenu ref="tabCtxMenu" />
   </div>
 </template>
 
 <style scoped>
-/* Sprint 22-14 M3 — overflow fade gradient (좌/우 끝).
- * 8개 초과 (.has-overflow) 시 좌우 끝에 fade 표시 → 스크롤 가능 인지.
- */
 .repo-tab-strip.has-overflow {
   position: relative;
 }
@@ -244,18 +364,10 @@ function onTabContextMenu(ev: MouseEvent, id: number) {
 }
 .repo-tab-strip.has-overflow::before {
   left: 0;
-  background: linear-gradient(
-    to right,
-    hsl(var(--muted) / 0.6),
-    transparent
-  );
+  background: linear-gradient(to right, hsl(var(--muted) / 0.6), transparent);
 }
 .repo-tab-strip.has-overflow::after {
   right: 0;
-  background: linear-gradient(
-    to left,
-    hsl(var(--muted) / 0.6),
-    transparent
-  );
+  background: linear-gradient(to left, hsl(var(--muted) / 0.6), transparent);
 }
 </style>
