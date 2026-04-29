@@ -71,3 +71,4 @@ post-commit-*.yml
 audit-*.png
 audit-*.yml
 .claude/agent-memory/
+checkpoint.md
