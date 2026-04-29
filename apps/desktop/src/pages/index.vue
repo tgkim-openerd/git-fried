@@ -3,6 +3,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
+import { useGraph } from '@/composables/useGraph'
 import CommitGraph from '@/components/CommitGraph.vue'
 import StatusPanel from '@/components/StatusPanel.vue'
 // Sprint c25-1 (`docs/plan/25 §2`) — SyncBar → GitKrakenToolbar 교체.
@@ -75,11 +76,16 @@ function toggleFocusMode() {
 // Sprint 22-3 V-1 — row dblclick 도 동일 액션 트리거.
 const selectedSha = ref<string | null>(null)
 const diffModalOpen = ref(false)
+// Sprint c30 / GitKraken UX (Phase 1) — auto-default 와 명시 선택 구분.
+//   user 가 한 번이라도 row click / ESC 했으면 true → 이후 auto-default 비활성.
+//   repo 변경 시 false 로 reset (새 repo 의 latest 로 default 적용).
+const userChoseSha = ref(false)
 // Sprint c30 / GitKraken UX — commit row 단일 클릭 시 우측 패널 자동 전환:
 //   1. 같은 sha 재선택: 선택 해제 (toggle, 우측 status 복귀)
 //   2. 다른 sha: selectedSha set + tab='commit' 즉시 전환 (GitKraken 동작)
 //      현재 어느 tab 이든 (Branches/PR/...) commit detail 로 즉시 전환됨.
 function onSelectCommit(sha: string) {
+  userChoseSha.value = true
   if (selectedSha.value === sha) {
     selectedSha.value = null
     return
@@ -113,6 +119,7 @@ function onEscKey(e: KeyboardEvent) {
     return
   }
   if (selectedSha.value != null) {
+    userChoseSha.value = true // 명시적 deselect — auto-default 재적용 차단
     selectedSha.value = null
   }
 }
@@ -124,11 +131,28 @@ onUnmounted(() => {
 })
 
 // Phase 1 (Sprint c29-5) — activeRepoId 변경 시 selectedSha reset (graph 가 바뀌어 의미 잃음).
+// Sprint c30 / GitKraken UX — userChoseSha 도 reset → 새 repo 의 latest 로 auto-default 재적용.
 watch(
   () => store.activeRepoId,
   () => {
     selectedSha.value = null
+    userChoseSha.value = false
   },
+)
+
+// Sprint c30 / GitKraken UX (Phase 1) — auto-default selectedSha to latest commit.
+//   graph 로드 후 user 가 명시 선택/해제 안했으면 latest commit 으로 자동 set.
+//   commit tab 클릭 시 즉시 detail 표시 (빈 "commit 선택하세요" placeholder 회피).
+//   tab 자동 변경 안 함 — 사용자의 status tab 선택권 보존.
+const { data: graphData } = useGraph(() => store.activeRepoId, 500)
+watch(
+  graphData,
+  (g) => {
+    if (!userChoseSha.value && selectedSha.value == null && g?.rows && g.rows.length > 0) {
+      selectedSha.value = g.rows[0].commit.sha
+    }
+  },
+  { immediate: true },
 )
 function onShowDiff(sha: string) {
   selectedSha.value = sha

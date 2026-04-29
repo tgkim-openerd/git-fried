@@ -3,9 +3,9 @@ import { parsePatchStats } from './patchStats'
 
 describe('parsePatchStats', () => {
   it('null / undefined / 빈 string → 0 stats', () => {
-    expect(parsePatchStats(null)).toEqual({ adds: 0, dels: 0, files: 0 })
-    expect(parsePatchStats(undefined)).toEqual({ adds: 0, dels: 0, files: 0 })
-    expect(parsePatchStats('')).toEqual({ adds: 0, dels: 0, files: 0 })
+    expect(parsePatchStats(null)).toEqual({ adds: 0, dels: 0, files: 0, paths: [] })
+    expect(parsePatchStats(undefined)).toEqual({ adds: 0, dels: 0, files: 0, paths: [] })
+    expect(parsePatchStats('')).toEqual({ adds: 0, dels: 0, files: 0, paths: [] })
   })
 
   it('단일 파일 추가 3 / 삭제 1 / 1 file', () => {
@@ -21,7 +21,12 @@ describe('parsePatchStats', () => {
       '+const c = 4',
       '+const d = 5',
     ].join('\n')
-    expect(parsePatchStats(patch)).toEqual({ adds: 3, dels: 1, files: 1 })
+    expect(parsePatchStats(patch)).toEqual({
+      adds: 3,
+      dels: 1,
+      files: 1,
+      paths: [{ path: 'foo.ts', oldPath: null, change: 'modified' }],
+    })
   })
 
   it('두 파일 — files 카운트 2', () => {
@@ -84,5 +89,77 @@ describe('parsePatchStats', () => {
     expect(s.files).toBe(1)
     expect(s.adds).toBe(0)
     expect(s.dels).toBe(0)
+  })
+
+  // Sprint c30 / GitKraken UX — file path + change kind 추출 (commit detail 패널 file list).
+  describe('paths (Sprint c30)', () => {
+    it('added — new file mode 라인 감지', () => {
+      const patch = [
+        'diff --git a/new.ts b/new.ts',
+        'new file mode 100644',
+        '--- /dev/null',
+        '+++ b/new.ts',
+        '@@ -0,0 +1 @@',
+        '+hello',
+      ].join('\n')
+      const s = parsePatchStats(patch)
+      expect(s.paths).toEqual([{ path: 'new.ts', oldPath: null, change: 'added' }])
+    })
+
+    it('deleted — deleted file mode 라인 감지', () => {
+      const patch = [
+        'diff --git a/gone.ts b/gone.ts',
+        'deleted file mode 100644',
+        '--- a/gone.ts',
+        '+++ /dev/null',
+        '@@ -1 +0,0 @@',
+        '-bye',
+      ].join('\n')
+      const s = parsePatchStats(patch)
+      expect(s.paths).toEqual([{ path: 'gone.ts', oldPath: null, change: 'deleted' }])
+    })
+
+    it('renamed — rename from / rename to 라인 감지 + oldPath', () => {
+      const patch = [
+        'diff --git a/old.ts b/new.ts',
+        'similarity index 95%',
+        'rename from old.ts',
+        'rename to new.ts',
+      ].join('\n')
+      const s = parsePatchStats(patch)
+      expect(s.paths).toEqual([{ path: 'new.ts', oldPath: 'old.ts', change: 'renamed' }])
+    })
+
+    it('multiple files — 순서 보존', () => {
+      const patch = [
+        'diff --git a/a.ts b/a.ts',
+        '--- a/a.ts',
+        '+++ b/a.ts',
+        '@@ -1 +1 @@',
+        '-old',
+        '+new',
+        'diff --git a/sub/b.ts b/sub/b.ts',
+        'new file mode 100644',
+        '+++ b/sub/b.ts',
+        '@@ -0,0 +1 @@',
+        '+x',
+      ].join('\n')
+      const s = parsePatchStats(patch)
+      expect(s.paths.map((p) => p.path)).toEqual(['a.ts', 'sub/b.ts'])
+      expect(s.paths.map((p) => p.change)).toEqual(['modified', 'added'])
+    })
+
+    it('한글 path 보존', () => {
+      const patch = [
+        'diff --git a/문서/설계.md b/문서/설계.md',
+        '--- a/문서/설계.md',
+        '+++ b/문서/설계.md',
+        '@@ -1 +1 @@',
+        '-old',
+        '+new',
+      ].join('\n')
+      const s = parsePatchStats(patch)
+      expect(s.paths).toEqual([{ path: '문서/설계.md', oldPath: null, change: 'modified' }])
+    })
   })
 })
