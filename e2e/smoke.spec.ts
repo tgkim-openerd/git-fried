@@ -1,19 +1,21 @@
 import { expect, test } from '@playwright/test'
+import { selectFrontendRepo } from './helpers'
 
-// Sprint E2E smoke — 본 세션 dogfood 10항목 시나리오의 자동화 골격.
-// 환경: vite dev server (1420) + Chromium + devMock (Tauri webview 부재 → fixture 응답).
+// Sprint c30 / LOW 2 — e2e 분할:
+//   smoke.spec.ts  → app shell / 콘솔 에러 / GitKraken 8 button (가장 critical 한 골격)
+//   shortcuts.spec.ts → CommandPalette / CommitSearch / ⌘1~7 / sidebar focus
+//   status.spec.ts → ChangeCountBadge / Path-Tree / sticky 4 섹션 / Sidebar mini
+//   commit.spec.ts → commit row click / 8번째 tab / inline-diff / graph zoom / fallback
+//   actions.spec.ts → Toolbar Redo / Stash list
 
-test.describe('git-fried smoke', () => {
+test.describe('smoke — 앱 shell & 콘솔 health', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    // fresh chromium 의 localStorage 는 비어있어 activeRepoId=null. 첫 repo 강제 선택.
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
+    await selectFrontendRepo(page)
   })
 
   test('app shell + 8 fake repos + GitKraken toolbar 노출', async ({ page }) => {
     await expect(page).toHaveTitle('git-fried')
 
-    // 좌측 사이드바 repo list (data-testid="sidebar-repo-list")
     const repoList = page.locator('[data-testid="sidebar-repo-list"]')
     await expect(repoList).toBeVisible()
     await expect(repoList.locator('[data-testid="sidebar-repo-frontend"]')).toBeVisible()
@@ -29,259 +31,6 @@ test.describe('git-fried smoke', () => {
     await expect(page.getByRole('button', { name: /Stash$/ }).first()).toBeVisible()
     await expect(page.getByRole('button', { name: /Pop \d+$/ })).toBeVisible()
     await expect(page.getByRole('button', { name: /Terminal$/ })).toBeVisible()
-  })
-
-  test('ChangeCountBadge 영구 노출 + 12 file changes', async ({ page }) => {
-    // testid 가 main panel + sidebar quick action 양쪽 mount → file changes 텍스트로 좁히기
-    const badge = page
-      .locator('[data-testid="change-count-badge"]')
-      .filter({ hasText: 'file changes' })
-      .first()
-    await expect(badge).toBeVisible()
-    await expect(badge).toContainText(/12/)
-    await expect(badge).toContainText(/staged 3/)
-    await expect(badge).toContainText(/mod 5/)
-  })
-
-  test('CommandPalette ⌘P 열림 + 검색 input focus', async ({ page }) => {
-    await page.keyboard.press('Control+p')
-    const input = page.locator('input[placeholder*="명령 검색"]')
-    await expect(input).toBeFocused()
-    await page.keyboard.press('Escape')
-  })
-
-  test('CommitSearchModal ⌘⇧F 열림 (F-P5)', async ({ page }) => {
-    await page.keyboard.press('Control+Shift+F')
-    await expect(page.getByRole('dialog', { name: 'Commit message 검색' })).toBeVisible()
-    // focus 검증 race-condition (beforeEach click 후) 회피 — fill 자체가 focus + type 수행
-    const input = page.locator('input[placeholder*="git log --grep"]')
-    await input.fill('plan/22')
-    await expect(page.getByText(/매칭 commit 없음|개 결과/).first()).toBeVisible({
-      timeout: 2_000,
-    })
-    await page.keyboard.press('Escape')
-  })
-
-  test('Sidebar 4 mini sections + collapsible 토글', async ({ page }) => {
-    await expect(page.locator('[data-testid="mini-section-active-repo-quick.branches"]')).toBeVisible()
-    await expect(page.locator('[data-testid="mini-section-active-repo-quick.stash"]')).toBeVisible()
-    await expect(page.locator('[data-testid="mini-section-active-repo-quick.worktree"]')).toBeVisible()
-    await expect(page.locator('[data-testid="mini-section-active-repo-quick.pr"]')).toBeVisible()
-
-    // 토글 — Stash 섹션 → title 이 "펴기" 로 전환
-    const stashToggle = page.locator('[data-testid="mini-section-toggle-active-repo-quick.stash"]')
-    await expect(stashToggle).toHaveAttribute('title', /접기/)
-    await stashToggle.click()
-    await expect(stashToggle).toHaveAttribute('title', /펴기/)
-  })
-
-  test('Path/Tree 토글 + 4 섹션 노출', async ({ page }) => {
-    // main nav 의 '변경' tab — data-testid="main-nav-status"
-    await page.locator('[data-testid="main-nav-status"]').click()
-    // page evaluation — STAGED/MODIFIED 텍스트 노출 검증 (CSS selector 매칭 race-condition 회피)
-    await page.waitForFunction(() => {
-      const t = document.body.innerText
-      return /STAGED.*MODIFIED.*UNTRACKED.*CONFLICTED/s.test(t)
-    }, { timeout: 5_000 })
-
-    // Tree 모드 토글 — 디렉토리 트리 모드 button
-    const treeBtn = page.locator('button[aria-label="디렉토리 트리 모드"]')
-    await treeBtn.click()
-    // localStorage 영속 검증
-    const stored = await page.evaluate(() => localStorage.getItem('git-fried.status.viewMode'))
-    expect(stored).toBe('tree')
-  })
-
-  test('Status 4 section sticky + STAGED bulk-unstage button', async ({ page }) => {
-    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
-    await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
-    await page.locator('[data-testid="main-nav-status"]').click()
-
-    // 4 section header 의 첫 자식 div 가 sticky 인지 computed style 검증.
-    const sticky = await page.evaluate(() => {
-      const txts = ['Staged', 'Modified', 'Untracked', 'Conflicted']
-      return txts.map((t) => {
-        const span = Array.from(document.querySelectorAll('span, div')).find(
-          (el) =>
-            el.children.length === 0 &&
-            new RegExp(`[▶▼]\\s*${t}\\s*\\(`).test(el.textContent ?? ''),
-        )
-        const header = span?.closest('div.sticky')
-        return { name: t, sticky: !!header }
-      })
-    })
-    expect(sticky.every((s) => s.sticky)).toBe(true)
-
-    // STAGED 옆 "모두 unstage" button — devMock 의 staged 3 개 기준.
-    const unstageAllBtn = page.locator('button[title*="모두 unstage"]')
-    await expect(unstageAllBtn).toBeVisible()
-  })
-
-  test('CommitSearchModal — 검색 결과 노출 + Esc 닫기', async ({ page }) => {
-    await page.keyboard.press('Control+Shift+F')
-    const dialog = page.getByRole('dialog', { name: 'Commit message 검색' })
-    await expect(dialog).toBeVisible()
-    const input = page.locator('input[placeholder*="git log --grep"]')
-    await input.fill('feat')
-    // devMock 의 fake commit log 에 "feat" 포함 메시지 존재 → 결과 노출 (시간 제한 내)
-    await expect(page.getByText(/개 결과 \(max 50\)|매칭 commit 없음/)).toBeVisible({
-      timeout: 2_000,
-    })
-    await page.keyboard.press('Escape')
-    await expect(dialog).not.toBeVisible()
-  })
-
-  test('commit row click → inline-diff-panel visible', async ({ page }) => {
-    // detail panel + inline diff 모두 켜진 상태에서 진입.
-    await page.evaluate(() => {
-      localStorage.setItem('git-fried.detail-visible', '1')
-      localStorage.setItem('git-fried.inline-diff.visible', '1')
-    })
-    await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
-
-    // devMock fake log 의 첫 commit. shortSha 기준 testid.
-    const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
-    await expect(row).toBeVisible()
-    // row 의 sha cell 클릭 — message 영역의 ref pill (HEAD/main 등) 은 @click.stop 으로 row 핸들러 차단.
-    await row.locator('span', { hasText: /^6ef63e0$/ }).click()
-
-    // selectedSha set → CommitDiffPanel mount.
-    await expect(page.locator('[data-testid="inline-diff-panel"]')).toBeVisible({
-      timeout: 2_000,
-    })
-  })
-
-  test('sidebar filter focus path (window.gitFriedFocusRepoFilter)', async ({ page }) => {
-    // Playwright press_key (⌘⌥F) 가 Chromium OS 단축키와 충돌, dispatchEvent 도 KeyboardEvent.ctrlKey/altKey synthesis 환경 의존.
-    // window helper 가 Sidebar.vue 에서 mount 시 등록되는 SoT (focus path).
-    // 단축키 → handler → window helper 매핑 자체는 useShortcuts unit spec 으로 검증.
-    await page.evaluate(() => window.gitFriedFocusRepoFilter?.())
-    const filter = page
-      .locator('input[placeholder*="필터"][placeholder*="별칭"]')
-      .first()
-    await expect(filter).toBeFocused({ timeout: 1_000 })
-  })
-
-  test('Toolbar Redo button → confirm → toast (Phase 1 reflog-undo)', async ({ page }) => {
-    // confirm dialog 자동 수락.
-    page.on('dialog', (d) => d.accept())
-    const redoBtn = page.getByRole('button', { name: /Redo$/ })
-    await expect(redoBtn).toBeVisible()
-    await redoBtn.click()
-    // devMock 의 redo_last_action 가 executed=true 응답 → toast.success "Redo: reset"
-    await expect(page.getByText(/Redo:\s*reset/i)).toBeVisible({ timeout: 2_000 })
-  })
-
-  test('CommitGraph zoom +/- + graphWidth max 320 cap', async ({ page }) => {
-    // graphWidth computed 가 maxLane * laneW + 16 또는 320 중 작은 값.
-    // devMock 의 maxLane × default laneW 16 = 작아서 cap 미적용. cap 자체 동작 검증:
-    // zoom in 으로 laneW 36 까지 올려도 graphWidth <= 320 인지.
-    const result = await page.evaluate(() => {
-      const cssWidth = (() => {
-        const c = document.querySelector('canvas')
-        return c?.style.width
-      })()
-      return { cssWidth }
-    })
-    // canvas style.width 는 graphWidth + 'px'. cap 적용 시 320 이하.
-    if (result.cssWidth) {
-      const px = parseInt(result.cssWidth, 10)
-      expect(px).toBeLessThanOrEqual(320)
-    }
-
-    // zoom out / in button 노출.
-    await expect(page.getByRole('button', { name: /그래프 축소/ })).toBeVisible()
-    await expect(page.getByRole('button', { name: /그래프 확대/ })).toBeVisible()
-  })
-
-  test('commit row click → 8번째 commit tab mount + sidebar visible', async ({ page }) => {
-    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
-    await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
-
-    // 초기엔 commit tab 미존재 (selectedSha=null).
-    await expect(page.locator('[data-testid="main-nav-commit"]')).toHaveCount(0)
-
-    // 첫 commit row sha cell click.
-    const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
-    await expect(row).toBeVisible()
-    await row.locator('span', { hasText: /^6ef63e0$/ }).click()
-
-    // commit tab mount (자동 활성 없음 — 사용자 명시 click).
-    const commitTab = page.locator('[data-testid="main-nav-commit"]')
-    await expect(commitTab).toBeVisible({ timeout: 2_000 })
-    await commitTab.click()
-
-    // CommitDetailSidebar visible + SHA 표시.
-    const sidebar = page.locator('[data-testid="commit-detail-sidebar"]')
-    await expect(sidebar).toBeVisible()
-    await expect(sidebar).toContainText('6ef63e0')
-  })
-
-  test('⌘1~7 단축키 7개 main-nav tab 전환', async ({ page }) => {
-    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
-    await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
-
-    const tabs = ['status', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree'] as const
-    for (let i = 0; i < tabs.length; i++) {
-      // window dispatchEvent 로 useShortcuts handler 직접 발화 (press_key 의 OS 단축키 충돌 회피).
-      await page.evaluate((n) => {
-        window.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: String(n),
-            ctrlKey: true,
-            bubbles: true,
-            cancelable: true,
-          }),
-        )
-      }, i + 1)
-      // Vue reactive 갱신 대기 (2 raf)
-      await page.evaluate(
-        () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-      )
-      const btn = page.locator(`[data-testid="main-nav-${tabs[i]}"]`)
-      await expect(btn).toHaveClass(/font-semibold/)
-    }
-  })
-
-  test('Stash 탭 진입 → 3 stash row + ⌘L apply hint', async ({ page }) => {
-    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
-    await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
-    await page.locator('[data-testid="main-nav-stash"]').click()
-
-    // devMock 의 fake stash 3개 (stash@{0}/{1}/{2}).
-    await expect(page.getByText(/stash@\{0\}/)).toBeVisible()
-    await expect(page.getByText(/stash@\{1\}/)).toBeVisible()
-    await expect(page.getByText(/stash@\{2\}/)).toBeVisible()
-  })
-
-  test('commit tab fallback — selectedSha=null 시 status 복귀', async ({ page }) => {
-    await page.evaluate(() => localStorage.setItem('git-fried.detail-visible', '1'))
-    await page.reload()
-    await page.locator('[data-testid="sidebar-repo-frontend"]').click()
-
-    // commit row click → 8번째 tab mount + 사용자 직접 click 으로 활성.
-    const row = page.locator('[data-testid="commit-row-6ef63e0"]').first()
-    await row.locator('span', { hasText: /^6ef63e0$/ }).click()
-    await page.locator('[data-testid="main-nav-commit"]').click()
-    await expect(page.locator('[data-testid="commit-detail-sidebar"]')).toBeVisible()
-
-    // selectedSha=null 강제 (다른 repo click → activeRepoId 변경 → selectedSha reset).
-    // 또는 evaluate 로 state reset (devMock 환경 단순화).
-    await page.evaluate(() => {
-      // pages/index.vue 내부 selectedSha 는 외부 노출 안 됨. 우회: sidebar repo 변경.
-      const el = document.querySelector('[data-testid="sidebar-repo-backend-api"]')
-      ;(el as HTMLElement | null)?.click()
-    })
-    // selectedSha 가 null 로 reset 되면 tab='commit' watch 가 'status' 로 fallback.
-    // commit tab DOM 자체가 사라짐 (mainTabs computed).
-    await expect(page.locator('[data-testid="main-nav-commit"]')).toHaveCount(0, {
-      timeout: 2_000,
-    })
   })
 
   test('console.error 0건', async ({ page }) => {
