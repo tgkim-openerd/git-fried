@@ -126,4 +126,20 @@ mod tests {
         let v = parse_remote_v("origin only-this-token\n");
         assert!(v.is_empty(), "탭 없는 라인은 skip");
     }
+
+    /// RemoteInfo serde — camelCase (fetchUrl / pushUrl).
+    #[test]
+    fn test_remote_info_serde() {
+        let r = RemoteInfo {
+            name: "origin".to_string(),
+            fetch_url: Some("https://git.dev.opnd.io/openerd-web/한글레포.git".to_string()),
+            push_url: Some("https://git.dev.opnd.io/openerd-web/한글레포.git".to_string()),
+        };
+        let json = serde_json::to_string(&r).unwrap();
+        assert!(json.contains("\"fetchUrl\""));
+        assert!(json.contains("\"pushUrl\""));
+        assert!(!json.contains("fetch_url"));
+        // 한글 path 그대로.
+        assert!(json.contains("한글레포"));
+    }
 }

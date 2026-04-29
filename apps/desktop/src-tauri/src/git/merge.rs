@@ -224,4 +224,29 @@ mod tests {
         assert!(cf.working.is_some());
         assert!(cf.working.as_ref().unwrap().contains("<<<<<<<"));
     }
+
+    /// SideTake serde — lowercase (ours/theirs).
+    #[test]
+    fn test_side_take_serde() {
+        assert_eq!(serde_json::to_string(&SideTake::Ours).unwrap(), "\"ours\"");
+        assert_eq!(
+            serde_json::to_string(&SideTake::Theirs).unwrap(),
+            "\"theirs\""
+        );
+    }
+
+    /// ConflictedFile serde — camelCase 모든 None 도 정상.
+    #[test]
+    fn test_conflicted_file_serde_all_none() {
+        let cf = ConflictedFile {
+            path: "src/한글.md".to_string(),
+            base: None,
+            ours: None,
+            theirs: None,
+            working: None,
+        };
+        let json = serde_json::to_string(&cf).unwrap();
+        assert!(json.contains("\"path\":\"src/한글.md\""));
+        assert!(json.contains("\"base\":null"));
+    }
 }

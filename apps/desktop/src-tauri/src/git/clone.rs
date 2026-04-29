@@ -159,3 +159,59 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
         stderr: combined_stderr,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 빈 URL 은 validation error.
+    #[tokio::test]
+    async fn test_clone_empty_url_rejected() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let target = tmp.path().join("repo");
+        let res = clone("", &target, &CloneOptions::default()).await;
+        assert!(res.is_err());
+        let res2 = clone("   ", &target, &CloneOptions::default()).await;
+        assert!(res2.is_err());
+    }
+
+    /// CloneOptions deserialize — sparse_paths / depth 등 모두 optional.
+    #[test]
+    fn test_clone_options_minimal_deserialize() {
+        // 빈 object 도 default 로 변환.
+        let o: CloneOptions = serde_json::from_str("{}").unwrap();
+        assert!(o.sparse_paths.is_none());
+        assert!(o.depth.is_none());
+        assert!(!o.bare);
+    }
+
+    /// CloneOptions serde — camelCase (sparsePaths / shallowSince / singleBranch).
+    #[test]
+    fn test_clone_options_serde_camel_case() {
+        let o = CloneOptions {
+            sparse_paths: Some(vec!["src/".to_string(), "docs/한글/".to_string()]),
+            depth: Some(50),
+            shallow_since: Some("2026-01-01".to_string()),
+            single_branch: Some("main".to_string()),
+            bare: false,
+        };
+        let json = serde_json::to_string(&o).unwrap();
+        assert!(json.contains("\"sparsePaths\""));
+        assert!(json.contains("\"shallowSince\""));
+        assert!(json.contains("\"singleBranch\""));
+        assert!(json.contains("docs/한글/"));
+    }
+
+    /// CloneResult serde — camelCase (targetPath) + 한글 path.
+    #[test]
+    fn test_clone_result_serde() {
+        let r = CloneResult {
+            target_path: "C:/work/한글-레포".to_string(),
+            stdout: "".to_string(),
+            stderr: "".to_string(),
+        };
+        let json = serde_json::to_string(&r).unwrap();
+        assert!(json.contains("\"targetPath\":\"C:/work/한글-레포\""));
+        assert!(!json.contains("target_path"));
+    }
+}
