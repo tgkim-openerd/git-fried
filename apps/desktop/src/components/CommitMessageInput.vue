@@ -73,9 +73,7 @@ watch(
       }
     }
     const hasInput =
-      mode.value === 'free'
-        ? freeMessage.value.trim().length > 0
-        : subject.value.trim().length > 0
+      mode.value === 'free' ? freeMessage.value.trim().length > 0 : subject.value.trim().length > 0
     if (hasInput) return
     try {
       const last = await lastCommitMessage(id)
@@ -90,7 +88,10 @@ watch(
         subject.value = m[4]
         const bodyStart = lines.findIndex((l, i) => i > 0 && l.trim() === '')
         if (bodyStart > 0) {
-          body.value = lines.slice(bodyStart + 1).join('\n').trim()
+          body.value = lines
+            .slice(bodyStart + 1)
+            .join('\n')
+            .trim()
         }
         mode.value = 'conventional'
       } else {
@@ -208,11 +209,7 @@ const aiMut = useMutation({
     if (props.repoId == null || availableCli.value == null) {
       return Promise.reject(new Error('AI 사용 불가'))
     }
-    if (
-      !confirm(
-        '⚠ staged diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?',
-      )
-    ) {
+    if (!confirm('⚠ staged diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?')) {
       return Promise.reject(new Error('cancelled'))
     }
     return aiCommitMessage(props.repoId, availableCli.value, true)
@@ -233,7 +230,10 @@ const aiMut = useMutation({
         subject.value = m[4]
         const bodyStart = lines.findIndex((l, i) => i > 0 && l.trim() === '')
         if (bodyStart > 0) {
-          body.value = lines.slice(bodyStart + 1).join('\n').trim()
+          body.value = lines
+            .slice(bodyStart + 1)
+            .join('\n')
+            .trim()
         }
         mode.value = 'conventional'
       }
@@ -279,6 +279,15 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
 
 <template>
   <div class="flex flex-col gap-2 border-t border-border p-3">
+    <!-- Sprint c30 / GitKraken UX (Phase 2b) — "Commit" 헤더 라벨.
+         GitKraken 스크린샷 3 의 우측 패널 하단 commit form 위 라벨 흡수. -->
+    <div
+      class="flex items-center justify-between border-b border-border/50 pb-1 text-[11px] uppercase tracking-wider text-muted-foreground"
+    >
+      <span class="font-semibold">⊙ Commit</span>
+      <span class="font-mono">↑ {{ ahead }} / ↓ {{ behind }}</span>
+    </div>
+
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2 text-xs">
         <button
@@ -302,9 +311,20 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
           Free-form
         </button>
       </div>
-      <div class="text-[11px] text-muted-foreground">
-        ↑ {{ ahead }} / ↓ {{ behind }}
-      </div>
+      <!-- Sprint c30 / GitKraken UX (Phase 2b) — "Compose with AI" prominent 버튼.
+           기존 작은 ✨ AI 텍스트 → 라벨 명시. Conventional/Free 토글 옆 위치. -->
+      <button
+        v-if="availableCli"
+        type="button"
+        data-testid="compose-with-ai"
+        class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+        :disabled="!repoId || aiMut.isPending.value"
+        :title="`${availableCli} CLI 로 staged diff 분석 → commit 메시지 생성`"
+        :aria-label="`Compose with AI (${availableCli})`"
+        @click="aiMut.mutate()"
+      >
+        {{ aiMut.isPending.value ? '✨ 생성 중...' : '✨ Compose with AI' }}
+      </button>
     </div>
 
     <!-- Conventional 빌더 -->
@@ -365,7 +385,9 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
     <!-- 미리보기 -->
     <details class="rounded-md border border-border bg-muted/30 px-2 py-1 text-xs">
       <summary class="cursor-pointer text-muted-foreground">최종 메시지 미리보기</summary>
-      <pre class="mt-1 whitespace-pre-wrap font-mono text-[11px]">{{ finalMessage || '(비어있음)' }}</pre>
+      <pre class="mt-1 whitespace-pre-wrap font-mono text-[11px]">{{
+        finalMessage || '(비어있음)'
+      }}</pre>
     </details>
 
     <!-- Sprint c25-2 §3-2 — Amend previous commit (GitKraken 호환) -->
@@ -379,13 +401,12 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       "
     >
       <input v-model="amend" type="checkbox" :disabled="!repoId" class="accent-amber-500" />
-      <span :class="amend ? 'font-semibold text-amber-500' : ''">
-        Amend previous commit
-      </span>
+      <span :class="amend ? 'font-semibold text-amber-500' : ''"> Amend previous commit </span>
       <span v-if="amend" class="text-[10px] text-muted-foreground">— 마지막 커밋 수정</span>
     </label>
 
-    <!-- 옵션 + commit 버튼 -->
+    <!-- 옵션 + commit 버튼.
+         Sprint c30 / GitKraken UX (Phase 2b) — AI 버튼은 헤더로 이동. -->
     <div class="flex items-center justify-between text-xs">
       <div class="flex items-center gap-3">
         <label class="flex items-center gap-1">
@@ -397,31 +418,23 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
           --no-verify
         </label>
       </div>
-      <div class="flex gap-1">
-        <button
-          v-if="availableCli"
-          type="button"
-          class="rounded-md border border-input px-2 py-1 text-xs hover:bg-accent disabled:opacity-50"
-          :disabled="!repoId || aiMut.isPending.value"
-          :title="`${availableCli} CLI 사용`"
-          @click="aiMut.mutate()"
-        >
-          {{ aiMut.isPending.value ? '✨...' : '✨ AI' }}
-        </button>
-        <button
-          type="button"
-          class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
-          :disabled="!canCommit() || commitMut.isPending.value"
-          :title="amend ? 'Amend (⌘Enter) — 마지막 커밋 덮어쓰기' : 'Commit (⌘Enter)'"
-          @click="commitWith(noVerify)"
-        >
-          {{
-            commitMut.isPending.value
-              ? amend ? 'Amend 중...' : '커밋 중...'
-              : amend ? 'Amend (⌘Enter)' : 'Commit (⌘Enter)'
-          }}
-        </button>
-      </div>
+      <button
+        type="button"
+        class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+        :disabled="!canCommit() || commitMut.isPending.value"
+        :title="amend ? 'Amend (⌘Enter) — 마지막 커밋 덮어쓰기' : 'Commit (⌘Enter)'"
+        @click="commitWith(noVerify)"
+      >
+        {{
+          commitMut.isPending.value
+            ? amend
+              ? 'Amend 중...'
+              : '커밋 중...'
+            : amend
+              ? 'Amend (⌘Enter)'
+              : 'Commit (⌘Enter)'
+        }}
+      </button>
     </div>
 
     <!-- Sprint c25-2 §3-2 — 'Stage Changes to Commit' combo CTA (대형 primary).
@@ -467,12 +480,12 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
           ✕
         </button>
       </div>
-      <pre
-        class="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px]"
-      >{{ lastResult.stderr || lastResult.stdout || '(출력 없음)' }}</pre>
+      <pre class="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px]">{{
+        lastResult.stderr || lastResult.stdout || '(출력 없음)'
+      }}</pre>
       <p class="mt-2 text-[10px] text-muted-foreground">
-        💡 Pre-commit hook 이 실패하면 보통 lint / format / typecheck 가 막은 것입니다.
-        에디터에서 수정 후 다시 commit. <strong>--no-verify 우회는 권장하지 않음</strong>
+        💡 Pre-commit hook 이 실패하면 보통 lint / format / typecheck 가 막은 것입니다. 에디터에서
+        수정 후 다시 commit. <strong>--no-verify 우회는 권장하지 않음</strong>
         (CI 실패 / 코드 품질 저하).
       </p>
       <div class="mt-2 flex justify-end gap-2">

@@ -17,6 +17,14 @@ test.describe('상태 패널 — Sidebar mini / ChangeCountBadge / Path-Tree / s
     await expect(badge).toContainText(/mod 5/)
   })
 
+  // Sprint c30 / GitKraken UX (Phase 2b) — Stage All Changes emerald 버튼.
+  test('Stage All Changes 버튼 — unstaged > 0 시 표시', async ({ page }) => {
+    // devMock 의 default state 는 unstaged 5 + untracked 4 → button 보여야.
+    const stageAllBtn = page.locator('[data-testid="stage-all-changes"]').first()
+    await expect(stageAllBtn).toBeVisible()
+    await expect(stageAllBtn).toContainText(/Stage All Changes/i)
+  })
+
   test('Sidebar 4 mini sections + collapsible 토글', async ({ page }) => {
     await expect(page.locator('[data-testid="mini-section-active-repo-quick.branches"]')).toBeVisible()
     await expect(page.locator('[data-testid="mini-section-active-repo-quick.stash"]')).toBeVisible()
