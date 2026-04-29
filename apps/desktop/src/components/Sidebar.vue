@@ -332,10 +332,10 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
       <span class="text-xs text-muted-foreground">v0.0</span>
     </header>
 
-    <!-- 워크스페이스 + 일괄 Fetch -->
-    <section class="border-b border-border px-3 py-2">
-      <label class="text-xs uppercase tracking-wider text-muted-foreground"> 워크스페이스 </label>
-      <div class="mt-1 flex items-center gap-1">
+    <!-- Phase 11-3 — Workspace + 일괄 Fetch (compact single row, label 제거).
+         GitKraken 스타일: 워크스페이스 선택은 작게, 활성 레포 카테고리가 dominant. -->
+    <section class="border-b border-border px-3 py-1.5">
+      <div class="flex items-center gap-1">
         <span
           v-if="activeWorkspace?.color"
           class="inline-block h-3 w-3 shrink-0 rounded-full"

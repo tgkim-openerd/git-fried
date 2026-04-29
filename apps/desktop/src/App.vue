@@ -217,6 +217,14 @@ useMenuListener()
           홈
         </RouterLink>
         <RouterLink
+          to="/repositories"
+          class="text-muted-foreground hover:text-foreground"
+          active-class="text-foreground font-semibold"
+          title="모든 레포 관리 (프로젝트 그룹)"
+        >
+          레포
+        </RouterLink>
+        <RouterLink
           v-if="!uiSettings.hideLaunchpad"
           to="/launchpad"
           class="text-muted-foreground hover:text-foreground"
