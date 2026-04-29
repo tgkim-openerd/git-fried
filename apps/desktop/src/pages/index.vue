@@ -286,14 +286,18 @@ onUnmounted(() => {
       :behind="behind"
     />
 
+    <!-- Phase 14-2 — fullscreenActive (파일 클릭으로 진입) 시 우측 detail 자동 hide.
+         GitKraken 의 "Diff View 가 좌측 화면을 덮음 (우측 sidebar 접고 덮는 형태)" 흐름. -->
     <div
       class="grid min-h-0 overflow-hidden"
       :class="
         focusMode
           ? 'grid-cols-[0_1fr]'
-          : ui.detailVisible.value
-            ? 'grid-cols-[1fr_360px]'
-            : 'grid-cols-[1fr_0]'
+          : fullscreenActive
+            ? 'grid-cols-[1fr_0]'
+            : ui.detailVisible.value
+              ? 'grid-cols-[1fr_360px]'
+              : 'grid-cols-[1fr_0]'
       "
     >
       <!-- Sprint c30 / GitKraken UX (Phase 5) — 가운데 영역: main view nav + active panel

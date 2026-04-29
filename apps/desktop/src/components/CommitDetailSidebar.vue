@@ -356,8 +356,8 @@ function onExplainCommit() {
             v-for="f in fileStats.paths"
             :key="f.path"
             class="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-            :title="`${f.oldPath ? `renamed from ${f.oldPath} — ` : ''}더블클릭 — fullscreen diff`"
-            @dblclick="openFullscreen(f.path)"
+            :title="`${f.oldPath ? `renamed from ${f.oldPath} — ` : ''}클릭 — fullscreen diff (좌/우 사이드바 자동 hide)`"
+            @click="openFullscreen(f.path)"
           >
             <span :class="['shrink-0 w-3 text-center', changeColor(f.change)]">
               {{ changeIcon(f.change) }}
@@ -384,8 +384,8 @@ function onExplainCommit() {
               v-else
               class="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
               :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-              :title="`${row.meta.oldPath ? `renamed from ${row.meta.oldPath} — ` : ''}더블클릭 — fullscreen diff`"
-              @dblclick="openFullscreen(row.path)"
+              :title="`${row.meta.oldPath ? `renamed from ${row.meta.oldPath} — ` : ''}클릭 — fullscreen diff (좌/우 사이드바 자동 hide)`"
+              @click="openFullscreen(row.path)"
             >
               <span :class="['shrink-0 w-3 text-center', changeColor(row.meta.change)]">
                 {{ changeIcon(row.meta.change) }}
