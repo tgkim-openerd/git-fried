@@ -57,12 +57,8 @@
 
     /* Elevation tier 3 — A-4 신규 (popover / modal / toast) */
     --shadow-popover: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-modal:
-      0 10px 15px -3px rgb(0 0 0 / 0.1),
-      0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-toast:
-      0 20px 25px -5px rgb(0 0 0 / 0.1),
-      0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-toast: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
     /* Sprint 22-12 Q-5 Transition 정책 + S-4 Micro-interaction (design 01 §7 / 04 §6).
      *
@@ -125,12 +121,8 @@
 
     /* Elevation tier (dark — opacity 강화) */
     --shadow-popover: 0 1px 2px 0 rgb(0 0 0 / 0.6);
-    --shadow-modal:
-      0 10px 15px -3px rgb(0 0 0 / 0.5),
-      0 4px 6px -4px rgb(0 0 0 / 0.5);
-    --shadow-toast:
-      0 20px 25px -5px rgb(0 0 0 / 0.6),
-      0 8px 10px -6px rgb(0 0 0 / 0.6);
+    --shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+    --shadow-toast: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.6);
   }
 
   * {
@@ -138,15 +130,37 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Phase 11-2 — 가독성 개선:
+     * - opsz: 32 (display) → 14 (body 표준) — Pretendard 변형은 8~32, 14 가 최적 본문 사이즈
+     * - line-height: 기본(1.2) → 1.55 (한글/영문 mixed line spacing 충분 확보)
+     * - letter-spacing: -0.003em (tabular numbers + Hangul 균형)
+     * - font-smoothing: Windows webview 에서 Pretendard 가 얇게 렌더되는 문제 보정
+     */
     font-feature-settings: 'cv11', 'ss01';
-    font-variation-settings: 'opsz' 32;
+    font-variation-settings: 'opsz' 14;
+    line-height: 1.55;
+    letter-spacing: -0.003em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   /* 한글 입력 안전: NFC 정규화는 Rust 측에서 + CSS 측은 line-height 충분히 */
   textarea,
   input[type='text'],
   input:not([type]) {
-    line-height: 1.5;
+    line-height: 1.55;
+  }
+
+  /* mono 폰트 (코드 / SHA / diff) — opsz 별도 + smoothing 동일 적용 */
+  code,
+  pre,
+  .font-mono {
+    font-feature-settings:
+      'liga' 0,
+      'calt' 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Sprint 22-12 Q-5 — prefers-reduced-motion 폴백 (WCAG 2.3.3 + design 04 §1-3).

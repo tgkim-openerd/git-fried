@@ -312,10 +312,16 @@ onUnmounted(() => {
         <div class="overflow-hidden">
           <!-- Sprint c30 / GitKraken UX (Phase 8a) — graph view: CommitGraph 가 WIP row 직접 통합.
                (별도 WipRow mount 제거 — CommitGraph 의 virtualizer idx=0 + dirty 시 WIP row.) -->
+          <!-- Phase 11-1 (GitKraken parity) — 커밋 선택 시 diff 가 primary content.
+               inactive: graph 100% / active: graph compressed (top, 35%) + diff prominent (bottom, 65% min) -->
           <div
             v-if="mainView === 'graph'"
             class="grid h-full min-h-0 overflow-hidden"
-            :class="inlineDiffActive ? 'grid-rows-[1fr_minmax(140px,40%)]' : 'grid-rows-[1fr_0]'"
+            :class="
+              inlineDiffActive
+                ? 'grid-rows-[minmax(140px,35%)_minmax(320px,1fr)]'
+                : 'grid-rows-[1fr_0]'
+            "
           >
             <CommitGraph
               :repo-id="store.activeRepoId"
