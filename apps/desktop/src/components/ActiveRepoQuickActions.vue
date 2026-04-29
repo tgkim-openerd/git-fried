@@ -1,23 +1,23 @@
 <script setup lang="ts">
-// Sprint c25-3 step 1 (`docs/plan/25 §4`) — 좌측 Sidebar 하단 mini section.
-// Sprint c27-1 (ARCH-003 fix) — God component 해소. 4 mini list 는 별도 sub-component 로 분리.
-//
-// 본 컴포넌트의 책임 = 활성 레포 status header + 5 quick tab btn 만.
-// Branch / Stash / Worktree / PR 리스트는 각각 MiniXxxList.vue 가 자체 data + UI 책임.
+// Sprint c25-3 step 1 (`docs/plan/25 §4`) — 활성 레포 mini section.
+// Sprint c27-1 (ARCH-003 fix) — God component 해소. mini list 는 별도 sub-component.
+// Phase 11-6 (GitKraken parity issue #2) — Sidebar body 로 격상. <details> wrapper 제거,
+// MiniRemoteBranchList / MiniTagList 추가 → LOCAL / REMOTE / WORKTREES / STASHES / PR / TAGS.
 
 import { computed } from 'vue'
 import { useStatus } from '@/composables/useStatus'
 import { useStatusCounts } from '@/composables/useStatusCounts'
 import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
-import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import MiniBranchList from './MiniBranchList.vue'
+import MiniRemoteBranchList from './MiniRemoteBranchList.vue'
 import MiniStashList from './MiniStashList.vue'
 import MiniWorktreeList from './MiniWorktreeList.vue'
+import MiniTagList from './MiniTagList.vue'
 import MiniPrList from './MiniPrList.vue'
+import EmptyState from './EmptyState.vue'
 
 const store = useReposStore()
-const collapsed = useSectionCollapse('active-repo-quick')
 
 const repoIdRef = computed(() => store.activeRepoId)
 const { data: status } = useStatus(repoIdRef)
@@ -30,8 +30,6 @@ const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
 // 7-tab 단축 버튼 — pages/index.vue 의 useShortcut('tab1'~'tab7') 로 dispatch.
-// (변경/브랜치/Stash/Sub/LFS/PR/WT 매핑)
-// TYPE-006 — key: ShortcutAction 명시.
 const QUICK_TABS: ReadonlyArray<{
   key: ShortcutAction
   icon: string
@@ -47,19 +45,17 @@ const QUICK_TABS: ReadonlyArray<{
 </script>
 
 <template>
-  <details
-    class="border-t border-border bg-muted/20"
-    :open="!collapsed"
-    @toggle="(e: ToggleEvent) => (collapsed = !(e.target as HTMLDetailsElement).open)"
-  >
-    <summary
-      class="cursor-pointer select-none px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-    >
-      활성 레포
-      <span v-if="store.activeRepoId == null" class="ml-1 font-normal normal-case text-muted-foreground/70">(미선택)</span>
-    </summary>
+  <div class="flex flex-col">
+    <!-- 미선택 상태 — EmptyState 가이드. -->
+    <EmptyState
+      v-if="store.activeRepoId == null"
+      icon="📁"
+      title="레포 미선택"
+      description="상단 탭 또는 '레포' 페이지에서 활성 레포 선택"
+      size="sm"
+    />
 
-    <div v-if="store.activeRepoId != null" class="space-y-2 px-3 pb-2">
+    <div v-else class="space-y-2 px-3 pt-2 pb-2">
       <!-- branch + upstream -->
       <div class="flex flex-wrap items-baseline gap-1 font-mono text-xs">
         <span class="text-muted-foreground">on</span>
@@ -103,11 +99,15 @@ const QUICK_TABS: ReadonlyArray<{
         </button>
       </div>
 
-      <!-- c27-1 (ARCH-003 fix) — 4 mini list 는 sub-component 로 분리. -->
+      <!-- c27-1 (ARCH-003 fix) — mini list 는 sub-component 로 분리.
+           Phase 11-6 (issue #2 GitKraken parity) — MiniRemoteBranchList / MiniTagList 추가
+           → 활성 레포 카테고리 LOCAL / REMOTE / WORKTREES / STASHES / PR / TAGS 노출. -->
       <MiniBranchList />
-      <MiniStashList />
+      <MiniRemoteBranchList />
       <MiniWorktreeList />
+      <MiniStashList />
       <MiniPrList />
+      <MiniTagList />
     </div>
-  </details>
+  </div>
 </template>

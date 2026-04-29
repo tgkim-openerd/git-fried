@@ -26,8 +26,10 @@ import { useRepoAliases } from '@/composables/useRepoAliases'
 import { useSidebarGroups, type GroupMode } from '@/composables/useSidebarGroups'
 import { useBulkQuickStatus } from '@/composables/useBulkQuickStatus'
 import { useToast } from '@/composables/useToast'
-import { describeError } from '@/api/errors'
+import { describeError, humanizeGitError } from '@/api/errors'
+import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 import CloneRepoModal from '@/components/CloneRepoModal.vue'
+import BulkFetchResultModal from '@/components/BulkFetchResultModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import type { Repo } from '@/types/git'
@@ -40,6 +42,11 @@ const qc = useQueryClient()
 
 const cloneOpen = ref(false)
 const filter = ref('')
+const bulkResultOpen = ref(false)
+const bulkResultStore = useBulkFetchResult()
+const bulkResultFailedCount = computed(
+  () => bulkResultStore.last.value?.results.filter((r) => !r.success).length ?? 0,
+)
 
 const { data: workspaces } = useQuery({
   queryKey: ['workspaces'],
@@ -97,8 +104,25 @@ const bulkFetchMut = useMutation({
     qc.invalidateQueries({ queryKey: ['status'] })
     qc.invalidateQueries({ queryKey: ['log'] })
     qc.invalidateQueries({ queryKey: ['graph'] })
-    const ok = results.filter((r) => r.success).length
-    toast.success(`일괄 Fetch 완료 (${ok}/${results.length} 레포)`)
+    qc.invalidateQueries({ queryKey: ['branches'] })
+    bulkResultStore.set(results)
+    const failed = results.filter((r) => !r.success)
+    const ok = results.length - failed.length
+    if (failed.length > 0) {
+      const PREVIEW = 5
+      const lines = failed
+        .slice(0, PREVIEW)
+        .map((f) => `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`)
+      if (failed.length > PREVIEW) {
+        lines.push(`...외 ${failed.length - PREVIEW}개 — 📡 버튼으로 전체 보기`)
+      }
+      toast.warning(
+        `일괄 Fetch: ${ok}/${results.length} 성공 (${failed.length} 실패)`,
+        lines.join('\n'),
+      )
+    } else if (results.length > 0) {
+      toast.success(`일괄 Fetch 완료 (${ok} 레포)`)
+    }
   },
   onError: (e) => toast.error('일괄 Fetch 실패', describeError(e)),
 })
@@ -169,6 +193,25 @@ function workspaceName(id: number | null): string {
           @click="bulkFetchMut.mutate()"
         >
           {{ bulkFetchMut.isPending.value ? '⟳ Fetching...' : '⤓ Fetch All' }}
+        </button>
+        <button
+          v-if="bulkResultStore.last.value"
+          type="button"
+          class="relative rounded-md border border-input bg-card px-3 py-1.5 text-sm hover:bg-accent"
+          :title="
+            bulkResultFailedCount > 0
+              ? `최근 일괄 fetch — ${bulkResultFailedCount}개 실패, 자세히 보기`
+              : '최근 일괄 fetch 결과'
+          "
+          @click="bulkResultOpen = true"
+        >
+          📡
+          <span
+            v-if="bulkResultFailedCount > 0"
+            class="absolute -right-1 -top-1 rounded-full bg-amber-500 px-1 text-[9px] font-bold text-white"
+          >
+            {{ bulkResultFailedCount > 99 ? '99+' : bulkResultFailedCount }}
+          </span>
         </button>
         <button
           type="button"
@@ -403,5 +446,6 @@ function workspaceName(id: number | null): string {
     </div>
 
     <CloneRepoModal :open="cloneOpen" :workspace-id="null" @close="cloneOpen = false" />
+    <BulkFetchResultModal :open="bulkResultOpen" @close="bulkResultOpen = false" />
   </div>
 </template>
