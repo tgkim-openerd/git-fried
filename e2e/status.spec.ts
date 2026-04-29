@@ -45,6 +45,29 @@ test.describe('상태 패널 — Sidebar mini / ChangeCountBadge / Path-Tree / s
     expect(stored).toBe('tree')
   })
 
+  // Sprint c30 / GitKraken UX (Phase 2a) — graph 위 sticky WIP pseudo-row.
+  test('WipRow 표시 + 클릭 → status tab + selection highlight', async ({ page }) => {
+    // devMock 의 default fake repo 는 dirty (file changes 12). WipRow 가 보여야.
+    const wipRow = page.locator('[data-testid="wip-row"]')
+    await expect(wipRow).toBeVisible()
+    await expect(wipRow).toContainText('// WIP')
+    await expect(wipRow).toContainText(/12/) // change count badge
+
+    // 클릭 → selection 활성 (bg-accent + ring-1)
+    await wipRow.click()
+    await expect(wipRow).toHaveClass(/bg-accent/)
+    // status tab 강제 활성
+    await expect(page.locator('[data-testid="main-nav-status"]')).toHaveClass(/font-semibold/)
+  })
+
+  test('WipRow 재클릭 → 선택 해제 (toggle)', async ({ page }) => {
+    const wipRow = page.locator('[data-testid="wip-row"]')
+    await wipRow.click()
+    await expect(wipRow).toHaveClass(/bg-accent/)
+    await wipRow.click()
+    await expect(wipRow).not.toHaveClass(/bg-accent/)
+  })
+
   test('Status 4 section sticky + STAGED bulk-unstage button', async ({ page }) => {
     await ensureDetailVisible(page)
     await page.locator('[data-testid="main-nav-status"]').click()

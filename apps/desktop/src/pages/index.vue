@@ -5,6 +5,8 @@ import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
 import { useGraph } from '@/composables/useGraph'
 import CommitGraph from '@/components/CommitGraph.vue'
+// Sprint c30 / GitKraken UX (Phase 2a) — graph 최상단 WIP pseudo-row.
+import WipRow from '@/components/WipRow.vue'
 import StatusPanel from '@/components/StatusPanel.vue'
 // Sprint c25-1 (`docs/plan/25 §2`) — SyncBar → GitKrakenToolbar 교체.
 // SyncBar 는 단계적 마이그레이션을 위해 보존 (c25-3 이후 deprecation 검토).
@@ -74,6 +76,9 @@ function toggleFocusMode() {
 
 // Sprint B5 — ⌘D = 선택 commit 의 diff modal.
 // Sprint 22-3 V-1 — row dblclick 도 동일 액션 트리거.
+// Sprint c30 / GitKraken UX (Phase 2a) — '__WIP__' sentinel = working tree pseudo-row.
+//   selectedSha === WIP_SHA 이면 graph 의 WipRow 가 활성 + 우측 staging (status tab).
+const WIP_SHA = '__WIP__'
 const selectedSha = ref<string | null>(null)
 const diffModalOpen = ref(false)
 // Sprint c30 / GitKraken UX (Phase 1) — auto-default 와 명시 선택 구분.
@@ -94,15 +99,40 @@ function onSelectCommit(sha: string) {
   tab.value = 'commit'
 }
 
+// Sprint c30 / GitKraken UX (Phase 2a) — WipRow click 핸들러.
+//   같은 sentinel 재클릭 = toggle (deselect, 우측 status 유지).
+//   다른 sha 였으면 sentinel set + tab='status' 강제 (staging 모드).
+function onSelectWip() {
+  userChoseSha.value = true
+  if (selectedSha.value === WIP_SHA) {
+    selectedSha.value = null
+    return
+  }
+  selectedSha.value = WIP_SHA
+  tab.value = 'status'
+}
+
+// Sprint c30 / GitKraken UX (Phase 2a) — WipRow visibility + change count.
+//   working dir 의 staged + unstaged + untracked + conflicted 합산.
+const wipChangeCount = computed(() => {
+  const s = status.value
+  if (!s) return 0
+  return s.staged.length + s.unstaged.length + s.untracked.length + s.conflicted.length
+})
+const showWipRow = computed(() => !!status.value && !status.value.isClean)
+
 // Phase 1 (plan-commit-graph-ux v2) — main-nav 8번째 'commit' tab 조건부 mount.
+// Sprint c30 / GitKraken UX (Phase 2a) — selectedSha === WIP_SHA 시 'commit' tab 미추가
+//   (WIP 는 우측 status tab 의 staging UI 사용).
 const mainTabs = computed<Tab[]>(() => {
   const base: Tab[] = ['status', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree']
-  return selectedSha.value ? [...base, 'commit'] : base
+  if (!selectedSha.value || selectedSha.value === WIP_SHA) return base
+  return [...base, 'commit']
 })
 
 // Phase 1 — selectedSha=null 트랜지션 시 tab='commit' 이면 status fallback.
 watch(selectedSha, (v) => {
-  if (v == null && tab.value === 'commit') tab.value = 'status'
+  if ((v == null || v === WIP_SHA) && tab.value === 'commit') tab.value = 'status'
 })
 
 // Sprint c30 / GitKraken UX — ESC 키 = commit 선택 해제 (모달 없을 때만).
@@ -140,26 +170,34 @@ watch(
   },
 )
 
-// Sprint c30 / GitKraken UX (Phase 1) — auto-default selectedSha to latest commit.
-//   graph 로드 후 user 가 명시 선택/해제 안했으면 latest commit 으로 자동 set.
-//   commit tab 클릭 시 즉시 detail 표시 (빈 "commit 선택하세요" placeholder 회피).
-//   tab 자동 변경 안 함 — 사용자의 status tab 선택권 보존.
+// Sprint c30 / GitKraken UX (Phase 1 + 2a) — auto-default selectedSha.
+//   GitKraken UX 우선순위:
+//     working dir dirty 면 WIP_SHA → 우측 staging UI 즉시
+//     clean 이면 graph latest commit → 우측 commit detail 즉시
+//   user 가 명시 선택 (row click / ESC) 했으면 auto 재적용 안 함.
+//   status / graph 둘 다 도착 후 결정 — race condition 회피.
 const { data: graphData } = useGraph(() => store.activeRepoId, 500)
 watch(
-  graphData,
-  (g) => {
-    if (!userChoseSha.value && selectedSha.value == null && g?.rows && g.rows.length > 0) {
+  [status, graphData],
+  ([s, g]) => {
+    if (userChoseSha.value || selectedSha.value != null) return
+    if (!s || !g) return
+    if (!s.isClean) {
+      selectedSha.value = WIP_SHA
+    } else if (g.rows.length > 0) {
       selectedSha.value = g.rows[0].commit.sha
     }
   },
   { immediate: true },
 )
 function onShowDiff(sha: string) {
+  if (sha === WIP_SHA) return // sentinel — commit diff modal 대상 아님
   selectedSha.value = sha
   diffModalOpen.value = true
 }
 useShortcut('showDiff', () => {
-  if (selectedSha.value) diffModalOpen.value = true
+  // Sprint c30 — WIP_SHA 는 commit diff 대상 아님 (working dir 은 status panel 에서 보기).
+  if (selectedSha.value && selectedSha.value !== WIP_SHA) diffModalOpen.value = true
 })
 
 // Sprint c25-4.5 — ⌘⇧D = inline diff panel 토글.
@@ -181,7 +219,10 @@ function setInlineDiff(visible: boolean) {
     localStorage.setItem(INLINE_DIFF_KEY, visible ? '1' : '0')
   }
 }
-const inlineDiffActive = computed(() => inlineDiffVisible.value && selectedSha.value != null)
+// Sprint c30 — WIP_SHA 는 inline diff 대상 아님 (sentinel). status panel 에서 working dir 변경 보기.
+const inlineDiffActive = computed(
+  () => inlineDiffVisible.value && selectedSha.value != null && selectedSha.value !== WIP_SHA,
+)
 
 // CommandPalette 에서 호출되는 외부 트리거.
 function externalToggleTerminal() {
@@ -226,12 +267,28 @@ onUnmounted(() => {
             : 'grid-cols-[1fr_0]'
       "
     >
-      <!-- 좌측: 커밋 그래프 + Sprint c25-4.5 inline diff vertical split (focusMode 시 숨김) -->
+      <!-- 좌측: 커밋 그래프 + Sprint c25-4.5 inline diff vertical split (focusMode 시 숨김)
+           Sprint c30 / GitKraken UX (Phase 2a) — graph 위 sticky WipRow (working dir dirty 시). -->
       <div
         v-if="!focusMode"
         class="grid min-h-0 overflow-hidden"
-        :class="inlineDiffActive ? 'grid-rows-[1fr_minmax(140px,40%)]' : 'grid-rows-[1fr_0]'"
+        :class="
+          inlineDiffActive
+            ? showWipRow
+              ? 'grid-rows-[auto_1fr_minmax(140px,40%)]'
+              : 'grid-rows-[1fr_minmax(140px,40%)]'
+            : showWipRow
+              ? 'grid-rows-[auto_1fr_0]'
+              : 'grid-rows-[1fr_0]'
+        "
       >
+        <WipRow
+          v-if="showWipRow"
+          :change-count="wipChangeCount"
+          :branch="branch"
+          :selected="selectedSha === WIP_SHA"
+          @select="onSelectWip"
+        />
         <CommitGraph
           :repo-id="store.activeRepoId"
           @select-commit="onSelectCommit"
@@ -337,7 +394,7 @@ onUnmounted(() => {
             class="h-full border-l-0"
           />
           <CommitDetailSidebar
-            v-else-if="tab === 'commit' && selectedSha"
+            v-else-if="tab === 'commit' && selectedSha && selectedSha !== WIP_SHA"
             :repo-id="store.activeRepoId"
             :sha="selectedSha"
           />
@@ -357,7 +414,7 @@ onUnmounted(() => {
     <InteractiveRebaseModal />
     <!-- ARCH-009 fix — v-if mount 게이팅 (Panel 과 일치). useShortcut 메모리 잔존 방지 + 첫 렌더 비용 회피. -->
     <CommitDiffModal
-      v-if="diffModalOpen"
+      v-if="diffModalOpen && selectedSha && selectedSha !== WIP_SHA"
       :repo-id="store.activeRepoId"
       :sha="selectedSha"
       :open="diffModalOpen"
