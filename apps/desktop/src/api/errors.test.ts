@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { describeError, formatError, humanizeGitError } from './errors'
+import {
+  describeError,
+  formatError,
+  humanizeGitError,
+  isAppErrorKind,
+  isAuthExpiredError,
+  isRateLimitError,
+} from './errors'
 
 describe('formatError', () => {
   it('null/undefined → 빈 문자열', () => {
@@ -109,5 +116,40 @@ describe('describeError — formatError + humanizeGitError 통합', () => {
   })
   it('null → 빈 문자열', () => {
     expect(describeError(null)).toBe('')
+  })
+})
+
+// Sprint c30 / MED 2 — Forge 특화 kind 분기
+describe('isAppErrorKind / Forge 특화 kind helper', () => {
+  it('rate_limit kind 매칭', () => {
+    expect(isRateLimitError({ kind: 'rate_limit', message: 'x', retryAfter: 60 })).toBe(true)
+    expect(isRateLimitError({ kind: 'git_cli', message: 'x' })).toBe(false)
+    expect(isRateLimitError(null)).toBe(false)
+    expect(isRateLimitError('string')).toBe(false)
+  })
+  it('auth_expired kind 매칭', () => {
+    expect(isAuthExpiredError({ kind: 'auth_expired', provider: 'GitHub' })).toBe(true)
+    expect(isAuthExpiredError({ kind: 'rate_limit' })).toBe(false)
+  })
+  it('isAppErrorKind generic 분기', () => {
+    expect(isAppErrorKind({ kind: 'validation' }, 'validation')).toBe(true)
+    expect(isAppErrorKind({ kind: 'validation' }, 'rate_limit')).toBe(false)
+    expect(isAppErrorKind(undefined, 'validation')).toBe(false)
+  })
+})
+
+describe('humanizeGitError — Sprint c30 추가 패턴', () => {
+  it('rate limit 키워드 → 한국어 힌트', () => {
+    const out = humanizeGitError('GitHub: API rate limit exceeded')
+    expect(out).toContain('rate limit')
+    expect(out).toContain('PAT')
+  })
+  it('429 status → rate limit 힌트', () => {
+    const out = humanizeGitError('HTTP 429 Too Many Requests')
+    expect(out).toContain('rate limit')
+  })
+  it('한국어 메시지 (AppError::AuthExpired) → 토큰 재입력 힌트', () => {
+    const out = humanizeGitError('GitHub 토큰이 만료되었거나 권한이 부족합니다.')
+    expect(out).toContain('토큰 재입력')
   })
 })

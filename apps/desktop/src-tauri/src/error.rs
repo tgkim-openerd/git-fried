@@ -50,6 +50,19 @@ pub enum AppError {
     #[error("입력 검증 실패: {0}")]
     Validation(String),
 
+    /// Sprint c30 / MED 2 — Forge API rate-limit 도달.
+    /// `retry_after` 는 초 단위 권장 대기 시간 (Gitea/GitHub Retry-After 헤더).
+    #[error("API 호출 한도 초과 ({provider}). {retry_after}초 후 재시도")]
+    RateLimit {
+        provider: String,
+        retry_after: u64,
+    },
+
+    /// Sprint c30 / MED 2 — Forge 토큰 만료 / 무효.
+    /// frontend 에서 자동으로 토큰 재입력 모달 띄우는 분기 트리거.
+    #[error("{provider} 토큰이 만료되었거나 권한이 부족합니다. Settings 에서 토큰을 갱신하세요.")]
+    AuthExpired { provider: String },
+
     #[error("내부 오류: {0}")]
     Internal(String),
 }
@@ -67,6 +80,21 @@ impl AppError {
     pub fn encoding<S: Into<String>>(s: S) -> Self {
         Self::Encoding(s.into())
     }
+
+    /// Sprint c30 / MED 2 — Rate limit 빌더.
+    pub fn rate_limit<S: Into<String>>(provider: S, retry_after: u64) -> Self {
+        Self::RateLimit {
+            provider: provider.into(),
+            retry_after,
+        }
+    }
+
+    /// Sprint c30 / MED 2 — Auth expired 빌더.
+    pub fn auth_expired<S: Into<String>>(provider: S) -> Self {
+        Self::AuthExpired {
+            provider: provider.into(),
+        }
+    }
 }
 
 impl From<anyhow::Error> for AppError {
@@ -82,12 +110,25 @@ impl Serialize for AppError {
         let mut map = ser.serialize_map(Some(2))?;
         map.serialize_entry("kind", self.kind())?;
         map.serialize_entry("message", &self.to_string())?;
-        if let Self::GitCli {
-            stderr, exit_code, ..
-        } = self
-        {
-            map.serialize_entry("stderr", stderr)?;
-            map.serialize_entry("exitCode", exit_code)?;
+        match self {
+            Self::GitCli {
+                stderr, exit_code, ..
+            } => {
+                map.serialize_entry("stderr", stderr)?;
+                map.serialize_entry("exitCode", exit_code)?;
+            }
+            // Sprint c30 / MED 2 — Forge 분기 처리용 메타.
+            Self::RateLimit {
+                provider,
+                retry_after,
+            } => {
+                map.serialize_entry("provider", provider)?;
+                map.serialize_entry("retryAfter", retry_after)?;
+            }
+            Self::AuthExpired { provider } => {
+                map.serialize_entry("provider", provider)?;
+            }
+            _ => {}
         }
         map.end()
     }
@@ -109,6 +150,8 @@ impl AppError {
             Self::WorkspaceNotFound(_) => "workspace_not_found",
             Self::Encoding(_) => "encoding",
             Self::Validation(_) => "validation",
+            Self::RateLimit { .. } => "rate_limit",
+            Self::AuthExpired { .. } => "auth_expired",
             Self::Internal(_) => "internal",
         }
     }
@@ -121,5 +164,96 @@ pub struct DisplayWrap<T>(pub T);
 impl<T: fmt::Display> fmt::Debug for DisplayWrap<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn rate_limit_kind() {
+        let e = AppError::rate_limit("Gitea", 60);
+        assert_eq!(e.kind(), "rate_limit");
+    }
+
+    #[test]
+    fn rate_limit_serialize_includes_provider_and_retry_after() {
+        let e = AppError::rate_limit("Gitea", 60);
+        let v = serde_json::to_value(&e).expect("serde");
+        assert_eq!(v["kind"], json!("rate_limit"));
+        assert_eq!(v["provider"], json!("Gitea"));
+        assert_eq!(v["retryAfter"], json!(60));
+        // 한국어 메시지가 직렬화 message 에 들어감.
+        assert!(
+            v["message"]
+                .as_str()
+                .unwrap()
+                .contains("API 호출 한도 초과")
+        );
+    }
+
+    #[test]
+    fn auth_expired_kind() {
+        let e = AppError::auth_expired("GitHub");
+        assert_eq!(e.kind(), "auth_expired");
+    }
+
+    #[test]
+    fn auth_expired_serialize_includes_provider() {
+        let e = AppError::auth_expired("GitHub");
+        let v = serde_json::to_value(&e).expect("serde");
+        assert_eq!(v["kind"], json!("auth_expired"));
+        assert_eq!(v["provider"], json!("GitHub"));
+        assert!(
+            v["message"]
+                .as_str()
+                .unwrap()
+                .contains("토큰이 만료되었거나")
+        );
+    }
+
+    #[test]
+    fn rate_limit_korean_provider_round_trip() {
+        let e = AppError::rate_limit("깃이아", 5);
+        let v = serde_json::to_value(&e).expect("serde");
+        assert_eq!(v["provider"], json!("깃이아"));
+    }
+
+    #[test]
+    fn validation_serialize_no_provider_field() {
+        let e = AppError::validation("입력값 부족");
+        let v = serde_json::to_value(&e).expect("serde");
+        assert_eq!(v["kind"], json!("validation"));
+        assert!(v.get("provider").is_none());
+        assert!(v.get("retryAfter").is_none());
+    }
+
+    #[test]
+    fn git_cli_serialize_includes_stderr_and_exit_code() {
+        let e = AppError::GitCli {
+            message: "fail".to_string(),
+            exit_code: Some(128),
+            stderr: "fatal: not a git repo".to_string(),
+        };
+        let v = serde_json::to_value(&e).expect("serde");
+        assert_eq!(v["kind"], json!("git_cli"));
+        assert_eq!(v["exitCode"], json!(128));
+        assert_eq!(v["stderr"], json!("fatal: not a git repo"));
+    }
+
+    #[test]
+    fn all_kinds_are_unique_strings() {
+        let kinds = [
+            AppError::rate_limit("p", 0).kind(),
+            AppError::auth_expired("p").kind(),
+            AppError::validation("v").kind(),
+            AppError::internal("i").kind(),
+            AppError::path("p").kind(),
+            AppError::encoding("e").kind(),
+        ];
+        let unique: std::collections::HashSet<_> = kinds.iter().copied().collect();
+        assert_eq!(unique.len(), kinds.len());
     }
 }

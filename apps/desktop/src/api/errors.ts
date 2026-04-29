@@ -8,7 +8,23 @@ export interface AppErrorPayload {
   message?: string
   stderr?: string
   exitCode?: number | null
+  /** Sprint c30 / MED 2 — Forge 특화 메타. */
+  provider?: string
+  retryAfter?: number
 }
+
+/**
+ * Sprint c30 / MED 2 — AppError kind 분기 helper.
+ * frontend 가 toast 종류 / 액션 (재토큰 modal 띄우기 등) 결정 시 사용.
+ */
+export function isAppErrorKind(e: unknown, kind: string): boolean {
+  if (!e || typeof e !== 'object') return false
+  const k = (e as AppErrorPayload).kind
+  return typeof k === 'string' && k === kind
+}
+
+export const isRateLimitError = (e: unknown): boolean => isAppErrorKind(e, 'rate_limit')
+export const isAuthExpiredError = (e: unknown): boolean => isAppErrorKind(e, 'auth_expired')
 
 /**
  * 어떤 에러든 사람이 읽을 수 있는 한 줄 메시지로 변환.
@@ -28,9 +44,7 @@ export function formatError(e: unknown): string {
     if (typeof obj.message === 'string') {
       const kind = typeof obj.kind === 'string' ? `[${obj.kind}] ` : ''
       const stderr =
-        typeof obj.stderr === 'string' && obj.stderr.trim()
-          ? `\n${obj.stderr.trim()}`
-          : ''
+        typeof obj.stderr === 'string' && obj.stderr.trim() ? `\n${obj.stderr.trim()}` : ''
       return `${kind}${obj.message}${stderr}`
     }
     try {
@@ -52,18 +66,14 @@ export function humanizeGitError(rawMessage: string): string {
   let hint: string | null = null
 
   // Pull / Fetch 빈 remote
-  if (
-    m.includes('no such ref was fetched') ||
-    m.includes("couldn't find remote ref")
-  ) {
+  if (m.includes('no such ref was fetched') || m.includes("couldn't find remote ref")) {
     hint =
       '⚠ 원격 저장소에 해당 브랜치가 아직 없습니다.\n' +
       '   - 첫 push 가 필요할 수 있습니다: `git push -u origin <branch>`\n' +
       '   - 또는 remote 가 다른 기본 브랜치를 사용 중인지 확인 (예: master vs main)'
   } else if (m.includes('remote: Repository not found')) {
     hint =
-      '⚠ remote 저장소를 찾을 수 없습니다 (404).\n' +
-      '   - URL 오타 / private 레포 인증 여부 확인'
+      '⚠ remote 저장소를 찾을 수 없습니다 (404).\n' + '   - URL 오타 / private 레포 인증 여부 확인'
   } else if (
     m.includes('Authentication failed') ||
     m.includes('could not read Username') ||
@@ -100,25 +110,35 @@ export function humanizeGitError(rawMessage: string): string {
       '   - GitHub PAT: `repo` scope 필요 (private 레포)\n' +
       '   - Gitea PAT: `repo` + `write:issue` 등 필요 작업별 scope 추가'
   } else if (m.includes('CONFLICT')) {
-    hint =
-      '⚠ 머지 충돌 발생. 변경사항 패널에서 충돌 파일을 해결하고 stage + commit.'
-  } else if (
-    m.includes('non-fast-forward') ||
-    m.includes('Updates were rejected')
-  ) {
+    hint = '⚠ 머지 충돌 발생. 변경사항 패널에서 충돌 파일을 해결하고 stage + commit.'
+  } else if (m.includes('non-fast-forward') || m.includes('Updates were rejected')) {
     hint =
       '⚠ non-fast-forward push 가 거부됐습니다.\n' +
       '   - 먼저 pull 또는 rebase 후 다시 push\n' +
       '   - 또는 강제 푸시 (force-with-lease) — 단, 공유 브랜치는 위험'
-  } else if (
-    m.includes('safe.directory') ||
-    m.includes('dubious ownership')
-  ) {
+  } else if (m.includes('safe.directory') || m.includes('dubious ownership')) {
     hint =
       '⚠ Git 의 safe.directory 정책 거부.\n' +
       '   git-fried 는 safe.directory=* 를 자동 주입하지만 외부 git 호출이 막힐 수 있습니다.'
   } else if (m.includes('No such file or directory')) {
     hint = '⚠ 경로가 존재하지 않거나 삭제됨.'
+  } else if (
+    // Sprint c30 / MED 2 — Forge rate-limit (Gitea / GitHub).
+    m.includes('rate limit') ||
+    m.includes('API rate limit') ||
+    /\b429\b/.test(m) ||
+    m.includes('API 호출 한도 초과')
+  ) {
+    hint =
+      '⚠ Forge API 호출 한도 초과 (rate limit).\n' +
+      '   - 잠시 후 자동 재시도하거나 1~2분 뒤 다시 시도\n' +
+      '   - 인증된 토큰이 없으면 익명 한도(60/h) 가 빨리 소진 — 설정에서 PAT 등록'
+  } else if (
+    m.includes('토큰이 만료되었거나') // AppError::AuthExpired 한국어 메시지
+  ) {
+    hint =
+      '⚠ 자동으로 토큰 재입력 모달을 띄울 수 있습니다.\n' +
+      '   - 설정 → Forge 계정 → 만료 토큰 갱신'
   }
 
   return hint ? `${m}\n\n${hint}` : m
