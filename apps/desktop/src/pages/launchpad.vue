@@ -17,6 +17,7 @@ import {
   useSavedViews,
   LAUNCHPAD_VIEW_KIND,
 } from '@/composables/useLaunchpadMeta'
+import { useLaunchpadFilter } from '@/composables/useLaunchpadFilter'
 import { useToast } from '@/composables/useToast'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -29,96 +30,21 @@ type Tab = 'active' | 'pinned' | 'snoozed'
 const tab = ref<Tab>('active')
 
 // === Sprint C14-2 F2 (`docs/plan/14 §7 F2`): PR Filter syntax ===
-// 검색 syntax:
-//   author:<sub>   — pr.author.username substring
-//   state:<v>      — open|closed|merged|draft 정확
-//   repo:<sub>     — repoName substring
-//   is:pinned      — meta.isPinned
-//   is:snoozed     — meta.snoozeRemaining != null
-//   is:bot         — isBot()
-//   그 외 token    — pr.title substring (case-insensitive)
-// 여러 token = AND.
-const searchQuery = ref<string>('')
-
-interface ParsedQuery {
-  author: string[]
-  state: string[]
-  repo: string[]
-  is: string[]
-  free: string[]
-}
-
-function parseQuery(q: string): ParsedQuery {
-  const out: ParsedQuery = { author: [], state: [], repo: [], is: [], free: [] }
-  const tokens = q.split(/\s+/).filter((t) => t.length > 0)
-  for (const t of tokens) {
-    const m = /^(author|state|repo|is):(.+)$/i.exec(t)
-    if (m) {
-      const key = m[1].toLowerCase() as keyof ParsedQuery
-      const val = m[2].toLowerCase()
-      if (key !== 'free') out[key].push(val)
-    } else {
-      out.free.push(t.toLowerCase())
-    }
-  }
-  return out
-}
-
-const parsedQuery = computed<ParsedQuery>(() => parseQuery(searchQuery.value))
-
-function matchesQuery(row: { repoName: string; pr: PullRequest }): boolean {
-  const q = parsedQuery.value
-  // author
-  if (q.author.length > 0) {
-    const u = row.pr.author.username.toLowerCase()
-    if (!q.author.some((a) => u.includes(a))) return false
-  }
-  // state
-  if (q.state.length > 0 && !q.state.includes(row.pr.state)) {
-    return false
-  }
-  // repo
-  if (q.repo.length > 0) {
-    const r = row.repoName.toLowerCase()
-    if (!q.repo.some((s) => r.includes(s))) return false
-  }
-  // is:
-  for (const tag of q.is) {
-    if (tag === 'pinned' && !meta.isPinned(row.pr)) return false
-    if (tag === 'snoozed' && meta.snoozeRemaining(row.pr) == null) return false
-    if (tag === 'bot' && !isBot(row.pr)) return false
-  }
-  // free text — title 매칭
-  if (q.free.length > 0) {
-    const t = row.pr.title.toLowerCase()
-    for (const f of q.free) {
-      if (!t.includes(f)) return false
-    }
-  }
-  return true
-}
-
-// helper buttons (input 끝에 token append)
-const FILTER_HELPERS: { label: string; insert: string }[] = [
-  { label: '+author:', insert: 'author:' },
-  { label: '+state:open', insert: 'state:open' },
-  { label: '+repo:', insert: 'repo:' },
-  { label: '+is:pinned', insert: 'is:pinned' },
-  { label: '+is:snoozed', insert: 'is:snoozed' },
-  { label: '+is:bot', insert: 'is:bot' },
-]
-
-function appendFilter(token: string) {
-  const cur = searchQuery.value.trimEnd()
-  searchQuery.value = cur ? `${cur} ${token}` : token
-}
+// Sprint c30 / HIGH 2 — composables/useLaunchpadFilter.ts 로 추출 (검색 파서 + 매처).
+// FILTER_HELPERS / appendFilter 는 그대로 유지 (UI 보존).
+const {
+  searchQuery,
+  matches: matchesQuery,
+  appendFilter,
+  helpers: FILTER_HELPERS,
+} = useLaunchpadFilter(() => ({
+  isPinned: (pr) => meta.isPinned(pr),
+  snoozeRemaining: (pr) => meta.snoozeRemaining(pr),
+  isBot,
+}))
 
 const { data, isFetching, error, refetch } = useQuery({
-  queryKey: computed(() => [
-    'launchpad-prs',
-    store.activeWorkspaceId,
-    stateFilter.value,
-  ]),
+  queryKey: computed(() => ['launchpad-prs', store.activeWorkspaceId, stateFilter.value]),
   queryFn: () => bulkListPrs(store.activeWorkspaceId, stateFilter.value),
   staleTime: STALE_TIME.NORMAL,
 })
@@ -162,17 +88,11 @@ const searchedRows = computed(() => flatRows.value.filter(matchesQuery))
 const humanPrs = computed(() => searchedRows.value.filter((r) => !isBot(r.pr)))
 const botPrs = computed(() => searchedRows.value.filter((r) => isBot(r.pr)))
 
-const pinnedRows = computed(() =>
-  humanPrs.value.filter((r) => meta.isPinned(r.pr)),
-)
-const snoozedRows = computed(() =>
-  humanPrs.value.filter((r) => meta.snoozeRemaining(r.pr) != null),
-)
+const pinnedRows = computed(() => humanPrs.value.filter((r) => meta.isPinned(r.pr)))
+const snoozedRows = computed(() => humanPrs.value.filter((r) => meta.snoozeRemaining(r.pr) != null))
 const activeNotSnoozedRows = computed(() => {
   // tab='active' 의 메인 리스트: pinned 우선, 그 다음 일반 (snoozed 제외).
-  const list = humanPrs.value.filter(
-    (r) => meta.snoozeRemaining(r.pr) == null,
-  )
+  const list = humanPrs.value.filter((r) => meta.snoozeRemaining(r.pr) == null)
   return list.slice().sort((a, b) => {
     const ap = meta.isPinned(a.pr) ? 1 : 0
     const bp = meta.isPinned(b.pr) ? 1 : 0
@@ -303,8 +223,9 @@ function applyView(v: { filterJson: string }) {
       <div class="flex items-center gap-3">
         <h1 class="text-base font-semibold">Launchpad</h1>
         <span class="text-xs text-muted-foreground">
-          {{ stats.reposWithPrs }}/{{ stats.reposScanned }} 레포 ·
-          PR {{ stats.human }}+{{ stats.bot }}봇
+          {{ stats.reposWithPrs }}/{{ stats.reposScanned }} 레포 · PR {{ stats.human }}+{{
+            stats.bot
+          }}봇
           <span v-if="stats.pinned > 0" class="ml-1 text-amber-500">⭐{{ stats.pinned }}</span>
           <span v-if="stats.snoozed > 0" class="ml-1 text-sky-500">💤{{ stats.snoozed }}</span>
           <span v-if="stats.failed > 0" class="ml-1 text-amber-500">
@@ -320,9 +241,7 @@ function applyView(v: { filterJson: string }) {
             type="button"
             class="rounded-md border border-input px-2 py-0.5"
             :class="
-              stateFilter === s
-                ? 'bg-accent text-accent-foreground'
-                : 'text-muted-foreground'
+              stateFilter === s ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
             "
             @click="stateFilter = s"
           >
@@ -379,7 +298,7 @@ function applyView(v: { filterJson: string }) {
     <div class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-1 text-xs">
       <div class="flex gap-1">
         <button
-          v-for="t in (['active', 'pinned', 'snoozed'] as Tab[])"
+          v-for="t in ['active', 'pinned', 'snoozed'] as Tab[]"
           :key="t"
           type="button"
           class="rounded px-2 py-0.5"
@@ -390,7 +309,13 @@ function applyView(v: { filterJson: string }) {
           "
           @click="tab = t"
         >
-          {{ t === 'active' ? 'Active' : t === 'pinned' ? `⭐ ${stats.pinned}` : `💤 ${stats.snoozed}` }}
+          {{
+            t === 'active'
+              ? 'Active'
+              : t === 'pinned'
+                ? `⭐ ${stats.pinned}`
+                : `💤 ${stats.snoozed}`
+          }}
         </button>
       </div>
 
@@ -468,7 +393,11 @@ function applyView(v: { filterJson: string }) {
                 <td class="px-2 py-1 text-center">
                   <button
                     type="button"
-                    :class="meta.isPinned(row.pr) ? 'text-amber-500' : 'text-muted-foreground/50 hover:text-foreground'"
+                    :class="
+                      meta.isPinned(row.pr)
+                        ? 'text-amber-500'
+                        : 'text-muted-foreground/50 hover:text-foreground'
+                    "
                     :title="meta.isPinned(row.pr) ? 'Unpin' : 'Pin'"
                     @click="togglePin(row.pr)"
                   >
@@ -480,12 +409,7 @@ function applyView(v: { filterJson: string }) {
                   #{{ row.pr.number }}
                 </td>
                 <td class="px-2 py-1">
-                  <a
-                    :href="row.pr.htmlUrl"
-                    target="_blank"
-                    rel="noopener"
-                    class="hover:underline"
-                  >
+                  <a :href="row.pr.htmlUrl" target="_blank" rel="noopener" class="hover:underline">
                     {{ row.pr.title }}
                   </a>
                   <template v-for="l in row.pr.labels" :key="l.name">
@@ -555,7 +479,10 @@ function applyView(v: { filterJson: string }) {
         <h2 class="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
           ⭐ Pinned ({{ pinnedRows.length }})
         </h2>
-        <div v-if="pinnedRows.length === 0" class="rounded border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+        <div
+          v-if="pinnedRows.length === 0"
+          class="rounded border border-dashed border-border p-6 text-center text-xs text-muted-foreground"
+        >
           핀 된 PR 없음. Active 탭의 ☆ 클릭으로 핀.
         </div>
         <ul v-else class="rounded-md border border-border">
@@ -564,12 +491,7 @@ function applyView(v: { filterJson: string }) {
             :key="`pin-${row.repoName}-${row.pr.number}`"
             class="flex items-center gap-2 border-b border-border/50 px-2 py-1.5 last:border-0 hover:bg-accent/30"
           >
-            <button
-              type="button"
-              class="text-amber-500"
-              title="Unpin"
-              @click="togglePin(row.pr)"
-            >
+            <button type="button" class="text-amber-500" title="Unpin" @click="togglePin(row.pr)">
               ⭐
             </button>
             <span class="font-mono text-xs">{{ row.repoName }}</span>
@@ -594,7 +516,10 @@ function applyView(v: { filterJson: string }) {
         <h2 class="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
           💤 Snoozed ({{ snoozedRows.length }})
         </h2>
-        <div v-if="snoozedRows.length === 0" class="rounded border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+        <div
+          v-if="snoozedRows.length === 0"
+          class="rounded border border-dashed border-border p-6 text-center text-xs text-muted-foreground"
+        >
           Snooze 된 PR 없음. Active 탭의 💤 클릭으로 snooze.
         </div>
         <ul v-else class="rounded-md border border-border">
@@ -603,12 +528,7 @@ function applyView(v: { filterJson: string }) {
             :key="`snooze-${row.repoName}-${row.pr.number}`"
             class="flex items-center gap-2 border-b border-border/50 px-2 py-1.5 last:border-0 hover:bg-accent/30"
           >
-            <button
-              type="button"
-              class="text-sky-500"
-              title="Snooze 해제"
-              @click="unsnooze(row)"
-            >
+            <button type="button" class="text-sky-500" title="Snooze 해제" @click="unsnooze(row)">
               💤
             </button>
             <span class="font-mono text-xs">{{ row.repoName }}</span>
@@ -684,8 +604,8 @@ function applyView(v: { filterJson: string }) {
           </li>
         </ul>
         <p class="mt-1 text-[10px] text-muted-foreground">
-          힌트: forge 계정 (PAT) 미등록이거나 forge_kind=unknown 인 레포는 자동 skip 됩니다.
-          설정 → Forge 계정 에서 등록.
+          힌트: forge 계정 (PAT) 미등록이거나 forge_kind=unknown 인 레포는 자동 skip 됩니다. 설정 →
+          Forge 계정 에서 등록.
         </p>
       </section>
 
