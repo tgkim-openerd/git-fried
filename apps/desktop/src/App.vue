@@ -21,6 +21,8 @@ import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
 import { useDeepLink } from '@/composables/useDeepLink'
 import { useMenuListener } from '@/composables/useMenuListener'
+import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
+import { computed } from 'vue'
 import { useUiSettingsStore } from '@/composables/useUserSettings'
 import { useAutoFetch } from '@/composables/useAutoFetch'
 import { useReposStore } from '@/stores/repos'
@@ -190,6 +192,12 @@ window.gitFriedOpenBisect = () => (bisectOpen.value = true)
 window.gitFriedOpenReflog = () => (reflogOpen.value = true)
 window.gitFriedOpenCompare = openCompare
 
+// Phase 14-3 — fullscreen diff 진입 시 좌측 sidebar 자동 hide (GitKraken Diff View 동등).
+//   ui.sidebarVisible localStorage 는 보존 — grid-cols 조건에 fullscreenActive 직접 결합.
+const fsDiff = useFullscreenDiff()
+const fullscreenActive = computed(() => fsDiff.current.value != null)
+const sidebarShown = computed(() => ui.sidebarVisible.value && !fullscreenActive.value)
+
 // Phase 10-6 — 네이티브 메뉴 (Tauri menu) bridge.
 window.gitFriedToggleTheme = toggle
 useMenuListener()
@@ -198,9 +206,9 @@ useMenuListener()
 <template>
   <div
     class="grid h-screen overflow-hidden"
-    :class="ui.sidebarVisible.value ? 'grid-cols-[280px_1fr]' : 'grid-cols-[0_1fr]'"
+    :class="sidebarShown ? 'grid-cols-[280px_1fr]' : 'grid-cols-[0_1fr]'"
   >
-    <Sidebar v-if="ui.sidebarVisible.value" />
+    <Sidebar v-if="sidebarShown" />
     <div v-else />
     <main class="flex flex-col overflow-hidden">
       <!-- Phase 13-3 (GitKraken parity) — 헤더 row 제거. nav 를 RepoTabBar 의 trailing slot 으로 통합.

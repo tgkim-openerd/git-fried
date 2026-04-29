@@ -51,20 +51,33 @@ const queryArgs = computed(() => {
   }
 })
 
+// Phase 14-3 — diff query 전용 rev (parent..commit). File / Blame 쿼리는 단일 sha 유지.
+//   기존: getDiff(rev=sha) → backend `git diff sha -- path` = sha~working dir 비교 → 같으면 empty.
+//   변경: diff query 만 rev=`sha~..sha` → backend `git diff sha~..sha -- path` = 그 commit 의 파일 변경.
+//   (root commit 의 경우 ~ 없어서 git error — rare 케이스, fallback 추후.)
+const diffRev = computed<string | null>(() => {
+  const cur = fs.current.value
+  if (!cur || cur.source !== 'commit') return null
+  return `${cur.sha}~..${cur.sha}`
+})
+
 const patchQuery = useQuery({
   queryKey: computed(() => {
     const a = queryArgs.value
     if (!a) return ['fullscreen-diff', 'idle'] as const
-    return ['fullscreen-diff', a.repoId, a.staged, a.path, a.rev] as const
+    // Phase 14-3 — commit context 시 diffRev (parent..commit) 사용.
+    const rev = diffRev.value ?? a.rev
+    return ['fullscreen-diff', a.repoId, a.staged, a.path, rev] as const
   }),
   queryFn: () => {
     const a = queryArgs.value
     if (!a) return Promise.resolve('')
+    const rev = diffRev.value ?? a.rev
     return getDiff({
       repoId: a.repoId,
       staged: a.staged,
       path: a.path,
-      rev: a.rev,
+      rev,
       context: 3,
     })
   },

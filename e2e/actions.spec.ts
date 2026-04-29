@@ -18,8 +18,9 @@ test.describe('actions — Toolbar Redo / Stash 진입', () => {
     await ensureDetailVisible(page)
     await page.locator('[data-testid="main-nav-stash"]').click()
 
-    await expect(page.getByText(/stash@\{0\}/)).toBeVisible()
-    await expect(page.getByText(/stash@\{1\}/)).toBeVisible()
-    await expect(page.getByText(/stash@\{2\}/)).toBeVisible()
+    // StashPanel 의 stash list — 첫 row 가 보이면 panel 마운트 완료. 그 다음 1/2 검증 (timeout 더 넉넉히).
+    await expect(page.getByText(/stash@\{0\}/).first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText(/stash@\{1\}/).first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText(/stash@\{2\}/).first()).toBeVisible({ timeout: 5_000 })
   })
 })
