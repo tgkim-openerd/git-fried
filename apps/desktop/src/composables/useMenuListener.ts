@@ -77,6 +77,7 @@ export function useMenuListener(): MenuPump {
 
   // 모든 메뉴 ID 별 listener 등록.
   const ids = [
+    'open-repo-management',
     'open-settings',
     'reload-repos',
     'undo-action',
@@ -115,6 +116,9 @@ export function useMenuListener(): MenuPump {
     if (fireRegistered(id)) return
 
     switch (id) {
+      case 'open-repo-management':
+        void router.push('/repositories')
+        return
       case 'open-settings':
         void router.push('/settings')
         return

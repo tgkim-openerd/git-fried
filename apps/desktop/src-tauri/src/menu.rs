@@ -23,11 +23,16 @@ const EVENT_PREFIX: &str = "menu://";
 /// 빌더에 결합할 메뉴 생성. on_menu_event 와 짝으로 사용한다.
 pub fn build(app: &AppHandle<Wry>) -> tauri::Result<tauri::menu::Menu<Wry>> {
     // File
+    let file_repo_mgmt = MenuItemBuilder::with_id("open-repo-management", "Repository Management…")
+        .accelerator("CmdOrCtrl+Shift+R")
+        .build(app)?;
     let file_settings = MenuItemBuilder::with_id("open-settings", "Settings…").build(app)?;
     let file_reload_repos =
         MenuItemBuilder::with_id("reload-repos", "Reload Repositories").build(app)?;
     let file_quit = PredefinedMenuItem::quit(app, Some("Quit"))?;
     let file = SubmenuBuilder::new(app, "File")
+        .item(&file_repo_mgmt)
+        .separator()
         .item(&file_settings)
         .item(&file_reload_repos)
         .separator()
