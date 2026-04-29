@@ -75,8 +75,17 @@ function toggleFocusMode() {
 // Sprint 22-3 V-1 — row dblclick 도 동일 액션 트리거.
 const selectedSha = ref<string | null>(null)
 const diffModalOpen = ref(false)
+// Sprint c30 / GitKraken UX — commit row 단일 클릭 시 우측 패널 자동 전환:
+//   1. 같은 sha 재선택: 선택 해제 (toggle, 우측 status 복귀)
+//   2. 다른 sha: selectedSha set + tab='commit' 즉시 전환 (GitKraken 동작)
+//      현재 어느 tab 이든 (Branches/PR/...) commit detail 로 즉시 전환됨.
 function onSelectCommit(sha: string) {
+  if (selectedSha.value === sha) {
+    selectedSha.value = null
+    return
+  }
   selectedSha.value = sha
+  tab.value = 'commit'
 }
 
 // Phase 1 (plan-commit-graph-ux v2) — main-nav 8번째 'commit' tab 조건부 mount.
@@ -88,6 +97,30 @@ const mainTabs = computed<Tab[]>(() => {
 // Phase 1 — selectedSha=null 트랜지션 시 tab='commit' 이면 status fallback.
 watch(selectedSha, (v) => {
   if (v == null && tab.value === 'commit') tab.value = 'status'
+})
+
+// Sprint c30 / GitKraken UX — ESC 키 = commit 선택 해제 (모달 없을 때만).
+//   useShortcuts 가 ESC 를 cover 하지 않아 직접 window listener 등록.
+//   modal/CommandPalette 가 자체 ESC 처리하면 그쪽이 stopPropagation 하므로 안전.
+function onEscKey(e: KeyboardEvent) {
+  if (e.key !== 'Escape') return
+  // 모달 / palette 등이 열려있으면 (active element 가 input/dialog 안) skip
+  const ae = document.activeElement
+  if (
+    ae &&
+    (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.closest('[role="dialog"]'))
+  ) {
+    return
+  }
+  if (selectedSha.value != null) {
+    selectedSha.value = null
+  }
+}
+onMounted(() => {
+  window.addEventListener('keydown', onEscKey)
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onEscKey)
 })
 
 // Phase 1 (Sprint c29-5) — activeRepoId 변경 시 selectedSha reset (graph 가 바뀌어 의미 잃음).

@@ -100,7 +100,13 @@ const LANE_W_MIN = 8
 const LANE_W_MAX = 36
 // Phase 1 (plan-commit-graph-ux v2) — graphWidth hard cap 으로 message column 압박 해소.
 // lane 이 cap 보다 많으면 우측 lane 은 잘림 (zoom out 으로 회피). Phase 2 에서 graph/message 별도 element.
-const MAX_GRAPH_WIDTH = 320
+//
+// Sprint c30 / GitKraken UX — cap 320 → 480 으로 확대.
+//   회사 50+ 레포 dogfood 시 메인 레포 (lane 18~22) 가 320 cap 에서 잘려 lane 색이
+//   사라지는 문제 (실제 GitKraken 의 default split 점은 ~450~500px). 480 으로 늘려
+//   lane 30 까지 laneW=16 기준 표시 가능. message 컬럼은 좌측 sidebar/우측 패널이
+//   먼저 영역 확보 후 남은 공간이라 480 도 안전.
+const MAX_GRAPH_WIDTH = 480
 
 function loadLaneW(): number {
   if (typeof localStorage === 'undefined') return DEFAULT_LANE_W
