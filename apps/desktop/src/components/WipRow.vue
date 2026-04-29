@@ -46,11 +46,21 @@ const emit = defineEmits<{
       </span>
     </div>
 
-    <!-- GRAPH 컬럼 — 점선 dashed circle (GitKraken 의 WIP 시각 단서) -->
-    <div class="w-12 shrink-0 flex items-center justify-center">
+    <!-- GRAPH 컬럼 — 점선 dashed circle (GitKraken 의 WIP 시각 단서)
+         Sprint c30 / GitKraken UX (Phase 7a) — graph 첫 row 와 시각 연결:
+           dashed circle 아래 dashed vertical line 으로 첫 commit 까지 이어지는 lane 시각.
+           canvas 자체는 무변경 — 시각 통합만.
+           lane 0 위치 (left + laneW/2 = 8px @ default laneW=16). w-12 (48px) 의 14px-22px. -->
+    <div class="relative w-12 shrink-0 flex items-center justify-center self-stretch">
       <span
-        class="block h-3 w-3 rounded-full border border-dashed border-foreground/60"
-        :class="selected ? 'bg-primary/40' : ''"
+        class="block h-3 w-3 rounded-full border border-dashed border-emerald-500/70"
+        :class="selected ? 'bg-emerald-500/40' : ''"
+        aria-hidden="true"
+      />
+      <!-- dashed lane connector — 다음 commit 으로 이어지는 점선 (lane 0 의 x = 8px from left, default laneW=16) -->
+      <span
+        class="absolute bottom-[-1px] h-2 w-0 border-l border-dashed border-emerald-500/50"
+        :style="{ left: 'calc(50% - 6px + 6px)' }"
         aria-hidden="true"
       />
     </div>
