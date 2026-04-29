@@ -13,6 +13,7 @@ import MiniBranchList from './MiniBranchList.vue'
 import MiniRemoteBranchList from './MiniRemoteBranchList.vue'
 import MiniStashList from './MiniStashList.vue'
 import MiniWorktreeList from './MiniWorktreeList.vue'
+import MiniSubmoduleList from './MiniSubmoduleList.vue'
 import MiniTagList from './MiniTagList.vue'
 import MiniPrList from './MiniPrList.vue'
 import EmptyState from './EmptyState.vue'
@@ -100,12 +101,13 @@ const QUICK_TABS: ReadonlyArray<{
       </div>
 
       <!-- c27-1 (ARCH-003 fix) — mini list 는 sub-component 로 분리.
-           Phase 11-6 (issue #2 GitKraken parity) — MiniRemoteBranchList / MiniTagList 추가
-           → 활성 레포 카테고리 LOCAL / REMOTE / WORKTREES / STASHES / PR / TAGS 노출. -->
+           Phase 11-6 (issue #2 GitKraken parity) — MiniRemoteBranchList / MiniTagList 추가.
+           Phase 12-1/2/3 — branch tree (LOCAL/REMOTE/TAGS) + 검색 query 통합 + MiniSubmoduleList. -->
       <MiniBranchList />
       <MiniRemoteBranchList />
       <MiniWorktreeList />
       <MiniStashList />
+      <MiniSubmoduleList />
       <MiniPrList />
       <MiniTagList />
     </div>

@@ -11,7 +11,7 @@
 // - Pop: stash@{0} pop — stash 0개면 disabled
 // - Terminal: terminal 토글 (dispatchShortcut('terminal'))
 
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import {
   fetchAll,
@@ -93,8 +93,16 @@ const fetchMut = useMutation({
   },
   onError: (e) => toast.error('Fetch 호출 실패', describeError(e)),
 })
+// Phase 12-3 — Pull 옵션 매개 (dropdown 액션 수신).
+type PullStrategy = 'default' | 'rebase' | 'ff-only' | 'no-rebase'
 const pullMut = useMutation({
-  mutationFn: (id: number) => pull({ repoId: id }),
+  mutationFn: ({ id, strategy }: { id: number; strategy: PullStrategy }) =>
+    pull({
+      repoId: id,
+      rebase: strategy === 'rebase',
+      ffOnly: strategy === 'ff-only',
+      noRebase: strategy === 'no-rebase',
+    }),
   onSuccess: async (res) => {
     invalidate(props.repoId)
     if (res.success) {
@@ -113,6 +121,37 @@ const pullMut = useMutation({
   },
   onError: (e) => toast.error('Pull 호출 실패', describeError(e)),
 })
+
+// Pull dropdown 가시성 + 마지막 사용 strategy 기억 (localStorage).
+const PULL_STRATEGY_KEY = 'git-fried.pull-strategy'
+const pullStrategy = ref<PullStrategy>(
+  (typeof localStorage !== 'undefined'
+    ? (localStorage.getItem(PULL_STRATEGY_KEY) as PullStrategy | null)
+    : null) ?? 'default',
+)
+function setPullStrategy(s: PullStrategy) {
+  pullStrategy.value = s
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(PULL_STRATEGY_KEY, s)
+    } catch {
+      /* ignore */
+    }
+  }
+}
+const pullDropdownOpen = ref(false)
+function pullStrategyLabel(s: PullStrategy): string {
+  switch (s) {
+    case 'rebase':
+      return '--rebase'
+    case 'ff-only':
+      return '--ff-only'
+    case 'no-rebase':
+      return '--no-rebase'
+    default:
+      return 'merge'
+  }
+}
 const pushMut = useMutation({
   mutationFn: (id: number) =>
     push({
@@ -245,7 +284,12 @@ function onFetch() {
   if (props.repoId != null) fetchMut.mutate(props.repoId)
 }
 function onPull() {
-  if (props.repoId != null) pullMut.mutate(props.repoId)
+  if (props.repoId != null) pullMut.mutate({ id: props.repoId, strategy: pullStrategy.value })
+}
+function onPullWithStrategy(s: PullStrategy) {
+  setPullStrategy(s)
+  pullDropdownOpen.value = false
+  if (props.repoId != null) pullMut.mutate({ id: props.repoId, strategy: s })
 }
 function onPush() {
   if (props.repoId != null) pushMut.mutate(props.repoId)
@@ -366,20 +410,71 @@ onUnmounted(() => {
 
       <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
 
-      <!-- [sync] Pull / Push -->
+      <!-- [sync] Pull (with strategy ▾) / Push -->
       <div class="flex items-center gap-0.5">
-        <button
-          type="button"
-          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId || pullMut.isPending.value"
-          :title="pullMut.isPending.value ? 'Pull 진행 중...' : 'Pull (⌘⇧L) — fetch + merge/rebase'"
-          @click="onPull"
-        >
-          <span class="text-base leading-none">⇩</span>
-          <span class="text-[10px] leading-tight">{{
-            pullMut.isPending.value ? '...' : 'Pull'
-          }}</span>
-        </button>
+        <!-- Phase 12-3 — Pull dropdown (split button: 본체 = 마지막 strategy 즉시 실행, ▾ = 옵션 메뉴). -->
+        <div class="relative flex items-center">
+          <button
+            type="button"
+            class="flex flex-col items-center gap-0 rounded-l-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            :disabled="!repoId || pullMut.isPending.value"
+            :title="
+              pullMut.isPending.value
+                ? 'Pull 진행 중...'
+                : `Pull (⌘⇧L) — fetch + ${pullStrategyLabel(pullStrategy)}`
+            "
+            @click="onPull"
+          >
+            <span class="text-base leading-none">⇩</span>
+            <span class="text-[10px] leading-tight">{{
+              pullMut.isPending.value ? '...' : 'Pull'
+            }}</span>
+          </button>
+          <button
+            type="button"
+            class="flex h-full items-center rounded-r-md border-l border-border/40 px-1 py-0 text-[10px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            :disabled="!repoId || pullMut.isPending.value"
+            :aria-expanded="pullDropdownOpen"
+            aria-haspopup="menu"
+            title="Pull 전략 선택 (merge / rebase / ff-only / no-rebase)"
+            @click="pullDropdownOpen = !pullDropdownOpen"
+          >
+            ▾
+          </button>
+          <!-- Dropdown popover -->
+          <div
+            v-if="pullDropdownOpen"
+            class="absolute left-0 top-full z-50 mt-0.5 w-44 overflow-hidden rounded-md border border-border bg-popover text-xs shadow-modal"
+            role="menu"
+            @click.stop
+          >
+            <button
+              v-for="s in ['default', 'rebase', 'ff-only', 'no-rebase'] as const"
+              :key="s"
+              type="button"
+              class="flex w-full items-center justify-between px-3 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
+              :class="
+                pullStrategy === s ? 'font-semibold text-foreground' : 'text-muted-foreground'
+              "
+              role="menuitem"
+              @click="onPullWithStrategy(s)"
+            >
+              <span>
+                Pull
+                <span class="ml-1 font-mono text-[10px] text-muted-foreground">
+                  ({{ pullStrategyLabel(s) }})
+                </span>
+              </span>
+              <span v-if="pullStrategy === s" class="text-[9px]">●</span>
+            </button>
+          </div>
+          <!-- click-outside backdrop -->
+          <div
+            v-if="pullDropdownOpen"
+            class="fixed inset-0 z-40"
+            @click="pullDropdownOpen = false"
+          />
+        </div>
         <button
           type="button"
           class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"

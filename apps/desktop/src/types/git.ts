@@ -125,6 +125,10 @@ export interface PullArgs {
   repoId: number
   remote?: string | null
   branch?: string | null
+  // Phase 12-3 — Pull dropdown (mutually exclusive — 첫 매치만 적용).
+  rebase?: boolean
+  ffOnly?: boolean
+  noRebase?: boolean
 }
 
 // === Conventional Commits ===

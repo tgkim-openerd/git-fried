@@ -51,13 +51,35 @@ pub async fn fetch(repo: &Path, remote: &str) -> AppResult<SyncResult> {
     Ok(out.into())
 }
 
+/// pull 전략 옵션 (Phase 12-3 — GitKraken Pull dropdown).
+/// 모두 false → `git pull` (사용자 `pull.rebase` 설정 따름).
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PullOpts {
+    /// `--rebase` (사용자 commits 재생성).
+    pub rebase: bool,
+    /// `--ff-only` (non-fast-forward 거부).
+    pub ff_only: bool,
+    /// `--no-rebase` (명시적 merge — pull.rebase=true 사용자 환경에서 강제 merge).
+    pub no_rebase: bool,
+}
+
 /// pull (== fetch + merge | rebase). 디폴트는 사용자 `pull.rebase` 설정 따름.
 pub async fn pull(
     repo: &Path,
     remote: Option<&str>,
     branch: Option<&str>,
+    opts: PullOpts,
 ) -> AppResult<SyncResult> {
     let mut args: Vec<&str> = vec!["pull"];
+    // 옵션 mutually exclusive — rebase > ff_only > no_rebase 순.
+    if opts.rebase {
+        args.push("--rebase");
+    } else if opts.ff_only {
+        args.push("--ff-only");
+    } else if opts.no_rebase {
+        args.push("--no-rebase");
+    }
     if let Some(r) = remote {
         args.push(r);
         if let Some(b) = branch {

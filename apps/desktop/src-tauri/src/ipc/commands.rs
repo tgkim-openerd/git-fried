@@ -447,6 +447,13 @@ pub struct PullArgs {
     pub repo_id: i64,
     pub remote: Option<String>,
     pub branch: Option<String>,
+    /// Phase 12-3 — Pull dropdown 옵션 (rebase / ff_only / no_rebase). 모두 None → 기본 pull.
+    #[serde(default)]
+    pub rebase: bool,
+    #[serde(default)]
+    pub ff_only: bool,
+    #[serde(default)]
+    pub no_rebase: bool,
 }
 
 #[tauri::command]
@@ -455,7 +462,12 @@ pub async fn pull(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_sync::SyncResult> {
     let path = repo_path(&state, args.repo_id).await?;
-    git_sync::pull(&path, args.remote.as_deref(), args.branch.as_deref()).await
+    let opts = git_sync::PullOpts {
+        rebase: args.rebase,
+        ff_only: args.ff_only,
+        no_rebase: args.no_rebase,
+    };
+    git_sync::pull(&path, args.remote.as_deref(), args.branch.as_deref(), opts).await
 }
 
 #[derive(Debug, Deserialize)]

@@ -12,19 +12,22 @@
 //   - INTEGRATIONS placeholder  → /settings (또는 v0.4 시점 부활)
 //   - 일괄 fetch  → /repositories 의 [⤓ Fetch All]
 
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRouter, RouterLink } from 'vue-router'
 import { listWorkspaces } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useToast } from '@/composables/useToast'
+import { useSidebarSearch } from '@/composables/useSidebarSearch'
 import ActiveRepoQuickActions from './ActiveRepoQuickActions.vue'
 
 const store = useReposStore()
 const qc = useQueryClient()
 const toast = useToast()
 const router = useRouter()
+const search = useSidebarSearch()
+const searchInputRef = useTemplateRef<HTMLInputElement>('searchInput')
 
 const { data: workspaces } = useQuery({
   queryKey: ['workspaces'],
@@ -44,15 +47,20 @@ window.gitFriedReloadRepos = () => {
   toast.success('레포 reload', '워크스페이스/레포 목록 갱신 중')
 }
 
-// 외부 (App.vue) 트리거 — Sidebar 가 hidden 일 때 fallback.
-window.gitFriedFocusRepoFilter = () => {
-  void router.push('/repositories')
+// Phase 12-2 — ⌘⌥F = sidebar 검색 input focus (예전 동작 복원).
+//   /repositories 페이지 진입은 헤더 "레포" RouterLink + ⌘⇧R 메뉴.
+function focusSidebarSearch() {
+  const el = searchInputRef.value
+  if (!el) {
+    // sidebar hidden 시 fallback — /repositories 로 이동.
+    void router.push('/repositories')
+    return
+  }
+  el.focus()
+  el.select()
 }
-
-// Sprint I — ⌘⌥F 가 /repositories 페이지로 이동 (예전: sidebar 검색 input focus).
-useShortcut('filterRepos', () => {
-  void router.push('/repositories')
-})
+window.gitFriedFocusRepoFilter = focusSidebarSearch
+useShortcut('filterRepos', focusSidebarSearch)
 </script>
 
 <template>
@@ -102,8 +110,33 @@ useShortcut('filterRepos', () => {
       </RouterLink>
     </section>
 
+    <!-- Phase 12-2 — sidebar 통합 검색 input (LOCAL/REMOTE/WORKTREES/STASHES/PR/TAGS/SUBMODULES filter). -->
+    <section class="border-b border-border px-3 py-1.5">
+      <div class="relative">
+        <input
+          ref="searchInput"
+          v-model="search.query.value"
+          type="search"
+          data-testid="sidebar-search"
+          placeholder="검색 (브랜치 / 태그 / submodule) — ⌘⌥F"
+          class="w-full rounded border border-input bg-background px-2 py-1 pr-6 text-xs outline-none focus:border-primary"
+        />
+        <button
+          v-if="search.isActive.value"
+          type="button"
+          class="absolute right-1 top-1/2 -translate-y-1/2 rounded text-[10px] text-muted-foreground hover:text-foreground"
+          title="검색 지우기"
+          aria-label="검색 지우기"
+          @click="search.clear()"
+        >
+          ✕
+        </button>
+      </div>
+    </section>
+
     <!-- Phase 11-6 — Sidebar body = 활성 레포 카테고리.
-         LOCAL / REMOTE / WORKTREES / STASHES / PR / TAGS (각 collapsible). -->
+         LOCAL / REMOTE / WORKTREES / STASHES / SUBMODULES / PR / TAGS (각 collapsible).
+         Phase 12-1: branch / tag tree (prefix `/` 자동 nesting). -->
     <div class="flex-1 overflow-y-auto">
       <ActiveRepoQuickActions />
     </div>
