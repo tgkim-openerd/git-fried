@@ -10,7 +10,9 @@
 //   - 사용자가 단축키를 발견하기 좋게 메뉴 항목에 단축키 표시 (accelerator)
 
 use tauri::{
-    menu::{AboutMetadataBuilder, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder},
+    menu::{
+        AboutMetadataBuilder, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder,
+    },
     AppHandle, Emitter, Manager, Wry,
 };
 
@@ -35,10 +37,9 @@ pub fn build(app: &AppHandle<Wry>) -> tauri::Result<tauri::menu::Menu<Wry>> {
     // Edit (시스템 기본 + 앱 액션)
     let edit_undo = MenuItemBuilder::with_id("undo-action", "Undo Last Git Action").build(app)?;
     let edit_redo = MenuItemBuilder::with_id("redo-action", "Redo Last Git Action").build(app)?;
-    let edit_filter =
-        MenuItemBuilder::with_id("filter-repos", "Find Repository…")
-            .accelerator("CmdOrCtrl+Alt+F")
-            .build(app)?;
+    let edit_filter = MenuItemBuilder::with_id("filter-repos", "Find Repository…")
+        .accelerator("CmdOrCtrl+Alt+F")
+        .build(app)?;
     let edit = SubmenuBuilder::new(app, "Edit")
         .item(&PredefinedMenuItem::undo(app, None)?)
         .item(&PredefinedMenuItem::redo(app, None)?)
@@ -69,10 +70,9 @@ pub fn build(app: &AppHandle<Wry>) -> tauri::Result<tauri::menu::Menu<Wry>> {
         .build(app)?;
     let view_toggle_theme =
         MenuItemBuilder::with_id("toggle-theme", "Toggle Light / Dark Theme").build(app)?;
-    let view_reload =
-        MenuItemBuilder::with_id("reload-window", "Reload Window")
-            .accelerator("CmdOrCtrl+R")
-            .build(app)?;
+    let view_reload = MenuItemBuilder::with_id("reload-window", "Reload Window")
+        .accelerator("CmdOrCtrl+R")
+        .build(app)?;
     let view_devtools = MenuItemBuilder::with_id("toggle-devtools", "Toggle Developer Tools")
         .accelerator("CmdOrCtrl+Shift+I")
         .build(app)?;
@@ -94,22 +94,18 @@ pub fn build(app: &AppHandle<Wry>) -> tauri::Result<tauri::menu::Menu<Wry>> {
         .build()?;
 
     // Repository — daily git ops (fetch/pull/push/branch/stash)
-    let repo_fetch =
-        MenuItemBuilder::with_id("repo-fetch", "Fetch")
-            .accelerator("CmdOrCtrl+L")
-            .build(app)?;
-    let repo_pull =
-        MenuItemBuilder::with_id("repo-pull", "Pull")
-            .accelerator("CmdOrCtrl+Shift+L")
-            .build(app)?;
-    let repo_push =
-        MenuItemBuilder::with_id("repo-push", "Push")
-            .accelerator("CmdOrCtrl+Shift+K")
-            .build(app)?;
-    let repo_branch =
-        MenuItemBuilder::with_id("repo-branch", "New Branch / Branch View")
-            .accelerator("CmdOrCtrl+B")
-            .build(app)?;
+    let repo_fetch = MenuItemBuilder::with_id("repo-fetch", "Fetch")
+        .accelerator("CmdOrCtrl+L")
+        .build(app)?;
+    let repo_pull = MenuItemBuilder::with_id("repo-pull", "Pull")
+        .accelerator("CmdOrCtrl+Shift+L")
+        .build(app)?;
+    let repo_push = MenuItemBuilder::with_id("repo-push", "Push")
+        .accelerator("CmdOrCtrl+Shift+K")
+        .build(app)?;
+    let repo_branch = MenuItemBuilder::with_id("repo-branch", "New Branch / Branch View")
+        .accelerator("CmdOrCtrl+B")
+        .build(app)?;
     let repo_stash = MenuItemBuilder::with_id("repo-stash-view", "Stash View")
         .accelerator("CmdOrCtrl+3")
         .build(app)?;

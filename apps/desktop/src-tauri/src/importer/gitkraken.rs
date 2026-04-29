@@ -230,6 +230,8 @@ pub fn detect_summary() -> AppResult<Option<DetectResult>> {
 // ====== Plan / Apply 공통 ======
 
 /// 입력 path → 가장 길게 매칭되는 syncPath 의 project name.
+/// (현재 prod 진입점 미사용 — apply step 통합 시 사용 예정. 테스트 커버리지 유지.)
+#[allow(dead_code)]
 fn assign_workspace<'a>(repo_path: &Path, projects: &'a [(String, PathBuf)]) -> Option<&'a str> {
     let repo_str = repo_path.to_string_lossy().to_lowercase();
     let mut best: Option<(&str, usize)> = None;
