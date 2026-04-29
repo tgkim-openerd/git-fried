@@ -425,6 +425,10 @@ useShortcut('vimLeft', () => {
 
 // === 컬럼 토글 / 재정렬 (Sprint A3) ===
 const cols = useCommitColumns()
+// Phase 13-4 — branchTag 컬럼 visible 시 message 안의 ref pill 생략 (중복 회피).
+const branchTagColumnVisible = computed(() =>
+  cols.visibleColumns.value.some((c) => c.id === 'branchTag'),
+)
 const headerMenuOpen = ref(false)
 const headerMenuRef = ref<HTMLDivElement | null>(null)
 
@@ -725,24 +729,15 @@ onUnmounted(() => {
             @contextmenu="onRowContextMenu($event, commitRowAt(v.index) ?? undefined)"
           >
             <template v-for="col in cols.visibleColumns.value" :key="col.id">
-              <!-- sha -->
+              <!-- branchTag (Phase 13-4 — GitKraken parity 별도 컬럼) -->
               <span
-                v-if="col.id === 'sha'"
-                :class="[col.widthClass, 'truncate font-mono text-xs text-muted-foreground']"
+                v-if="col.id === 'branchTag'"
+                :class="[col.widthClass, 'flex items-center gap-1 overflow-hidden']"
               >
-                {{ commitRowAt(v.index)?.commit.shortSha }}
-              </span>
-              <!-- message + refs -->
-              <span
-                v-else-if="col.id === 'message'"
-                :class="[col.widthClass, 'truncate']"
-                :title="commitTooltip(commitRowAt(v.index))"
-              >
-                {{ commitRowAt(v.index)?.commit.subject }}
                 <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
                   <span
                     v-if="visibleRef(r)"
-                    class="ref-pill ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
+                    class="ref-pill inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
                     :class="
                       soloRef === r
                         ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
@@ -772,6 +767,57 @@ onUnmounted(() => {
                       🙈
                     </button>
                   </span>
+                </template>
+              </span>
+              <!-- sha -->
+              <span
+                v-else-if="col.id === 'sha'"
+                :class="[col.widthClass, 'truncate font-mono text-xs text-muted-foreground']"
+              >
+                {{ commitRowAt(v.index)?.commit.shortSha }}
+              </span>
+              <!-- message + (refs only when branchTag column hidden — backward compat) -->
+              <span
+                v-else-if="col.id === 'message'"
+                :class="[col.widthClass, 'truncate']"
+                :title="commitTooltip(commitRowAt(v.index))"
+              >
+                {{ commitRowAt(v.index)?.commit.subject }}
+                <template v-if="!branchTagColumnVisible">
+                  <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
+                    <span
+                      v-if="visibleRef(r)"
+                      class="ref-pill ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
+                      :class="
+                        soloRef === r
+                          ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
+                          : 'bg-muted text-muted-foreground'
+                      "
+                    >
+                      <button
+                        type="button"
+                        class="ref-pill-body cursor-pointer hover:underline"
+                        :title="
+                          soloRef === r
+                            ? `Solo 해제: ${r}`
+                            : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
+                        "
+                        :aria-label="soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`"
+                        @click.stop="toggleSoloRef(r)"
+                      >
+                        {{ r }}
+                      </button>
+                      <button
+                        type="button"
+                        class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
+                        :title="`그래프에서 숨김: ${r}`"
+                        :aria-label="`'${r}' 그래프에서 숨김`"
+                        @click.stop="hideRefByName(r)"
+                      >
+                        🙈
+                      </button>
+                    </span>
+                  </template>
                 </template>
               </span>
               <!-- author -->

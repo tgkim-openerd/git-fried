@@ -3,19 +3,19 @@
 // localStorage 영속화 — 단순 글로벌 선호도 (per-repo 영속화는 시나리오 약함).
 //
 // 컬럼:
-//   - sha     : shortSha (w-16)
-//   - message : subject + ref labels
-//   - author  : authorName (w-32)
-//   - date    : authorAt 포맷 (w-20)
-//   - signed  : GPG ✓ (w-3)
+//   - branchTag : commit refs (브랜치/태그) — Phase 13-4 (GitKraken parity)
+//   - sha       : shortSha (w-16)
+//   - message   : subject (refs 는 branchTag 에 있으면 message 에서 생략)
+//   - author    : authorName (w-32)
+//   - date      : authorAt 포맷 (w-20)
+//   - signed    : GPG ✓ (w-3)
 //
-// 향후 v1.x:
-//   - "branch/tag" 별도 컬럼 (현재는 message 안에 inline)
-//   - relative time / 라인 +/- (그래프 막대) 등 추가 컬럼
+// branchTag 컬럼이 visible 일 때 message 컬럼은 ref pill 미표시 (중복 회피).
+// 비활성화 (예전 동작) 시 message 안에 inline ref pill — backward compat.
 
 import { computed, ref, watch } from 'vue'
 
-export type CommitColumnId = 'sha' | 'message' | 'author' | 'date' | 'signed'
+export type CommitColumnId = 'branchTag' | 'sha' | 'message' | 'author' | 'date' | 'signed'
 
 export interface CommitColumnDef {
   id: CommitColumnId
@@ -25,6 +25,7 @@ export interface CommitColumnDef {
 }
 
 export const ALL_COLUMNS: CommitColumnDef[] = [
+  { id: 'branchTag', label: 'BRANCH/TAG', widthClass: 'w-32 shrink-0' },
   { id: 'sha', label: 'SHA', widthClass: 'w-16 shrink-0' },
   { id: 'message', label: 'Message', widthClass: 'flex-1 min-w-0' },
   { id: 'author', label: 'Author', widthClass: 'w-32 shrink-0' },
@@ -37,8 +38,9 @@ interface PersistedState {
   order: CommitColumnId[]
 }
 
-const STORAGE_KEY = 'git-fried.commit-table-columns.v1'
-const DEFAULT_ORDER: CommitColumnId[] = ['sha', 'message', 'author', 'date', 'signed']
+// Phase 13-4 — v2 storage key (branchTag 컬럼 신규 추가). 기존 v1 사용자는 default v2 로 migration.
+const STORAGE_KEY = 'git-fried.commit-table-columns.v2'
+const DEFAULT_ORDER: CommitColumnId[] = ['branchTag', 'sha', 'message', 'author', 'date', 'signed']
 
 function safeParse(raw: string | null): PersistedState | null {
   if (!raw) return null
@@ -85,9 +87,7 @@ export function useCommitColumns() {
   const visibleColumns = computed<CommitColumnDef[]>(() => {
     const map = new Map<CommitColumnId, CommitColumnDef>()
     for (const c of ALL_COLUMNS) map.set(c.id, c)
-    return state.value.order
-      .map((id) => map.get(id))
-      .filter((c): c is CommitColumnDef => c != null)
+    return state.value.order.map((id) => map.get(id)).filter((c): c is CommitColumnDef => c != null)
   })
 
   const isVisible = (id: CommitColumnId) => state.value.order.includes(id)

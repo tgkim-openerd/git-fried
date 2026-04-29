@@ -203,52 +203,54 @@ useMenuListener()
     <Sidebar v-if="ui.sidebarVisible.value" />
     <div v-else />
     <main class="flex flex-col overflow-hidden">
-      <!-- 상단 헤더 — Profiles / Home / Settings / Theme -->
-      <div
-        class="relative flex h-9 items-center justify-end gap-2 border-b border-border bg-card px-3 text-xs"
-      >
-        <ProfileSwitcher />
-        <span class="mx-1 text-muted-foreground">·</span>
-        <RouterLink
-          to="/"
-          class="text-muted-foreground hover:text-foreground"
-          active-class="text-foreground font-semibold"
-        >
-          홈
-        </RouterLink>
-        <RouterLink
-          to="/repositories"
-          class="text-muted-foreground hover:text-foreground"
-          active-class="text-foreground font-semibold"
-          title="모든 레포 관리 (프로젝트 그룹)"
-        >
-          레포
-        </RouterLink>
-        <RouterLink
-          v-if="!uiSettings.hideLaunchpad"
-          to="/launchpad"
-          class="text-muted-foreground hover:text-foreground"
-          active-class="text-foreground font-semibold"
-        >
-          Launchpad
-        </RouterLink>
-        <RouterLink
-          to="/settings"
-          class="text-muted-foreground hover:text-foreground"
-          active-class="text-foreground font-semibold"
-        >
-          설정
-        </RouterLink>
-        <button
-          type="button"
-          class="ml-2 rounded-md border border-input px-2 py-0.5 hover:bg-accent"
-          :title="theme === 'dark' ? '라이트로' : '다크로'"
-          @click="toggle"
-        >
-          {{ theme === 'dark' ? '☾' : '☀' }}
-        </button>
-      </div>
-      <RepoTabBar @open-switcher="repoSwitcherOpen = true" />
+      <!-- Phase 13-3 (GitKraken parity) — 헤더 row 제거. nav 를 RepoTabBar 의 trailing slot 으로 통합.
+           기존 36px 헤더 row 절약 → vertical 공간 확보. -->
+      <RepoTabBar @open-switcher="repoSwitcherOpen = true">
+        <template #trailing>
+          <div class="flex items-center gap-2 px-2 text-[11px]">
+            <ProfileSwitcher />
+            <span class="mx-0.5 text-muted-foreground">·</span>
+            <RouterLink
+              to="/"
+              class="text-muted-foreground hover:text-foreground"
+              active-class="text-foreground font-semibold"
+            >
+              홈
+            </RouterLink>
+            <RouterLink
+              to="/repositories"
+              class="text-muted-foreground hover:text-foreground"
+              active-class="text-foreground font-semibold"
+              title="모든 레포 관리 (프로젝트 그룹) — ⌘⇧R"
+            >
+              레포
+            </RouterLink>
+            <RouterLink
+              v-if="!uiSettings.hideLaunchpad"
+              to="/launchpad"
+              class="text-muted-foreground hover:text-foreground"
+              active-class="text-foreground font-semibold"
+            >
+              Launchpad
+            </RouterLink>
+            <RouterLink
+              to="/settings"
+              class="text-muted-foreground hover:text-foreground"
+              active-class="text-foreground font-semibold"
+            >
+              설정
+            </RouterLink>
+            <button
+              type="button"
+              class="ml-1 rounded border border-input px-1.5 py-0.5 text-[10px] hover:bg-accent"
+              :title="theme === 'dark' ? '라이트로' : '다크로'"
+              @click="toggle"
+            >
+              {{ theme === 'dark' ? '☾' : '☀' }}
+            </button>
+          </div>
+        </template>
+      </RepoTabBar>
       <RouterView class="flex-1 overflow-hidden" />
       <StatusBar />
     </main>

@@ -249,11 +249,8 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
 </script>
 
 <template>
-  <div
-    v-if="store.tabs.length > 0"
-    class="flex flex-col border-b border-border bg-muted/40"
-    data-testid="repo-tab-bar"
-  >
+  <!-- Phase 13-3 — 탭 0개여도 trailing slot (헤더 nav) 노출 위해 항상 렌더. -->
+  <div class="flex flex-col border-b border-border bg-muted/40" data-testid="repo-tab-bar">
     <!-- Row 1 — 프로젝트 탭 (Phase 11-7).
          그룹 1개 + solo 면 단순 평면 표시 (label = repo 이름). -->
     <div class="flex items-center gap-0.5 px-1 pt-0.5">
@@ -299,6 +296,10 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
       >
         +
       </button>
+      <!-- Phase 13-3 — Row 1 우측 trailing slot (App.vue 헤더 nav 통합). -->
+      <div class="ml-auto flex shrink-0 items-center">
+        <slot name="trailing" />
+      </div>
     </div>
 
     <!-- Row 2 — 활성 프로젝트의 레포 탭. solo 그룹이면 미표시 (Row 1 이 곧 레포). -->

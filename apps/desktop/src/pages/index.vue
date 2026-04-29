@@ -28,7 +28,9 @@ import CommitDetailSidebar from '@/components/CommitDetailSidebar.vue'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 fullscreen.
 import FullscreenDiffView from '@/components/FullscreenDiffView.vue'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
-import WipBanner from '@/components/WipBanner.vue'
+// Phase 13-1 — WipBanner 제거 (GitKraken parity / vertical 공간 절약).
+//   useWipNote 은 StashPanel 의 new stash message prefill 에서 계속 사용 (clearWipNote 도 stash push 후 자동).
+//   WIP note 자체 입력은 stash 모드 진입 시 noteworthy.
 import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
 import { useTabPerProfile } from '@/composables/useTabPerProfile'
@@ -254,12 +256,11 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- Phase 13-1 (WipBanner 제거) — grid-rows: toolbar / main / terminal? -->
   <div
     class="grid h-full overflow-hidden"
     :class="
-      terminalOpen
-        ? 'grid-rows-[auto_auto_minmax(0,1fr)_minmax(140px,30%)]'
-        : 'grid-rows-[auto_auto_1fr]'
+      terminalOpen ? 'grid-rows-[auto_minmax(0,1fr)_minmax(140px,30%)]' : 'grid-rows-[auto_1fr]'
     "
   >
     <GitKrakenToolbar
@@ -269,7 +270,6 @@ onUnmounted(() => {
       :ahead="ahead"
       :behind="behind"
     />
-    <WipBanner :repo-id="store.activeRepoId" />
 
     <div
       class="grid min-h-0 overflow-hidden"

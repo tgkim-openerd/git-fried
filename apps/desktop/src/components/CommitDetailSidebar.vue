@@ -10,6 +10,7 @@
 // - file stats + paths: useCommitDiff 의 patch 파싱 (patchStats)
 
 import { computed, ref } from 'vue'
+import { useMutation } from '@tanstack/vue-query'
 import { useGraph } from '@/composables/useGraph'
 import { useCommitDiff } from '@/composables/useCommitDiff'
 import { formatDateLocalized } from '@/composables/useUserSettings'
@@ -18,6 +19,9 @@ import { useToast } from '@/composables/useToast'
 import { parsePatchStats, type PatchFile, type PatchFileChange } from '@/utils/patchStats'
 import { buildPathTree } from '@/utils/pathTree'
 import { flattenTree, type FlatTreeRow } from '@/composables/useStatusTreeView'
+import { aiExplainCommit } from '@/api/git'
+import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
+import AiResultModal from './AiResultModal.vue'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 
@@ -134,11 +138,61 @@ function openFullscreen(path: string) {
   if (!props.sha) return
   fsDiff.openCommit(props.sha, path)
 }
+
+// Phase 13-2 (GitKraken parity) — Explain commit (✨ AI) 버튼 (헤더 우상단).
+//   기존: StatusBar 의 좌측 inline diff toolbar 의 ✨ AI (충돌 분석 전용)
+//   여기 추가: 선택 commit 의 변경 내용을 AI 가 자연어로 설명.
+const ai = useAiCli()
+const explainOpen = ref(false)
+const explainContent = ref('')
+const explainError = ref<string | null>(null)
+const explainMut = useMutation({
+  mutationFn: () => {
+    if (props.repoId == null || !props.sha) {
+      return Promise.reject(new Error('레포/commit 미확정'))
+    }
+    if (ai.available.value == null) {
+      return Promise.reject(new Error('Claude/Codex CLI 미설치'))
+    }
+    if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
+    return aiExplainCommit(props.repoId, ai.available.value, props.sha, true)
+  },
+  onSuccess: (out) => {
+    if (out.success) {
+      explainContent.value = out.text
+      explainError.value = null
+      notifyAiDone('AI commit 설명', props.sha?.slice(0, 7) ?? '')
+    } else {
+      explainContent.value = ''
+      explainError.value = out.stderr || out.text || '응답 실패'
+    }
+  },
+  onError: (e) => {
+    const m = describeError(e)
+    if (m.includes('cancelled')) {
+      explainOpen.value = false
+      return
+    }
+    explainContent.value = ''
+    explainError.value = m
+  },
+})
+function onExplainCommit() {
+  if (!props.sha) return
+  if (ai.available.value == null) {
+    toast.warning('AI CLI 미설치', 'Claude 또는 Codex CLI 설치 후 재시도')
+    return
+  }
+  explainOpen.value = true
+  explainContent.value = ''
+  explainError.value = null
+  explainMut.mutate()
+}
 </script>
 
 <template>
   <section data-testid="commit-detail-sidebar" class="flex h-full flex-col overflow-hidden bg-card">
-    <!-- Sprint c30 / GitKraken UX — header: "commit: SHA" + (placeholder) Explain commit -->
+    <!-- Sprint c30 / GitKraken UX — header: "commit: SHA" + ✨ Explain commit (Phase 13-2). -->
     <header
       class="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2"
     >
@@ -155,9 +209,27 @@ function openFullscreen(path: string) {
           {{ sha.slice(0, 7) }}
         </button>
       </div>
-      <span v-if="cd.isFetching.value" class="text-[10px] text-muted-foreground">
-        불러오는 중...
-      </span>
+      <div class="flex items-center gap-1.5">
+        <span v-if="cd.isFetching.value" class="text-[10px] text-muted-foreground">
+          불러오는 중...
+        </span>
+        <!-- Phase 13-2 — Explain commit (GitKraken parity). AI CLI 미설치 시 disabled. -->
+        <button
+          v-if="sha"
+          type="button"
+          class="flex items-center gap-1 rounded border border-input bg-card px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-card"
+          :disabled="!ai.available.value || explainMut.isPending.value"
+          :title="
+            ai.available.value
+              ? `✨ ${ai.available.value} — 이 commit 의 변경을 AI 가 설명`
+              : 'Claude / Codex CLI 미설치'
+          "
+          aria-label="Explain commit (AI)"
+          @click="onExplainCommit"
+        >
+          ✨ {{ explainMut.isPending.value ? '...' : 'Explain' }}
+        </button>
+      </div>
     </header>
 
     <div v-if="!commit" class="p-6 text-center text-sm text-muted-foreground">
@@ -333,10 +405,21 @@ function openFullscreen(path: string) {
         {{ describeError(cd.error.value) }}
       </p>
 
-      <!-- Phase 1 — action button 없음 (좌측 inline diff 에서 cherry-pick/revert/reset/AI 사용). -->
+      <!-- Phase 1 — action button 없음 (좌측 inline diff 에서 cherry-pick/revert/reset 사용).
+           Phase 13-2 — AI commit 설명은 헤더 우상단 [✨ Explain] 버튼에서. -->
       <p class="text-[10px] text-muted-foreground">
-        💡 cherry-pick / revert / reset / AI 설명은 좌측 inline diff 의 toolbar 에서 사용하세요.
+        💡 cherry-pick / revert / reset 은 좌측 inline diff 의 toolbar 에서 사용하세요.
       </p>
     </div>
+
+    <!-- Phase 13-2 — AI explain commit 결과 모달. -->
+    <AiResultModal
+      :open="explainOpen"
+      title="Commit 설명 (AI)"
+      :content="explainContent"
+      :loading="explainMut.isPending.value"
+      :error="explainError"
+      @close="explainOpen = false"
+    />
   </section>
 </template>
