@@ -140,13 +140,27 @@ const fileQuery = useQuery({
   staleTime: STALE_TIME.REALTIME,
 })
 
-// Sprint c30 / GitKraken UX (Phase 7b) — Blame inline view.
-//   useFileBlame 으로 line array fetch (path 만 필요, rev 미지원 — 항상 HEAD blame).
-//   wip 또는 commit context 모두 동일 (현재 HEAD 의 blame).
+// Sprint c30 / GitKraken UX (Phase 7b + 8b) — Blame inline view.
+//   useFileBlame 으로 line array fetch.
+//   Phase 8b — fs.current 가 'commit' source 면 rev=sha 로 그 시점의 blame.
+//   working dir (source='wip') 이면 rev=null → HEAD blame.
+const currentRev = computed(() => {
+  const cur = fs.current.value
+  return cur && cur.source === 'commit' ? cur.sha : null
+})
 const blameQuery = useFileBlame(
   () => props.repoId,
   () => (viewMode.value === 'blame' ? currentPath.value : null),
+  currentRev,
 )
+
+// Sprint c30 / GitKraken UX (Phase 8c) — Blame row click → fs.openCommit(line.sha, path).
+//   같은 fullscreen 안에서 그 commit context 로 source 변경 — patchQuery / fileQuery / blameQuery
+//   모두 새 sha 로 재fetch. viewMode 는 그대로 ('blame' 유지).
+function onBlameRowClick(sha: string) {
+  if (!currentPath.value) return
+  fs.openCommit(sha, currentPath.value)
+}
 
 // Sprint c30 / GitKraken UX (Phase 3) — ESC 닫기.
 //   index.vue 의 onEscKey 가 selectedSha 만 처리 — fullscreen 우선.
@@ -362,18 +376,16 @@ watch(
           <tr
             v-for="(line, i) in blameQuery.data.value"
             :key="i"
-            class="border-b border-border/30 hover:bg-accent/20"
+            class="cursor-pointer border-b border-border/30 hover:bg-accent/30"
+            :title="`${line.authorName} · ${line.summary}\n${line.shortSha} — 클릭하면 이 commit 으로 진입`"
+            @click="onBlameRowClick(line.sha)"
           >
             <td
-              class="w-16 shrink-0 px-2 text-right text-[10px] text-muted-foreground"
-              :title="line.summary"
+              class="w-16 shrink-0 px-2 text-right text-[10px] text-emerald-500/80 hover:text-emerald-500"
             >
               {{ line.shortSha }}
             </td>
-            <td
-              class="w-32 shrink-0 truncate px-1 text-[10px] text-muted-foreground"
-              :title="`${line.authorName} (${line.summary})`"
-            >
+            <td class="w-32 shrink-0 truncate px-1 text-[10px] text-muted-foreground">
               {{ line.authorName }}
             </td>
             <td class="w-12 shrink-0 px-1 text-right text-[10px] text-muted-foreground">

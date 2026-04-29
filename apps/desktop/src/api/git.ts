@@ -329,8 +329,15 @@ export const getFileHistory = (
   path: string,
   limit?: number,
 ): Promise<CommitSummary[]> => invoke('get_file_history', { args: { repoId, path, limit } })
-export const getFileBlame = (repoId: number, path: string): Promise<BlameLine[]> =>
-  invoke('get_file_blame', { args: { repoId, path } })
+/**
+ * Sprint c30 / GitKraken UX (Phase 8b) — rev 인자 추가.
+ * rev=null → HEAD 기준 (default), rev=sha → 그 시점 기준 blame.
+ */
+export const getFileBlame = (
+  repoId: number,
+  path: string,
+  rev: string | null = null,
+): Promise<BlameLine[]> => invoke('get_file_blame', { args: { repoId, path, rev } })
 
 // === LFS ===
 export interface LfsStatus {

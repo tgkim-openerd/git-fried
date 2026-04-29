@@ -81,19 +81,26 @@ pub struct BlameLine {
 
 /// 파일의 blame (line-by-line 작성자 + sha).
 ///
-/// `git blame --porcelain` 출력 파싱.
-/// 첫 commit 헤더 + author/summary 메타 + content line 의 반복.
-pub async fn file_blame(repo: &Path, path: &str) -> AppResult<Vec<BlameLine>> {
+/// `git blame --porcelain [<rev>] -- <path>` 출력 파싱.
+/// rev=None → HEAD 기준 (default), rev=Some(sha) → 그 시점 기준.
+/// Sprint c30 / GitKraken UX (Phase 8b) — rev arg 추가.
+pub async fn file_blame(repo: &Path, path: &str, rev: Option<&str>) -> AppResult<Vec<BlameLine>> {
     if path.trim().is_empty() {
         return Err(AppError::validation("파일 경로가 비었습니다."));
     }
-    let out = git_run(
-        repo,
-        &["blame", "--porcelain", "--no-color", "--", path],
-        &GitRunOpts::default(),
-    )
-    .await?
-    .into_ok()?;
+    // Sprint c30 / Phase 8b — rev 가 있으면 인자에 추가. argv 의 -- 뒤가 path.
+    let mut args: Vec<&str> = vec!["blame", "--porcelain", "--no-color"];
+    if let Some(r) = rev {
+        if r.trim().is_empty() {
+            return Err(AppError::validation("rev 가 비었습니다."));
+        }
+        args.push(r);
+    }
+    args.push("--");
+    args.push(path);
+    let out = git_run(repo, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
 
     parse_blame_porcelain(&out)
 }

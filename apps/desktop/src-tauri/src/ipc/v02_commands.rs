@@ -438,6 +438,8 @@ pub async fn get_file_history(
 pub struct FileBlameArgs {
     pub repo_id: i64,
     pub path: String,
+    /// Sprint c30 / GitKraken UX (Phase 8b) — None=HEAD default, Some(sha)=그 시점 기준.
+    pub rev: Option<String>,
 }
 
 #[tauri::command]
@@ -446,7 +448,7 @@ pub async fn get_file_blame(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Vec<git_fh::BlameLine>> {
     let path = repo_path(&state, args.repo_id).await?;
-    git_fh::file_blame(&path, &args.path).await
+    git_fh::file_blame(&path, &args.path, args.rev.as_deref()).await
 }
 
 // ====== AI subprocess ======
