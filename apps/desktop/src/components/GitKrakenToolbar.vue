@@ -23,6 +23,8 @@ import {
   undoLastAction,
   updateSubmodules,
 } from '@/api/git'
+import { useQuery } from '@tanstack/vue-query'
+import { listRepos } from '@/api/git'
 import { useStash } from '@/composables/useStash'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useStatusCounts } from '@/composables/useStatusCounts'
@@ -30,6 +32,8 @@ import { useGeneralSettings } from '@/composables/useUserSettings'
 import { describeError, humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useShortcut, dispatchShortcut } from '@/composables/useShortcuts'
+import { useReposStore } from '@/stores/repos'
+import { useRepoAliases } from '@/composables/useRepoAliases'
 
 const props = defineProps<{
   repoId: number | null
@@ -48,6 +52,30 @@ const repoIdRef = computed(() => props.repoId)
 const { data: stashList } = useStash(repoIdRef)
 // ARCH-006 fix — useStatusCounts 단일 진실원천.
 const { hasChanges } = useStatusCounts(repoIdRef)
+
+// Phase 10-5 — 활성 레포 breadcrumb (alias 우선 → forge owner / 레포명).
+// store 가 repos 캐시를 보유하지 않으므로 listRepos query 를 직접 사용 (Sidebar 와 동일 캐시 공유).
+const store = useReposStore()
+const aliases = useRepoAliases()
+const { data: reposData } = useQuery({
+  queryKey: computed(() => ['repos', store.activeWorkspaceId]),
+  queryFn: () => listRepos(store.activeWorkspaceId),
+})
+const activeRepo = computed(() => {
+  if (props.repoId == null) return null
+  return reposData.value?.find((r) => r.id === props.repoId) ?? null
+})
+const repoBreadcrumb = computed(() => {
+  const r = activeRepo.value
+  if (!r) return null
+  const resolved = aliases.resolveLocal(r.id, r.name)
+  return {
+    owner: r.forgeOwner,
+    name: resolved.display,
+    original: r.name,
+    aliased: resolved.aliased,
+  }
+})
 
 const stashCount = computed(() => stashList.value?.length ?? 0)
 
@@ -438,8 +466,27 @@ useShortcut('push', onPush)
       </button>
     </div>
 
-    <!-- Branch indicator (우측, SyncBar 호환) -->
+    <!-- Phase 10-5 — Repository breadcrumb + Branch indicator (우측). -->
     <div class="flex items-center gap-2 font-mono">
+      <!-- Repository breadcrumb: owner/name → branch -->
+      <span
+        v-if="repoBreadcrumb"
+        class="flex items-center gap-1"
+        :title="
+          repoBreadcrumb.aliased
+            ? `별칭 (원본: ${repoBreadcrumb.original})`
+            : repoBreadcrumb.original
+        "
+      >
+        <span v-if="repoBreadcrumb.owner" class="text-muted-foreground">
+          {{ repoBreadcrumb.owner }}
+        </span>
+        <span v-if="repoBreadcrumb.owner" class="text-muted-foreground/60">/</span>
+        <span class="font-semibold text-foreground" :class="repoBreadcrumb.aliased ? 'italic' : ''">
+          {{ repoBreadcrumb.name }}
+        </span>
+        <span class="mx-1 text-muted-foreground/60">·</span>
+      </span>
       <span class="text-muted-foreground">on</span>
       <span class="font-semibold text-foreground">{{ branch || '(no branch)' }}</span>
       <span v-if="upstream" class="text-muted-foreground">→ {{ upstream }}</span>
