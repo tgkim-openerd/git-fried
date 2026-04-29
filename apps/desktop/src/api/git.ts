@@ -4,7 +4,12 @@
 // `invoke` 는 자체 timeout wrapper 사용 (`docs/plan/22 §2 C4`):
 //   - 일반: 30s
 //   - bulk_* / clone_ / fetch_ / push / pull / ai_ / maintenance_ / import_gitkraken_apply: 5min
+//
+// 한글 안전성 (Sprint c30 / HIGH 3):
+//   text 를 받는 명령 (commit message, branch/tag/remote name 등) 은 IPC 직전 NFC normalize.
+//   macOS Finder NFD → NFC 변환 후 git 에 전달해야 mangled file/branch name 회피.
 import { invoke } from './invokeWithTimeout'
+import { toNFC } from '@/utils/koreanNormalize'
 import type {
   AddRepoArgs,
   CommitArgs,
@@ -24,13 +29,14 @@ import type {
 export const listWorkspaces = (): Promise<Workspace[]> => invoke('list_workspaces')
 
 export const createWorkspace = (name: string, color?: string | null): Promise<Workspace> =>
-  invoke('create_workspace', { name, color })
+  invoke('create_workspace', { name: toNFC(name), color })
 
 export const updateWorkspace = (
   id: number,
   name?: string | null,
   color?: string | null,
-): Promise<Workspace> => invoke('update_workspace', { args: { id, name, color } })
+): Promise<Workspace> =>
+  invoke('update_workspace', { args: { id, name: name != null ? toNFC(name) : name, color } })
 
 export const deleteWorkspace = (id: number): Promise<void> => invoke('delete_workspace', { id })
 
@@ -79,7 +85,8 @@ export const getCommitDiff = (
 ): Promise<string> => invoke('get_commit_diff', { args: { repoId, sha, context } })
 
 // --- Commit ---
-export const commit = (args: CommitArgs): Promise<CommitResult> => invoke('commit', { args })
+export const commit = (args: CommitArgs): Promise<CommitResult> =>
+  invoke('commit', { args: { ...args, message: toNFC(args.message) } })
 
 export const lastCommitMessage = (repoId: number): Promise<string> =>
   invoke('last_commit_message', { repoId })
@@ -155,13 +162,13 @@ export interface BranchInfo {
 export const listBranches = (repoId: number): Promise<BranchInfo[]> =>
   invoke('list_branches', { repoId })
 export const switchBranch = (repoId: number, name: string, create = false): Promise<void> =>
-  invoke('switch_branch', { args: { repoId, name, create } })
+  invoke('switch_branch', { args: { repoId, name: toNFC(name), create } })
 export const createBranch = (repoId: number, name: string, start?: string): Promise<void> =>
-  invoke('create_branch', { args: { repoId, name, start } })
+  invoke('create_branch', { args: { repoId, name: toNFC(name), start } })
 export const deleteBranch = (repoId: number, name: string, force = false): Promise<void> =>
-  invoke('delete_branch', { args: { repoId, name, force } })
+  invoke('delete_branch', { args: { repoId, name: toNFC(name), force } })
 export const renameBranch = (repoId: number, oldName: string, newName: string): Promise<void> =>
-  invoke('rename_branch', { args: { repoId, oldName, newName } })
+  invoke('rename_branch', { args: { repoId, oldName: toNFC(oldName), newName: toNFC(newName) } })
 
 // --- Stash ---
 export interface StashEntry {
@@ -176,7 +183,10 @@ export const pushStash = (
   repoId: number,
   message?: string | null,
   includeUntracked = false,
-): Promise<void> => invoke('push_stash', { args: { repoId, message, includeUntracked } })
+): Promise<void> =>
+  invoke('push_stash', {
+    args: { repoId, message: message != null ? toNFC(message) : message, includeUntracked },
+  })
 export const applyStash = (repoId: number, index: number): Promise<void> =>
   invoke('apply_stash', { args: { repoId, index } })
 export const popStash = (repoId: number, index: number): Promise<void> =>
@@ -191,7 +201,7 @@ export const applyStashFile = (repoId: number, index: number, path: string): Pro
 
 /** stash@{n} 메시지 수정 (`docs/plan/14 §5 D2`). 새 entry 가 stash@{0} 으로 이동. */
 export const editStashMessage = (repoId: number, index: number, message: string): Promise<void> =>
-  invoke('edit_stash_message', { args: { repoId, index, message } })
+  invoke('edit_stash_message', { args: { repoId, index, message: toNFC(message) } })
 
 // --- Compare (`docs/plan/14 §2 A1`) ---
 export interface CompareCommit {
@@ -882,7 +892,10 @@ export const createPullRequest = (args: {
   head: string
   base: string
   draft?: boolean
-}): Promise<PullRequest> => invoke('create_pull_request', { args })
+}): Promise<PullRequest> =>
+  invoke('create_pull_request', {
+    args: { ...args, title: toNFC(args.title), body: toNFC(args.body) },
+  })
 
 export const listForgeIssues = (repoId: number): Promise<ForgeIssue[]> =>
   invoke('list_issues', { repoId })
@@ -1018,16 +1031,24 @@ export const createTag = (
   name: string,
   target?: string | null,
   message?: string | null,
-): Promise<void> => invoke('create_tag', { args: { repoId, name, target, message } })
+): Promise<void> =>
+  invoke('create_tag', {
+    args: {
+      repoId,
+      name: toNFC(name),
+      target,
+      message: message != null ? toNFC(message) : message,
+    },
+  })
 
 export const deleteTag = (repoId: number, name: string): Promise<void> =>
-  invoke('delete_tag', { args: { repoId, name } })
+  invoke('delete_tag', { args: { repoId, name: toNFC(name) } })
 
 export const pushTag = (repoId: number, remote: string, name: string): Promise<void> =>
-  invoke('push_tag', { args: { repoId, remote, name } })
+  invoke('push_tag', { args: { repoId, remote, name: toNFC(name) } })
 
 export const deleteRemoteTag = (repoId: number, remote: string, name: string): Promise<void> =>
-  invoke('delete_remote_tag', { args: { repoId, remote, name } })
+  invoke('delete_remote_tag', { args: { repoId, remote, name: toNFC(name) } })
 
 // --- Repository-Specific Preferences (`docs/plan/14 §3` Sprint B14-3) ---
 
@@ -1082,16 +1103,16 @@ export const listRemotes = (repoId: number): Promise<RemoteInfo[]> =>
   invoke('list_remotes', { repoId })
 
 export const addRemote = (repoId: number, name: string, url: string): Promise<void> =>
-  invoke('add_remote', { args: { repoId, name, url } })
+  invoke('add_remote', { args: { repoId, name: toNFC(name), url } })
 
 export const removeRemote = (repoId: number, name: string): Promise<void> =>
-  invoke('remove_remote', { args: { repoId, name } })
+  invoke('remove_remote', { args: { repoId, name: toNFC(name) } })
 
 export const renameRemote = (repoId: number, oldName: string, newName: string): Promise<void> =>
-  invoke('rename_remote', { args: { repoId, oldName, newName } })
+  invoke('rename_remote', { args: { repoId, oldName: toNFC(oldName), newName: toNFC(newName) } })
 
 export const setRemoteUrl = (repoId: number, name: string, url: string): Promise<void> =>
-  invoke('set_remote_url', { args: { repoId, name, url } })
+  invoke('set_remote_url', { args: { repoId, name: toNFC(name), url } })
 
 // --- GitKraken importer (`docs/plan/21`) ---
 
