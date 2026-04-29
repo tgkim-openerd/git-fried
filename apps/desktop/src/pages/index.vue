@@ -240,6 +240,21 @@ const inlineDiffActive = computed(
   () => inlineDiffVisible.value && selectedSha.value != null && selectedSha.value !== WIP_SHA,
 )
 
+// Phase 14-1 — inline diff "maximize" (graph 완전 hide, diff fullscreen 가까움).
+// localStorage 'git-fried.inline-diff.maximized' 영속.
+const INLINE_DIFF_MAX_KEY = 'git-fried.inline-diff.maximized'
+function loadInlineDiffMax(): boolean {
+  if (typeof localStorage === 'undefined') return false
+  return localStorage.getItem(INLINE_DIFF_MAX_KEY) === '1'
+}
+const inlineDiffMaximized = ref(loadInlineDiffMax())
+function toggleInlineDiffMaximize() {
+  inlineDiffMaximized.value = !inlineDiffMaximized.value
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(INLINE_DIFF_MAX_KEY, inlineDiffMaximized.value ? '1' : '0')
+  }
+}
+
 // CommandPalette 에서 호출되는 외부 트리거.
 function externalToggleTerminal() {
   terminalOpen.value = !terminalOpen.value
@@ -312,14 +327,17 @@ onUnmounted(() => {
         <div class="overflow-hidden">
           <!-- Sprint c30 / GitKraken UX (Phase 8a) — graph view: CommitGraph 가 WIP row 직접 통합.
                (별도 WipRow mount 제거 — CommitGraph 의 virtualizer idx=0 + dirty 시 WIP row.) -->
-          <!-- Phase 11-1 (GitKraken parity) — 커밋 선택 시 diff 가 primary content.
-               inactive: graph 100% / active: graph compressed (top, 35%) + diff prominent (bottom, 65% min) -->
+          <!-- Phase 14-1 (GitKraken parity 강화) — 커밋 선택 시 diff 가 dominant content.
+               inactive: graph 100% / active: graph 100px (thin context) + diff fills rest /
+               maximized: graph 0 (완전 hidden) + diff full-area (GitKraken Diff View 동등). -->
           <div
             v-if="mainView === 'graph'"
             class="grid h-full min-h-0 overflow-hidden"
             :class="
               inlineDiffActive
-                ? 'grid-rows-[minmax(140px,35%)_minmax(320px,1fr)]'
+                ? inlineDiffMaximized
+                  ? 'grid-rows-[0px_minmax(0,1fr)]'
+                  : 'grid-rows-[100px_minmax(0,1fr)]'
                 : 'grid-rows-[1fr_0]'
             "
           >
@@ -334,7 +352,9 @@ onUnmounted(() => {
               v-if="inlineDiffActive"
               :repo-id="store.activeRepoId"
               :sha="selectedSha"
+              :maximized="inlineDiffMaximized"
               @close="setInlineDiff(false)"
+              @toggle-maximize="toggleInlineDiffMaximize"
             />
           </div>
           <BranchPanel

@@ -13,8 +13,10 @@ import DiffSplitView from './DiffSplitView.vue'
 const props = defineProps<{
   repoId: number | null
   sha: string | null
+  /** Phase 14-1 — graph 완전 hide → diff 가 main view 영역 전체 차지 (GitKraken Diff View 동등). */
+  maximized?: boolean
 }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; toggleMaximize: [] }>()
 
 const cd = useCommitDiff({
   repoId: () => props.repoId,
@@ -155,6 +157,22 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
           @click="cd.explain"
         >
           ✨
+        </button>
+        <!-- Phase 14-1 — diff fullscreen toggle (graph hide / restore). -->
+        <button
+          type="button"
+          class="rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent/40"
+          :aria-label="
+            maximized ? 'diff fullscreen 해제 (graph 표시)' : 'diff fullscreen (graph 숨김)'
+          "
+          :title="
+            maximized
+              ? 'graph 보이기 (현재: diff fullscreen)'
+              : 'graph 숨기고 diff fullscreen (GitKraken Diff View 동등)'
+          "
+          @click="emit('toggleMaximize')"
+        >
+          {{ maximized ? '🗕' : '🗖' }}
         </button>
         <button
           type="button"
