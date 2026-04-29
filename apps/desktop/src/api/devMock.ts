@@ -1140,6 +1140,21 @@ const HANDLERS: Record<string, MockHandler> = {
   // Diff
   get_diff: () => SAMPLE_DIFF,
   get_commit_diff: () => SAMPLE_DIFF,
+  // Sprint c30 / GitKraken UX (Phase 6b) — File View 토글용 raw content fixture.
+  read_file: (args: unknown) => {
+    const path = (args as { args?: { path?: string } } | undefined)?.args?.path ?? 'unknown'
+    return [
+      `// devMock fixture — ${path}`,
+      `// (Tauri webview 부재 시 fixture, 실제 파일이 아닙니다.)`,
+      ``,
+      `import { ref } from 'vue'`,
+      ``,
+      `export function useExample() {`,
+      `  const count = ref(0)`,
+      `  return { count }`,
+      `}`,
+    ].join('\n')
+  },
 
   // Stash / Tags
   list_stash: () => STASHES,

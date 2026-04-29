@@ -11,9 +11,9 @@ use crate::error::{AppError, AppResult};
 use crate::git::{
     branch as git_branch, bulk as git_bulk, clone as git_clone, commit as git_commit,
     config_local as git_cfg_local, diff as git_diff, graph as git_graph, maintenance as git_maint,
-    remote as git_remote, repository as repo, reset as git_reset, runner, stage,
-    stash as git_stash, status as git_status, submodule as git_sub, sync as git_sync,
-    tag as git_tag,
+    read_file as git_read_file, remote as git_remote, repository as repo, reset as git_reset,
+    runner, stage, stash as git_stash, status as git_status, submodule as git_sub,
+    sync as git_sync, tag as git_tag,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -359,6 +359,28 @@ pub async fn get_commit_diff(
 ) -> AppResult<String> {
     let path = repo_path(&state, args.repo_id).await?;
     git_diff::diff_commit(&path, &args.sha, args.context).await
+}
+
+// Sprint c30 / GitKraken UX (Phase 6b) — File View 토글용 raw content read.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadFileArgs {
+    pub repo_id: i64,
+    pub path: String,
+    /// None = working dir, Some(sha) = 그 시점의 파일.
+    pub rev: Option<String>,
+    /// rev=None 일 때 staged 버전 읽기 (`git show :path`).
+    #[serde(default)]
+    pub is_staged: bool,
+}
+
+#[tauri::command]
+pub async fn read_file(
+    args: ReadFileArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<String> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_read_file::read_file(&path, &args.path, args.rev.as_deref(), args.is_staged).await
 }
 
 // ====== Commit ======

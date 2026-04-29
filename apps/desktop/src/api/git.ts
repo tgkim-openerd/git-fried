@@ -84,6 +84,17 @@ export const getCommitDiff = (
   context?: number | null,
 ): Promise<string> => invoke('get_commit_diff', { args: { repoId, sha, context } })
 
+// Sprint c30 / GitKraken UX (Phase 6b) — File View 토글용 raw content.
+//   rev=null + isStaged=false → working dir 파일
+//   rev=null + isStaged=true  → index 의 staged 버전
+//   rev=sha                   → 그 시점의 파일 (`git show sha:path`)
+export const readFile = (
+  repoId: number,
+  path: string,
+  rev: string | null = null,
+  isStaged = false,
+): Promise<string> => invoke('read_file', { args: { repoId, path, rev, isStaged } })
+
 // --- Commit ---
 export const commit = (args: CommitArgs): Promise<CommitResult> =>
   invoke('commit', { args: { ...args, message: toNFC(args.message) } })

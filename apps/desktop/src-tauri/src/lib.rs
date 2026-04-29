@@ -93,6 +93,7 @@ pub fn run() {
             ipc::commands::apply_patch,
             ipc::commands::get_diff,
             ipc::commands::get_commit_diff,
+            ipc::commands::read_file,
             ipc::commands::commit,
             ipc::commands::last_commit_message,
             ipc::commands::fetch_all,

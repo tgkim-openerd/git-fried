@@ -17,7 +17,7 @@
 
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { getDiff } from '@/api/git'
+import { getDiff, readFile } from '@/api/git'
 import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
 import FileHistoryModal from './FileHistoryModal.vue'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
@@ -100,28 +100,49 @@ function onNextHunk() {
   diffViewerRef.value?.nextHunk()
 }
 
-// Sprint c30 / GitKraken UX (Phase 4-1) — File History modal (FileHistoryModal 재사용).
+// Sprint c30 / GitKraken UX (Phase 4-1 + 6a) — File History modal (FileHistoryModal 재사용).
 //   GitKraken 의 "History" 버튼 흡수 — 파일의 커밋 이력 + blame 표시.
+//   Phase 6a — Blame 버튼은 동일 modal 의 'blame' tab 으로 직접 진입.
 const historyOpen = ref(false)
+const historyInitialTab = ref<'history' | 'blame'>('history')
 function openHistory() {
   if (!fs.current.value) return
+  historyInitialTab.value = 'history'
+  historyOpen.value = true
+}
+function openBlame() {
+  if (!fs.current.value) return
+  historyInitialTab.value = 'blame'
   historyOpen.value = true
 }
 
-// Sprint c30 / GitKraken UX (Phase 4-1) — File View / Diff View 토글.
-//   File View 는 파일 raw content 표시 (별도 IPC 필요 — Phase 5).
-//   현재는 'diff' 활성, 'file' 클릭 시 toast 안내 (placeholder).
+// Sprint c30 / GitKraken UX (Phase 4-1 + 6b) — File View / Diff View 토글.
+//   Phase 6b — File View 활성화 (Rust read_file IPC 추가).
+//     'diff' = 기존 patch + DiffViewer
+//     'file' = readFile(repoId, path, rev?, isStaged) → raw content + <pre>
 type ViewMode = 'diff' | 'file'
 const viewMode = ref<ViewMode>('diff')
 function setViewMode(m: ViewMode) {
-  if (m === 'file') {
-    // Phase 5 — 파일 raw content read IPC 추가 시 활성화.
-    return
-  }
   viewMode.value = m
 }
 
 const currentPath = computed(() => fs.current.value?.path ?? null)
+
+// Sprint c30 / GitKraken UX (Phase 6b) — File View raw content fetch.
+const fileQuery = useQuery({
+  queryKey: computed(() => {
+    const a = queryArgs.value
+    if (!a) return ['fullscreen-file', 'idle'] as const
+    return ['fullscreen-file', a.repoId, a.staged, a.path, a.rev] as const
+  }),
+  queryFn: () => {
+    const a = queryArgs.value
+    if (!a) return Promise.resolve('')
+    return readFile(a.repoId, a.path, a.rev, a.staged)
+  },
+  enabled: computed(() => viewMode.value === 'file' && queryArgs.value != null),
+  staleTime: STALE_TIME.REALTIME,
+})
 
 // Sprint c30 / GitKraken UX (Phase 3) — ESC 닫기.
 //   index.vue 의 onEscKey 가 selectedSha 만 처리 — fullscreen 우선.
@@ -172,7 +193,7 @@ watch(
         <span class="ml-2">{{ headerLabel }}</span>
       </div>
 
-      <!-- Sprint c30 / GitKraken UX (Phase 4-1) — File View / Diff View 토글 -->
+      <!-- Sprint c30 / GitKraken UX (Phase 4-1 + 6b) — File View / Diff View 토글 -->
       <div
         class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5"
         title="View 모드"
@@ -183,11 +204,10 @@ watch(
           :class="
             viewMode === 'file'
               ? 'bg-accent text-accent-foreground font-semibold'
-              : 'text-muted-foreground/50'
+              : 'text-muted-foreground hover:text-foreground'
           "
-          disabled
-          title="File View — 파일 raw content (Phase 5 후속)"
-          aria-label="File View (미구현)"
+          aria-label="File View"
+          data-testid="fullscreen-diff-file-view"
           @click="setViewMode('file')"
         >
           File View
@@ -201,19 +221,21 @@ watch(
               : 'text-muted-foreground hover:text-foreground'
           "
           aria-label="Diff View"
+          data-testid="fullscreen-diff-diff-view"
           @click="setViewMode('diff')"
         >
           Diff View
         </button>
       </div>
 
-      <!-- Sprint c30 / GitKraken UX (Phase 4-1) — Blame / History (placeholder + 활성) -->
+      <!-- Sprint c30 / GitKraken UX (Phase 4-1 + 6a) — Blame / History 버튼 (둘 다 활성) -->
       <button
         type="button"
-        class="rounded px-1.5 py-0.5 text-[10px] text-muted-foreground/50"
-        disabled
-        title="Blame — File History modal 의 blame tab (Phase 5 통합)"
-        aria-label="Blame (미구현)"
+        class="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+        title="Blame — 파일 line-by-line author 추적 (FileHistoryModal blame tab)"
+        aria-label="File blame"
+        data-testid="fullscreen-diff-blame"
+        @click="openBlame"
       >
         Blame
       </button>
@@ -273,37 +295,68 @@ watch(
       </button>
     </header>
 
-    <div
-      v-if="patchQuery.isFetching.value"
-      class="flex-1 p-6 text-center text-xs text-muted-foreground"
-    >
-      불러오는 중...
-    </div>
-    <div
-      v-else-if="patchQuery.error.value"
-      class="flex-1 overflow-auto p-3 text-xs text-destructive"
-    >
-      {{ describeError(patchQuery.error.value) }}
-    </div>
-    <div
-      v-else-if="!patchQuery.data.value"
-      class="flex-1 p-6 text-center text-xs text-muted-foreground"
-    >
-      변경사항 없음 — 다른 파일을 더블클릭하거나 ESC 로 닫으세요.
-    </div>
-    <DiffViewer
-      v-else
-      ref="diffViewer"
-      :patch="patchQuery.data.value"
-      class="flex-1 overflow-auto"
-    />
+    <!-- Sprint c30 / GitKraken UX (Phase 6b) — viewMode 별 분기 -->
+    <template v-if="viewMode === 'file'">
+      <div
+        v-if="fileQuery.isFetching.value"
+        class="flex-1 p-6 text-center text-xs text-muted-foreground"
+      >
+        파일 로딩 중...
+      </div>
+      <div
+        v-else-if="fileQuery.error.value"
+        class="flex-1 overflow-auto p-3 text-xs text-destructive"
+      >
+        {{ describeError(fileQuery.error.value) }}
+      </div>
+      <div
+        v-else-if="!fileQuery.data.value"
+        class="flex-1 p-6 text-center text-xs text-muted-foreground"
+      >
+        파일이 비어있거나 binary 입니다.
+      </div>
+      <pre
+        v-else
+        data-testid="fullscreen-file-content"
+        class="flex-1 overflow-auto whitespace-pre p-3 font-mono text-xs"
+        >{{ fileQuery.data.value }}</pre
+      >
+    </template>
 
-    <!-- Sprint c30 / GitKraken UX (Phase 4-1) — File History modal (재사용). -->
+    <template v-else>
+      <div
+        v-if="patchQuery.isFetching.value"
+        class="flex-1 p-6 text-center text-xs text-muted-foreground"
+      >
+        불러오는 중...
+      </div>
+      <div
+        v-else-if="patchQuery.error.value"
+        class="flex-1 overflow-auto p-3 text-xs text-destructive"
+      >
+        {{ describeError(patchQuery.error.value) }}
+      </div>
+      <div
+        v-else-if="!patchQuery.data.value"
+        class="flex-1 p-6 text-center text-xs text-muted-foreground"
+      >
+        변경사항 없음 — 다른 파일을 더블클릭하거나 ESC 로 닫으세요.
+      </div>
+      <DiffViewer
+        v-else
+        ref="diffViewer"
+        :patch="patchQuery.data.value"
+        class="flex-1 overflow-auto"
+      />
+    </template>
+
+    <!-- Sprint c30 / GitKraken UX (Phase 4-1 + 6a) — File History modal (Blame 버튼도 동일 modal). -->
     <FileHistoryModal
       v-if="historyOpen && currentPath"
       :repo-id="repoId"
       :path="currentPath"
       :open="historyOpen"
+      :initial-tab="historyInitialTab"
       @close="historyOpen = false"
     />
   </section>

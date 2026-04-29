@@ -53,10 +53,7 @@ pub enum AppError {
     /// Sprint c30 / MED 2 — Forge API rate-limit 도달.
     /// `retry_after` 는 초 단위 권장 대기 시간 (Gitea/GitHub Retry-After 헤더).
     #[error("API 호출 한도 초과 ({provider}). {retry_after}초 후 재시도")]
-    RateLimit {
-        provider: String,
-        retry_after: u64,
-    },
+    RateLimit { provider: String, retry_after: u64 },
 
     /// Sprint c30 / MED 2 — Forge 토큰 만료 / 무효.
     /// frontend 에서 자동으로 토큰 재입력 모달 띄우는 분기 트리거.
@@ -186,12 +183,10 @@ mod tests {
         assert_eq!(v["provider"], json!("Gitea"));
         assert_eq!(v["retryAfter"], json!(60));
         // 한국어 메시지가 직렬화 message 에 들어감.
-        assert!(
-            v["message"]
-                .as_str()
-                .unwrap()
-                .contains("API 호출 한도 초과")
-        );
+        assert!(v["message"]
+            .as_str()
+            .unwrap()
+            .contains("API 호출 한도 초과"));
     }
 
     #[test]
@@ -206,12 +201,10 @@ mod tests {
         let v = serde_json::to_value(&e).expect("serde");
         assert_eq!(v["kind"], json!("auth_expired"));
         assert_eq!(v["provider"], json!("GitHub"));
-        assert!(
-            v["message"]
-                .as_str()
-                .unwrap()
-                .contains("토큰이 만료되었거나")
-        );
+        assert!(v["message"]
+            .as_str()
+            .unwrap()
+            .contains("토큰이 만료되었거나"));
     }
 
     #[test]

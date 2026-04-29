@@ -20,6 +20,7 @@ pub mod hide;
 pub mod lfs;
 pub mod maintenance;
 pub mod merge;
+pub mod read_file;
 pub mod rebase;
 pub mod reflog;
 pub mod remote;
