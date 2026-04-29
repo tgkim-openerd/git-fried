@@ -18,6 +18,7 @@ import { useGeneralSettings } from '@/composables/useUserSettings'
 import { useNotification } from '@/composables/useNotification'
 import { useStatus } from '@/composables/useStatus'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
+import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 import AiResultModal from './AiResultModal.vue'
 
 const store = useReposStore()
@@ -51,27 +52,21 @@ const launchpadCount = computed(() => meta.activeQuery.data.value?.length ?? 0)
 
 // Sprint D3 — Conflict 상태 명확한 변화 (ok ↔ conflict) 시 OS notification.
 let lastOk: boolean | null = null
-watch(
-  prediction,
-  (next) => {
-    if (!next) return
-    const ok = next.ok
-    if (lastOk !== null && lastOk !== ok) {
-      if (!ok) {
-        void notification.notify(
-          '⚠ 충돌 발생 예측',
-          `${next.target}: ${next.conflictFiles.length}개 파일`,
-        )
-      } else {
-        void notification.notify(
-          '✓ 충돌 해소',
-          `${next.target} 와 동기화 가능`,
-        )
-      }
+watch(prediction, (next) => {
+  if (!next) return
+  const ok = next.ok
+  if (lastOk !== null && lastOk !== ok) {
+    if (!ok) {
+      void notification.notify(
+        '⚠ 충돌 발생 예측',
+        `${next.target}: ${next.conflictFiles.length}개 파일`,
+      )
+    } else {
+      void notification.notify('✓ 충돌 해소', `${next.target} 와 동기화 가능`)
     }
-    lastOk = ok
-  },
-)
+  }
+  lastOk = ok
+})
 
 // Sprint F2 — ⚠ 옆 ✨ 버튼: 충돌 예상 영역 분석 (aiExplainBranch).
 const explainOpen = ref(false)
@@ -121,6 +116,30 @@ function suggestResolution() {
   explainError.value = null
   explainMut.mutate()
 }
+
+// Phase 10-3 — 단축키 contextual hint (footer 중앙).
+// macOS = ⌘, others = Ctrl. SSR-safe (navigator 미존재 → Ctrl).
+const isMac = computed<boolean>(() => {
+  if (typeof navigator === 'undefined') return false
+  return /Mac|iPhone|iPad/.test(navigator.platform)
+})
+const modKey = computed(() => (isMac.value ? '⌘' : 'Ctrl'))
+
+interface ShortcutHint {
+  combo: string
+  label: string
+  action?: ShortcutAction
+}
+const shortcutHints = computed<ShortcutHint[]>(() => [
+  { combo: `${modKey.value}+P`, label: 'Palette' },
+  { combo: `${modKey.value}+1~7`, label: 'View' },
+  { combo: `${modKey.value}+K`, label: '우측', action: 'toggleDetail' },
+  { combo: '?', label: '도움말', action: 'help' },
+])
+function onShortcutClick(h: ShortcutHint) {
+  if (!h.action) return
+  dispatchShortcut(h.action)
+}
 </script>
 
 <template>
@@ -129,7 +148,10 @@ function suggestResolution() {
   >
     <!-- Conflict prediction -->
     <span v-if="store.activeRepoId == null">레포 미선택</span>
-    <span v-else-if="predictionQuery.isFetching.value && !prediction" class="text-muted-foreground/70">
+    <span
+      v-else-if="predictionQuery.isFetching.value && !prediction"
+      class="text-muted-foreground/70"
+    >
       target 충돌 예측 중...
     </span>
     <span
@@ -165,17 +187,40 @@ function suggestResolution() {
       ✨ {{ explainMut.isPending.value ? '...' : 'AI' }}
     </button>
 
+    <!-- Phase 10-3 — 단축키 hint (중앙). action 매핑된 항목은 클릭 시 dispatchShortcut. -->
+    <div
+      class="ml-auto flex items-center gap-2 text-[10px] opacity-70 hover:opacity-100"
+      data-testid="status-bar-shortcuts"
+    >
+      <button
+        v-for="h in shortcutHints"
+        :key="h.combo"
+        type="button"
+        class="flex items-center gap-1 rounded transition-colors"
+        :class="h.action ? 'cursor-pointer hover:text-foreground' : 'cursor-default'"
+        :disabled="!h.action"
+        :title="h.action ? `${h.combo} — ${h.label} (클릭 가능)` : `${h.combo} — ${h.label}`"
+        @click="onShortcutClick(h)"
+      >
+        <kbd
+          class="rounded border border-border bg-muted/50 px-1 py-0 font-mono text-[9px] tracking-tight"
+        >
+          {{ h.combo }}
+        </kbd>
+        <span>{{ h.label }}</span>
+      </button>
+    </div>
+
     <!-- Launchpad badge -->
     <RouterLink
       v-if="launchpadCount > 0"
       to="/launchpad"
-      class="ml-auto rounded border border-border px-1.5 py-0.5 hover:bg-accent/40"
+      class="rounded border border-border px-1.5 py-0.5 hover:bg-accent/40"
       title="Launchpad — pinned + 활성 snooze"
       :aria-label="`Launchpad — ${launchpadCount}개 pinned + 활성 snooze PR`"
     >
       ⭐💤 {{ launchpadCount }}
     </RouterLink>
-    <span v-else class="ml-auto" />
   </footer>
 
   <AiResultModal
