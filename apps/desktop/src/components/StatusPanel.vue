@@ -18,6 +18,8 @@ import { STALE_TIME } from '@/api/queryClient'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
 import HunkStageModal from './HunkStageModal.vue'
+// Sprint c30 / HIGH 1 — 4 섹션 sticky header sub-component.
+import StatusSectionHeader from './StatusSectionHeader.vue'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import { useStatusFilter } from '@/composables/useStatusFilter'
 import { flattenTree, useStatusTreeView } from '@/composables/useStatusTreeView'
@@ -392,27 +394,16 @@ function onNextHunk() {
       <div class="flex-1 overflow-auto px-2 py-2 text-sm">
         <!-- Staged -->
         <div v-if="status && status.staged.length > 0" class="mb-3">
-          <div
-            class="sticky top-0 z-10 mb-1 flex cursor-pointer select-none items-center justify-between border-b border-border/40 bg-card"
-            title="우클릭 = 섹션 접기/펴기"
-            @contextmenu.prevent="collapsedStaged = !collapsedStaged"
-          >
-            <span
-              class="text-xs uppercase tracking-wider text-muted-foreground"
-              @click="collapsedStaged = !collapsedStaged"
-            >
-              {{ collapsedStaged ? '▶' : '▼' }} Staged ({{ status.staged.length }})
-            </span>
-            <button
-              type="button"
-              class="text-xs text-muted-foreground hover:text-foreground"
-              title="모두 unstage (⌘⇧U)"
-              :aria-label="`staged ${status.staged.length}개 모두 unstage`"
-              @click.stop="onUnstageAll"
-            >
-              모두 unstage
-            </button>
-          </div>
+          <StatusSectionHeader
+            title="Staged"
+            :count="status.staged.length"
+            :collapsed="collapsedStaged"
+            bulk-label="모두 unstage"
+            bulk-title="모두 unstage (⌘⇧U)"
+            :bulk-aria-label="`staged ${status.staged.length}개 모두 unstage`"
+            @update:collapsed="collapsedStaged = $event"
+            @bulk="onUnstageAll"
+          />
           <ul v-if="!collapsedStaged && viewMode === 'path'">
             <FileRow
               v-for="f in filteredStaged"
@@ -497,25 +488,14 @@ function onNextHunk() {
 
         <!-- Unstaged -->
         <div v-if="status && status.unstaged.length > 0" class="mb-3">
-          <div
-            class="sticky top-0 z-10 mb-1 flex cursor-pointer select-none items-center justify-between border-b border-border/40 bg-card"
-            title="우클릭 = 섹션 접기/펴기"
-            @contextmenu.prevent="collapsedUnstaged = !collapsedUnstaged"
-          >
-            <span
-              class="text-xs uppercase tracking-wider text-muted-foreground"
-              @click="collapsedUnstaged = !collapsedUnstaged"
-            >
-              {{ collapsedUnstaged ? '▶' : '▼' }} Modified ({{ status.unstaged.length }})
-            </span>
-            <button
-              type="button"
-              class="text-xs text-muted-foreground hover:text-foreground"
-              @click.stop="onStageAll"
-            >
-              모두 stage
-            </button>
-          </div>
+          <StatusSectionHeader
+            title="Modified"
+            :count="status.unstaged.length"
+            :collapsed="collapsedUnstaged"
+            bulk-label="모두 stage"
+            @update:collapsed="collapsedUnstaged = $event"
+            @bulk="onStageAll"
+          />
           <ul v-if="!collapsedUnstaged && viewMode === 'path'">
             <li
               v-for="f in filteredUnstaged"
@@ -650,16 +630,12 @@ function onNextHunk() {
 
         <!-- Untracked -->
         <div v-if="status && status.untracked.length > 0" class="mb-3">
-          <div
-            class="sticky top-0 z-10 mb-1 flex cursor-pointer select-none items-center justify-between border-b border-border/40 bg-card"
-            title="우클릭 = 섹션 접기/펴기"
-            @contextmenu.prevent="collapsedUntracked = !collapsedUntracked"
-            @click="collapsedUntracked = !collapsedUntracked"
-          >
-            <span class="text-xs uppercase tracking-wider text-muted-foreground">
-              {{ collapsedUntracked ? '▶' : '▼' }} Untracked ({{ status.untracked.length }})
-            </span>
-          </div>
+          <StatusSectionHeader
+            title="Untracked"
+            :count="status.untracked.length"
+            :collapsed="collapsedUntracked"
+            @update:collapsed="collapsedUntracked = $event"
+          />
           <ul v-if="!collapsedUntracked && viewMode === 'path'">
             <li
               v-for="p in filteredUntracked"
@@ -726,14 +702,13 @@ function onNextHunk() {
 
         <!-- Conflicted -->
         <div v-if="status && status.conflicted.length > 0" class="mb-3">
-          <div
-            class="sticky top-0 z-10 mb-1 cursor-pointer select-none border-b border-border/40 bg-card text-xs uppercase tracking-wider text-destructive"
-            title="우클릭 = 섹션 접기/펴기"
-            @contextmenu.prevent="collapsedConflicted = !collapsedConflicted"
-            @click="collapsedConflicted = !collapsedConflicted"
-          >
-            {{ collapsedConflicted ? '▶' : '▼' }} Conflicted ({{ status.conflicted.length }})
-          </div>
+          <StatusSectionHeader
+            title="Conflicted"
+            :count="status.conflicted.length"
+            :collapsed="collapsedConflicted"
+            destructive
+            @update:collapsed="collapsedConflicted = $event"
+          />
           <ul v-if="!collapsedConflicted && viewMode === 'path'">
             <li
               v-for="p in filteredConflicted"
