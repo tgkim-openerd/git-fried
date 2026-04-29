@@ -50,6 +50,12 @@ function commitRowAt(idx: number): GraphRow | null {
   const offset = wipActive.value ? idx - 1 : idx
   return rows.value[offset] ?? null
 }
+function commitTooltip(row: GraphRow | null | undefined): string {
+  if (!row) return ''
+  const subject = row.commit.subject ?? ''
+  const body = (row.commit.body ?? '').trim()
+  return body ? `${subject}\n\n${body}` : subject
+}
 const { visibleFn: visibleRef, soloRef } = useRefVisibility(() => props.repoId)
 const { hide: hideMut } = useHiddenRefMutations(() => props.repoId)
 const { setSolo } = useSoloRef(() => props.repoId)
@@ -727,7 +733,11 @@ onUnmounted(() => {
                 {{ commitRowAt(v.index)?.commit.shortSha }}
               </span>
               <!-- message + refs -->
-              <span v-else-if="col.id === 'message'" :class="[col.widthClass, 'truncate']">
+              <span
+                v-else-if="col.id === 'message'"
+                :class="[col.widthClass, 'truncate']"
+                :title="commitTooltip(commitRowAt(v.index))"
+              >
                 {{ commitRowAt(v.index)?.commit.subject }}
                 <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
                   <span
