@@ -102,4 +102,89 @@ describe('invokeWithTimeout', () => {
     await invoke('clone_repo')
     expect(completeLongOpMock).toHaveBeenCalledTimes(1)
   })
+
+  // Sprint c30 / MED 1 — Retry policy
+  describe('retry (network-flaky)', () => {
+    it('clone_ transient 실패 → 1회 자동 retry → 성공', async () => {
+      let calls = 0
+      nativeInvokeMock.mockImplementation(() => {
+        calls += 1
+        if (calls === 1) return Promise.reject(new Error('connection reset'))
+        return Promise.resolve('ok')
+      })
+      const result = await invoke('clone_repo')
+      expect(result).toBe('ok')
+      expect(calls).toBe(2)
+    })
+
+    it('fetch_ 인증 실패 (401) → retry 안 함', async () => {
+      let calls = 0
+      nativeInvokeMock.mockImplementation(() => {
+        calls += 1
+        return Promise.reject(new Error('401 unauthorized'))
+      })
+      await expect(invoke('fetch_all')).rejects.toThrow(/401/)
+      expect(calls).toBe(1)
+    })
+
+    it('pull AppError kind=auth_expired → retry 안 함', async () => {
+      let calls = 0
+      nativeInvokeMock.mockImplementation(() => {
+        calls += 1
+        return Promise.reject({ kind: 'auth_expired', message: '토큰 만료' })
+      })
+      await expect(invoke('pull')).rejects.toMatchObject({ kind: 'auth_expired' })
+      expect(calls).toBe(1)
+    })
+
+    it('list_branches (non-retryable cmd) → retry 안 함', async () => {
+      let calls = 0
+      nativeInvokeMock.mockImplementation(() => {
+        calls += 1
+        return Promise.reject(new Error('boom'))
+      })
+      await expect(invoke('list_branches')).rejects.toThrow('boom')
+      expect(calls).toBe(1)
+    })
+
+    it('opts.retry=0 → 명시 비활성 (clone_ 라도)', async () => {
+      let calls = 0
+      nativeInvokeMock.mockImplementation(() => {
+        calls += 1
+        return Promise.reject(new Error('boom'))
+      })
+      await expect(invoke('clone_repo', undefined, { retry: 0 })).rejects.toThrow('boom')
+      expect(calls).toBe(1)
+    })
+
+    it('opts.retry=2 → 일반 명령에도 적용', async () => {
+      let calls = 0
+      nativeInvokeMock.mockImplementation(() => {
+        calls += 1
+        if (calls < 3) return Promise.reject(new Error('flaky'))
+        return Promise.resolve('ok')
+      })
+      const result = await invoke('list_branches', undefined, { retry: 2 })
+      expect(result).toBe('ok')
+      expect(calls).toBe(3)
+    })
+
+    it('cancelled 에러는 retry 안 함', async () => {
+      let calls = 0
+      nativeInvokeMock.mockImplementation(() => {
+        calls += 1
+        return Promise.reject(new Error('user cancelled'))
+      })
+      await expect(invoke('clone_repo')).rejects.toThrow(/cancelled/)
+      expect(calls).toBe(1)
+    })
+
+    it('IPC timeout 자체는 retry 안 함 (사용자 cancel 의지)', async () => {
+      vi.useFakeTimers()
+      nativeInvokeMock.mockImplementation(() => new Promise(() => {})) // hang
+      const promise = invoke('clone_repo')
+      vi.advanceTimersByTime(5 * 60_000)
+      await expect(promise).rejects.toThrow(/IPC timeout/)
+    })
+  })
 })
