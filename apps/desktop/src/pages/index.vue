@@ -42,27 +42,33 @@ const upstream = computed(() => status.value?.upstream ?? null)
 const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
-// Phase 1 (plan-commit-graph-ux v2) — 8번째 'commit' tab 추가 (selectedSha 시 조건부 mount).
-type Tab = 'status' | 'branches' | 'stash' | 'submodule' | 'lfs' | 'pr' | 'worktree' | 'commit'
-const tab = ref<Tab>('status')
+// Sprint c30 / GitKraken UX (Phase 5) — main 영역 view 분리.
+//   기존 우측 8 tabs (status/branches/.../commit) → 가운데 7 mainViews + 우측 sidebar 단순화.
+//   - mainView: 가운데 영역에서 보여줄 panel ('graph' default, branches/stash/pr/worktree/...)
+//   - 우측 sidebar: selectedSha 분기 (WIP staging / commit detail / placeholder) — tab 제거
+//   - 'status' / 'commit' 은 mainView 에서 제거 (우측 sidebar 가 자동 mapping)
+type MainView = 'graph' | 'branches' | 'stash' | 'submodule' | 'lfs' | 'pr' | 'worktree'
+const mainView = ref<MainView>('graph')
 
 // Sprint B10 — per-profile 탭 영속화.
-useTabPerProfile<Tab>(tab, 'status')
+useTabPerProfile<MainView>(mainView, 'graph')
 
 // 통합 터미널 가시성 (⌘` 토글) — `docs/plan/10 옵션 A`.
 const terminalOpen = ref(false)
 
-// ⌘1~⌘7 탭 전환 단축키
-useShortcut('tab1', () => (tab.value = 'status'))
-useShortcut('tab2', () => (tab.value = 'branches'))
-useShortcut('tab3', () => (tab.value = 'stash'))
-useShortcut('tab4', () => (tab.value = 'submodule'))
-useShortcut('tab5', () => (tab.value = 'lfs'))
-useShortcut('tab6', () => (tab.value = 'pr'))
-useShortcut('tab7', () => (tab.value = 'worktree'))
+// Sprint c30 / GitKraken UX (Phase 5) — ⌘1~⌘7 mainView 단축키.
+//   ⌘1 = graph (기존 status 의 working dir 보기는 우측 staging 으로 자동 노출)
+//   ⌘2 = branches, ⌘3 = stash, ⌘4 = submodule, ⌘5 = lfs, ⌘6 = pr, ⌘7 = worktree
+useShortcut('tab1', () => (mainView.value = 'graph'))
+useShortcut('tab2', () => (mainView.value = 'branches'))
+useShortcut('tab3', () => (mainView.value = 'stash'))
+useShortcut('tab4', () => (mainView.value = 'submodule'))
+useShortcut('tab5', () => (mainView.value = 'lfs'))
+useShortcut('tab6', () => (mainView.value = 'pr'))
+useShortcut('tab7', () => (mainView.value = 'worktree'))
 
-// ⌘B → 브랜치 탭 (BranchPanel 의 새 브랜치 input 으로 자동 focus 가능)
-useShortcut('newBranch', () => (tab.value = 'branches'))
+// ⌘B → 브랜치 view
+useShortcut('newBranch', () => (mainView.value = 'branches'))
 useShortcut('terminal', () => (terminalOpen.value = !terminalOpen.value))
 
 // Sprint B5 — ⌘K = 우측 detail 패널 토글
@@ -92,6 +98,9 @@ const userChoseSha = ref(false)
 //   1. 같은 sha 재선택: 선택 해제 (toggle, 우측 status 복귀)
 //   2. 다른 sha: selectedSha set + tab='commit' 즉시 전환 (GitKraken 동작)
 //      현재 어느 tab 이든 (Branches/PR/...) commit detail 로 즉시 전환됨.
+// Sprint c30 / GitKraken UX (Phase 5) — commit row click.
+//   selectedSha 만 변경 — 우측 sidebar 가 자동 commit detail 로 분기.
+//   tab 자동 변경 안 함 — 사용자가 'pr' / 'branches' 보고 있을 때 graph 로 강제 전환 안 함.
 function onSelectCommit(sha: string) {
   userChoseSha.value = true
   if (selectedSha.value === sha) {
@@ -99,12 +108,11 @@ function onSelectCommit(sha: string) {
     return
   }
   selectedSha.value = sha
-  tab.value = 'commit'
 }
 
-// Sprint c30 / GitKraken UX (Phase 2a) — WipRow click 핸들러.
-//   같은 sentinel 재클릭 = toggle (deselect, 우측 status 유지).
-//   다른 sha 였으면 sentinel set + tab='status' 강제 (staging 모드).
+// Sprint c30 / GitKraken UX (Phase 5) — WipRow click 핸들러.
+//   selectedSha=WIP_SHA → 우측 sidebar = staging UI (StatusPanel + CommitMessageInput).
+//   mainView 변경 안 함 (graph 보고 있으면 graph 유지, 다른 panel 이면 그것 유지).
 function onSelectWip() {
   userChoseSha.value = true
   if (selectedSha.value === WIP_SHA) {
@@ -112,7 +120,6 @@ function onSelectWip() {
     return
   }
   selectedSha.value = WIP_SHA
-  tab.value = 'status'
 }
 
 // Sprint c30 / GitKraken UX (Phase 2a) — WipRow visibility + change count.
@@ -128,19 +135,26 @@ const showWipRow = computed(() => !!status.value && !status.value.isClean)
 const fsDiff = useFullscreenDiff()
 const fullscreenActive = computed(() => fsDiff.current.value != null)
 
-// Phase 1 (plan-commit-graph-ux v2) — main-nav 8번째 'commit' tab 조건부 mount.
-// Sprint c30 / GitKraken UX (Phase 2a) — selectedSha === WIP_SHA 시 'commit' tab 미추가
-//   (WIP 는 우측 status tab 의 staging UI 사용).
-const mainTabs = computed<Tab[]>(() => {
-  const base: Tab[] = ['status', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree']
-  if (!selectedSha.value || selectedSha.value === WIP_SHA) return base
-  return [...base, 'commit']
-})
-
-// Phase 1 — selectedSha=null 트랜지션 시 tab='commit' 이면 status fallback.
-watch(selectedSha, (v) => {
-  if ((v == null || v === WIP_SHA) && tab.value === 'commit') tab.value = 'status'
-})
+// Sprint c30 / GitKraken UX (Phase 5) — main view 7개 (status/commit 제거).
+const MAIN_VIEWS: MainView[] = ['graph', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree']
+function mainViewLabel(v: MainView): string {
+  switch (v) {
+    case 'graph':
+      return '그래프'
+    case 'branches':
+      return '브랜치'
+    case 'stash':
+      return 'Stash'
+    case 'submodule':
+      return 'Sub'
+    case 'lfs':
+      return 'LFS'
+    case 'pr':
+      return 'PR'
+    case 'worktree':
+      return 'WT'
+  }
+}
 
 // Sprint c30 / GitKraken UX — ESC 키 = commit 선택 해제 (모달 없을 때만).
 //   useShortcuts 가 ESC 를 cover 하지 않아 직접 window listener 등록.
@@ -274,147 +288,135 @@ onUnmounted(() => {
             : 'grid-cols-[1fr_0]'
       "
     >
-      <!-- 좌측: 커밋 그래프 + Sprint c25-4.5 inline diff vertical split (focusMode 시 숨김)
-           Sprint c30 / GitKraken UX (Phase 2a) — graph 위 sticky WipRow (working dir dirty 시).
-           Sprint c30 / GitKraken UX (Phase 3) — fullscreen diff 활성 시 graph 영역 전체를
-             FullscreenDiffView 로 교체 (focusMode 와 비슷한 토글 패턴). -->
+      <!-- Sprint c30 / GitKraken UX (Phase 5) — 가운데 영역: main view nav + active panel
+           focusMode 시 우측 숨김 + 가운데 풀화면. -->
       <FullscreenDiffView v-if="!focusMode && fullscreenActive" :repo-id="store.activeRepoId" />
-      <div
-        v-else-if="!focusMode"
-        class="grid min-h-0 overflow-hidden"
-        :class="
-          inlineDiffActive
-            ? showWipRow
-              ? 'grid-rows-[auto_1fr_minmax(140px,40%)]'
-              : 'grid-rows-[1fr_minmax(140px,40%)]'
-            : showWipRow
-              ? 'grid-rows-[auto_1fr_0]'
-              : 'grid-rows-[1fr_0]'
-        "
-      >
-        <WipRow
-          v-if="showWipRow"
-          :change-count="wipChangeCount"
-          :branch="branch"
-          :selected="selectedSha === WIP_SHA"
-          @select="onSelectWip"
-        />
-        <CommitGraph
-          :repo-id="store.activeRepoId"
-          @select-commit="onSelectCommit"
-          @show-diff="onShowDiff"
-        />
-        <CommitDiffPanel
-          v-if="inlineDiffActive"
-          :repo-id="store.activeRepoId"
-          :sha="selectedSha"
-          @close="setInlineDiff(false)"
-        />
-      </div>
-      <div v-else />
-
-      <!-- 우측: 영구 ChangeCountBadge + 탭 (Status / Branches / Stash) + 하단 commit input -->
-      <div
-        v-if="ui.detailVisible.value || focusMode"
-        class="grid grid-rows-[auto_auto_1fr_auto] overflow-hidden border-l border-border"
-      >
-        <!-- Sprint c25-2 §3 — 항상 표시되는 변경 카운트 (탭 무관) -->
-        <ChangeCountBadge
-          :repo-id="store.activeRepoId"
-          :branch="branch"
-          @navigate-status="tab = 'status'"
-        />
+      <div v-else-if="!focusMode" class="grid min-h-0 grid-rows-[auto_1fr] overflow-hidden">
+        <!-- main nav (가운데 영역 위, 'graph' default) -->
         <nav
           class="flex border-b border-border bg-card text-xs"
-          title="더블클릭 = 좌측 그래프 숨김 / 복원"
+          title="더블클릭 = 우측 sidebar 숨김 / 복원"
           @dblclick="toggleFocusMode"
         >
           <button
-            v-for="t in mainTabs"
-            :key="t"
+            v-for="v in MAIN_VIEWS"
+            :key="v"
             type="button"
-            :data-testid="`main-nav-${t}`"
+            :data-testid="`main-nav-${v}`"
             class="flex-1 px-1.5 py-1.5 capitalize"
             :class="
-              tab === t
+              mainView === v
                 ? 'bg-accent text-accent-foreground font-semibold'
                 : 'text-muted-foreground hover:bg-accent/40'
             "
-            @click="tab = t"
+            @click="mainView = v"
           >
-            {{
-              t === 'status'
-                ? '변경'
-                : t === 'branches'
-                  ? '브랜치'
-                  : t === 'stash'
-                    ? 'Stash'
-                    : t === 'submodule'
-                      ? 'Sub'
-                      : t === 'lfs'
-                        ? 'LFS'
-                        : t === 'pr'
-                          ? 'PR'
-                          : t === 'worktree'
-                            ? 'WT'
-                            : '📄 ' + (selectedSha?.slice(0, 7) ?? '')
-            }}
-          </button>
-          <button
-            v-if="focusMode"
-            type="button"
-            class="px-2 py-1.5 text-amber-500"
-            title="Focus mode 해제 (또는 nav 더블클릭)"
-            @click="toggleFocusMode"
-          >
-            ⛶
+            {{ mainViewLabel(v) }}
           </button>
         </nav>
 
+        <!-- mainView 별 panel -->
         <div class="overflow-hidden">
-          <StatusPanel
-            v-if="tab === 'status'"
-            :repo-id="store.activeRepoId"
-            class="h-full border-l-0"
-          />
+          <!-- graph (default) — WipRow + CommitGraph + (inline diff) -->
+          <div
+            v-if="mainView === 'graph'"
+            class="grid h-full min-h-0 overflow-hidden"
+            :class="
+              inlineDiffActive
+                ? showWipRow
+                  ? 'grid-rows-[auto_1fr_minmax(140px,40%)]'
+                  : 'grid-rows-[1fr_minmax(140px,40%)]'
+                : showWipRow
+                  ? 'grid-rows-[auto_1fr_0]'
+                  : 'grid-rows-[1fr_0]'
+            "
+          >
+            <WipRow
+              v-if="showWipRow"
+              :change-count="wipChangeCount"
+              :branch="branch"
+              :selected="selectedSha === WIP_SHA"
+              @select="onSelectWip"
+            />
+            <CommitGraph
+              :repo-id="store.activeRepoId"
+              @select-commit="onSelectCommit"
+              @show-diff="onShowDiff"
+            />
+            <CommitDiffPanel
+              v-if="inlineDiffActive"
+              :repo-id="store.activeRepoId"
+              :sha="selectedSha"
+              @close="setInlineDiff(false)"
+            />
+          </div>
           <BranchPanel
-            v-else-if="tab === 'branches'"
+            v-else-if="mainView === 'branches'"
             :repo-id="store.activeRepoId"
-            class="h-full border-l-0"
+            class="h-full"
           />
           <StashPanel
-            v-else-if="tab === 'stash'"
+            v-else-if="mainView === 'stash'"
             :repo-id="store.activeRepoId"
-            class="h-full border-l-0"
+            class="h-full"
           />
           <SubmodulePanel
-            v-else-if="tab === 'submodule'"
+            v-else-if="mainView === 'submodule'"
             :repo-id="store.activeRepoId"
-            class="h-full border-l-0"
+            class="h-full"
           />
-          <LfsPanel
-            v-else-if="tab === 'lfs'"
-            :repo-id="store.activeRepoId"
-            class="h-full border-l-0"
-          />
-          <ForgePanel v-else-if="tab === 'pr'" :repo-id="store.activeRepoId" class="h-full" />
+          <LfsPanel v-else-if="mainView === 'lfs'" :repo-id="store.activeRepoId" class="h-full" />
+          <ForgePanel v-else-if="mainView === 'pr'" :repo-id="store.activeRepoId" class="h-full" />
           <WorktreePanel
-            v-else-if="tab === 'worktree'"
+            v-else-if="mainView === 'worktree'"
+            :repo-id="store.activeRepoId"
+            class="h-full"
+          />
+        </div>
+      </div>
+      <div v-else />
+
+      <!-- Sprint c30 / GitKraken UX (Phase 5) — 우측 sidebar = commit metadata only.
+           selectedSha 분기: WIP staging / commit detail / placeholder.
+           main view 와 무관 — 어떤 panel 이든 우측은 commit context 유지. -->
+      <div
+        v-if="ui.detailVisible.value || focusMode"
+        class="grid grid-rows-[auto_1fr_auto] overflow-hidden border-l border-border"
+      >
+        <ChangeCountBadge
+          :repo-id="store.activeRepoId"
+          :branch="branch"
+          @navigate-status="onSelectWip"
+        />
+
+        <div class="overflow-hidden">
+          <!-- WIP staging — Working dir dirty + WIP_SHA 선택 -->
+          <StatusPanel
+            v-if="selectedSha === WIP_SHA"
             :repo-id="store.activeRepoId"
             class="h-full border-l-0"
           />
+          <!-- commit detail — 실제 sha 선택 -->
           <CommitDetailSidebar
-            v-else-if="tab === 'commit' && selectedSha && selectedSha !== WIP_SHA"
+            v-else-if="selectedSha && selectedSha !== WIP_SHA"
             :repo-id="store.activeRepoId"
             :sha="selectedSha"
           />
+          <!-- placeholder — selectedSha=null (clean repo + auto-default 미적용 시) -->
+          <div
+            v-else
+            class="flex h-full items-center justify-center p-6 text-center text-xs text-muted-foreground"
+          >
+            <div>
+              <div class="mb-1 text-2xl">⊙</div>
+              <div>그래프에서 commit 또는 WIP 행을 선택하세요.</div>
+            </div>
+          </div>
         </div>
 
-        <!-- Sprint c30 / GitKraken UX (Phase 2c) — commit form 은 staging context 시에만.
-             GitKraken 동작: commit row 선택 시 우측 = commit detail (form 닫힘).
-             WIP row / status tab 일 때만 staging UI + form 표시. -->
+        <!-- Sprint c30 / GitKraken UX (Phase 2c + 5) — commit form 은 WIP staging 시에만. -->
         <CommitMessageInput
-          v-if="tab === 'status'"
+          v-if="selectedSha === WIP_SHA"
           :repo-id="store.activeRepoId"
           :ahead="ahead"
           :behind="behind"

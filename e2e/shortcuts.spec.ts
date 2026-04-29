@@ -48,7 +48,8 @@ test.describe('단축키 — CommandPalette / CommitSearch / ⌘1~7 / sidebar fo
   test('⌘1~7 단축키 7개 main-nav tab 전환', async ({ page }) => {
     await ensureDetailVisible(page)
 
-    const tabs = ['status', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree'] as const
+    // Phase 5 — main views: ⌘1 graph (was status), ⌘2~⌘7 동등.
+    const tabs = ['graph', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree'] as const
     for (let i = 0; i < tabs.length; i++) {
       await page.evaluate((n) => {
         window.dispatchEvent(
