@@ -74,3 +74,34 @@ pub async fn diff_commit(repo: &Path, sha: &str, context: Option<u32>) -> AppRes
         .await?
         .into_ok()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// DiffArgs serde — camelCase + 한글 path 안전.
+    #[test]
+    fn test_diff_args_serde() {
+        let a = DiffArgs {
+            staged: true,
+            path: Some("docs/한글.md".to_string()),
+            rev: Some("HEAD~1".to_string()),
+            context: Some(5),
+        };
+        let json = serde_json::to_string(&a).unwrap();
+        assert!(json.contains("\"staged\":true"));
+        assert!(json.contains("\"path\":\"docs/한글.md\""));
+        assert!(json.contains("\"context\":5"));
+    }
+
+    /// DiffArgs deserialize 시 staged 만 명시해도 OK (Option None 자동).
+    #[test]
+    fn test_diff_args_deserialize_minimal() {
+        let json = r#"{"staged": false}"#;
+        let a: DiffArgs = serde_json::from_str(json).unwrap();
+        assert!(!a.staged);
+        assert!(a.path.is_none());
+        assert!(a.rev.is_none());
+        assert!(a.context.is_none());
+    }
+}

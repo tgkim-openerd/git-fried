@@ -312,3 +312,73 @@ pub fn parse_forge(url: Option<&str>) -> (ForgeKindLite, Option<String>, Option<
     };
     (kind, Some(owner), Some(repo))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// CommitSummary serde — camelCase (shortSha / parentShas / authorName /
+    /// authorEmail / authorAt / committerAt) + 한글 author/subject/body 안전.
+    #[test]
+    fn test_commit_summary_serde_camel_case_korean() {
+        let c = CommitSummary {
+            sha: "abc1234567890".to_string(),
+            short_sha: "abc1234".to_string(),
+            parent_shas: vec!["def5678".to_string()],
+            author_name: "김태길".to_string(),
+            author_email: "tgkim@opnd.io".to_string(),
+            author_at: 1_700_000_000,
+            committer_at: 1_700_000_100,
+            subject: "feat: 한글 commit subject".to_string(),
+            body: "본문\n한글 다음 라인".to_string(),
+            signed: true,
+            refs: vec!["HEAD".to_string(), "main".to_string()],
+        };
+        let json = serde_json::to_string(&c).unwrap();
+        assert!(json.contains("\"shortSha\":\"abc1234\""));
+        assert!(json.contains("\"parentShas\":[\"def5678\"]"));
+        assert!(json.contains("\"authorName\":\"김태길\""));
+        assert!(json.contains("\"authorAt\":1700000000"));
+        assert!(json.contains("\"committerAt\":1700000100"));
+        assert!(json.contains("한글 commit subject"));
+        assert!(!json.contains("short_sha"));
+        assert!(!json.contains("parent_shas"));
+    }
+
+    /// RepoMeta serde — camelCase (defaultBranch / forgeKind / forgeOwner / forgeRepo).
+    #[test]
+    fn test_repo_meta_serde() {
+        let m = RepoMeta {
+            name: "한글레포".to_string(),
+            default_branch: Some("main".to_string()),
+            default_remote: Some("origin".to_string()),
+            remote_url: Some("https://git.dev.opnd.io/openerd-web/openerd-nuxt3.git".to_string()),
+            forge_kind: ForgeKindLite::Gitea,
+            forge_owner: Some("openerd-web".to_string()),
+            forge_repo: Some("openerd-nuxt3".to_string()),
+        };
+        let json = serde_json::to_string(&m).unwrap();
+        assert!(json.contains("\"defaultBranch\""));
+        assert!(json.contains("\"forgeKind\":\"gitea\""));
+        assert!(json.contains("\"forgeOwner\""));
+        assert!(json.contains("\"forgeRepo\""));
+        assert!(json.contains("한글레포"));
+    }
+
+    /// ForgeKindLite serde — lowercase (gitea/github/unknown).
+    #[test]
+    fn test_forge_kind_lite_serde() {
+        assert_eq!(
+            serde_json::to_string(&ForgeKindLite::Gitea).unwrap(),
+            "\"gitea\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ForgeKindLite::Github).unwrap(),
+            "\"github\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ForgeKindLite::Unknown).unwrap(),
+            "\"unknown\""
+        );
+    }
+}

@@ -281,3 +281,36 @@ pub async fn push_size(repo: &Path) -> AppResult<LfsPushSize> {
         note: None,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// LfsFile serde — camelCase (downloaded) + 한글 path.
+    #[test]
+    fn test_lfs_file_serde() {
+        let f = LfsFile {
+            path: "assets/한글-이미지.psd".to_string(),
+            oid: "abc1234".to_string(),
+            downloaded: true,
+            size: Some(83_200_000),
+        };
+        let json = serde_json::to_string(&f).unwrap();
+        assert!(json.contains("\"downloaded\":true"));
+        assert!(json.contains("\"size\":83200000"));
+        assert!(json.contains("한글-이미지.psd"));
+    }
+
+    /// LfsStatus serde — camelCase (trackedPatterns).
+    #[test]
+    fn test_lfs_status_serde_camel_case() {
+        let s = LfsStatus {
+            installed: true,
+            version: Some("git-lfs/3.4.0".to_string()),
+            tracked_patterns: vec!["*.psd".to_string(), "*.zip".to_string()],
+        };
+        let json = serde_json::to_string(&s).unwrap();
+        assert!(json.contains("\"trackedPatterns\""));
+        assert!(!json.contains("tracked_patterns"));
+    }
+}
