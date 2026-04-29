@@ -122,33 +122,33 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 const ROW_H = 28
-const DEFAULT_LANE_W = 16
-const LANE_W_KEY = 'git-fried.commit-graph-lane-width'
 const LANE_W_MIN = 8
 const LANE_W_MAX = 36
-// Phase 1 (plan-commit-graph-ux v2) — graphWidth hard cap 으로 message column 압박 해소.
-// lane 이 cap 보다 많으면 우측 lane 은 잘림 (zoom out 으로 회피). Phase 2 에서 graph/message 별도 element.
-//
-// Sprint c30 / GitKraken UX — cap 320 → 480 으로 확대.
-//   회사 50+ 레포 dogfood 시 메인 레포 (lane 18~22) 가 320 cap 에서 잘려 lane 색이
-//   사라지는 문제 (실제 GitKraken 의 default split 점은 ~450~500px). 480 으로 늘려
-//   lane 30 까지 laneW=16 기준 표시 가능. message 컬럼은 좌측 sidebar/우측 패널이
-//   먼저 영역 확보 후 남은 공간이라 480 도 안전.
-const MAX_GRAPH_WIDTH = 480
 
-function loadLaneW(): number {
-  if (typeof localStorage === 'undefined') return DEFAULT_LANE_W
-  const v = localStorage.getItem(LANE_W_KEY)
-  if (!v) return DEFAULT_LANE_W
+// Sprint c30 / GitKraken UX (Phase 9) — graph column width 사용자 조정.
+//   기존: laneW 가 사용자 ref, graphWidth = laneW * maxLane + 16 (lane 폭 변경)
+//   변경: graphWidth 가 사용자 ref (default 200, 80~400 range), laneW 자동 계산
+//     = clamp((graphWidth - 16) / maxLane, 8, 36).
+//   사용자가 +/- 버튼/drag handle 로 graph column width 직접 조정 (테이블 헤더 의미).
+//   maxLane 가 매우 크면 lane 자동으로 좁아져 잘릴 수 있으나 사용자 zoom 권장.
+const DEFAULT_GRAPH_W = 200
+const MIN_GRAPH_W = 80
+const MAX_GRAPH_W = 400
+const GRAPH_W_KEY = 'git-fried.commit-graph-width'
+
+function loadGraphW(): number {
+  if (typeof localStorage === 'undefined') return DEFAULT_GRAPH_W
+  const v = localStorage.getItem(GRAPH_W_KEY)
+  if (!v) return DEFAULT_GRAPH_W
   const n = Number.parseInt(v, 10)
-  if (!Number.isFinite(n)) return DEFAULT_LANE_W
-  return Math.min(LANE_W_MAX, Math.max(LANE_W_MIN, n))
+  if (!Number.isFinite(n)) return DEFAULT_GRAPH_W
+  return Math.min(MAX_GRAPH_W, Math.max(MIN_GRAPH_W, n))
 }
-const laneW = ref<number>(loadLaneW())
-watch(laneW, (v) => {
+const graphWidth = ref<number>(loadGraphW())
+watch(graphWidth, (v) => {
   if (typeof localStorage === 'undefined') return
   try {
-    localStorage.setItem(LANE_W_KEY, String(v))
+    localStorage.setItem(GRAPH_W_KEY, String(v))
   } catch {
     /* ignore */
   }
@@ -159,16 +159,24 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 const rows = computed<GraphRow[]>(() => graph.value?.rows ?? [])
 const maxLane = computed(() => graph.value?.maxLane ?? 1)
-const graphWidth = computed(() =>
-  Math.min(Math.max(1, maxLane.value) * laneW.value + 16, MAX_GRAPH_WIDTH),
-)
 
-// Phase 1 zoom +/- 핸들러 (vue template multi-statement 회피 — 함수 추출).
+// Sprint c30 / GitKraken UX (Phase 9) — laneW 자동 계산 (graphWidth 기반).
+//   maxLane 1 → laneW = graphWidth - 16 (clamp 36 으로 줄음)
+//   maxLane 10 → laneW ≈ (graphWidth - 16) / 10
+//   lane 잘림 회피하려면 사용자가 graphWidth 늘리거나 (drag/zoom-in).
+const laneW = computed(() => {
+  const ml = Math.max(1, maxLane.value)
+  const lw = Math.floor((graphWidth.value - 16) / ml)
+  return Math.max(LANE_W_MIN, Math.min(LANE_W_MAX, lw))
+})
+
+// Sprint c30 / GitKraken UX (Phase 9) — zoom +/- 버튼: graph column width 조정.
+//   기존: laneW +/- 2 → 변경: graphWidth +/- 20 (사용자 의도 = "테이블 헤더 늘이기/줄이기").
 function zoomIn() {
-  laneW.value = Math.min(LANE_W_MAX, laneW.value + 2)
+  graphWidth.value = Math.min(MAX_GRAPH_W, graphWidth.value + 20)
 }
 function zoomOut() {
-  laneW.value = Math.max(LANE_W_MIN, laneW.value - 2)
+  graphWidth.value = Math.max(MIN_GRAPH_W, graphWidth.value - 20)
 }
 
 // Sprint c30 / GitKraken UX (Phase 8a) — wipActive 시 virtualizer count + 1.
@@ -457,16 +465,18 @@ function colDef(id: CommitColumnId) {
   return cols.allColumns.find((c) => c.id === id)
 }
 
-// === Sprint C5 — Lane drag-resize ===
+// === Sprint C5 — Graph column drag-resize ===
+// Sprint c30 / GitKraken UX (Phase 9) — drag handle 이 laneW 가 아닌 graphWidth 직접 조정.
+//   사용자 의도 = "테이블 헤더 늘이기/줄이기" — graph column 폭 직접.
 let dragStartX = 0
-let dragStartLaneW = 16
+let dragStartGraphW = DEFAULT_GRAPH_W
 let dragging = false
 
 function onDragHandleStart(ev: MouseEvent) {
   ev.preventDefault()
   dragging = true
   dragStartX = ev.clientX
-  dragStartLaneW = laneW.value
+  dragStartGraphW = graphWidth.value
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('mouseup', onDragEnd)
 }
@@ -474,10 +484,8 @@ function onDragHandleStart(ev: MouseEvent) {
 function onDragMove(ev: MouseEvent) {
   if (!dragging) return
   const dx = ev.clientX - dragStartX
-  // maxLane 가 1 이면 dx 1 = laneW 1 변화. maxLane 가 5 면 dx 5 = laneW 1.
-  const denom = Math.max(1, maxLane.value)
-  const next = Math.round(dragStartLaneW + dx / denom)
-  laneW.value = Math.min(36, Math.max(8, next))
+  // 1px drag = 1px graphWidth 변화 (직접 매핑 — 사용자 직관).
+  graphWidth.value = Math.min(MAX_GRAPH_W, Math.max(MIN_GRAPH_W, dragStartGraphW + dx))
 }
 
 function onDragEnd() {
@@ -505,8 +513,8 @@ onUnmounted(() => {
           <button
             type="button"
             class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
-            :disabled="laneW <= LANE_W_MIN"
-            :aria-label="`그래프 축소 (현재 lane width: ${laneW}px)`"
+            :disabled="graphWidth <= MIN_GRAPH_W"
+            :aria-label="`그래프 column 축소 (현재 width: ${graphWidth}px)`"
             @click="zoomOut"
           >
             −
@@ -514,8 +522,8 @@ onUnmounted(() => {
           <button
             type="button"
             class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
-            :disabled="laneW >= LANE_W_MAX"
-            :aria-label="`그래프 확대 (현재 lane width: ${laneW}px)`"
+            :disabled="graphWidth >= MAX_GRAPH_W"
+            :aria-label="`그래프 column 확대 (현재 width: ${graphWidth}px)`"
             @click="zoomIn"
           >
             +
