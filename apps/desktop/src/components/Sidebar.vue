@@ -497,7 +497,7 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
         </span>
         <div class="flex gap-1 text-[10px]">
           <button
-            v-for="m in ['directory', 'org'] as GroupMode[]"
+            v-for="m in ['directory', 'org', 'forge'] as GroupMode[]"
             :key="m"
             type="button"
             class="rounded px-1.5 py-0.5 border border-input"
@@ -506,14 +506,24 @@ function onRepoContextMenu(ev: MouseEvent, repo: Repo) {
                 ? 'bg-accent text-accent-foreground'
                 : 'text-muted-foreground hover:bg-accent/40'
             "
-            :title="m === 'directory' ? '부모 디렉토리 그룹' : 'forge organization 그룹'"
+            :title="
+              m === 'directory'
+                ? '부모 디렉토리 그룹'
+                : m === 'org'
+                  ? 'forge organization 그룹'
+                  : 'forge kind 그룹 (Gitea / GitHub / Local-only)'
+            "
             :aria-label="
-              m === 'directory' ? '부모 디렉토리 그룹으로 정렬' : 'forge organization 그룹으로 정렬'
+              m === 'directory'
+                ? '부모 디렉토리 그룹으로 정렬'
+                : m === 'org'
+                  ? 'forge organization 그룹으로 정렬'
+                  : 'forge kind 그룹으로 정렬'
             "
             :aria-pressed="groupMode === m"
             @click="setGroupMode(m)"
           >
-            {{ m === 'directory' ? '폴더' : 'Org' }}
+            {{ m === 'directory' ? '폴더' : m === 'org' ? 'Org' : 'Forge' }}
           </button>
           <button
             type="button"

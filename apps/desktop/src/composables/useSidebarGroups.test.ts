@@ -98,4 +98,49 @@ describe('useSidebarGroups', () => {
     expect(groups.value[0].label).toBe('zelda')
     expect(groups.value[1].label).toBe(null)
   })
+
+  // Phase 10-4 — forge 모드 (Gitea / GitHub / Local-only).
+  it('forge mode groups by forgeKind with fixed order', () => {
+    const repos = ref<Repo[]>([
+      mkRepo({ id: 1, forgeKind: 'github', defaultRemote: 'origin' }),
+      mkRepo({ id: 2, forgeKind: 'gitea', defaultRemote: 'origin' }),
+      mkRepo({ id: 3, forgeKind: 'unknown', defaultRemote: null }), // local-only
+      mkRepo({ id: 4, forgeKind: 'gitea', defaultRemote: 'origin' }),
+    ])
+    const { groups, setGroupMode } = useSidebarGroups(repos)
+    setGroupMode('forge')
+    expect(groups.value.length).toBe(3)
+    expect(groups.value[0].key).toBe('Gitea')
+    expect(groups.value[0].repos.length).toBe(2)
+    expect(groups.value[1].key).toBe('GitHub')
+    expect(groups.value[1].repos.length).toBe(1)
+    expect(groups.value[2].key).toBe('Local-only')
+    expect(groups.value[2].repos.length).toBe(1)
+  })
+
+  it('forge mode: unknown forgeKind with defaultRemote = "Remote (other)"', () => {
+    const repos = ref<Repo[]>([
+      mkRepo({ id: 1, forgeKind: 'unknown', defaultRemote: 'origin' }), // remote but not gitea/github
+      mkRepo({ id: 2, forgeKind: 'unknown', defaultRemote: null }), // local-only
+    ])
+    const { groups, setGroupMode } = useSidebarGroups(repos)
+    setGroupMode('forge')
+    expect(groups.value.find((g) => g.key === 'Remote (other)')?.repos.length).toBe(1)
+    expect(groups.value.find((g) => g.key === 'Local-only')?.repos.length).toBe(1)
+  })
+
+  it('forge mode shows label even for solo repos', () => {
+    const repos = ref<Repo[]>([mkRepo({ id: 1, forgeKind: 'gitea' })])
+    const { groups, setGroupMode } = useSidebarGroups(repos)
+    setGroupMode('forge')
+    expect(groups.value[0].label).toBe('Gitea') // 1개라도 명시
+  })
+
+  it('forge mode persists across reload', () => {
+    const repos = ref<Repo[]>([])
+    const first = useSidebarGroups(repos)
+    first.setGroupMode('forge')
+    const reloaded = useSidebarGroups(repos)
+    expect(reloaded.groupMode.value).toBe('forge')
+  })
 })

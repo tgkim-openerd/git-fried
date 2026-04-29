@@ -1,8 +1,9 @@
 // Sidebar 레포 그룹핑 (Sprint B9 — `docs/plan/11 §22`).
 //
-// 두 가지 모드:
+// 세 가지 모드:
 //   - directory: 부모 디렉토리 이름 (예: peeloff/frontend + peeloff/frontend-admin)
 //   - org: forge_owner (예: opnd-frontend/x + opnd-frontend/y → "opnd-frontend")
+//   - forge: forge_kind 별 그룹 (Gitea / GitHub / Local-only) — Phase 10-4
 //
 // 50+ 회사 레포 환경에서 organization / 디렉토리 별 일괄 표시.
 // localStorage 영속.
@@ -12,7 +13,7 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import type { Repo } from '@/types/git'
 
-export type GroupMode = 'directory' | 'org'
+export type GroupMode = 'directory' | 'org' | 'forge'
 
 export interface RepoGroup {
   key: string
@@ -25,7 +26,9 @@ const GROUP_KEY = 'git-fried.sidebar-group-mode'
 function loadGroupMode(): GroupMode {
   if (typeof localStorage === 'undefined') return 'directory'
   const v = localStorage.getItem(GROUP_KEY)
-  return v === 'org' ? 'org' : 'directory'
+  if (v === 'org') return 'org'
+  if (v === 'forge') return 'forge'
+  return 'directory'
 }
 
 function persistGroupMode(m: GroupMode): void {
@@ -62,6 +65,12 @@ export function useSidebarGroups(
 
   function groupKey(r: Repo): string {
     if (groupMode.value === 'org') return r.forgeOwner ?? '__no-org__'
+    if (groupMode.value === 'forge') {
+      // Phase 10-4: forge_kind 별 분리. 'unknown' = 로컬 only (remote 없음).
+      if (r.forgeKind === 'gitea') return 'Gitea'
+      if (r.forgeKind === 'github') return 'GitHub'
+      return r.defaultRemote ? 'Remote (other)' : 'Local-only'
+    }
     return parentDirName(r.localPath) ?? '__solo__'
   }
 
@@ -76,18 +85,33 @@ export function useSidebarGroups(
     }
     const result: RepoGroup[] = []
     for (const [key, repoList] of map.entries()) {
-      const isSolo = key === '__solo__' || key === '__no-org__' || repoList.length === 1
+      // forge 모드는 항상 그룹 라벨 표시 (1개라도 — Local/Gitea/GitHub 명시).
+      const isSolo =
+        groupMode.value === 'forge'
+          ? false
+          : key === '__solo__' || key === '__no-org__' || repoList.length === 1
       result.push({
         key,
         label: isSolo ? null : key,
         repos: repoList,
       })
     }
-    result.sort((a, b) => {
-      if (a.label && !b.label) return -1
-      if (!a.label && b.label) return 1
-      return (a.label || a.repos[0].name).localeCompare(b.label || b.repos[0].name)
-    })
+    // forge 모드는 고정 순서: Gitea → GitHub → Remote (other) → Local-only.
+    if (groupMode.value === 'forge') {
+      const order: Record<string, number> = {
+        Gitea: 0,
+        GitHub: 1,
+        'Remote (other)': 2,
+        'Local-only': 3,
+      }
+      result.sort((a, b) => (order[a.key] ?? 99) - (order[b.key] ?? 99))
+    } else {
+      result.sort((a, b) => {
+        if (a.label && !b.label) return -1
+        if (!a.label && b.label) return 1
+        return (a.label || a.repos[0].name).localeCompare(b.label || b.repos[0].name)
+      })
+    }
     return result
   })
 
