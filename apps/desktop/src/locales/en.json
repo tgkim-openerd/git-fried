@@ -95,6 +95,19 @@
     "searchPlaceholder": "Search (branch / tag / submodule) — Cmd+Alt+F",
     "clearSearch": "Clear search"
   },
+  "stash": {
+    "title": "Stash",
+    "newFormCollapsed": "(new stash form collapsed — right-click to expand)",
+    "newFormToggleHint": "Right-click = toggle new stash form",
+    "messagePlaceholder": "Message (optional, use ✨ for auto-generate)",
+    "aiButtonTitle": "✨ {cli} — generate stash message",
+    "includeUntracked": "Include untracked (-u)",
+    "pushButton": "stash push"
+  },
+  "submodule": {
+    "title": "Submodule",
+    "empty": "No submodules"
+  },
   "branch": {
     "title": "Branches",
     "soloIndicator": "[Solo: {name}]",

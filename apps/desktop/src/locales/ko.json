@@ -95,6 +95,19 @@
     "searchPlaceholder": "검색 (브랜치 / 태그 / submodule) — ⌘⌥F",
     "clearSearch": "검색 지우기"
   },
+  "stash": {
+    "title": "Stash",
+    "newFormCollapsed": "(새 stash 폼 접힘 — 우클릭으로 펴기)",
+    "newFormToggleHint": "우클릭 = 새 stash 폼 접기/펴기",
+    "messagePlaceholder": "메시지 (선택, ✨ 로 자동 생성)",
+    "aiButtonTitle": "✨ {cli} 로 stash 메시지 생성",
+    "includeUntracked": "untracked 포함 (-u)",
+    "pushButton": "stash push"
+  },
+  "submodule": {
+    "title": "Submodule",
+    "empty": "서브모듈 없음"
+  },
   "branch": {
     "title": "브랜치",
     "soloIndicator": "[Solo: {name}]",

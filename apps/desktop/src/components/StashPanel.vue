@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Stash 매니저 — list / push / apply / pop / drop / show diff.
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 import { useStash } from '@/composables/useStash'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -8,6 +9,7 @@ import { clearWipNote, useWipNote } from '@/composables/useWipNote'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
 
 const collapsedNew = useSectionCollapse('stash.new')
+const { t } = useI18n()
 import {
   aiStashMessage,
   applyStash,
@@ -53,11 +55,7 @@ watch(
 const pushMut = useMutation({
   mutationFn: () => {
     if (props.repoId == null) return Promise.reject(new Error('no repo'))
-    return pushStash(
-      props.repoId,
-      newMessage.value || null,
-      includeUntracked.value,
-    )
+    return pushStash(props.repoId, newMessage.value || null, includeUntracked.value)
   },
   onSuccess: () => {
     newMessage.value = ''
@@ -70,9 +68,7 @@ const pushMut = useMutation({
 
 async function onApply(idx: number) {
   if (props.repoId == null) return
-  await applyStash(props.repoId, idx).catch((e) =>
-    toast.error('Apply 실패', describeError(e)),
-  )
+  await applyStash(props.repoId, idx).catch((e) => toast.error('Apply 실패', describeError(e)))
   invalidate(props.repoId)
 }
 async function onPop(idx: number) {
@@ -133,12 +129,7 @@ const aiMut = useMutation({
       return Promise.reject(new Error('AI 사용 불가 — Claude/Codex CLI 미설치'))
     }
     if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
-    return aiStashMessage(
-      props.repoId,
-      ai.available.value,
-      includeUntracked.value,
-      true,
-    )
+    return aiStashMessage(props.repoId, ai.available.value, includeUntracked.value, true)
   },
   onSuccess: (out) => {
     if (out.success) {
@@ -161,36 +152,30 @@ const aiMut = useMutation({
   <section class="flex h-full flex-col border-l border-border bg-card">
     <header
       class="cursor-pointer select-none border-b border-border px-3 py-2"
-      title="우클릭 = 새 stash 폼 접기/펴기"
+      :title="t('stash.newFormToggleHint')"
       @contextmenu.prevent="collapsedNew = !collapsedNew"
     >
       <h3 class="text-sm font-semibold">
-        Stash
-        <span
-          v-if="collapsedNew"
-          class="ml-1 text-[10px] font-normal text-muted-foreground"
-        >
-          (새 stash 폼 접힘 — 우클릭으로 펴기)
+        {{ t('stash.title') }}
+        <span v-if="collapsedNew" class="ml-1 text-[10px] font-normal text-muted-foreground">
+          {{ t('stash.newFormCollapsed') }}
         </span>
       </h3>
     </header>
 
     <!-- 새 stash -->
-    <div
-      v-if="!collapsedNew"
-      class="flex flex-col gap-1 border-b border-border px-3 py-2"
-    >
+    <div v-if="!collapsedNew" class="flex flex-col gap-1 border-b border-border px-3 py-2">
       <div class="flex gap-1">
         <input
           v-model="newMessage"
-          placeholder="메시지 (선택, ✨ 로 자동 생성)"
+          :placeholder="t('stash.messagePlaceholder')"
           class="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
         />
         <button
           v-if="ai.available.value"
           type="button"
           class="rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
-          :title="`✨ ${ai.available.value} 로 stash 메시지 생성`"
+          :title="t('stash.aiButtonTitle', { cli: ai.available.value })"
           :disabled="!repoId || aiMut.isPending.value"
           @click="aiMut.mutate()"
         >
@@ -200,7 +185,7 @@ const aiMut = useMutation({
       <div class="flex items-center justify-between text-xs">
         <label class="flex items-center gap-1">
           <input v-model="includeUntracked" type="checkbox" />
-          untracked 포함 (-u)
+          {{ t('stash.includeUntracked') }}
         </label>
         <button
           type="button"
@@ -208,18 +193,14 @@ const aiMut = useMutation({
           :disabled="!repoId || pushMut.isPending.value"
           @click="pushMut.mutate()"
         >
-          stash push
+          {{ t('stash.pushButton') }}
         </button>
       </div>
     </div>
 
     <div class="flex-1 overflow-auto px-2 py-2 text-sm">
       <ul>
-        <li
-          v-for="s in stashes"
-          :key="s.index"
-          class="group rounded px-2 py-1 hover:bg-accent/40"
-        >
+        <li v-for="s in stashes" :key="s.index" class="group rounded px-2 py-1 hover:bg-accent/40">
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs">stash@{{ '{' }}{{ s.index }}{{ '}' }}</span>
             <span class="text-[10px] text-muted-foreground">
@@ -284,9 +265,7 @@ const aiMut = useMutation({
       <div class="mb-1 flex items-center justify-between">
         <span class="text-xs text-muted-foreground">
           stash@{{ '{' }}{{ previewIndex }}{{ '}' }} diff
-          <span v-if="previewFiles.length > 0">
-            ({{ previewFiles.length }} files)
-          </span>
+          <span v-if="previewFiles.length > 0"> ({{ previewFiles.length }} files) </span>
         </span>
         <button class="text-xs" @click="previewText = null">×</button>
       </div>
