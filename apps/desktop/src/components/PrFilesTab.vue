@@ -98,6 +98,7 @@ const totalDeletions = computed(
           <button
             type="button"
             class="rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
+            aria-label="모든 파일 diff 펼치기"
             @click="expandAllFiles"
           >
             Expand all
@@ -105,6 +106,7 @@ const totalDeletions = computed(
           <button
             type="button"
             class="rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
+            aria-label="모든 파일 diff 접기"
             @click="collapseAllFiles"
           >
             Collapse all
@@ -121,6 +123,8 @@ const totalDeletions = computed(
           <button
             type="button"
             class="flex w-full items-center gap-2 px-2 py-1 text-left hover:bg-accent/30"
+            :aria-label="`'${f.path}' diff ${expandedFiles.has(f.path) ? '접기' : '펼치기'}`"
+            :aria-expanded="expandedFiles.has(f.path)"
             @click="toggleFileExpand(f.path)"
           >
             <span class="text-[10px] text-muted-foreground">
