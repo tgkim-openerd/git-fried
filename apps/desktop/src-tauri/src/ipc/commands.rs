@@ -10,10 +10,11 @@
 use crate::error::{AppError, AppResult};
 use crate::git::{
     branch as git_branch, bulk as git_bulk, clone as git_clone, commit as git_commit,
-    config_local as git_cfg_local, diff as git_diff, graph as git_graph, maintenance as git_maint,
-    read_file as git_read_file, reflog as git_reflog, remote as git_remote, repository as repo,
-    reset as git_reset, runner, stage, stash as git_stash, status as git_status,
-    submodule as git_sub, sync as git_sync, tag as git_tag,
+    config_local as git_cfg_local, diff as git_diff, graph as git_graph,
+    identity_stats as git_identity, maintenance as git_maint, read_file as git_read_file,
+    reflog as git_reflog, remote as git_remote, repository as repo, reset as git_reset, runner,
+    stage, stash as git_stash, status as git_status, submodule as git_sub, sync as git_sync,
+    tag as git_tag,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -827,6 +828,23 @@ pub async fn redo_last_action(
 ) -> AppResult<git_reflog::UndoResult> {
     let path = repo_path(&state, args.repo_id).await?;
     git_reflog::redo_last_action(&path).await
+}
+
+// ====== Identity stats (Sprint c36) ======
+
+#[derive(Debug, Deserialize)]
+pub struct CountHangulCommitsArgs {
+    pub repo_id: i64,
+}
+
+/// IdentityCard 의 dogfood 통계 — 한글 commit 비율 (plan/26 Phase 2).
+#[tauri::command]
+pub async fn count_hangul_commits(
+    args: CountHangulCommitsArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_identity::HangulCommitStats> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_identity::count_hangul_commits(&path).await
 }
 
 // ====== Submodule ======

@@ -122,6 +122,19 @@ export const undoLastAction = (repoId: number): Promise<UndoResult> =>
 export const redoLastAction = (repoId: number): Promise<UndoResult> =>
   invoke('redo_last_action', { args: { repoId } })
 
+// --- Identity stats (Sprint c36, plan/26 IdentityCard dogfood) ---
+export interface HangulCommitStats {
+  /** 검사된 최근 commit 수 (최대 10,000). */
+  scanned: number
+  /** 그 중 한글 음절 1자 이상 포함된 subject 수. */
+  hangul: number
+  /** hangul / scanned (0~1.0). scanned=0 시 0. */
+  ratio: number
+}
+/** 활성 레포의 한글 commit 비율 — IdentityCard 차별점 검증. */
+export const countHangulCommits = (repoId: number): Promise<HangulCommitStats> =>
+  invoke('count_hangul_commits', { args: { repoId } })
+
 // --- Sync ---
 export const fetchAll = (repoId: number): Promise<SyncResult> => invoke('fetch_all', { repoId })
 

@@ -10,9 +10,12 @@
 //   - AI CLI: Claude / Codex 설치 감지 결과 + 사용 횟수 (localStorage 카운터)
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { aiDetectClis, forgeListAccounts } from '@/api/git'
+import { aiDetectClis, countHangulCommits, forgeListAccounts } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
+import { useReposStore } from '@/stores/repos'
 import { readAiCallCount } from '@/composables/useAiCli'
+
+const reposStore = useReposStore()
 
 const { data: aiProbes } = useQuery({
   queryKey: ['aiProbes'],
@@ -59,15 +62,23 @@ onUnmounted(() => {
 })
 const aiCallCount = computed(() => aiCallCountRaw.value)
 
-const hangulCommitCount = computed(() => {
-  // dogfood 통계 v0.4 — 활성 레포 git log --grep="[가-힣]" 결과 카운트 (별도 IPC).
-  // 현재 v0.x 단계는 placeholder. v0.4 wiring 후 실측.
-  try {
-    const v = localStorage.getItem('git-fried.identity.hangulCommitCount')
-    return v ? Number(v) : 0
-  } catch {
-    return 0
-  }
+// Sprint c36 — count_hangul_commits IPC 직접 query. 활성 레포 시에만 실행.
+const hangulQuery = useQuery({
+  queryKey: computed(() => ['hangul-commits', reposStore.activeRepoId]),
+  queryFn: () => {
+    if (reposStore.activeRepoId == null) {
+      return Promise.resolve({ scanned: 0, hangul: 0, ratio: 0 })
+    }
+    return countHangulCommits(reposStore.activeRepoId)
+  },
+  enabled: computed(() => reposStore.activeRepoId != null),
+  staleTime: STALE_TIME.NORMAL,
+})
+const hangulCommitCount = computed(() => hangulQuery.data.value?.hangul ?? 0)
+const hangulScanned = computed(() => hangulQuery.data.value?.scanned ?? 0)
+const hangulRatioPct = computed(() => {
+  const r = hangulQuery.data.value?.ratio ?? 0
+  return Math.round(r * 100)
 })
 </script>
 
@@ -87,11 +98,13 @@ const hangulCommitCount = computed(() => {
           UTF-8 강제 + NFC normalize + file-based commit body
         </div>
         <div class="mt-2 text-[10px]">
-          한글 commit:
-          <span class="font-mono font-semibold">{{ hangulCommitCount }}</span>
-          <span v-if="hangulCommitCount === 0" class="ml-1 text-muted-foreground">
-            (v0.4 dogfood 통계)
-          </span>
+          <template v-if="hangulScanned > 0">
+            한글 commit:
+            <span class="font-mono font-semibold text-diff-add">{{ hangulCommitCount }}</span>
+            / {{ hangulScanned }}
+            <span class="ml-0.5 text-muted-foreground">({{ hangulRatioPct }}%)</span>
+          </template>
+          <span v-else class="text-muted-foreground">(레포 미선택 또는 빈 commit)</span>
         </div>
       </li>
 
