@@ -22,6 +22,7 @@ import { useUiState } from '@/composables/useUiState'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
+import { confirmDialog } from '@/composables/useConfirm'
 import { lfsInstall, maintenanceFsck, maintenanceGc, type MaintenanceResult } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useGeneralSettings, useUiSettingsStore } from '@/composables/useUserSettings'
@@ -146,8 +147,12 @@ const fsckMut = useMutation({
   onError: (e) => toast.error('git fsck 실패', describeError(e)),
 })
 
-function confirmAggressiveGc() {
-  if (window.confirm('aggressive gc 는 시간이 오래 걸립니다. 진행할까요?')) {
+async function confirmAggressiveGc() {
+  const ok = await confirmDialog({
+    title: t('confirm.aggressiveGcTitle'),
+    message: t('confirm.aggressiveGcMessage'),
+  })
+  if (ok) {
     gcMut.mutate(true)
   }
 }

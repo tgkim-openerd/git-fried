@@ -17,6 +17,10 @@ import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { notifyAiDone } from '@/composables/useAiCli'
 import { isConventionalType, type ConventionalType } from '@/types/git'
+import { confirmDialog } from '@/composables/useConfirm'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export interface ParsedAiCommitMessage {
   /** AI 가 만든 raw text (free 모드 fallback). */
@@ -85,14 +89,17 @@ export function useAiCommitMessage(
   })
 
   const generate = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const id = repoIdGetter()
       if (id == null || availableCli.value == null) {
-        return Promise.reject(new Error('AI 사용 불가'))
+        throw new Error('AI 사용 불가')
       }
-      if (!confirm('⚠ staged diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?')) {
-        return Promise.reject(new Error('cancelled'))
-      }
+      const ok = await confirmDialog({
+        title: t('confirm.aiSendTitle'),
+        message: t('confirm.aiCommitMessage'),
+        danger: true,
+      })
+      if (!ok) throw new Error('cancelled')
       return aiCommitMessage(id, availableCli.value, true)
     },
     onSuccess: (out) => {
