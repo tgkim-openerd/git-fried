@@ -15,6 +15,8 @@ import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 import ForgeSetup from '@/components/ForgeSetup.vue'
 import GitKrakenImportModal from '@/components/GitKrakenImportModal.vue'
+// Sprint c35 — plan/26 Phase 2: 차별점 패널.
+import IdentityCard from '@/components/IdentityCard.vue'
 import PlaceholderButton from '@/components/PlaceholderButton.vue'
 import ProfilesSection from '@/components/ProfilesSection.vue'
 import RepoSpecificForm from '@/components/RepoSpecificForm.vue'
@@ -664,6 +666,8 @@ const buildInfo = computed(() => ({
           GitKraken 대체 데스크탑 git client — Tauri 2 + Vue 3 + Rust. Gitea 1급, 한글 안전, AI CLI
           위임.
         </p>
+        <!-- Sprint c35 plan/26 Phase 2 — 차별점 패널 (3 정체성 + dogfood 통계) -->
+        <IdentityCard />
         <ul class="space-y-1 rounded border border-border bg-muted/20 p-3 text-xs">
           <li>
             버전: <span class="font-mono">{{ buildInfo.version }}</span>
