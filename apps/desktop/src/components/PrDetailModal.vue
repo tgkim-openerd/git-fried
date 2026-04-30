@@ -212,13 +212,14 @@ function fmtDate(unix: number): string {
 }
 
 function stateColor(s: PullRequest['state']): string {
+  // Sprint c36 plan/28 — light theme 가독성 (text-X-700 dark:text-X-500).
   switch (s) {
     case 'open':
-      return 'text-emerald-500'
+      return 'text-emerald-700 dark:text-emerald-500'
     case 'merged':
-      return 'text-violet-500'
+      return 'text-violet-700 dark:text-violet-500'
     case 'closed':
-      return 'text-rose-500'
+      return 'text-rose-700 dark:text-rose-500'
     case 'draft':
       return 'text-muted-foreground'
   }
@@ -494,9 +495,9 @@ async function onAiReview(): Promise<void> {
             :class="
               verdict === v
                 ? v === 'approve'
-                  ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/40'
+                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-500 border-emerald-500/40'
                   : v === 'request_changes'
-                    ? 'bg-rose-500/20 text-rose-500 border-rose-500/40'
+                    ? 'bg-rose-500/20 text-rose-700 dark:text-rose-500 border-rose-500/40'
                     : 'bg-accent text-accent-foreground'
                 : 'text-muted-foreground'
             "

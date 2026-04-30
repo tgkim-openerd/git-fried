@@ -284,7 +284,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       "
     >
       <input v-model="amend" type="checkbox" :disabled="!repoId" class="accent-amber-500" />
-      <span :class="amend ? 'font-semibold text-amber-500' : ''"> Amend previous commit </span>
+      <span :class="amend ? 'font-semibold text-warning-amber' : ''"> Amend previous commit </span>
       <span v-if="amend" class="text-[10px] text-muted-foreground">— 마지막 커밋 수정</span>
     </label>
 
@@ -346,7 +346,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       class="rounded-md border border-rose-500/40 bg-rose-500/5 p-2 text-xs"
     >
       <div class="mb-1 flex items-center justify-between">
-        <span class="font-semibold text-rose-500">
+        <span class="font-semibold text-danger-rose">
           ✕ Commit 실패 (exit {{ lastResult.exitCode }})
           <span
             v-if="hookKind(lastResult.stderr)"
@@ -374,7 +374,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       <div class="mt-2 flex justify-end gap-2">
         <button
           type="button"
-          class="rounded-md border border-rose-500/40 px-2 py-1 text-rose-500 hover:bg-rose-500/10"
+          class="rounded-md border border-rose-500/40 px-2 py-1 text-danger-rose hover:bg-rose-500/10"
           @click="commitWith(true)"
         >
           ⚠ --no-verify 로 강제 commit

@@ -227,19 +227,28 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
         >
           <div class="flex items-center justify-between">
             <span class="truncate text-xs">
-              <span v-if="wt.isMain" class="text-emerald-500" :title="$t('worktree.mainTitle')"
+              <span
+                v-if="wt.isMain"
+                class="text-emerald-700 dark:text-emerald-500"
+                :title="$t('worktree.mainTitle')"
                 >●</span
               >
               <span
                 v-if="isAiAgent(wt.branch)"
-                class="text-violet-500"
+                class="text-ai-violet"
                 :title="$t('worktree.aiAgentTitle')"
                 >🤖</span
               >
-              <span v-if="wt.isLocked" class="text-amber-500" :title="$t('worktree.lockedTitle')"
+              <span
+                v-if="wt.isLocked"
+                class="text-warning-amber"
+                :title="$t('worktree.lockedTitle')"
                 >🔒</span
               >
-              <span v-if="wt.isPrunable" class="text-rose-500" :title="$t('worktree.prunableTitle')"
+              <span
+                v-if="wt.isPrunable"
+                class="text-danger-rose"
+                :title="$t('worktree.prunableTitle')"
                 >⚠</span
               >
               <span class="ml-1 font-mono">{{ wt.branch || $t('worktree.detached') }}</span>
@@ -251,7 +260,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
             <button
               v-if="!wt.isLocked"
               type="button"
-              class="text-[10px] text-amber-500 hover:underline"
+              class="text-[10px] text-warning-amber hover:underline"
               :disabled="lockMut.isPending.value"
               :aria-label="t('worktree.lockAria', { path: wt.path })"
               @click="onLock(wt.path)"
@@ -261,7 +270,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
             <button
               v-else
               type="button"
-              class="text-[10px] text-amber-500 hover:underline"
+              class="text-[10px] text-warning-amber hover:underline"
               :disabled="unlockMut.isPending.value"
               :aria-label="t('worktree.unlockAria', { path: wt.path })"
               @click="onUnlock(wt.path)"

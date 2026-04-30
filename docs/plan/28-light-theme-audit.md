@@ -45,6 +45,15 @@
 - ✅ `ConventionalCommitBuilder.vue` — subjectZone ideal/warn/over: `text-emerald/amber/rose-500` → `text-diff-add/warning-amber/danger-rose`
 - 🟡 잔여 ~50곳: PrDetailModal (state) / CommitMessageInput / WorktreePanel / BranchPanel / 외 다수 — c36 진입
 
+### Sprint c36 옵션 C 2차 적용 (상위 5 컴포넌트, 29 위치)
+
+- ✅ `PrDetailModal.vue` — stateColor (open/merged/closed) + bg-X-500/20 텍스트 → `text-X-700 dark:text-X-500` 패턴 (state 의미는 semantic colors 와 매핑 어려움)
+- ✅ `CommitDetailSidebar.vue` — changeColor (added/deleted/renamed/modified) + +/- adds/dels → semantic colors (text-diff-add/delete/rename/warning-amber)
+- ✅ `WorktreePanel.vue` — main / AI agent / locked / prunable 6 위치 → semantic (text-emerald-700 dark:emerald-500 / text-ai-violet / text-warning-amber / text-danger-rose)
+- ✅ `ActiveRepoQuickActions.vue` — ahead/behind + staged/unstaged/conflicted 5 위치 → semantic (text-diff-add / text-warning-amber / text-danger-rose)
+- ✅ `CommitMessageInput.vue` — amend warning + force push danger 4 위치 → text-warning-amber / text-danger-rose
+- 🟡 잔여 ~30곳: ToastContainer / SyncTemplateModal / StatusBar / ReflogModal / PrPanel / MiniBranchList / IdentityCard / GitKrakenToolbar / ChangeCountBadge / 외 (각 3곳 미만, 영향 작음) — c37 진입
+
 ---
 
 ## 2. 시스템적 fix 전략 (3 후보)

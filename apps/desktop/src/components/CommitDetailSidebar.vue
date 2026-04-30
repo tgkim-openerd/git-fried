@@ -119,16 +119,17 @@ function changeIcon(c: PatchFileChange): string {
 }
 
 function changeColor(c: PatchFileChange): string {
+  // Sprint c36 plan/28 옵션 C — diff 의미는 semantic colors 사용.
   switch (c) {
     case 'added':
-      return 'text-emerald-500'
+      return 'text-diff-add'
     case 'deleted':
-      return 'text-rose-500'
+      return 'text-diff-delete'
     case 'renamed':
-      return 'text-violet-500'
+      return 'text-diff-rename'
     case 'modified':
     default:
-      return 'text-amber-500'
+      return 'text-warning-amber'
   }
 }
 
@@ -249,7 +250,7 @@ function onExplainCommit() {
       <div class="space-y-1.5 rounded-md border border-border bg-muted/10 p-2 text-xs">
         <div class="flex items-center gap-2">
           <span
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-emerald-500"
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-diff-add"
             :title="commit.authorEmail"
             :aria-label="`작성자: ${commit.authorName} (${commit.authorEmail})`"
           >
@@ -305,8 +306,8 @@ function onExplainCommit() {
         class="flex items-center gap-3 rounded-md border border-border bg-muted/20 px-2 py-1.5 text-xs"
         title="이 commit 의 변경 통계 (좌측 inline diff 의 patch 기반)"
       >
-        <span class="text-emerald-500">+{{ fileStats.adds }}</span>
-        <span class="text-rose-500">−{{ fileStats.dels }}</span>
+        <span class="text-diff-add">+{{ fileStats.adds }}</span>
+        <span class="text-diff-delete">−{{ fileStats.dels }}</span>
         <span class="text-muted-foreground">({{ fileStats.files }} files)</span>
       </div>
 
