@@ -16,6 +16,10 @@ import ConventionalCommitBuilder from './ConventionalCommitBuilder.vue'
 import { useAiCommitMessage } from '@/composables/useAiCommitMessage'
 import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const toast = useToast()
 import { buildConventional, isConventionalType, type ConventionalType } from '@/types/git'
@@ -48,15 +52,12 @@ watch(
     // SEC-006 fix — 이미 push 된 commit 의 amend 는 force-push 필요 (history rewrite).
     // ahead === 0 && upstream 존재 = 마지막 commit 이 원격에도 있음 → 강제 confirm.
     if (props.ahead === 0) {
-      if (
-        !confirm(
-          '⚠ Amend 경고 — 이미 push 된 commit 일 수 있습니다\n\n' +
-            '• ahead = 0 (모든 local commit 이 원격에 push 됨)\n' +
-            '• Amend 시 마지막 commit hash 변경 → 동료의 fetch 충돌\n' +
-            '• 해결: push 후 force-push (--force-with-lease) 필요\n\n' +
-            'Amend 를 진행하시겠습니까?',
-        )
-      ) {
+      const ok = await confirmDialog({
+        title: t('confirm.amendPushedTitle'),
+        message: t('confirm.amendPushedMessage'),
+        danger: true,
+      })
+      if (!ok) {
         amend.value = false
         return
       }

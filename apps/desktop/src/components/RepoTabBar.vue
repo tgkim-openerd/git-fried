@@ -26,6 +26,10 @@ import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './Con
 // Sprint c31 — BaseTooltip primitive (kbd hint 노출).
 import BaseTooltip from './BaseTooltip.vue'
 import { visualWidth } from '@/utils/visualWidth'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const OVERFLOW_THRESHOLD = 8
 
@@ -208,7 +212,14 @@ function onTabContextMenu(ev: MouseEvent, id: number) {
       icon: '✕✕',
       destructive: true,
       action: () => {
-        if (window.confirm(`${total}개 탭 모두 닫기?`)) store.closeAll()
+        void (async () => {
+          const ok = await confirmDialog({
+            title: t('confirm.closeAllTabsTitle'),
+            message: t('confirm.closeAllTabsMessage', { n: total }),
+            danger: true,
+          })
+          if (ok) store.closeAll()
+        })()
       },
     },
     { divider: true },
@@ -237,12 +248,20 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
       icon: '✕',
       destructive: g.tabIds.length > 1,
       action: () => {
-        if (
-          g.tabIds.length === 1 ||
-          window.confirm(`'${g.label}' 그룹의 ${g.tabIds.length} 탭 모두 닫기?`)
-        ) {
+        void (async () => {
+          if (g.tabIds.length > 1) {
+            const ok = await confirmDialog({
+              title: t('confirm.closeGroupTabsTitle'),
+              message: t('confirm.closeGroupTabsMessage', {
+                n: g.tabIds.length,
+                label: g.label,
+              }),
+              danger: true,
+            })
+            if (!ok) return
+          }
           for (const id of g.tabIds) store.closeTab(id)
-        }
+        })()
       },
     },
   ]

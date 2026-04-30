@@ -8,7 +8,10 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 // Sprint c31 — BaseTooltip primitive.
 import BaseTooltip from './BaseTooltip.vue'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
 
+const { t } = useI18n()
 const toast = useToast()
 import { useProfiles } from '@/composables/useProfiles'
 
@@ -26,18 +29,17 @@ const activateMut = useMutation({
   onError: (e) => toast.error('프로파일 활성화 실패', describeError(e)),
 })
 
-function pick(id: number) {
+async function pick(id: number) {
   if (active.value?.id === id) {
     open.value = false
     return
   }
-  if (
-    !window.confirm(
-      '⚠ 이 프로파일을 활성화하면 글로벌 git config (user.name / user.email / signingKey) 가 덮여씌워집니다. 진행할까요?',
-    )
-  ) {
-    return
-  }
+  const ok = await confirmDialog({
+    title: t('confirm.activateProfileTitle'),
+    message: t('confirm.activateProfileGenericMessage'),
+    danger: true,
+  })
+  if (!ok) return
   activateMut.mutate(id)
 }
 </script>
