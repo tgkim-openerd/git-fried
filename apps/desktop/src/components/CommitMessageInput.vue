@@ -18,18 +18,14 @@ import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useShortcut } from '@/composables/useShortcuts'
 import { notifyAiDone } from '@/composables/useAiCli'
-import { visualWidth } from '@/utils/visualWidth'
+// Sprint c31 god comp 분리 5/N — Conventional 빌더 분리.
+import ConventionalCommitBuilder from './ConventionalCommitBuilder.vue'
 import type { AiCli } from '@/api/git'
 import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 
 const toast = useToast()
-import {
-  buildConventional,
-  CONVENTIONAL_TYPES,
-  isConventionalType,
-  type ConventionalType,
-} from '@/types/git'
+import { buildConventional, isConventionalType, type ConventionalType } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null; ahead: number; behind: number }>()
 const emit = defineEmits<{
@@ -117,18 +113,8 @@ const finalMessage = computed(() => {
   })
 })
 
-// Sprint 22-7 Q-3: visualWidth 를 utils/visualWidth.ts 로 추출 (DRY 재사용).
-// ASCII=1, 한글/CJK/emoji=2 — terminal cell 기준. 한글 36자 ≈ 영문 72자.
-const subjectLength = computed(() => visualWidth(subject.value))
-const subjectWarn = computed(() => subjectLength.value > 72)
-// Phase 10 MEDIUM 1 — 50/72 char progress bar (Conventional commits convention)
-// ≤50: ideal (emerald), 51-72: warn (amber), >72: over (rose)
-const subjectZone = computed<'ideal' | 'warn' | 'over'>(() => {
-  if (subjectLength.value > 72) return 'over'
-  if (subjectLength.value > 50) return 'warn'
-  return 'ideal'
-})
-const subjectPct = computed(() => Math.min(100, Math.round((subjectLength.value / 72) * 100)))
+// Sprint c31 — subjectLength / subjectZone / subjectPct / subjectWarn 모두
+// ConventionalCommitBuilder.vue 내부로 이전 (subject prop 만 의존).
 
 // commit 실패 결과 (hook 출력) — alert 대신 inline panel.
 // 사용자 lefthook + husky + lint-staged 출력이 stderr 로 옴.
@@ -257,14 +243,15 @@ const aiMut = useMutation({
 })
 
 // Sprint B5 — ⌘⇧Enter (stage all + commit) / ⌘⇧M (focus message).
-const subjectRef = ref<HTMLInputElement | null>(null)
+// Sprint c31 — Conventional 모드 subjectRef 는 ConventionalCommitBuilder defineExpose 통해 접근.
+const builderRef = ref<InstanceType<typeof ConventionalCommitBuilder> | null>(null)
 const freeRef = ref<HTMLTextAreaElement | null>(null)
 
 useShortcut('focusMessage', () => {
   if (mode.value === 'free') {
     freeRef.value?.focus()
   } else {
-    subjectRef.value?.focus()
+    builderRef.value?.subjectRef?.focus()
   }
 })
 
@@ -335,77 +322,17 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       </button>
     </div>
 
-    <!-- Conventional 빌더 -->
-    <template v-if="mode === 'conventional'">
-      <div class="grid grid-cols-[120px_1fr_60px] gap-1">
-        <select
-          v-model="type"
-          class="rounded-md border border-input bg-background px-2 py-1 text-xs"
-        >
-          <option v-for="t in CONVENTIONAL_TYPES" :key="t" :value="t">{{ t }}</option>
-        </select>
-        <input
-          v-model="scope"
-          placeholder="scope (선택)"
-          class="rounded-md border border-input bg-background px-2 py-1 text-xs"
-        />
-        <label class="flex items-center justify-center gap-1 text-xs">
-          <input v-model="breaking" type="checkbox" class="accent-destructive" />
-          !
-        </label>
-      </div>
-      <input
-        ref="subjectRef"
-        v-model="subject"
-        placeholder="subject (한글 OK)"
-        class="rounded-md border border-input bg-background px-2 py-1 text-sm"
-        :class="subjectWarn ? 'border-amber-500' : ''"
-      />
-      <!-- Phase 10 MEDIUM 1 — 50/72 progress bar -->
-      <div class="flex flex-col gap-0.5">
-        <div class="relative h-1 w-full overflow-hidden rounded bg-muted">
-          <!-- 50/72 marker (≈69.4%) -->
-          <div
-            class="absolute top-0 bottom-0 w-px bg-foreground/30"
-            :style="{ left: 'calc(50 / 72 * 100%)' }"
-            aria-hidden="true"
-          ></div>
-          <div
-            class="h-full transition-all"
-            :class="{
-              'bg-emerald-500': subjectZone === 'ideal',
-              'bg-amber-500': subjectZone === 'warn',
-              'bg-rose-500': subjectZone === 'over',
-            }"
-            :style="{ width: `${subjectPct}%` }"
-          ></div>
-        </div>
-        <div class="flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>형식: type(scope)!: subject (이상 ≤50, 한계 ≤72)</span>
-          <span
-            :class="{
-              'text-emerald-500': subjectZone === 'ideal' && subjectLength > 0,
-              'text-amber-500': subjectZone === 'warn',
-              'text-rose-500': subjectZone === 'over',
-            }"
-          >
-            {{ subjectLength }}/72
-          </span>
-        </div>
-      </div>
-      <textarea
-        v-model="body"
-        placeholder="body (선택, 빈 줄 분리)"
-        rows="3"
-        class="rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
-      />
-      <textarea
-        v-model="footer"
-        placeholder="footer — Closes: #123 / BREAKING CHANGE: ... (선택)"
-        rows="2"
-        class="rounded-md border border-input bg-background px-2 py-1 text-xs font-mono"
-      />
-    </template>
+    <!-- Conventional 빌더 (Sprint c31 god comp 분리 5/N — ConventionalCommitBuilder.vue) -->
+    <ConventionalCommitBuilder
+      v-if="mode === 'conventional'"
+      ref="builderRef"
+      v-model:type="type"
+      v-model:scope="scope"
+      v-model:breaking="breaking"
+      v-model:subject="subject"
+      v-model:body="body"
+      v-model:footer="footer"
+    />
 
     <!-- Free 모드 -->
     <template v-else>
