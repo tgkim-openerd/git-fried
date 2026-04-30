@@ -27,6 +27,8 @@ import { statusColor, statusLabel } from '@/utils/statusFormat'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 // Sprint c31 god comp 분리 6/N — 3 modal state (history / merge / hunk) composable.
 import { useStatusModals } from '@/composables/useStatusModals'
+// Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge + a11y).
+import BaseTooltip from './BaseTooltip.vue'
 
 const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
@@ -288,36 +290,37 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
       <!-- Sprint c25-2.1 — Path / Tree 토글 (Modified 섹션에 적용) -->
       <div
         class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5 text-[10px]"
-        title="Modified 파일 목록 표시 모드 (localStorage 영속)"
       >
-        <button
-          type="button"
-          class="rounded px-1.5 py-0.5"
-          :class="
-            viewMode === 'path'
-              ? 'bg-accent text-accent-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
-          "
-          aria-label="평탄 path 모드"
-          title="Path — 전체 경로 한 줄 표시"
-          @click="setViewMode('path')"
-        >
-          Path
-        </button>
-        <button
-          type="button"
-          class="rounded px-1.5 py-0.5"
-          :class="
-            viewMode === 'tree'
-              ? 'bg-accent text-accent-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
-          "
-          aria-label="디렉토리 트리 모드"
-          title="Tree — 디렉토리 그룹핑 (collapse 가능)"
-          @click="setViewMode('tree')"
-        >
-          Tree
-        </button>
+        <BaseTooltip text="전체 경로 한 줄 표시 (localStorage 영속)" placement="bottom">
+          <button
+            type="button"
+            class="rounded px-1.5 py-0.5"
+            :class="
+              viewMode === 'path'
+                ? 'bg-accent text-accent-foreground font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
+            "
+            aria-label="평탄 path 모드"
+            @click="setViewMode('path')"
+          >
+            Path
+          </button>
+        </BaseTooltip>
+        <BaseTooltip text="디렉토리 그룹핑 (collapse 가능, localStorage 영속)" placement="bottom">
+          <button
+            type="button"
+            class="rounded px-1.5 py-0.5"
+            :class="
+              viewMode === 'tree'
+                ? 'bg-accent text-accent-foreground font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
+            "
+            aria-label="디렉토리 트리 모드"
+            @click="setViewMode('tree')"
+          >
+            Tree
+          </button>
+        </BaseTooltip>
       </div>
     </header>
 
