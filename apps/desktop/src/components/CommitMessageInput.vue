@@ -5,8 +5,7 @@
 //   - 한글 메시지 55~72%
 // → 디폴트 빌더 모드, 자유 입력 토글 가능.
 import { computed, ref, watch } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
-import { commit as ipcCommit, lastCommitMessage, stageAll as apiStageAll } from '@/api/git'
+import { lastCommitMessage, stageAll as apiStageAll } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useShortcut } from '@/composables/useShortcuts'
@@ -14,8 +13,8 @@ import { useShortcut } from '@/composables/useShortcuts'
 import ConventionalCommitBuilder from './ConventionalCommitBuilder.vue'
 // Sprint c32 god comp 분리 8/N — AI commit message 영역 (probes / mutation / parser) 분리.
 import { useAiCommitMessage } from '@/composables/useAiCommitMessage'
-import type { CommitResult } from '@/types/git'
-import { useInvalidateRepoQueries } from '@/composables/useStatus'
+// Sprint c33 god comp 분리 10/N — commit mutation + lastResult panel 영역 분리.
+import { useCommitMutation, hookKind } from '@/composables/useCommitMutation'
 import { useI18n } from 'vue-i18n'
 import { confirmDialog } from '@/composables/useConfirm'
 
@@ -23,6 +22,7 @@ const { t } = useI18n()
 
 const toast = useToast()
 import { buildConventional, isConventionalType, type ConventionalType } from '@/types/git'
+// useInvalidateRepoQueries — useCommitMutation 내부에서 invalidate 처리.
 
 const props = defineProps<{ repoId: number | null; ahead: number; behind: number }>()
 const emit = defineEmits<{
@@ -112,70 +112,29 @@ const finalMessage = computed(() => {
 
 // commit 실패 결과 (hook 출력) — alert 대신 inline panel.
 // 사용자 lefthook + husky + lint-staged 출력이 stderr 로 옴.
-const lastResult = ref<CommitResult | null>(null)
+const cmtMut = useCommitMutation({
+  repoId: () => props.repoId,
+  finalMessage: () => finalMessage.value,
+  signoff: () => signoff.value,
+  amend,
+  resetForm: () => {
+    subject.value = ''
+    body.value = ''
+    footer.value = ''
+    freeMessage.value = ''
+    breaking.value = false
+  },
+  onCommitted: () => emit('committed'),
+})
+const lastResult = cmtMut.lastResult
+const commitMut = cmtMut.commitMut
 
 function commitWith(noVerifyOverride: boolean) {
-  if (props.repoId == null) return
-  commitMut.mutate({ noVerify: noVerifyOverride })
+  cmtMut.commit(noVerifyOverride)
 }
-
-const commitMut = useMutation({
-  mutationFn: ({ noVerify: nv }: { noVerify: boolean }) => {
-    if (props.repoId == null) return Promise.reject(new Error('no repo'))
-    return ipcCommit({
-      repoId: props.repoId,
-      message: finalMessage.value,
-      signoff: signoff.value,
-      noVerify: nv,
-      amend: amend.value,
-    })
-  },
-  onSuccess: (res) => {
-    if (res.success) {
-      lastResult.value = null
-      subject.value = ''
-      body.value = ''
-      footer.value = ''
-      freeMessage.value = ''
-      breaking.value = false
-      // Amend 성공 시 토글 해제 (다음 commit 은 일반 commit 로).
-      amend.value = false
-      invalidate(props.repoId)
-      emit('committed')
-    } else {
-      // pre-commit hook 실패 등 — inline panel 로 표시
-      lastResult.value = res
-      // R-2A C5 (`docs/plan/22 §2 C5`): conflict marker 가 stderr 에 보이면
-      // 사용자에게 어디 충돌인지 안내. git 은 "<<<<<<<" 라인이 남으면 거부.
-      const merged = `${res.stdout ?? ''}\n${res.stderr ?? ''}`
-      const conflictHints = [
-        /<{4,7}\s*HEAD/, // <<<<<<< HEAD
-        /needs merge/i,
-        /unmerged paths/i,
-        /conflicting files/i,
-        /you have unmerged files/i,
-      ]
-      if (conflictHints.some((re) => re.test(merged))) {
-        toast.warning(
-          '⚠ Conflict marker 가 남아 있습니다',
-          'StatusPanel 의 "Conflicted" 섹션에서 충돌 파일을 열어 ours/theirs 를 선택하고 stage 하세요. (또는 우측 패널의 ⚔ Merge editor)',
-        )
-      }
-    }
-  },
-  onError: (e) => toast.error('커밋 호출 실패', describeError(e)),
-})
 
 function canCommit(): boolean {
   return finalMessage.value.trim().length > 0 && props.repoId != null
-}
-
-// hook 출력에서 husky / lefthook 마커 감지
-function hookKind(stderr: string): string | null {
-  if (/husky/i.test(stderr)) return 'husky'
-  if (/lefthook/i.test(stderr)) return 'lefthook'
-  if (/pre-commit/i.test(stderr)) return 'pre-commit'
-  return null
 }
 
 // === Sprint c32 god comp 분리 8/N — useAiCommitMessage composable ===
@@ -399,7 +358,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         <button
           type="button"
           class="text-muted-foreground hover:text-foreground"
-          @click="lastResult = null"
+          @click="cmtMut.clearLastResult()"
         >
           ✕
         </button>

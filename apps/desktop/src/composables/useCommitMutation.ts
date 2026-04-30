@@ -1,0 +1,116 @@
+// Sprint c33 god comp 분리 10/N — CommitMessageInput.vue 의 commit mutation 영역 추출.
+//
+// 책임:
+//   - lastResult ref (실패 panel 표시)
+//   - commitMut useMutation (ipcCommit + 결과 분기)
+//   - commit(noVerify) 호출 helper
+//   - hookKind(stderr) 분류 (husky / lefthook / pre-commit)
+//
+// 부모 (CommitMessageInput) 는 form state (subject/body/footer/freeMessage/amend) 만 보유.
+// onSuccess 시 부모의 resetForm 콜백 호출 → form clear + amend 토글 해제.
+//
+// Conflict marker 감지 (R-2A C5) 는 composable 내부 — toast 발화.
+
+import { ref } from 'vue'
+import { useMutation } from '@tanstack/vue-query'
+import { commit as ipcCommit } from '@/api/git'
+import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
+import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import type { CommitResult } from '@/types/git'
+
+export interface UseCommitMutationOptions {
+  /** 활성 레포 id getter (반응성). */
+  repoId: () => number | null
+  /** Conventional / free 모드에서 조립된 최종 메시지 getter. */
+  finalMessage: () => string
+  /** signoff 토글 getter. */
+  signoff: () => boolean
+  /** amend 토글 ref — 성공 시 자동으로 false 로 초기화. */
+  amend: { value: boolean }
+  /** 성공 시 form state 정리 콜백 (subject/body/footer/freeMessage/breaking 등 부모 책임). */
+  resetForm: () => void
+  /** 성공 시 emit('committed') 위임. */
+  onCommitted: () => void
+}
+
+/** hook 출력에서 husky / lefthook 마커 감지. */
+export function hookKind(stderr: string): string | null {
+  if (/husky/i.test(stderr)) return 'husky'
+  if (/lefthook/i.test(stderr)) return 'lefthook'
+  if (/pre-commit/i.test(stderr)) return 'pre-commit'
+  return null
+}
+
+const CONFLICT_HINTS = [
+  /<{4,7}\s*HEAD/, // <<<<<<< HEAD
+  /needs merge/i,
+  /unmerged paths/i,
+  /conflicting files/i,
+  /you have unmerged files/i,
+] as const
+
+/** stdout/stderr 에 conflict marker 잔존 신호가 있는지 검사. */
+export function hasConflictHints(res: { stdout?: string; stderr?: string }): boolean {
+  const merged = `${res.stdout ?? ''}\n${res.stderr ?? ''}`
+  return CONFLICT_HINTS.some((re) => re.test(merged))
+}
+
+export function useCommitMutation(opts: UseCommitMutationOptions) {
+  const toast = useToast()
+  const invalidate = useInvalidateRepoQueries()
+
+  const lastResult = ref<CommitResult | null>(null)
+
+  const commitMut = useMutation({
+    mutationFn: ({ noVerify }: { noVerify: boolean }) => {
+      const id = opts.repoId()
+      if (id == null) return Promise.reject(new Error('no repo'))
+      return ipcCommit({
+        repoId: id,
+        message: opts.finalMessage(),
+        signoff: opts.signoff(),
+        noVerify,
+        amend: opts.amend.value,
+      })
+    },
+    onSuccess: (res) => {
+      if (res.success) {
+        lastResult.value = null
+        opts.resetForm()
+        // Amend 성공 시 토글 해제 (다음 commit 은 일반 commit 로).
+        opts.amend.value = false
+        invalidate(opts.repoId())
+        opts.onCommitted()
+      } else {
+        // pre-commit hook 실패 등 — inline panel 로 표시.
+        lastResult.value = res
+        // R-2A C5 (`docs/plan/22 §2 C5`): conflict marker 가 stderr 에 보이면
+        // 사용자에게 어디 충돌인지 안내. git 은 "<<<<<<<" 라인이 남으면 거부.
+        if (hasConflictHints(res)) {
+          toast.warning(
+            '⚠ Conflict marker 가 남아 있습니다',
+            'StatusPanel 의 "Conflicted" 섹션에서 충돌 파일을 열어 ours/theirs 를 선택하고 stage 하세요. (또는 우측 패널의 ⚔ Merge editor)',
+          )
+        }
+      }
+    },
+    onError: (e) => toast.error('커밋 호출 실패', describeError(e)),
+  })
+
+  function commit(noVerifyOverride: boolean) {
+    if (opts.repoId() == null) return
+    commitMut.mutate({ noVerify: noVerifyOverride })
+  }
+
+  function clearLastResult() {
+    lastResult.value = null
+  }
+
+  return {
+    lastResult,
+    commitMut,
+    commit,
+    clearLastResult,
+  }
+}
