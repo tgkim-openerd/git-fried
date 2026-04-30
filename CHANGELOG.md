@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c32 — c31 후속 잔여 자율 작업 1~6 순차 진행 (2026-04-30, 3 commit)** — 사용자 "1~6 진행" → main 직접 3 commits + 3 skip 결정. typecheck 0 / lint 0 / vitest 50/529 → 52/551 (+2 files / +22 tests) / **god comp 분리 누적 9 / -1,118 LOC (-22%)** / **i18n 158 → ~189 키**:
+  - **Step 1 ContextMenu reka-ui — skip 결론 재확인** (이전 sprint c31 e705534 a11y 보강 완료. reka-ui declarative trigger wrap 패턴 vs git-fried 동적 `openAt(event, items)` 패턴 차이 + 14 위치 인터페이스 변경 위험. 별도 sprint 권장)
+  - **Step 2 i18n `ae434e1`** — WorktreePanel + TagPanel + PrPanel t() 마이그레이션 (~31 키 추가):
+    - worktree.* 14 키 (title / 4 status badge / 2 placeholder / 3 aria + remove block / detached)
+    - tag.* 13 키 (loading / 2 placeholder / annotated / noMessage / push / empty / createButton / annotatedBadge / ctxHint / 3 aria)
+    - pr.* 8 키 (title / emptyOpen+Desc / emptyAll / newPr / 2 aria / stateAll)
+    - v-for 변수 충돌 해소 (`t in trees` → `wt in trees`, `t in tagsQuery` → `tg in ...`)
+  - **Step 3 CommitGraph 추가 분리 — skip** (drawGraph / lane 알고리즘 / column resize 응집도 높음. 별도 sprint 권장)
+  - **Step 4 BaseTooltip 추가 — ROI 낮음 skip** (i18n 마이그레이션 시 title 자연 흡수, 26 위치로 충분)
+  - **Step 5 `1d2f1fe`** — useAiCommitMessage composable (119 LOC, CommitMessageInput 476 → 439):
+    - aiProbes useQuery (STATIC) + availableCli (Claude > Codex 우선) + generate useMutation (confirm + IPC) 통합
+    - **parseAiResult** named export — Conventional 패턴 매칭 + body 추출 (test 가능)
+    - 부모는 onResult callback 으로 ref 갱신만
+    - +13 unit test (Conventional 매칭 7 / 미매치 4 / edge 2)
+  - **Step 6 `f3fea5e`** — useExplainBranch composable (63 LOC, BranchPanel 545 → 504):
+    - 5 ref state + explain(repoId, cli, head, base) async + close() 통합
+    - +9 unit test (initial / 성공 / 실패 4 / catch / close / pending)
+  - **누적 통계**: Sprint c31 + c32 god comp 분리 누적 9 컴포넌트 / -1,118 LOC (-22%). 추출 composable 8 → 10 (useGraphSearch + useAiCommitMessage + useExplainBranch). i18n 활용 키 158 → ~189 / 11 컴포넌트 (WorktreePanel / TagPanel / PrPanel 추가)
 - **Sprint c31 — 잔여 자율 작업 22 commit 묶음 (2026-04-30)** — `/analyze` 반복 검증 + 잔여 식별 + 사용자 "1~6 순차 진행" 결정 → main 직접 22 commits. typecheck 0 / lint 0 / vitest 44/467 → 50/529 (+6 files / +62 tests) / Rust bench compile 통과 / **god component 누적 -1,040 LOC (-23%)** / **i18n 158 키 활용 / BaseTooltip 26 위치 / aria-label 6 보강 / ContextMenu role/aria 6 보강**:
   - **잔여 자율 작업 6 step (6 추가 commit, 사용자 "1~6 순차 진행")**:
     - **Step 1 `d4c66d0`** — useGraphSearch composable (CommitGraph 859 → 833, -26). isMatch / matchCount / openSearch / closeSearch / onKeydown(⌘F/Esc) 통합. drawGraph callback 위임. +14 unit test
