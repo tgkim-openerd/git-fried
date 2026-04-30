@@ -25,6 +25,7 @@ import { computed } from 'vue'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
+import { confirmDialog } from '@/composables/useConfirm'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import DiffViewer from './DiffViewer.vue'
 import EmptyState from './EmptyState.vue'
@@ -78,7 +79,12 @@ async function onPop(idx: number) {
 }
 async function onDrop(idx: number) {
   if (props.repoId == null) return
-  if (!confirm(`stash@{${idx}} 를 삭제하시겠습니까?`)) return
+  const ok = await confirmDialog({
+    title: t('confirm.deleteStashTitle'),
+    message: t('confirm.deleteStashMessage', { idx }),
+    danger: true,
+  })
+  if (!ok) return
   await dropStash(props.repoId, idx).catch((e) => toast.error('Drop 실패', describeError(e)))
   invalidate(props.repoId)
 }

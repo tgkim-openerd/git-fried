@@ -17,6 +17,7 @@ import AiResultModal from './AiResultModal.vue'
 import RemoteManageModal from './RemoteManageModal.vue'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
 import { useBranchActions, localBranchName } from '@/composables/useBranchActions'
 import SkeletonBlock from './SkeletonBlock.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
@@ -119,16 +120,17 @@ function onCreate() {
   createMut.mutate({ id: props.repoId, name: newBranchName.value.trim() })
 }
 
-function onDelete(b: BranchInfo) {
+async function onDelete(b: BranchInfo) {
   if (props.repoId == null) return
   const force = b.ahead > 0
-  if (
-    !confirm(
-      `브랜치 '${b.name}' 를 삭제하시겠습니까?` +
-        (force ? '\n⚠ 머지되지 않은 커밋이 있어 강제 삭제 -D 합니다.' : ''),
-    )
-  )
-    return
+  const ok = await confirmDialog({
+    title: t('confirm.deleteBranchTitle'),
+    message:
+      t('confirm.deleteBranchMessage', { name: b.name }) +
+      (force ? '\n⚠ ' + t('confirm.deleteBranchForceHint') : ''),
+    danger: true,
+  })
+  if (!ok) return
   deleteMut.mutate({ id: props.repoId, name: localName(b.name), force })
 }
 
@@ -201,9 +203,14 @@ async function onDropOnBranch(target: BranchInfo, ev: DragEvent) {
 
   if (commitSha) {
     // commit → branch (cherry-pick onto branch).
-    if (!confirm(`commit ${commitSha.slice(0, 7)} 를 '${target.name}' 에 cherry-pick?`)) {
-      return
-    }
+    const ok = await confirmDialog({
+      title: t('confirm.cherryPickTitle'),
+      message: t('confirm.cherryPickMessage', {
+        sha: commitSha.slice(0, 7),
+        branch: target.name,
+      }),
+    })
+    if (!ok) return
     try {
       const r = await cherryPickSha(props.repoId, commitSha, localName(target.name))
       if (r.success) {

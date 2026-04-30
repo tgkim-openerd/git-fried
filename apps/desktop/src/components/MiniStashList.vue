@@ -12,6 +12,10 @@ import { applyStash, popStash } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import MiniSection from './MiniSection.vue'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const store = useReposStore()
 const toast = useToast()
@@ -52,19 +56,15 @@ function onApply(idx: number) {
   if (store.activeRepoId == null) return
   applyStashMut.mutate({ id: store.activeRepoId, idx })
 }
-function onPop(idx: number) {
+async function onPop(idx: number) {
   if (store.activeRepoId == null) return
   // SEC-002 — hover-only 버튼 우발 클릭 방지.
-  if (
-    !confirm(
-      `stash@{${idx}} 을 pop 합니다.\n\n` +
-        `• working tree 에 적용 + stash 제거\n` +
-        `• conflict 발생 시 stash 만 남고 working tree 가 더러워질 수 있음\n\n` +
-        `진행하시겠습니까?`,
-    )
-  ) {
-    return
-  }
+  const ok = await confirmDialog({
+    title: t('confirm.popStashTitle'),
+    message: t('confirm.popStashMessage', { idx }),
+    danger: true,
+  })
+  if (!ok) return
   popStashMut.mutate({ id: store.activeRepoId, idx })
 }
 </script>
@@ -85,9 +85,7 @@ function onPop(idx: number) {
         class="group flex items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-accent/30"
         :title="`stash@{${s.index}} on ${s.branch ?? 'unknown'} — ${s.message}`"
       >
-        <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
-          @{{ s.index }}
-        </span>
+        <span class="shrink-0 font-mono text-[10px] text-muted-foreground"> @{{ s.index }} </span>
         <span class="flex-1 truncate">{{ s.message || '(no message)' }}</span>
         <button
           type="button"
@@ -108,10 +106,7 @@ function onPop(idx: number) {
           pop
         </button>
       </li>
-      <li
-        v-if="moreCount > 0"
-        class="px-1 py-0.5 text-[10px] text-muted-foreground"
-      >
+      <li v-if="moreCount > 0" class="px-1 py-0.5 text-[10px] text-muted-foreground">
         ⋯ +{{ moreCount }}개 더 (전체 → 클릭)
       </li>
     </ul>

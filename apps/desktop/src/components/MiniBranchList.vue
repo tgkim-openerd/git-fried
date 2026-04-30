@@ -20,6 +20,10 @@ import { useSidebarSearch } from '@/composables/useSidebarSearch'
 import MiniSection from './MiniSection.vue'
 import BranchTreeView from './BranchTreeView.vue'
 import type { BranchInfo } from '@/api/git'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const store = useReposStore()
 const toast = useToast()
@@ -55,20 +59,19 @@ const switchMut = useMutation({
   onError: (e) => toast.error('브랜치 전환 실패', describeError(e)),
 })
 
-function onSwitchBranch(name: string, isHead: boolean) {
+async function onSwitchBranch(name: string, isHead: boolean) {
   if (isHead) return
   if (store.activeRepoId == null) return
   if (counts.value.total > 0) {
-    if (
-      !confirm(
-        `변경사항 있음 (${counts.value.total} files) — '${name}' 으로 체크아웃 진행?\n\n` +
-          `• git checkout 이 거부할 수 있음 (overwrite 위험)\n` +
-          `• 안전하게 진행하려면 stash 먼저 권장\n\n` +
-          `그래도 시도하시겠습니까?`,
-      )
-    ) {
-      return
-    }
+    const ok = await confirmDialog({
+      title: t('confirm.switchWithChangesTitle'),
+      message: t('confirm.switchWithChangesMessage', {
+        n: counts.value.total,
+        name,
+      }),
+      danger: true,
+    })
+    if (!ok) return
   }
   switchMut.mutate({ id: store.activeRepoId, name })
 }

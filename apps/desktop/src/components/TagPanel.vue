@@ -25,6 +25,7 @@ import { formatDateLocalized } from '@/composables/useUserSettings'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
+import { confirmDialog } from '@/composables/useConfirm'
 
 const props = defineProps<{ repoId: number | null }>()
 
@@ -77,8 +78,13 @@ const deleteMut = useMutation({
   onError: (e) => toast.error('Tag 삭제 실패', describeError(e)),
 })
 
-function onDelete(name: string) {
-  if (!window.confirm(`로컬 tag '${name}' 를 삭제할까요?\n(원격은 별도)`)) return
+async function onDelete(name: string) {
+  const ok = await confirmDialog({
+    title: t('confirm.deleteTagTitle'),
+    message: t('confirm.deleteLocalTagMessage', { name }),
+    danger: true,
+  })
+  if (!ok) return
   deleteMut.mutate(name)
 }
 
@@ -103,8 +109,13 @@ const deleteRemoteMut = useMutation({
   onError: (e) => toast.error('원격 tag 삭제 실패', describeError(e)),
 })
 
-function onDeleteRemote(name: string) {
-  if (!window.confirm(`원격 tag 'origin/${name}' 를 삭제할까요?`)) return
+async function onDeleteRemote(name: string) {
+  const ok = await confirmDialog({
+    title: t('confirm.deleteTagTitle'),
+    message: t('confirm.deleteRemoteTagMessage', { name }),
+    danger: true,
+  })
+  if (!ok) return
   deleteRemoteMut.mutate(name)
 }
 
@@ -127,12 +138,16 @@ function toggleTagExpand(name: string) {
 const tagCtxMenu = useTemplateRef<ContextMenuExpose>('tagCtxMenu')
 const invalidateAll = useInvalidateRepoQueries()
 
-async function checkoutTag(t: TagInfo) {
+async function checkoutTag(tag: TagInfo) {
   if (props.repoId == null) return
-  if (!window.confirm(`Tag '${t.name}' checkout? (detached HEAD)`)) return
+  const ok = await confirmDialog({
+    title: t('confirm.checkoutTagTitle'),
+    message: t('confirm.checkoutTagMessage', { name: tag.name }),
+  })
+  if (!ok) return
   try {
-    await switchBranch(props.repoId, t.name, false)
-    toast.success('Checkout', t.name)
+    await switchBranch(props.repoId, tag.name, false)
+    toast.success('Checkout', tag.name)
     invalidateAll(props.repoId)
   } catch (e) {
     toast.error('Checkout 실패', describeError(e))
