@@ -13,16 +13,9 @@
 
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import {
-  fetchAll,
-  popStash,
-  pull,
-  pushStash,
-  push,
-  redoLastAction,
-  undoLastAction,
-  updateSubmodules,
-} from '@/api/git'
+import { fetchAll, popStash, pull, pushStash, push, updateSubmodules } from '@/api/git'
+// Sprint c36 god 17/N — undo/redo mutation 영역 분리.
+import { useUndoRedo } from '@/composables/useUndoRedo'
 import { useQuery } from '@tanstack/vue-query'
 import { listRepos } from '@/api/git'
 import { useStash } from '@/composables/useStash'
@@ -150,58 +143,9 @@ const pushMut = useMutation({
   onError: (e) => toast.error('Push 호출 실패', describeError(e)),
 })
 
-// === Sprint c25-1.5 — Undo last action ===
-// commit / amend 만 자동 reset --soft, 나머지는 ReflogModal 진입 권유.
-const undoMut = useMutation({
-  mutationFn: (id: number) => undoLastAction(id),
-  onSuccess: (res) => {
-    if (res.executed) {
-      invalidate(props.repoId)
-      // SEC-005 fix — reflog 출력의 control char (ANSI escape 등) 위생화.
-      // Vue 자동 escape 가 XSS 자체는 차단하지만 toast 표시 깨짐 방지.
-      const preview = res.message
-        .split(/\r?\n/)[0]
-        .slice(0, 50)
-        // eslint-disable-next-line no-control-regex
-        .replace(/[\x00-\x1f]/g, '')
-      toast.success(
-        `Undid: ${res.action}`,
-        preview ? `'${preview}' 되돌림 (--soft, working tree 보존)` : '되돌림 완료',
-      )
-    } else {
-      toast.warning(
-        `${res.action} 은 자동 undo 미지원`,
-        (res.rejectionReason ?? '') + ' — Reflog 모달에서 직접 처리하세요.',
-      )
-      // 거부된 경우 ReflogModal 자동 오픈 — 사용자 후속 액션 가이드.
-      window.gitFriedOpenReflog?.()
-    }
-  },
-  onError: (e) => toast.error('Undo 실패', describeError(e)),
-})
-
-// Phase 1 (plan-reflog-undo) — Redo last action.
-const redoMut = useMutation({
-  mutationFn: (id: number) => redoLastAction(id),
-  onSuccess: (res) => {
-    if (res.executed) {
-      invalidate(props.repoId)
-      const preview = res.message
-        .split(/\r?\n/)[0]
-        .slice(0, 50)
-        // eslint-disable-next-line no-control-regex
-        .replace(/[\x00-\x1f]/g, '')
-      toast.success(`Redo: ${res.action}`, preview ? `'${preview}' 다시 적용` : '다시 적용 완료')
-    } else {
-      toast.warning(
-        `Redo 거부 (${res.action})`,
-        (res.rejectionReason ?? '') + ' — Reflog 모달에서 직접 처리하세요.',
-      )
-      window.gitFriedOpenReflog?.()
-    }
-  },
-  onError: (e) => toast.error('Redo 실패', describeError(e)),
-})
+// === Sprint c36 god 17/N — undo/redo composable 위임 ===
+// commit/amend 만 자동 reset --soft, 나머지 거부 → ReflogModal 자동 오픈.
+const { undoMut, redoMut } = useUndoRedo(() => props.repoId)
 
 // === Stash / Pop (toolbar 자체 mutation) ===
 const stashMut = useMutation({
