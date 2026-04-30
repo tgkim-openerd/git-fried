@@ -4,6 +4,7 @@
 import { computed, useTemplateRef } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
+import BaseTooltip from './BaseTooltip.vue'
 import { getDiff } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
@@ -78,88 +79,104 @@ function onNextHunk() {
       </div>
       <div class="flex shrink-0 items-center gap-1 text-[11px]">
         <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (1-hunk 이하면 disabled) -->
-        <div
-          class="flex items-center gap-0.5 rounded border border-border bg-muted/30 px-0.5"
-          :title="
-            hunkNavDisabled
-              ? '이 patch 는 hunk 1개 이하 — nav 불필요'
-              : `${inlineHunkCount}개 hunk — ↑↓ 로 이동`
-          "
-        >
-          <button
-            type="button"
-            class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+        <div class="flex items-center gap-0.5 rounded border border-border bg-muted/30 px-0.5">
+          <BaseTooltip
+            :text="
+              hunkNavDisabled
+                ? '이 patch 는 hunk 1개 이하 — nav 불필요'
+                : `이전 hunk (${inlineHunkCount}개)`
+            "
+            kbd="Alt+↑"
+            placement="bottom"
             :disabled="hunkNavDisabled"
-            title="이전 hunk"
-            aria-label="이전 hunk 로 이동"
-            @click="onPrevHunk"
           >
-            ↑
-          </button>
-          <button
-            type="button"
-            class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+            <button
+              type="button"
+              class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+              :disabled="hunkNavDisabled"
+              aria-label="이전 hunk 로 이동"
+              @click="onPrevHunk"
+            >
+              ↑
+            </button>
+          </BaseTooltip>
+          <BaseTooltip
+            :text="
+              hunkNavDisabled
+                ? '이 patch 는 hunk 1개 이하 — nav 불필요'
+                : `다음 hunk (${inlineHunkCount}개)`
+            "
+            kbd="Alt+↓"
+            placement="bottom"
             :disabled="hunkNavDisabled"
-            title="다음 hunk"
-            aria-label="다음 hunk 로 이동"
-            @click="onNextHunk"
           >
-            ↓
-          </button>
+            <button
+              type="button"
+              class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
+              :disabled="hunkNavDisabled"
+              aria-label="다음 hunk 로 이동"
+              @click="onNextHunk"
+            >
+              ↓
+            </button>
+          </BaseTooltip>
         </div>
-        <button
-          type="button"
-          class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
-          title="파일 히스토리 / Blame (⌘⇧H)"
-          aria-label="파일 히스토리 보기"
-          @click="emit('history', path)"
-        >
-          📜 History
-        </button>
-        <button
-          v-if="!isStaged"
-          type="button"
-          class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
-          title="이 파일 stage"
-          @click="emit('stage', path)"
-        >
-          + stage
-        </button>
-        <button
-          v-else
-          type="button"
-          class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
-          title="이 파일 unstage"
-          @click="emit('unstage', path)"
-        >
-          − unstage
-        </button>
-        <button
-          type="button"
-          class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
-          title="Hunk-level"
-          @click="emit('hunk', path, isStaged)"
-        >
-          ✂ hunk
-        </button>
-        <button
-          v-if="!isStaged"
-          type="button"
-          class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
-          title="discard"
-          @click="emit('discard', path)"
-        >
-          ⤺ discard
-        </button>
-        <button
-          type="button"
-          class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
-          aria-label="diff preview 닫기"
-          title="닫기"
-          @click="emit('close')"
-        >
-          ✕
-        </button>
+        <BaseTooltip text="파일 히스토리 / Blame" kbd="⌘⇧H" placement="bottom">
+          <button
+            type="button"
+            class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
+            aria-label="파일 히스토리 보기"
+            @click="emit('history', path)"
+          >
+            📜 History
+          </button>
+        </BaseTooltip>
+        <BaseTooltip v-if="!isStaged" text="이 파일 stage" kbd="S" placement="bottom">
+          <button
+            type="button"
+            class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
+            @click="emit('stage', path)"
+          >
+            + stage
+          </button>
+        </BaseTooltip>
+        <BaseTooltip v-else text="이 파일 unstage" kbd="U" placement="bottom">
+          <button
+            type="button"
+            class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
+            @click="emit('unstage', path)"
+          >
+            − unstage
+          </button>
+        </BaseTooltip>
+        <BaseTooltip text="Hunk-level stage / unstage (특정 라인만)" placement="bottom">
+          <button
+            type="button"
+            class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
+            @click="emit('hunk', path, isStaged)"
+          >
+            ✂ hunk
+          </button>
+        </BaseTooltip>
+        <BaseTooltip v-if="!isStaged" text="변경 폐기 (discard)" placement="bottom">
+          <button
+            type="button"
+            class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
+            @click="emit('discard', path)"
+          >
+            ⤺ discard
+          </button>
+        </BaseTooltip>
+        <BaseTooltip text="diff preview 닫기" kbd="Esc" placement="bottom">
+          <button
+            type="button"
+            class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
+            aria-label="diff preview 닫기"
+            @click="emit('close')"
+          >
+            ✕
+          </button>
+        </BaseTooltip>
       </div>
     </div>
     <div class="flex-1 overflow-hidden">

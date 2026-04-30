@@ -37,6 +37,8 @@ import { useRepoAliases } from '@/composables/useRepoAliases'
 import { onMenuAction } from '@/composables/useMenuListener'
 // Sprint c31 — Pull strategy ref + helper 외부 분리.
 import { usePullStrategy, type PullStrategy } from '@/composables/usePullStrategy'
+// Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge 회피 + a11y).
+import BaseTooltip from './BaseTooltip.vue'
 
 const props = defineProps<{
   repoId: number | null
@@ -349,38 +351,48 @@ onUnmounted(() => {
     <div class="flex items-center gap-0.5">
       <!-- [history] Undo / Redo -->
       <div class="flex items-center gap-0.5">
-        <button
-          type="button"
-          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId || undoMut.isPending.value"
-          :title="
+        <BaseTooltip
+          :text="
             undoMut.isPending.value
               ? 'Undo 진행 중...'
-              : 'Undo — 마지막 commit/amend 되돌리기 (--soft, working tree 보존)'
+              : '마지막 commit/amend 되돌리기 (--soft, working tree 보존)'
           "
-          @click="onUndo"
+          kbd="⌘Z"
+          placement="bottom"
         >
-          <span class="text-base leading-none">↶</span>
-          <span class="text-[10px] leading-tight">{{
-            undoMut.isPending.value ? '...' : 'Undo'
-          }}</span>
-        </button>
-        <button
-          type="button"
-          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId || redoMut.isPending.value"
-          :title="
+          <button
+            type="button"
+            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            :disabled="!repoId || undoMut.isPending.value"
+            @click="onUndo"
+          >
+            <span class="text-base leading-none">↶</span>
+            <span class="text-[10px] leading-tight">{{
+              undoMut.isPending.value ? '...' : 'Undo'
+            }}</span>
+          </button>
+        </BaseTooltip>
+        <BaseTooltip
+          :text="
             redoMut.isPending.value
               ? 'Redo 진행 중...'
-              : 'Redo — 직전 undo 되돌리기 (reset/checkout 만, working tree 보존)'
+              : '직전 undo 되돌리기 (reset/checkout 만, working tree 보존)'
           "
-          @click="onRedo"
+          kbd="⌘⇧Z"
+          placement="bottom"
         >
-          <span class="text-base leading-none">↷</span>
-          <span class="text-[10px] leading-tight">{{
-            redoMut.isPending.value ? '...' : 'Redo'
-          }}</span>
-        </button>
+          <button
+            type="button"
+            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            :disabled="!repoId || redoMut.isPending.value"
+            @click="onRedo"
+          >
+            <span class="text-base leading-none">↷</span>
+            <span class="text-[10px] leading-tight">{{
+              redoMut.isPending.value ? '...' : 'Redo'
+            }}</span>
+          </button>
+        </BaseTooltip>
       </div>
 
       <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
@@ -389,33 +401,42 @@ onUnmounted(() => {
       <div class="flex items-center gap-0.5">
         <!-- Phase 12-3 — Pull dropdown (split button: 본체 = 마지막 strategy 즉시 실행, ▾ = 옵션 메뉴). -->
         <div class="relative flex items-center">
-          <button
-            type="button"
-            class="flex flex-col items-center gap-0 rounded-l-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-            :disabled="!repoId || pullMut.isPending.value"
-            :title="
+          <BaseTooltip
+            :text="
               pullMut.isPending.value
                 ? 'Pull 진행 중...'
-                : `Pull (⌘⇧L) — fetch + ${pullStrategyLabel(pullStrategy)}`
+                : `Pull — fetch + ${pullStrategyLabel(pullStrategy)}`
             "
-            @click="onPull"
+            kbd="⌘⇧L"
+            placement="bottom"
           >
-            <span class="text-base leading-none">⇩</span>
-            <span class="text-[10px] leading-tight">{{
-              pullMut.isPending.value ? '...' : 'Pull'
-            }}</span>
-          </button>
-          <button
-            type="button"
-            class="flex h-full items-center rounded-r-md border-l border-border/40 px-1 py-0 text-[10px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-            :disabled="!repoId || pullMut.isPending.value"
-            :aria-expanded="pullDropdownOpen"
-            aria-haspopup="menu"
-            title="Pull 전략 선택 (merge / rebase / ff-only / no-rebase)"
-            @click="pullDropdownOpen = !pullDropdownOpen"
+            <button
+              type="button"
+              class="flex flex-col items-center gap-0 rounded-l-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+              :disabled="!repoId || pullMut.isPending.value"
+              @click="onPull"
+            >
+              <span class="text-base leading-none">⇩</span>
+              <span class="text-[10px] leading-tight">{{
+                pullMut.isPending.value ? '...' : 'Pull'
+              }}</span>
+            </button>
+          </BaseTooltip>
+          <BaseTooltip
+            text="Pull 전략 선택 (merge / rebase / ff-only / no-rebase)"
+            placement="bottom"
           >
-            ▾
-          </button>
+            <button
+              type="button"
+              class="flex h-full items-center rounded-r-md border-l border-border/40 px-1 py-0 text-[10px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+              :disabled="!repoId || pullMut.isPending.value"
+              :aria-expanded="pullDropdownOpen"
+              aria-haspopup="menu"
+              @click="pullDropdownOpen = !pullDropdownOpen"
+            >
+              ▾
+            </button>
+          </BaseTooltip>
           <!-- Dropdown popover -->
           <div
             v-if="pullDropdownOpen"
@@ -450,102 +471,118 @@ onUnmounted(() => {
             @click="pullDropdownOpen = false"
           />
         </div>
-        <button
-          type="button"
-          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId || pushMut.isPending.value"
-          :title="pushMut.isPending.value ? 'Push 진행 중...' : 'Push (⌘⇧K)'"
-          @click="onPush"
+        <BaseTooltip
+          :text="pushMut.isPending.value ? 'Push 진행 중...' : 'Push'"
+          kbd="⌘⇧K"
+          placement="bottom"
         >
-          <span class="text-base leading-none">⇧</span>
-          <span class="text-[10px] leading-tight">{{
-            pushMut.isPending.value ? '...' : 'Push'
-          }}</span>
-        </button>
+          <button
+            type="button"
+            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            :disabled="!repoId || pushMut.isPending.value"
+            @click="onPush"
+          >
+            <span class="text-base leading-none">⇧</span>
+            <span class="text-[10px] leading-tight">{{
+              pushMut.isPending.value ? '...' : 'Push'
+            }}</span>
+          </button>
+        </BaseTooltip>
       </div>
 
       <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
 
       <!-- [branch] Branch / Stash / Pop -->
       <div class="flex items-center gap-0.5">
-        <button
-          type="button"
-          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId"
-          title="Branch (⌘B) — 브랜치 패널 전환 + 새 브랜치 입력"
-          @click="onBranch"
-        >
-          <span class="text-base leading-none">⎇</span>
-          <span class="text-[10px] leading-tight">Branch</span>
-        </button>
-        <button
-          type="button"
-          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId || !hasChanges || stashMut.isPending.value"
-          :title="
+        <BaseTooltip text="브랜치 패널 전환 + 새 브랜치 입력" kbd="⌘B" placement="bottom">
+          <button
+            type="button"
+            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            :disabled="!repoId"
+            @click="onBranch"
+          >
+            <span class="text-base leading-none">⎇</span>
+            <span class="text-[10px] leading-tight">Branch</span>
+          </button>
+        </BaseTooltip>
+        <BaseTooltip
+          :text="
             !hasChanges
               ? 'Stash 할 working tree 변경 없음'
               : stashMut.isPending.value
                 ? 'Stash 진행 중...'
-                : 'Stash — 현재 변경사항 즉시 stash (메시지 없이)'
+                : '현재 변경사항 즉시 stash (메시지 없이)'
           "
-          @click="onStash"
+          placement="bottom"
         >
-          <span class="text-base leading-none">⤓</span>
-          <span class="text-[10px] leading-tight">{{
-            stashMut.isPending.value ? '...' : 'Stash'
-          }}</span>
-        </button>
-        <button
-          type="button"
-          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-          :disabled="!repoId || stashCount === 0 || popMut.isPending.value"
-          :title="
+          <button
+            type="button"
+            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            :disabled="!repoId || !hasChanges || stashMut.isPending.value"
+            @click="onStash"
+          >
+            <span class="text-base leading-none">⤓</span>
+            <span class="text-[10px] leading-tight">{{
+              stashMut.isPending.value ? '...' : 'Stash'
+            }}</span>
+          </button>
+        </BaseTooltip>
+        <BaseTooltip
+          :text="
             stashCount === 0
               ? 'pop 할 stash 없음'
               : popMut.isPending.value
                 ? 'Pop 진행 중...'
-                : `Pop — 가장 최근 stash@{0} apply + drop (총 ${stashCount}개)`
+                : `가장 최근 stash@{0} apply + drop (총 ${stashCount}개)`
           "
-          @click="onPop"
+          placement="bottom"
         >
-          <span class="text-base leading-none">⤒</span>
-          <span class="text-[10px] leading-tight">
-            {{ popMut.isPending.value ? '...' : 'Pop' }}
-            <span v-if="stashCount > 0" class="ml-0.5 text-emerald-500">{{ stashCount }}</span>
-          </span>
-        </button>
+          <button
+            type="button"
+            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            :disabled="!repoId || stashCount === 0 || popMut.isPending.value"
+            @click="onPop"
+          >
+            <span class="text-base leading-none">⤒</span>
+            <span class="text-[10px] leading-tight">
+              {{ popMut.isPending.value ? '...' : 'Pop' }}
+              <span v-if="stashCount > 0" class="ml-0.5 text-emerald-500">{{ stashCount }}</span>
+            </span>
+          </button>
+        </BaseTooltip>
       </div>
 
       <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
 
       <!-- [shell] Terminal -->
-      <button
-        type="button"
-        class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-        title="Terminal (⌘`) — 통합 터미널 토글"
-        @click="onTerminal"
-      >
-        <span class="text-base leading-none">▸_</span>
-        <span class="text-[10px] leading-tight">Terminal</span>
-      </button>
+      <BaseTooltip text="통합 터미널 토글" kbd="⌘`" placement="bottom">
+        <button
+          type="button"
+          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          @click="onTerminal"
+        >
+          <span class="text-base leading-none">▸_</span>
+          <span class="text-[10px] leading-tight">Terminal</span>
+        </button>
+      </BaseTooltip>
 
       <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
 
       <!-- Fetch — secondary, label only (Pull 옆 ▾ 대체 — 단순화) -->
-      <button
-        type="button"
-        class="rounded-md px-2 py-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-        :disabled="!repoId || fetchMut.isPending.value"
-        :title="
-          fetchMut.isPending.value
-            ? 'Fetch 진행 중...'
-            : 'Fetch (⌘L) — origin 만 가져오기 (merge 없음)'
-        "
-        @click="onFetch"
+      <BaseTooltip
+        :text="fetchMut.isPending.value ? 'Fetch 진행 중...' : 'origin 만 가져오기 (merge 없음)'"
+        kbd="⌘L"
+        placement="bottom"
       >
-        {{ fetchMut.isPending.value ? '...' : 'Fetch' }}
-      </button>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          :disabled="!repoId || fetchMut.isPending.value"
+          @click="onFetch"
+        >
+          {{ fetchMut.isPending.value ? '...' : 'Fetch' }}
+        </button>
+      </BaseTooltip>
     </div>
 
     <!-- Phase 10-5 — Repository breadcrumb + Branch indicator (우측). -->
