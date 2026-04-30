@@ -25,6 +25,8 @@ import { flattenTree, useStatusTreeView } from '@/composables/useStatusTreeView'
 import { statusColor, statusLabel } from '@/utils/statusFormat'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
+// Sprint c31 god comp 분리 6/N — 3 modal state (history / merge / hunk) composable.
+import { useStatusModals } from '@/composables/useStatusModals'
 
 const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
@@ -60,31 +62,23 @@ const onUnstageAll = sm.unstageAll
 
 // statusLabel / statusColor → utils/statusFormat.ts 로 이동 (test 가능 + DiffViewer 공용)
 
-// File history modal state
-const historyPath = ref<string | null>(null)
-const historyOpen = ref(false)
-function openHistory(path: string) {
-  historyPath.value = path
-  historyOpen.value = true
-}
-
-// 3-way merge modal state
-const mergePath = ref<string | null>(null)
-const mergeOpen = ref(false)
-function openMerge(path: string) {
-  mergePath.value = path
-  mergeOpen.value = true
-}
-
-// Sprint H — Hunk-level stage / unstage
-const hunkPath = ref<string | null>(null)
-const hunkStaged = ref(false)
-const hunkOpen = ref(false)
-function openHunk(path: string, staged: boolean) {
-  hunkPath.value = path
-  hunkStaged.value = staged
-  hunkOpen.value = true
-}
+// Sprint c31 god comp 분리 6/N — File history / 3-way merge / Hunk-level modal state
+// 통합 composable. close handler 는 template 의 @close 에서 직접 호출.
+const {
+  historyPath,
+  historyOpen,
+  openHistory,
+  closeHistory,
+  mergePath,
+  mergeOpen,
+  openMerge,
+  closeMerge,
+  hunkPath,
+  hunkStaged,
+  hunkOpen,
+  openHunk,
+  closeHunk,
+} = useStatusModals()
 
 // === Sprint 22-2 CM-3: file row 우클릭 메뉴 ===
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
@@ -768,20 +762,15 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
       :repo-id="repoId"
       :path="historyPath"
       :open="historyOpen"
-      @close="historyOpen = false"
+      @close="closeHistory"
     />
-    <MergeEditorModal
-      :repo-id="repoId"
-      :path="mergePath"
-      :open="mergeOpen"
-      @close="mergeOpen = false"
-    />
+    <MergeEditorModal :repo-id="repoId" :path="mergePath" :open="mergeOpen" @close="closeMerge" />
     <HunkStageModal
       :repo-id="repoId"
       :path="hunkPath"
       :staged="hunkStaged"
       :open="hunkOpen"
-      @close="hunkOpen = false"
+      @close="closeHunk"
     />
     <ContextMenu ref="ctxMenu" />
   </section>

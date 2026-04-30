@@ -208,7 +208,8 @@ async function copyThemeExport() {
 // ===== About =====
 const uiState = useUiState()
 const buildInfo = computed(() => ({
-  version: '0.0',
+  // Sprint c31 PR-B — version 0.0.0 → 0.3.0 동기 (tauri.conf.json + Cargo.toml + package.json).
+  version: '0.3.0',
   zoomPx: uiState.zoomPx.value,
   sidebarVisible: uiState.sidebarVisible.value,
   detailVisible: uiState.detailVisible.value,
