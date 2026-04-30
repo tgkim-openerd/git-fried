@@ -1,11 +1,22 @@
-// Reflog viewer — `.git/logs/HEAD` 또는 다른 ref 의 reflog 파싱.
+// Reflog 모듈 — `.git/logs/HEAD` 또는 다른 ref 의 reflog 파싱 + reflog-based undo/redo
+// 통합 진입점.
 //
-// `git reflog` 출력 파싱이 가장 안정적.
+// 본 모듈의 책임 (Sprint c35 plan/27 단기 액션 3):
+//   1. `list_reflog(repo, ref_name, limit)` — reflog 항목 파싱 (sha + label + action + subject + at)
+//   2. `undo_last_action(repo)` / `redo_last_action(repo)` — reflog 기반 안전 undo/redo
+//      (실 구현은 `git/reset.rs` 에 있고 본 모듈에서 re-export — v1.x crate
+//      'reflog-undo' 추출 시 본 모듈 통째로 가져갈 수 있도록 정비).
+//
+// `git reflog` 출력 파싱이 가장 안정적 (in-process libgit2 의 reflog API 보다 정확).
 
 use crate::error::AppResult;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+// Sprint c35 — reflog 단일 진입점. 실 구현은 reset.rs (race-safe SHA capture / 화이트리스트
+// 검증 / checkout dirty 거부 등) 그대로 두되 본 모듈에서 re-export 하여 publish 가능 형태 정비.
+pub use crate::git::reset::{redo_last_action, undo_last_action, UndoResult};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

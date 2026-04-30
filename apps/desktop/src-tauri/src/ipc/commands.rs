@@ -11,9 +11,9 @@ use crate::error::{AppError, AppResult};
 use crate::git::{
     branch as git_branch, bulk as git_bulk, clone as git_clone, commit as git_commit,
     config_local as git_cfg_local, diff as git_diff, graph as git_graph, maintenance as git_maint,
-    read_file as git_read_file, remote as git_remote, repository as repo, reset as git_reset,
-    runner, stage, stash as git_stash, status as git_status, submodule as git_sub,
-    sync as git_sync, tag as git_tag,
+    read_file as git_read_file, reflog as git_reflog, remote as git_remote, repository as repo,
+    reset as git_reset, runner, stage, stash as git_stash, status as git_status,
+    submodule as git_sub, sync as git_sync, tag as git_tag,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -810,22 +810,23 @@ pub struct UndoLastActionArgs {
     pub repo_id: i64,
 }
 
+// Sprint c35 — undo/redo 는 reflog 기반 — git_reflog 진입점 사용 (실 구현은 reset.rs re-export).
 #[tauri::command]
 pub async fn undo_last_action(
     args: UndoLastActionArgs,
     state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<git_reset::UndoResult> {
+) -> AppResult<git_reflog::UndoResult> {
     let path = repo_path(&state, args.repo_id).await?;
-    git_reset::undo_last_action(&path).await
+    git_reflog::undo_last_action(&path).await
 }
 
 #[tauri::command]
 pub async fn redo_last_action(
     args: UndoLastActionArgs,
     state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<git_reset::UndoResult> {
+) -> AppResult<git_reflog::UndoResult> {
     let path = repo_path(&state, args.repo_id).await?;
-    git_reset::redo_last_action(&path).await
+    git_reflog::redo_last_action(&path).await
 }
 
 // ====== Submodule ======
