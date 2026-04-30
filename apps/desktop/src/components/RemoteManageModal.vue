@@ -168,24 +168,24 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
   const items: ContextMenuItem[] = [
     {
       // 단일 remote fetch IPC 부재 → fetchAll 일괄 매핑.
-      label: 'Fetch (전체 remote)',
+      label: t('remote.ctxFetchAll'),
       icon: '⬇',
       action: () => fetchAllMut.mutate(),
     },
     { divider: true },
     {
-      label: '이름 변경',
+      label: t('remote.ctxRename'),
       icon: '✏',
       action: () => startRename(r.name),
     },
     {
-      label: 'URL 변경',
+      label: t('remote.ctxChangeUrl'),
       icon: '🔗',
       action: () => startUrlChange(r),
     },
     { divider: true },
     {
-      label: '제거',
+      label: t('remote.ctxRemove'),
       icon: '🗑',
       destructive: true,
       action: () => onRemove(r.name),
@@ -199,15 +199,17 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
   <BaseModal
     :open="open"
     max-width="2xl"
-    title="🔗 Remote 관리"
+    :title="t('remote.title')"
     panel-class="max-h-[85vh]"
     @close="close"
   >
     <div class="p-4 text-sm">
       <!-- list -->
-      <div v-if="remotesQuery.isFetching.value" class="text-muted-foreground">불러오는 중...</div>
+      <div v-if="remotesQuery.isFetching.value" class="text-muted-foreground">
+        {{ t('remote.loading') }}
+      </div>
       <div v-else-if="!remotesQuery.data.value?.length" class="text-muted-foreground">
-        등록된 remote 가 없습니다.
+        {{ t('remote.empty') }}
       </div>
       <ul v-else class="space-y-2">
         <li
@@ -223,19 +225,19 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
                 class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
                 @click="startRename(r.name)"
               >
-                이름 변경
+                {{ t('remote.rename') }}
               </button>
               <button
                 class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
                 @click="startUrlChange(r)"
               >
-                URL 변경
+                {{ t('remote.changeUrl') }}
               </button>
               <button
                 class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
                 @click="onRemove(r.name)"
               >
-                제거
+                {{ t('remote.remove') }}
               </button>
             </div>
           </div>
@@ -257,7 +259,7 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
             <input
               v-model="renameNew"
               class="flex-1 rounded border border-input bg-background px-2 py-0.5 text-xs"
-              placeholder="새 이름"
+              :placeholder="t('remote.renameNewName')"
             />
             <button
               type="submit"
@@ -266,14 +268,14 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
                 !renameNew.trim() || renameNew.trim() === renameTarget || renameMut.isPending.value
               "
             >
-              변경
+              {{ t('remote.save') }}
             </button>
             <button
               type="button"
               class="rounded border border-border px-2 py-0.5 text-[11px]"
               @click="renameTarget = null"
             >
-              취소
+              {{ t('remote.cancel') }}
             </button>
           </form>
 
@@ -286,21 +288,21 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
             <input
               v-model="urlNew"
               class="flex-1 rounded border border-input bg-background px-2 py-0.5 font-mono text-[11px]"
-              placeholder="새 URL (https:// or git@)"
+              :placeholder="t('remote.newUrl')"
             />
             <button
               type="submit"
               class="rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground"
               :disabled="!urlNew.trim() || urlMut.isPending.value"
             >
-              변경
+              {{ t('remote.save') }}
             </button>
             <button
               type="button"
               class="rounded border border-border px-2 py-0.5 text-[11px]"
               @click="urlTarget = null"
             >
-              취소
+              {{ t('remote.cancel') }}
             </button>
           </form>
         </li>
@@ -308,16 +310,16 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
 
       <!-- add new -->
       <div class="mt-5 rounded border border-dashed border-border p-3">
-        <h3 class="mb-2 text-xs font-semibold">+ Remote 추가</h3>
+        <h3 class="mb-2 text-xs font-semibold">{{ t('remote.addNewTitle') }}</h3>
         <form class="flex flex-col gap-2" @submit.prevent="addMut.mutate()">
           <input
             v-model="addName"
-            placeholder="이름 (예: upstream)"
+            :placeholder="t('remote.namePlaceholder')"
             class="rounded border border-input bg-background px-2 py-1 text-xs"
           />
           <input
             v-model="addUrl"
-            placeholder="URL (예: https://github.com/owner/repo.git)"
+            :placeholder="t('remote.urlPlaceholder')"
             class="rounded border border-input bg-background px-2 py-1 font-mono text-[11px]"
           />
           <button
@@ -325,7 +327,7 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
             class="self-end rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
             :disabled="!addName.trim() || !addUrl.trim() || addMut.isPending.value"
           >
-            추가
+            {{ t('remote.addButton') }}
           </button>
         </form>
       </div>
@@ -338,7 +340,7 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
           class="rounded border border-border px-3 py-1 hover:bg-muted/40"
           @click="close"
         >
-          닫기
+          {{ t('common.close') }}
         </button>
       </div>
     </template>

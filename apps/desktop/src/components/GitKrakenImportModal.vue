@@ -21,6 +21,9 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import BaseModal from './BaseModal.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -29,9 +32,7 @@ const toast = useToast()
 const qc = useQueryClient()
 const reposStore = useReposStore()
 
-const phase = ref<'idle' | 'detecting' | 'preview' | 'applying' | 'done' | 'error'>(
-  'idle',
-)
+const phase = ref<'idle' | 'detecting' | 'preview' | 'applying' | 'done' | 'error'>('idle')
 const detect = ref<GitKrakenDetect | null>(null)
 const plan = ref<GitKrakenImportPlan | null>(null)
 const result = ref<GitKrakenApplyResult | null>(null)
@@ -139,108 +140,104 @@ watch(
   <BaseModal
     :open="open"
     max-width="2xl"
-    title="📦 GitKraken 가져오기"
+    :title="`📦 ${t('gitkrakenImport.title')}`"
     panel-class="max-h-[85vh]"
     @close="close"
   >
     <div class="p-4 text-sm">
-          <!-- detecting -->
-          <div v-if="phase === 'detecting'" class="text-muted-foreground">
-            GitKraken 데이터 탐지 중...
-          </div>
+      <!-- detecting -->
+      <div v-if="phase === 'detecting'" class="text-muted-foreground">
+        GitKraken 데이터 탐지 중...
+      </div>
 
-          <!-- preview -->
-          <div v-else-if="phase === 'preview' && detect && plan">
-            <p class="mb-3 text-xs text-muted-foreground">
-              <code class="rounded bg-muted/40 px-1">{{ detect.profileDir }}</code>
-            </p>
+      <!-- preview -->
+      <div v-else-if="phase === 'preview' && detect && plan">
+        <p class="mb-3 text-xs text-muted-foreground">
+          <code class="rounded bg-muted/40 px-1">{{ detect.profileDir }}</code>
+        </p>
 
-            <div class="mb-4 grid grid-cols-2 gap-2 text-xs">
-              <div class="rounded border border-border bg-muted/20 p-2">
-                <div class="text-muted-foreground">Workspace</div>
-                <div class="text-lg font-semibold">
-                  {{ plan.workspacesToCreate.length }}
-                </div>
-              </div>
-              <div class="rounded border border-border bg-muted/20 p-2">
-                <div class="text-muted-foreground">Repo</div>
-                <div class="text-lg font-semibold">{{ plan.reposToAdd }}</div>
-              </div>
-              <div class="rounded border border-border bg-muted/20 p-2">
-                <div class="text-muted-foreground">즐겨찾기 (Pin)</div>
-                <div class="text-lg font-semibold">
-                  {{ plan.reposToPin.length }}
-                </div>
-              </div>
-              <div class="rounded border border-border bg-muted/20 p-2">
-                <div class="text-muted-foreground">활성 탭</div>
-                <div class="text-lg font-semibold">
-                  {{ plan.tabsToOpen.length }}
-                </div>
-              </div>
+        <div class="mb-4 grid grid-cols-2 gap-2 text-xs">
+          <div class="rounded border border-border bg-muted/20 p-2">
+            <div class="text-muted-foreground">Workspace</div>
+            <div class="text-lg font-semibold">
+              {{ plan.workspacesToCreate.length }}
             </div>
-
-            <details v-if="plan.workspacesToCreate.length" class="mb-3">
-              <summary class="cursor-pointer text-xs text-muted-foreground">
-                새로 생성될 Workspace 목록
-              </summary>
-              <ul class="mt-1 ml-4 list-disc text-xs">
-                <li v-for="w in plan.workspacesToCreate" :key="w">{{ w }}</li>
-              </ul>
-            </details>
-
-            <details v-if="plan.skippedPaths.length" class="mb-3">
-              <summary class="cursor-pointer text-xs text-amber-600">
-                스킵될 path (디렉토리 존재 안 함):
-                {{ plan.skippedPaths.length }}개
-              </summary>
-              <ul class="mt-1 ml-4 list-disc text-xs text-muted-foreground">
-                <li v-for="p in plan.skippedPaths" :key="p" class="truncate">
-                  {{ p }}
-                </li>
-              </ul>
-            </details>
-
-            <p class="mt-4 text-xs text-muted-foreground">
-              ⚠ PAT (GitHub / Gitea 토큰) 은 GitKraken 자체 암호화로 가져올 수 없습니다.
-              import 후 Settings → Forge 에서 재입력 필요.
-            </p>
           </div>
-
-          <!-- applying -->
-          <div v-else-if="phase === 'applying'" class="text-muted-foreground">
-            가져오는 중... ({{ plan?.reposToAdd }}개 레포)
+          <div class="rounded border border-border bg-muted/20 p-2">
+            <div class="text-muted-foreground">Repo</div>
+            <div class="text-lg font-semibold">{{ plan.reposToAdd }}</div>
           </div>
-
-          <!-- done -->
-          <div v-else-if="phase === 'done' && result">
-            <p class="mb-3 text-sm font-semibold text-green-600">✅ 완료</p>
-            <ul class="ml-4 list-disc text-xs">
-              <li>Workspace 생성: {{ result.workspacesCreated }}</li>
-              <li>Repo 추가: {{ result.reposAdded }}</li>
-              <li>즐겨찾기 (Pin): {{ result.reposPinned }}</li>
-              <li v-if="result.skippedPaths.length">
-                스킵: {{ result.skippedPaths.length }}
-              </li>
-              <li v-if="result.tabsToOpen.length">
-                탭 복원 시도: {{ result.tabsToOpen.length }}
-              </li>
-            </ul>
-            <details v-if="result.warnings.length" class="mt-3">
-              <summary class="cursor-pointer text-xs text-amber-600">
-                경고 {{ result.warnings.length }}건
-              </summary>
-              <ul class="mt-1 ml-4 list-disc text-xs">
-                <li v-for="w in result.warnings" :key="w">{{ w }}</li>
-              </ul>
-            </details>
+          <div class="rounded border border-border bg-muted/20 p-2">
+            <div class="text-muted-foreground">즐겨찾기 (Pin)</div>
+            <div class="text-lg font-semibold">
+              {{ plan.reposToPin.length }}
+            </div>
           </div>
-
-          <!-- error -->
-          <div v-else-if="phase === 'error'" class="text-sm text-red-600">
-            <p class="mb-2 font-semibold">❌ 실패</p>
-            <pre class="whitespace-pre-wrap text-xs">{{ errorMessage }}</pre>
+          <div class="rounded border border-border bg-muted/20 p-2">
+            <div class="text-muted-foreground">활성 탭</div>
+            <div class="text-lg font-semibold">
+              {{ plan.tabsToOpen.length }}
+            </div>
           </div>
+        </div>
+
+        <details v-if="plan.workspacesToCreate.length" class="mb-3">
+          <summary class="cursor-pointer text-xs text-muted-foreground">
+            새로 생성될 Workspace 목록
+          </summary>
+          <ul class="mt-1 ml-4 list-disc text-xs">
+            <li v-for="w in plan.workspacesToCreate" :key="w">{{ w }}</li>
+          </ul>
+        </details>
+
+        <details v-if="plan.skippedPaths.length" class="mb-3">
+          <summary class="cursor-pointer text-xs text-amber-600">
+            스킵될 path (디렉토리 존재 안 함):
+            {{ plan.skippedPaths.length }}개
+          </summary>
+          <ul class="mt-1 ml-4 list-disc text-xs text-muted-foreground">
+            <li v-for="p in plan.skippedPaths" :key="p" class="truncate">
+              {{ p }}
+            </li>
+          </ul>
+        </details>
+
+        <p class="mt-4 text-xs text-muted-foreground">
+          ⚠ PAT (GitHub / Gitea 토큰) 은 GitKraken 자체 암호화로 가져올 수 없습니다. import 후
+          Settings → Forge 에서 재입력 필요.
+        </p>
+      </div>
+
+      <!-- applying -->
+      <div v-else-if="phase === 'applying'" class="text-muted-foreground">
+        가져오는 중... ({{ plan?.reposToAdd }}개 레포)
+      </div>
+
+      <!-- done -->
+      <div v-else-if="phase === 'done' && result">
+        <p class="mb-3 text-sm font-semibold text-green-600">✅ 완료</p>
+        <ul class="ml-4 list-disc text-xs">
+          <li>Workspace 생성: {{ result.workspacesCreated }}</li>
+          <li>Repo 추가: {{ result.reposAdded }}</li>
+          <li>즐겨찾기 (Pin): {{ result.reposPinned }}</li>
+          <li v-if="result.skippedPaths.length">스킵: {{ result.skippedPaths.length }}</li>
+          <li v-if="result.tabsToOpen.length">탭 복원 시도: {{ result.tabsToOpen.length }}</li>
+        </ul>
+        <details v-if="result.warnings.length" class="mt-3">
+          <summary class="cursor-pointer text-xs text-amber-600">
+            경고 {{ result.warnings.length }}건
+          </summary>
+          <ul class="mt-1 ml-4 list-disc text-xs">
+            <li v-for="w in result.warnings" :key="w">{{ w }}</li>
+          </ul>
+        </details>
+      </div>
+
+      <!-- error -->
+      <div v-else-if="phase === 'error'" class="text-sm text-red-600">
+        <p class="mb-2 font-semibold">❌ 실패</p>
+        <pre class="whitespace-pre-wrap text-xs">{{ errorMessage }}</pre>
+      </div>
     </div>
 
     <template #footer>
@@ -250,7 +247,7 @@ watch(
           class="rounded border border-border px-3 py-1 hover:bg-muted/40"
           @click="close"
         >
-          취소
+          {{ t('common.cancel') }}
         </button>
         <button
           v-if="phase === 'preview' && plan"
@@ -265,7 +262,7 @@ watch(
           class="rounded border border-border px-3 py-1 hover:bg-muted/40"
           @click="close"
         >
-          닫기
+          {{ t('common.close') }}
         </button>
       </div>
     </template>
