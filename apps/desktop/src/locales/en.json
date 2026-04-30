@@ -95,6 +95,30 @@
     "searchPlaceholder": "Search (branch / tag / submodule) — Cmd+Alt+F",
     "clearSearch": "Clear search"
   },
+  "branch": {
+    "title": "Branches",
+    "soloIndicator": "[Solo: {name}]",
+    "filterLocal": "local",
+    "filterRemote": "remote",
+    "filterAll": "all",
+    "filterAriaLabel": "Branch filter: {kind}",
+    "remoteManage": "Manage remotes (add / remove / rename / change URL)",
+    "hideLabel": "Hide:",
+    "hideAllRemotes": "all remotes",
+    "hideAllRemotesTitle": "Hide all remote branches",
+    "hideAllLocal": "all local",
+    "hideAllLocalTitle": "Hide all local branches",
+    "restore": "Restore ({n})",
+    "restoreTitle": "Restore",
+    "soloOff": "Solo ✕",
+    "soloOffTitle": "Clear Solo",
+    "newPlaceholder": "New branch (e.g. feat/foo)",
+    "createButton": "+",
+    "hideOff": "Unhide",
+    "hideOn": "Hide from graph",
+    "soloOnTitle": "Show only this branch",
+    "deleteTitle": "Delete"
+  },
   "shortcuts": {
     "title": "⌨ Keyboard shortcuts",
     "groups": {

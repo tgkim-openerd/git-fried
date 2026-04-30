@@ -5,33 +5,22 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useBranches } from '@/composables/useBranches'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
-import {
-  createBranch,
-  deleteBranch,
-  switchBranch,
-} from '@/api/git'
+import { createBranch, deleteBranch, switchBranch } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
-import {
-  useHiddenRefs,
-  useHiddenRefMutations,
-  useSoloRef,
-} from '@/composables/useHiddenRefs'
+import { useHiddenRefs, useHiddenRefMutations, useSoloRef } from '@/composables/useHiddenRefs'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
-import {
-  aiExplainBranch,
-  cherryPickSha,
-  mergeBranch,
-  rebaseBranch,
-} from '@/api/git'
+import { aiExplainBranch, cherryPickSha, mergeBranch, rebaseBranch } from '@/api/git'
 import AiResultModal from './AiResultModal.vue'
 import RemoteManageModal from './RemoteManageModal.vue'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
+import { useI18n } from 'vue-i18n'
 import { useBranchActions, localBranchName } from '@/composables/useBranchActions'
 import SkeletonBlock from './SkeletonBlock.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
 const toast = useToast()
+const { t } = useI18n()
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: branches, isFetching: branchesFetching } = useBranches(() => props.repoId)
@@ -95,15 +84,13 @@ function bulkHideKind(kind: HiddenRefKind) {
 }
 
 const switchMut = useMutation({
-  mutationFn: ({ id, name }: { id: number; name: string }) =>
-    switchBranch(id, name, false),
+  mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name, false),
   onSuccess: () => invalidate(props.repoId),
   onError: (e) => toast.error('Switch 실패', describeError(e)),
 })
 
 const createMut = useMutation({
-  mutationFn: ({ id, name }: { id: number; name: string }) =>
-    createBranch(id, name),
+  mutationFn: ({ id, name }: { id: number; name: string }) => createBranch(id, name),
   onSuccess: () => {
     newBranchName.value = ''
     invalidate(props.repoId)
@@ -132,7 +119,7 @@ function onCreate() {
 
 function onDelete(b: BranchInfo) {
   if (props.repoId == null) return
-  const force = (b.ahead > 0)
+  const force = b.ahead > 0
   if (
     !confirm(
       `브랜치 '${b.name}' 를 삭제하시겠습니까?` +
@@ -208,17 +195,11 @@ async function onDropOnBranch(target: BranchInfo, ev: DragEvent) {
 
   if (commitSha) {
     // commit → branch (cherry-pick onto branch).
-    if (
-      !confirm(`commit ${commitSha.slice(0, 7)} 를 '${target.name}' 에 cherry-pick?`)
-    ) {
+    if (!confirm(`commit ${commitSha.slice(0, 7)} 를 '${target.name}' 에 cherry-pick?`)) {
       return
     }
     try {
-      const r = await cherryPickSha(
-        props.repoId,
-        commitSha,
-        localName(target.name),
-      )
+      const r = await cherryPickSha(props.repoId, commitSha, localName(target.name))
       if (r.success) {
         toast.success('Cherry-pick 완료', target.name)
         invalidate(props.repoId)
@@ -252,12 +233,7 @@ async function onDropOnBranch(target: BranchInfo, ev: DragEvent) {
           name: localName(target.name),
         })
         // 2. source 를 머지.
-        const r = await mergeBranch(
-          props.repoId,
-          localName(branchName),
-          true,
-          false,
-        )
+        const r = await mergeBranch(props.repoId, localName(branchName), true, false)
         if (r.success) {
           toast.success('Merge 완료', `${branchName} → ${target.name}`)
         } else if (r.conflicted) {
@@ -317,10 +293,7 @@ async function onExplainBranch(b: BranchInfo) {
   // base 는 사용자 입력 — 디폴트 main / master 추정.
   const head = localName(b.name)
   const guessBase = b.kind === 'local' ? 'main' : 'main'
-  const base = window.prompt(
-    `브랜치 ${head} 을(를) 어떤 base 와 비교?`,
-    guessBase,
-  )
+  const base = window.prompt(`브랜치 ${head} 을(를) 어떤 base 와 비교?`, guessBase)
   if (!base?.trim()) return
   if (!confirmAiSend()) return
   explainOpen.value = true
@@ -329,13 +302,7 @@ async function onExplainBranch(b: BranchInfo) {
   explainError.value = null
   explainPending.value = true
   try {
-    const out = await aiExplainBranch(
-      props.repoId,
-      ai.available.value,
-      head,
-      base.trim(),
-      true,
-    )
+    const out = await aiExplainBranch(props.repoId, ai.available.value, head, base.trim(), true)
     if (out.success) {
       explainContent.value = out.text
       notifyAiDone('AI 브랜치 설명', `${head} vs ${base.trim()}`)
@@ -354,9 +321,9 @@ async function onExplainBranch(b: BranchInfo) {
   <section class="flex h-full flex-col border-l border-border bg-card">
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <h3 class="text-sm font-semibold">
-        브랜치
+        {{ t('branch.title') }}
         <span v-if="soloRef" class="ml-1 text-[10px] font-normal text-orange-500">
-          [Solo: {{ soloRef }}]
+          {{ t('branch.soloIndicator', { name: soloRef }) }}
         </span>
       </h3>
       <div class="flex gap-1 text-[10px]">
@@ -366,17 +333,17 @@ async function onExplainBranch(b: BranchInfo) {
           type="button"
           class="rounded px-1.5 py-0.5"
           :class="filterKind === k ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
-          :aria-label="`브랜치 필터: ${k}`"
+          :aria-label="t('branch.filterAriaLabel', { kind: k })"
           :aria-pressed="filterKind === k"
           @click="filterKind = k"
         >
-          {{ k }}
+          {{ t(`branch.filter${k.charAt(0).toUpperCase() + k.slice(1)}`) }}
         </button>
         <button
           type="button"
           class="rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
-          title="Remote 관리 (add / remove / rename / URL 변경)"
-          aria-label="Remote 관리 (add / remove / rename / URL 변경)"
+          :title="t('branch.remoteManage')"
+          :aria-label="t('branch.remoteManage')"
           @click="remoteManageOpen = true"
         >
           🔗
@@ -394,41 +361,41 @@ async function onExplainBranch(b: BranchInfo) {
     <div
       class="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1 text-[10px] text-muted-foreground"
     >
-      <span>Hide:</span>
+      <span>{{ t('branch.hideLabel') }}</span>
       <button
         type="button"
         class="rounded border border-border px-1.5 hover:bg-accent/40"
-        title="모든 remote 일괄 hide"
+        :title="t('branch.hideAllRemotesTitle')"
         @click="bulkHideKind('remote')"
       >
-        all remotes
+        {{ t('branch.hideAllRemotes') }}
       </button>
       <button
         type="button"
         class="rounded border border-border px-1.5 hover:bg-accent/40"
-        title="모든 local branch 일괄 hide"
+        :title="t('branch.hideAllLocalTitle')"
         @click="bulkHideKind('branch')"
       >
-        all local
+        {{ t('branch.hideAllLocal') }}
       </button>
       <span class="ml-auto" />
       <button
         v-if="hiddenSet.size > 0"
         type="button"
         class="rounded border border-border px-1.5 hover:bg-accent/40"
-        title="복원"
+        :title="t('branch.restoreTitle')"
         @click="hiddenMut.unhideAll.mutate()"
       >
-        복원 ({{ hiddenSet.size }})
+        {{ t('branch.restore', { n: hiddenSet.size }) }}
       </button>
       <button
         v-if="soloRef"
         type="button"
         class="rounded border border-orange-500 px-1.5 text-orange-500 hover:bg-orange-500/10"
-        title="Solo 해제"
+        :title="t('branch.soloOffTitle')"
         @click="setSolo(null)"
       >
-        Solo ✕
+        {{ t('branch.soloOff') }}
       </button>
     </div>
 
@@ -436,7 +403,7 @@ async function onExplainBranch(b: BranchInfo) {
     <div class="flex gap-1 border-b border-border px-3 py-2">
       <input
         v-model="newBranchName"
-        placeholder="새 브랜치 (예: feat/foo)"
+        :placeholder="t('branch.newPlaceholder')"
         class="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
         @keyup.enter="onCreate"
       />
@@ -510,7 +477,9 @@ async function onExplainBranch(b: BranchInfo) {
             class="text-[10px] opacity-0 group-hover:opacity-100"
             :class="soloRef === b.name ? 'opacity-100 text-orange-500' : 'text-muted-foreground'"
             :title="soloRef === b.name ? 'Solo 해제' : '이 브랜치만 표시'"
-            :aria-label="soloRef === b.name ? `'${b.name}' Solo 해제` : `'${b.name}' 만 그래프에 표시`"
+            :aria-label="
+              soloRef === b.name ? `'${b.name}' Solo 해제` : `'${b.name}' 만 그래프에 표시`
+            "
             @click.stop="toggleSolo(b)"
           >
             ◉

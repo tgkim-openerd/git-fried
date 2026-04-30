@@ -95,6 +95,30 @@
     "searchPlaceholder": "검색 (브랜치 / 태그 / submodule) — ⌘⌥F",
     "clearSearch": "검색 지우기"
   },
+  "branch": {
+    "title": "브랜치",
+    "soloIndicator": "[Solo: {name}]",
+    "filterLocal": "local",
+    "filterRemote": "remote",
+    "filterAll": "all",
+    "filterAriaLabel": "브랜치 필터: {kind}",
+    "remoteManage": "Remote 관리 (add / remove / rename / URL 변경)",
+    "hideLabel": "Hide:",
+    "hideAllRemotes": "all remotes",
+    "hideAllRemotesTitle": "모든 remote 일괄 hide",
+    "hideAllLocal": "all local",
+    "hideAllLocalTitle": "모든 local branch 일괄 hide",
+    "restore": "복원 ({n})",
+    "restoreTitle": "복원",
+    "soloOff": "Solo ✕",
+    "soloOffTitle": "Solo 해제",
+    "newPlaceholder": "새 브랜치 (예: feat/foo)",
+    "createButton": "+",
+    "hideOff": "숨김 해제",
+    "hideOn": "그래프에서 숨김",
+    "soloOnTitle": "이 브랜치만 표시",
+    "deleteTitle": "삭제"
+  },
   "shortcuts": {
     "title": "⌨ 키보드 단축키",
     "groups": {
