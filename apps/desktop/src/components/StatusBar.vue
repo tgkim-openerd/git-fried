@@ -165,14 +165,14 @@ function onShortcutClick(h: ShortcutHint) {
     </span>
     <span
       v-else-if="prediction?.ok"
-      class="text-emerald-500"
+      class="text-diff-add"
       :title="t('statusBar.upToDateTitle', { target: prediction.target })"
     >
       {{ t('statusBar.upToDate', { target: prediction.target }) }}
     </span>
     <span
       v-else-if="prediction"
-      class="text-amber-500"
+      class="text-warning-amber"
       :title="prediction.conflictFiles.join('\n')"
     >
       {{
@@ -185,7 +185,7 @@ function onShortcutClick(h: ShortcutHint) {
     <button
       v-if="prediction && !prediction.ok && ai.available.value && status.data.value?.branch"
       type="button"
-      class="rounded border border-border px-1.5 py-0.5 text-[10px] text-amber-500 hover:bg-accent/40 disabled:opacity-50"
+      class="rounded border border-border px-1.5 py-0.5 text-[10px] text-warning-amber hover:bg-accent/40 disabled:opacity-50"
       :disabled="explainMut.isPending.value"
       :title="
         t('statusBar.aiAnalyzeTitle', {

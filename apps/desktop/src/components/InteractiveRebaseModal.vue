@@ -262,11 +262,11 @@ onUnmounted(() => {
             class="rounded border border-border bg-background px-1 py-0.5 text-xs"
             :class="
               e.action === 'drop'
-                ? 'text-red-500 line-through'
+                ? 'text-danger-rose line-through'
                 : e.action === 'reword'
-                  ? 'text-blue-500'
+                  ? 'text-blue-700 dark:text-blue-500'
                   : e.action === 'squash' || e.action === 'fixup'
-                    ? 'text-amber-500'
+                    ? 'text-warning-amber'
                     : ''
             "
             @change="setAction(i, ($event.target as HTMLSelectElement).value as RebaseAction)"
@@ -330,7 +330,7 @@ onUnmounted(() => {
         v-if="status?.inProgress"
         class="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-sm"
       >
-        <p class="font-semibold text-amber-500">
+        <p class="font-semibold text-warning-amber">
           Rebase 진행 중 (step {{ status.currentStep ?? '?' }} / {{ status.totalSteps ?? '?' }})
         </p>
         <p v-if="status.conflict" class="mt-1 text-xs">
@@ -341,13 +341,13 @@ onUnmounted(() => {
       </div>
       <div
         v-else-if="lastResult?.success"
-        class="rounded border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-500"
+        class="rounded border border-green-500/40 bg-green-500/10 p-3 text-sm text-diff-add"
       >
         ✔ Rebase 완료 ({{ todo.length }}개 commit 처리)
       </div>
       <div
         v-else
-        class="rounded border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-500"
+        class="rounded border border-red-500/40 bg-red-500/10 p-3 text-sm text-danger-rose"
       >
         Rebase 실패 (exit {{ lastResult?.exitCode }})
       </div>
@@ -362,7 +362,7 @@ onUnmounted(() => {
         <template v-if="status?.inProgress">
           <button
             type="button"
-            class="rounded border border-red-500/60 px-3 py-1 text-sm text-red-700 dark:text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+            class="rounded border border-red-500/60 px-3 py-1 text-sm text-danger-rose hover:bg-red-500/10 disabled:opacity-50"
             :disabled="abortMut.isPending.value"
             @click="abortMut.mutate()"
           >

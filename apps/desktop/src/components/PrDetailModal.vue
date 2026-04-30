@@ -413,7 +413,7 @@ async function onAiReview(): Promise<void> {
         v-if="suggestionOpen"
         class="mb-4 rounded-md border border-violet-500/40 bg-violet-500/5 p-3"
       >
-        <h3 class="mb-2 text-xs font-semibold text-violet-700 dark:text-violet-500">
+        <h3 class="mb-2 text-xs font-semibold text-ai-violet">
           💡 Code suggestion — diff 의 특정 라인을 새 코드로 제안
         </h3>
         <div class="mb-2 grid grid-cols-[1fr_120px] gap-2">
@@ -478,7 +478,7 @@ async function onAiReview(): Promise<void> {
           <button
             v-if="availableCli"
             type="button"
-            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] text-violet-700 dark:text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] text-ai-violet hover:bg-violet-500/20 disabled:opacity-50"
             :disabled="aiReviewMut.isPending.value"
             :title="`${availableCli} CLI 가 PR diff 분석 후 리뷰 추천`"
             @click="onAiReview()"

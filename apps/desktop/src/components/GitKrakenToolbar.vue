@@ -477,7 +477,7 @@ onUnmounted(() => {
             <span class="text-base leading-none">⤒</span>
             <span class="text-[10px] leading-tight">
               {{ popMut.isPending.value ? '...' : 'Pop' }}
-              <span v-if="stashCount > 0" class="ml-0.5 text-emerald-500">{{ stashCount }}</span>
+              <span v-if="stashCount > 0" class="ml-0.5 text-diff-add">{{ stashCount }}</span>
             </span>
           </button>
         </BaseTooltip>
@@ -541,8 +541,8 @@ onUnmounted(() => {
       <span class="font-semibold text-foreground">{{ branch || '(no branch)' }}</span>
       <span v-if="upstream" class="text-muted-foreground">→ {{ upstream }}</span>
       <span v-if="ahead || behind" class="text-xs">
-        <span v-if="ahead" class="text-emerald-500">↑{{ ahead }}</span>
-        <span v-if="behind" class="ml-1 text-rose-500">↓{{ behind }}</span>
+        <span v-if="ahead" class="text-diff-add">↑{{ ahead }}</span>
+        <span v-if="behind" class="ml-1 text-danger-rose">↓{{ behind }}</span>
       </span>
     </div>
   </header>

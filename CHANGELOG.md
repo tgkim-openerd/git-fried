@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37 — plan/28 옵션 C 3차 + statusFormat semantic 전환 (2026-04-30, 1 commit)** — checkpoint.md 1순위 A "plan/28 잔여 ~30곳" 자율 진행. main 직접 1 commit / typecheck 0 / vitest **57/612** (+5 tests, statusFormat semantic update) / **plan/28 누적 적용 17 컴포넌트 (c35 2 + c36 5 + c37 10) / 잔존 87 → 68 (19 위치 감소)**:
+  - **이번 commit** — 11 컴포넌트 + statusFormat util + test 일괄 치환:
+    - **c37 진입 후보 8개** (plan/28 §c36 명시): ToastContainer (success/warning/error 3) / StatusBar (clean/conflict/AI button 3) / ReflogModal (commit/reset/rebase/merge 4) / GitKrakenToolbar (stash/ahead/behind 3) / ChangeCountBadge (staged/unstaged/untracked/conflicted 4) / MiniBranchList (HEAD/ahead/behind 3) / SyncTemplateModal (success/conflict/fail 3) / PrPanel (PR state 3)
+    - **추가 ROI 큰 3개**: PrDetailModal (AI 헤더 + AI 리뷰 버튼 → text-ai-violet 2 위치 단순화) / InteractiveRebaseModal (drop/reword/squash/fixup action + warning/success/error/abort box 6) / BranchPanel (solo orange + ahead/behind 4)
+    - **statusFormat util** (StatusPanel/MiniSubmoduleList/SubmodulePanel 공용): `text-emerald-500/amber-500/rose-500/sky-500` → `text-diff-add/warning-amber/diff-delete/diff-rename` semantic 일괄 치환. statusFormat.test.ts 4 expectations 동반 update
+  - **누적 통계 (Sprint c31~c37)**:
+    - god comp: 17 (c36 useUndoRedo 이후 변동 없음)
+    - LOC 누적 감소: -1,450 (-27%, c36 이후 변동 없음 — c37 은 색상 치환만)
+    - vitest: 57/607 → **57/612** (+5 tests, statusFormat semantic update)
+    - plan/28 옵션 C 적용 컴포넌트: 7 → **17** (+10 — ToastContainer / StatusBar / ReflogModal / GitKrakenToolbar / ChangeCountBadge / MiniBranchList / SyncTemplateModal / PrPanel / InteractiveRebaseModal / BranchPanel) + statusFormat util
+    - 잔여 hardcoded 색상: 87 → **68** (19 위치 감소, ~78% 적용)
+
 - **Sprint c36 — c35 후속 자율 진행 (2026-04-30, 4 commits)** — 사용자 요청 "Sprint c36 후보 4개 모두 진행". main 직접 4 commits / typecheck 0 / lint 0 / vitest 56/598 → 57/607 (+1 file / +9 tests) / **god comp 분리 누적 17 (c36 신규 1) / -1,450 LOC (-27%)**:
   - **`9774c08`** — AI 호출 카운터 wiring (plan/26 IdentityCard 활성). useAiCli::notifyAiDone 에 incrementAiCallCount 통합 — 5 AI composable 의 onSuccess 에서 자연 측정. localStorage 'git-fried.identity.aiCallCount' + IdentityCard ref + 5초 poll
   - **`6c66341`** — 한글 commit 카운트 IPC 신규 (Rust `git/identity_stats.rs` 107 LOC). `count_hangul_commits` — git log --no-merges --pretty=%s -n 10000 + regex `[\u{AC00}-\u{D7A3}]`. +5 unit test (한국어 매칭 / ASCII skip / NFD 자모 skip / 중일 negative). lib.rs invoke_handler 등록 (162→163). IdentityCard useQuery 직접 호출 — "한글 commit: 42 / 100 (42%)" 실시간 표시

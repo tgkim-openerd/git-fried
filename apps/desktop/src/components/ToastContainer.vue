@@ -7,13 +7,13 @@ const { toasts, dismiss } = useToast()
 function kindClass(kind: ToastKind): string {
   switch (kind) {
     case 'success':
-      return 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
+      return 'border-emerald-500/40 bg-emerald-500/10 text-diff-add'
     case 'info':
-      return 'border-sky-500/40 bg-sky-500/10 text-sky-500'
+      return 'border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-500'
     case 'warning':
-      return 'border-amber-500/40 bg-amber-500/10 text-amber-500'
+      return 'border-amber-500/40 bg-amber-500/10 text-warning-amber'
     case 'error':
-      return 'border-rose-500/40 bg-rose-500/10 text-rose-500'
+      return 'border-rose-500/40 bg-rose-500/10 text-danger-rose'
   }
 }
 
@@ -61,7 +61,8 @@ function kindIcon(kind: ToastKind): string {
               <pre
                 v-if="t.message"
                 class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] opacity-90"
-              >{{ t.message }}</pre>
+                >{{ t.message }}</pre
+              >
             </div>
             <button
               type="button"

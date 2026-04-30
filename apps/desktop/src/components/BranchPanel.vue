@@ -319,7 +319,10 @@ async function onExplainBranch(b: BranchInfo) {
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <h3 class="text-sm font-semibold">
         {{ t('branch.title') }}
-        <span v-if="soloRef" class="ml-1 text-[10px] font-normal text-orange-500">
+        <span
+          v-if="soloRef"
+          class="ml-1 text-[10px] font-normal text-orange-700 dark:text-orange-500"
+        >
           {{ t('branch.soloIndicator', { name: soloRef }) }}
         </span>
       </h3>
@@ -388,7 +391,7 @@ async function onExplainBranch(b: BranchInfo) {
       <button
         v-if="soloRef"
         type="button"
-        class="rounded border border-orange-500 px-1.5 text-orange-500 hover:bg-orange-500/10"
+        class="rounded border border-orange-500 px-1.5 text-orange-700 dark:text-orange-500 hover:bg-orange-500/10"
         :title="t('branch.soloOffTitle')"
         @click="setSolo(null)"
       >
@@ -454,8 +457,8 @@ async function onExplainBranch(b: BranchInfo) {
           <span class="w-3 text-[10px]">{{ b.isHead ? '●' : '' }}</span>
           <span class="flex-1 truncate font-mono text-xs">{{ b.name }}</span>
           <span v-if="b.ahead || b.behind" class="text-[10px]">
-            <span v-if="b.ahead" class="text-emerald-500">↑{{ b.ahead }}</span>
-            <span v-if="b.behind" class="ml-0.5 text-rose-500">↓{{ b.behind }}</span>
+            <span v-if="b.ahead" class="text-diff-add">↑{{ b.ahead }}</span>
+            <span v-if="b.behind" class="ml-0.5 text-danger-rose">↓{{ b.behind }}</span>
           </span>
           <!-- Hide 토글 (eye icon) — 항상 보이되 hidden 일 때 닫힌 눈 -->
           <button
@@ -472,7 +475,11 @@ async function onExplainBranch(b: BranchInfo) {
           <button
             type="button"
             class="text-[10px] opacity-0 group-hover:opacity-100"
-            :class="soloRef === b.name ? 'opacity-100 text-orange-500' : 'text-muted-foreground'"
+            :class="
+              soloRef === b.name
+                ? 'opacity-100 text-orange-700 dark:text-orange-500'
+                : 'text-muted-foreground'
+            "
             :title="soloRef === b.name ? 'Solo 해제' : '이 브랜치만 표시'"
             :aria-label="
               soloRef === b.name ? `'${b.name}' Solo 해제` : `'${b.name}' 만 그래프에 표시`

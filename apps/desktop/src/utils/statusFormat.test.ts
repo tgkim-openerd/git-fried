@@ -23,18 +23,18 @@ describe('statusLabel', () => {
 })
 
 describe('statusColor', () => {
-  it('added → emerald', () => {
-    expect(statusColor('added')).toBe('text-emerald-500')
+  it('added → diff-add (semantic)', () => {
+    expect(statusColor('added')).toBe('text-diff-add')
   })
-  it('modified → amber', () => {
-    expect(statusColor('modified')).toBe('text-amber-500')
+  it('modified → warning-amber (semantic)', () => {
+    expect(statusColor('modified')).toBe('text-warning-amber')
   })
-  it('deleted → rose', () => {
-    expect(statusColor('deleted')).toBe('text-rose-500')
+  it('deleted → diff-delete (semantic)', () => {
+    expect(statusColor('deleted')).toBe('text-diff-delete')
   })
-  it('renamed / copied → sky (둘 다 같음)', () => {
-    expect(statusColor('renamed')).toBe('text-sky-500')
-    expect(statusColor('copied')).toBe('text-sky-500')
+  it('renamed / copied → diff-rename (둘 다 같음)', () => {
+    expect(statusColor('renamed')).toBe('text-diff-rename')
+    expect(statusColor('copied')).toBe('text-diff-rename')
   })
   it('typechange / unknown → muted', () => {
     expect(statusColor('typechange')).toBe('text-muted-foreground')

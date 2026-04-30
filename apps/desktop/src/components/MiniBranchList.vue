@@ -97,7 +97,7 @@ async function onSwitchBranch(name: string, isHead: boolean) {
           class="group flex w-full items-center gap-1 px-1 py-0.5 text-[11px]"
           :class="
             data.isHead
-              ? 'bg-emerald-500/10 text-emerald-500 rounded'
+              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-500 rounded'
               : 'text-foreground hover:bg-accent/40 cursor-pointer rounded'
           "
           :title="
@@ -112,8 +112,8 @@ async function onSwitchBranch(name: string, isHead: boolean) {
             {{ data.name.split('/').pop() }}
           </span>
           <span v-if="data.ahead || data.behind" class="text-[9px]">
-            <span v-if="data.ahead" class="text-emerald-500">↑{{ data.ahead }}</span>
-            <span v-if="data.behind" class="ml-0.5 text-rose-500">↓{{ data.behind }}</span>
+            <span v-if="data.ahead" class="text-diff-add">↑{{ data.ahead }}</span>
+            <span v-if="data.behind" class="ml-0.5 text-danger-rose">↓{{ data.behind }}</span>
           </span>
         </button>
       </template>

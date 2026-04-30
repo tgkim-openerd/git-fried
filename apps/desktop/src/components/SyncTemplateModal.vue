@@ -90,9 +90,9 @@ function statusOf(r: CherryPickResult): {
   label: string
   color: string
 } {
-  if (r.success) return { label: '성공', color: 'text-emerald-500' }
-  if (r.conflicted) return { label: '충돌', color: 'text-amber-500' }
-  return { label: '실패', color: 'text-rose-500' }
+  if (r.success) return { label: '성공', color: 'text-diff-add' }
+  if (r.conflicted) return { label: '충돌', color: 'text-warning-amber' }
+  return { label: '실패', color: 'text-danger-rose' }
 }
 
 function repoName(id: number): string {

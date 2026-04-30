@@ -73,16 +73,19 @@ function onStageAll(e: MouseEvent) {
         </span>
       </span>
       <span v-if="!isClean" class="flex items-center gap-1 text-[10px]">
-        <span v-if="counts.staged > 0" class="rounded bg-emerald-500/15 px-1 text-emerald-500">
+        <span v-if="counts.staged > 0" class="rounded bg-emerald-500/15 px-1 text-diff-add">
           staged {{ counts.staged }}
         </span>
-        <span v-if="counts.unstaged > 0" class="rounded bg-amber-500/15 px-1 text-amber-500">
+        <span v-if="counts.unstaged > 0" class="rounded bg-amber-500/15 px-1 text-warning-amber">
           mod {{ counts.unstaged }}
         </span>
-        <span v-if="counts.untracked > 0" class="rounded bg-sky-500/15 px-1 text-sky-500">
+        <span
+          v-if="counts.untracked > 0"
+          class="rounded bg-sky-500/15 px-1 text-sky-700 dark:text-sky-500"
+        >
           new {{ counts.untracked }}
         </span>
-        <span v-if="counts.conflicted > 0" class="rounded bg-rose-500/15 px-1 text-rose-500">
+        <span v-if="counts.conflicted > 0" class="rounded bg-rose-500/15 px-1 text-danger-rose">
           ⚠ {{ counts.conflicted }}
         </span>
       </span>

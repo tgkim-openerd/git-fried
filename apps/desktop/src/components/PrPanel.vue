@@ -37,11 +37,11 @@ const createOpen = ref(false)
 function stateColor(s: PrState): string {
   switch (s) {
     case 'open':
-      return 'text-emerald-500'
+      return 'text-emerald-700 dark:text-emerald-500'
     case 'merged':
-      return 'text-violet-500'
+      return 'text-violet-700 dark:text-violet-500'
     case 'closed':
-      return 'text-rose-500'
+      return 'text-rose-700 dark:text-rose-500'
     case 'draft':
       return 'text-muted-foreground'
   }

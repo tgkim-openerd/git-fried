@@ -49,10 +49,10 @@ function fmtDate(unix: number): string {
 function actionColor(action: string): string {
   // Phase 1 (plan-reflog-undo) — destructive 액션 강조 (working tree / branch 영향 큼).
   if (isDestructive(action)) return 'text-destructive font-semibold'
-  if (action.includes('commit')) return 'text-emerald-500'
-  if (action.includes('reset')) return 'text-amber-500'
-  if (action.includes('rebase')) return 'text-violet-500'
-  if (action.includes('merge')) return 'text-sky-500'
+  if (action.includes('commit')) return 'text-diff-add'
+  if (action.includes('reset')) return 'text-warning-amber'
+  if (action.includes('rebase')) return 'text-violet-700 dark:text-violet-500'
+  if (action.includes('merge')) return 'text-sky-700 dark:text-sky-500'
   if (action.includes('checkout')) return 'text-muted-foreground'
   return 'text-foreground'
 }
