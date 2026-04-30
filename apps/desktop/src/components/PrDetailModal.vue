@@ -8,8 +8,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   addPrComment,
   addReviewComment,
-  aiCodeReview,
-  aiDetectClis,
   closePr,
   getPullRequest,
   listPrComments,
@@ -18,16 +16,16 @@ import {
   submitPrReview,
 } from '@/api/git'
 import { describeError } from '@/api/errors'
-import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useNotification } from '@/composables/useNotification'
-import { notifyAiDone } from '@/composables/useAiCli'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import BaseModal from './BaseModal.vue'
 import UserAvatar from './UserAvatar.vue'
 // Sprint c31 god comp 분리 3/N — Files Changed tab 분리.
 import PrFilesTab from './PrFilesTab.vue'
-import type { AiCli, MergeMethod, PullRequest, ReviewVerdict } from '@/api/git'
+// Sprint c35 god 15/N — AI 코드 리뷰 영역 분리.
+import { useAiReview } from '@/composables/useAiReview'
+import type { MergeMethod, PullRequest, ReviewVerdict } from '@/api/git'
 import { useI18n } from 'vue-i18n'
 import { confirmDialog } from '@/composables/useConfirm'
 
@@ -248,61 +246,21 @@ async function onClose() {
   closeMut.mutate()
 }
 
-// === AI 코드 리뷰 ===
-const { data: aiProbes } = useQuery({
-  queryKey: ['aiProbes'],
-  queryFn: aiDetectClis,
-  staleTime: STALE_TIME.STATIC,
-})
-const availableCli = computed<AiCli | null>(() => {
-  const p = aiProbes.value
-  if (!p) return null
-  if (p.find((x) => x.cli === 'claude' && x.installed)) return 'claude'
-  if (p.find((x) => x.cli === 'codex' && x.installed)) return 'codex'
-  return null
-})
-
-const aiReviewMut = useMutation({
-  mutationFn: () => {
-    const d = detailQuery.data.value
-    if (props.repoId == null || props.number == null || !d || !availableCli.value)
-      return Promise.reject(new Error('AI 사용 불가'))
-    return aiCodeReview({
-      repoId: props.repoId,
-      cli: availableCli.value,
-      headBranch: d.headBranch,
-      baseBranch: d.baseBranch,
-      prTitle: d.title,
-      prBody: d.bodyMd,
-      userApproved: true,
-    })
+// === AI 코드 리뷰 — Sprint c35 god 15/N: useAiReview composable 위임 ===
+const aiR = useAiReview({
+  repoId: () => props.repoId,
+  number: () => props.number,
+  detail: () => detailQuery.data.value ?? null,
+  onResult: (text) => {
+    // 리뷰 본문 textarea 에 자동 채움 → 사용자가 verdict 선택 후 제출.
+    reviewBody.value = text
   },
-  onSuccess: (out) => {
-    if (out.success) {
-      // 리뷰 본문 textarea 에 자동 채움 → 사용자가 verdict 선택 후 제출
-      reviewBody.value = out.text.trim()
-      notifyAiDone('AI 코드 리뷰', `#${props.number ?? ''}`)
-    } else {
-      toast.error('AI 리뷰 실패', out.stderr || out.text)
-    }
-  },
-  onError: (e) => {
-    const msg = describeError(e)
-    if (msg.includes('cancelled')) return
-    toast.error('AI 호출 실패', msg)
-  },
+  onError: (e) => toast.error('AI 호출 실패', describeError(e)),
 })
-
-async function onAiReview() {
-  const d = detailQuery.data.value
-  if (props.repoId == null || props.number == null || !d || !availableCli.value) return
-  const ok = await confirmDialog({
-    title: t('confirm.aiSendTitle'),
-    message: t('confirm.aiSendMessage'),
-    danger: true,
-  })
-  if (!ok) return
-  aiReviewMut.mutate()
+const availableCli = aiR.availableCli
+const aiReviewMut = aiR.generate
+async function onAiReview(): Promise<void> {
+  await aiR.run()
 }
 </script>
 
