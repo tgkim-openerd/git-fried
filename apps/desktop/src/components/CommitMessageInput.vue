@@ -5,22 +5,15 @@
 //   - 한글 메시지 55~72%
 // → 디폴트 빌더 모드, 자유 입력 토글 가능.
 import { computed, ref, watch } from 'vue'
-import { useMutation, useQuery } from '@tanstack/vue-query'
-import {
-  aiCommitMessage,
-  aiDetectClis,
-  commit as ipcCommit,
-  lastCommitMessage,
-  stageAll as apiStageAll,
-} from '@/api/git'
+import { useMutation } from '@tanstack/vue-query'
+import { commit as ipcCommit, lastCommitMessage, stageAll as apiStageAll } from '@/api/git'
 import { describeError } from '@/api/errors'
-import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useShortcut } from '@/composables/useShortcuts'
-import { notifyAiDone } from '@/composables/useAiCli'
 // Sprint c31 god comp 분리 5/N — Conventional 빌더 분리.
 import ConventionalCommitBuilder from './ConventionalCommitBuilder.vue'
-import type { AiCli } from '@/api/git'
+// Sprint c32 god comp 분리 8/N — AI commit message 영역 (probes / mutation / parser) 분리.
+import { useAiCommitMessage } from '@/composables/useAiCommitMessage'
 import type { CommitResult } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 
@@ -184,63 +177,30 @@ function hookKind(stderr: string): string | null {
   return null
 }
 
-// === AI commit message (Claude / Codex CLI) ===
-const { data: aiProbes } = useQuery({
-  queryKey: ['aiProbes'],
-  queryFn: aiDetectClis,
-  staleTime: STALE_TIME.STATIC,
-})
-const availableCli = computed<AiCli | null>(() => {
-  const p = aiProbes.value
-  if (!p) return null
-  if (p.find((x) => x.cli === 'claude' && x.installed)) return 'claude'
-  if (p.find((x) => x.cli === 'codex' && x.installed)) return 'codex'
-  return null
-})
-
-const aiMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || availableCli.value == null) {
-      return Promise.reject(new Error('AI 사용 불가'))
-    }
-    if (!confirm('⚠ staged diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?')) {
-      return Promise.reject(new Error('cancelled'))
-    }
-    return aiCommitMessage(props.repoId, availableCli.value, true)
-  },
-  onSuccess: (out) => {
-    if (out.success) {
-      notifyAiDone('AI commit message 생성', out.text.split(/\r?\n/)[0])
-      const lines = out.text.trim().split(/\r?\n/)
-      // 첫 줄 = subject. 빈 줄 이후 = body
-      mode.value = 'free'
-      freeMessage.value = out.text.trim()
-      // conventional 모드 채울 수도 있음
-      const m = lines[0].match(/^(\w+)(?:\(([^)]+)\))?(!?):\s*(.+)$/)
-      if (m && isConventionalType(m[1])) {
-        type.value = m[1]
-        scope.value = m[2] || ''
-        breaking.value = m[3] === '!'
-        subject.value = m[4]
-        const bodyStart = lines.findIndex((l, i) => i > 0 && l.trim() === '')
-        if (bodyStart > 0) {
-          body.value = lines
-            .slice(bodyStart + 1)
-            .join('\n')
-            .trim()
-        }
-        mode.value = 'conventional'
-      }
-    } else {
-      toast.error('AI 응답 실패', out.stderr || out.text)
+// === Sprint c32 god comp 분리 8/N — useAiCommitMessage composable ===
+// aiProbes / availableCli / generate (confirm + IPC) / parseAiResult (Conventional 매칭) 모두
+// composable 내부. 부모는 결과 받아 ref 갱신만.
+const aiCm = useAiCommitMessage(() => props.repoId, {
+  onResult: (parsed) => {
+    // free 모드 fallback 우선 채움
+    mode.value = 'free'
+    freeMessage.value = parsed.freeMessage
+    // Conventional 패턴 매치 시 type/scope/breaking/subject/body 갱신 + mode 전환
+    if (parsed.conventional) {
+      type.value = parsed.conventional.type
+      scope.value = parsed.conventional.scope
+      breaking.value = parsed.conventional.breaking
+      subject.value = parsed.conventional.subject
+      body.value = parsed.conventional.body
+      mode.value = 'conventional'
     }
   },
   onError: (e) => {
-    const msg = describeError(e)
-    if (msg.includes('cancelled')) return
-    toast.error('AI 호출 실패', msg)
+    toast.error('AI 호출 실패', describeError(e))
   },
 })
+const availableCli = aiCm.availableCli
+const aiMut = aiCm.generate
 
 // Sprint B5 — ⌘⇧Enter (stage all + commit) / ⌘⇧M (focus message).
 // Sprint c31 — Conventional 모드 subjectRef 는 ConventionalCommitBuilder defineExpose 통해 접근.
