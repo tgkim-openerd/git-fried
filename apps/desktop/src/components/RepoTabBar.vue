@@ -21,7 +21,8 @@ import { STALE_TIME } from '@/api/queryClient'
 import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
-import { parentDirName } from '@/composables/useSidebarGroups'
+// Sprint c33 — 프로젝트 그룹화 + drag-drop 모델 분리.
+import { useTabGroups, type ProjectGroup } from '@/composables/useTabGroups'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 // Sprint c31 — BaseTooltip primitive (kbd hint 노출).
 import BaseTooltip from './BaseTooltip.vue'
@@ -68,85 +69,8 @@ function tabLabelClass(id: number): string {
   return w > 24 ? 'max-w-[280px]' : 'max-w-[180px]'
 }
 
-// === Phase 11-7 — 프로젝트 그룹화 ===
-//
-// 그룹 키 = parentDirName(localPath). 없으면 '__solo__' (각 레포 자체로 한 그룹).
-// 활성 프로젝트 = 활성 레포의 프로젝트 (없으면 첫 그룹).
-
-interface ProjectGroup {
-  key: string
-  label: string // 표시명 ('__solo__' 의 경우 레포 이름 사용)
-  tabIds: number[] // 프로젝트의 열린 탭 id (store.tabs 순서 보존)
-  isSolo: boolean // 레포 1개 + parentDir 그룹 없음 → label 미표시
-}
-
-const projectGroups = computed<readonly ProjectGroup[]>(() => {
-  const map = new Map<string, ProjectGroup>()
-  for (const id of store.tabs) {
-    const r = repoMap.value.get(id)
-    if (!r) continue
-    const dir = parentDirName(r.localPath)
-    // 부모 디렉토리 그룹 우선, 없으면 단독 그룹 (key=`solo:${id}`).
-    const key = dir ?? `__solo:${id}`
-    if (!map.has(key)) {
-      map.set(key, {
-        key,
-        label: dir ?? aliases.resolveLocal(id, r.name).display,
-        tabIds: [],
-        isSolo: !dir,
-      })
-    }
-    map.get(key)!.tabIds.push(id)
-  }
-  // 1개짜리 디렉토리 그룹은 solo 로 격하 (label 부담 해소).
-  for (const g of map.values()) {
-    if (g.tabIds.length === 1 && !g.isSolo) {
-      const onlyId = g.tabIds[0]
-      const r = repoMap.value.get(onlyId)
-      if (r) {
-        g.isSolo = true
-        g.label = aliases.resolveLocal(onlyId, r.name).display
-      }
-    }
-  }
-  return Array.from(map.values())
-})
-
-const activeGroup = computed<ProjectGroup | null>(() => {
-  const groups = projectGroups.value
-  if (groups.length === 0) return null
-  if (store.activeRepoId == null) return groups[0]
-  return groups.find((g) => g.tabIds.includes(store.activeRepoId!)) ?? groups[0]
-})
-
-// VueDraggable 모델 — 활성 프로젝트의 탭들만 reorder.
-//   set 시 store.tabs 의 활성 그룹 부분만 새 순서로 교체.
-const activeGroupTabs = computed<number[]>({
-  get: () => activeGroup.value?.tabIds ?? [],
-  set: (v) => {
-    const g = activeGroup.value
-    if (!g) return
-    // store.tabs 에서 g.tabIds 위치들을 v 순서로 swap.
-    const oldOrder = store.tabs
-    const groupSet = new Set(g.tabIds)
-    const next: number[] = []
-    let vIdx = 0
-    for (const id of oldOrder) {
-      if (groupSet.has(id)) {
-        next.push(v[vIdx++])
-      } else {
-        next.push(id)
-      }
-    }
-    store.reorderTabs(next)
-  },
-})
-
-function activateProject(g: ProjectGroup) {
-  // 그룹 내 활성 레포 있으면 유지, 없으면 첫 레포 활성.
-  if (store.activeRepoId != null && g.tabIds.includes(store.activeRepoId)) return
-  if (g.tabIds.length > 0) store.setActiveRepo(g.tabIds[0])
-}
+// === Phase 11-7 — 프로젝트 그룹화 (Sprint c33 useTabGroups composable 위임) ===
+const { projectGroups, activeGroup, activeGroupTabs, activateProject } = useTabGroups(repoMap)
 
 function activate(id: number) {
   store.setActiveRepo(id)
