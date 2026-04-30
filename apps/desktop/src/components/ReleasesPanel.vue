@@ -14,6 +14,9 @@ import EmptyState from './EmptyState.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import type { ForgeRelease } from '@/api/git'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: releases, isFetching, error } = useReleases(() => props.repoId)
@@ -35,9 +38,9 @@ const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
 async function copyText(text: string, label: string) {
   try {
     await navigator.clipboard.writeText(text)
-    toast.success('복사', label)
+    toast.success(t('toast.copyPath'), label)
   } catch (e) {
-    toast.error('복사 실패', describeError(e))
+    toast.error(t('toast.copyFailed'), describeError(e))
   }
 }
 
@@ -46,23 +49,23 @@ function onReleaseContextMenu(ev: MouseEvent, r: ForgeRelease) {
   ev.stopPropagation()
   const items: ContextMenuItem[] = [
     {
-      label: 'Open detail',
+      label: t('common.open'),
       icon: '📋',
       action: () => (selected.value = r),
     },
     {
-      label: 'Open in browser',
+      label: t('releases.openInBrowser'),
       icon: '🔗',
       action: () => window.open(r.htmlUrl, '_blank', 'noopener'),
     },
     { divider: true },
     {
-      label: 'Copy URL',
+      label: t('releases.copyUrl'),
       icon: '📋',
       action: () => void copyText(r.htmlUrl, r.htmlUrl),
     },
     {
-      label: 'Copy tag',
+      label: t('releases.copyTag'),
       icon: '🏷',
       action: () => void copyText(r.tag, r.tag),
     },
@@ -74,7 +77,7 @@ function onReleaseContextMenu(ev: MouseEvent, r: ForgeRelease) {
 <template>
   <div class="flex h-full flex-col">
     <header class="border-b border-border px-3 py-2">
-      <h3 class="text-sm font-semibold">Releases</h3>
+      <h3 class="text-sm font-semibold">{{ t('releases.title') }}</h3>
     </header>
 
     <div
@@ -98,8 +101,16 @@ function onReleaseContextMenu(ev: MouseEvent, r: ForgeRelease) {
         >
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs">
-              <span v-if="r.draft" class="rounded bg-amber-500/30 px-1 py-0.5 text-[10px] text-amber-500 mr-1">draft</span>
-              <span v-if="r.prerelease" class="rounded bg-violet-500/30 px-1 py-0.5 text-[10px] text-violet-500 mr-1">pre</span>
+              <span
+                v-if="r.draft"
+                class="rounded bg-amber-500/30 px-1 py-0.5 text-[10px] text-amber-500 mr-1"
+                >{{ t('releases.draftBadge') }}</span
+              >
+              <span
+                v-if="r.prerelease"
+                class="rounded bg-violet-500/30 px-1 py-0.5 text-[10px] text-violet-500 mr-1"
+                >{{ t('releases.preReleaseBadge') }}</span
+              >
               {{ r.tag }}
             </span>
             <span class="text-[10px] text-muted-foreground">{{ fmtDate(r.createdAt) }}</span>
@@ -110,16 +121,12 @@ function onReleaseContextMenu(ev: MouseEvent, r: ForgeRelease) {
       <EmptyState
         v-if="releases && releases.length === 0 && !isFetching"
         icon="📦"
-        title="Release 없음"
+        :title="t('releases.empty')"
         size="sm"
       />
     </div>
 
-    <ReleaseDetailModal
-      :release="selected"
-      :open="selected != null"
-      @close="selected = null"
-    />
+    <ReleaseDetailModal :release="selected" :open="selected != null" @close="selected = null" />
     <ContextMenu ref="ctxMenu" />
   </div>
 </template>
