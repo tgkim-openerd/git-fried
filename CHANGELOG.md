@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c33 — UX 검토 + ConfirmDialog 도입 + i18n + god comp 분리 (2026-04-30, 14 commits)** — 사용자 요청 "자율로 작업할 수 있는 모든 작업 진행 + Laws of UX 비판 검토 후 UX 갭 fix". main 직접 14 commits / typecheck 0 / lint 0 / vitest 53/560 → 55/582 (+2 files / +22 tests) / **god comp 분리 누적 13 (Sprint c33 신규 4) / -1,234 LOC (-23.5%)** / **i18n 248 → 318 키**:
+  - **Phase 0 — UX 7원칙 점검** (Laws of UX + hada.io 비판적 검토):
+    - 7 원칙 압축 채택 (30 → 7): Doherty / Miller / Hick / Fitts / Jakob / Von Restorff / Selective Attention+Zeigarnik
+    - 실측 결과: 6 원칙 ✓ / **1 원칙 P0 갭** = `window.confirm()` 17곳 (실제 44곳) — Von Restorff + i18n + Jakob's Law 동시 위반
+  - **작업 F-NEW (P0 gap fix) — ConfirmDialog 도입 + 44곳 마이그레이션 (8 commits)**:
+    - **`18340f0`** — useConfirm composable + ConfirmDialog.vue (BaseModal wrap, danger=cancel auto-focus / Enter 자동 confirm 비활성) + i18n 50 키 (confirm.*) + App.vue 마운트 + unit test (9 tests)
+    - **`3d2679b`** — Branch/Stash/Tag 8곳 (BranchPanel 2 / Mini lists 2 / StashPanel 1 / TagPanel 3)
+    - **`a99c971`** — Worktree/LFS/Reflog/Remote 4곳 (모두 destructive)
+    - **`ff5e3ce`** — GitKrakenToolbar 4곳 (undo / redo / stash / pop, 모두 위험 액션)
+    - **`a2fa016`** — PR(CreatePr/PrDetail/Forge) 5곳 (mergePrMessage 에 {method} 변수 추가, AI mut → wrapper 함수 분리 패턴)
+    - **`1c3bb9a`** — Profile/Tab/Amend/MergeEditor 8곳 (RepoTabBar IIFE 패턴, amend SEC-006)
+    - **`91dd41a`** — confirmAiSend async + composables 13곳 (useBranchActions / useCommitActions / useStageMutations / useWorkspaceMutations + 5 호출처)
+    - **`025430c`** — useAiCommitMessage + settings.vue 마무리 2곳
+  - **작업 A — i18n 추가 마이그레이션 (2 commits)**:
+    - **`1b5dc19`** — CompareModal + ReleasesPanel 핵심 t() (compare 11 / releases 8 키)
+    - **`798fd47`** — RemoteManageModal 21 / GitKrakenImportModal 13 / SyncTemplateModal 14 키 적용 (modal title / footer button 핵심)
+  - **작업 C `ff25c42`** — useCommitMutation composable (116 LOC) — CommitMessageInput 433 → 392 (-41). lastResult / commitMut / commit / hookKind / hasConflictHints (+12 unit test)
+  - **작업 B `cbfb05b`** — useTabGroups composable (110 LOC) — RepoTabBar 401 → 326 (-75, -19%). projectGroups / activeGroup / activeGroupTabs WritableComputedRef / activateProject (+10 unit test)
+  - **작업 D `d0682b0`** — useAiPrBody (88 LOC) + useAiResolveConflict (85 LOC) — useAiCommitMessage 패턴 확장 (3 AI composable 표준화). CreatePrModal -45 / MergeEditorModal -35
+  - **작업 E (Light theme audit, 코드 변경 0)** — `:root` (17 vars) + `.dark` 오버라이드 명확. 60+ hardcoded Tailwind 색상 (PrDetailModal 10 / InteractiveRebaseModal 9 / CommitMessageInput 8 / PrFilesTab 7) — `dark:` 변형 1곳뿐. 라이트 가독성 우려 (`text-emerald-500` / `text-violet-500`) — dogfood 후 별도 sub-sprint 권장
+  - **누적 통계 (Sprint c31 + c32 + c33)**:
+    - god comp 분리: 9 → **13** (-1,118 → **-1,234 LOC, -23.5%**). Sprint c33 신규 4: useCommitMutation / useTabGroups / useAiPrBody / useAiResolveConflict
+    - i18n 활성 키: 248 → **318** (confirm.* 50 + compare 11 + remote 21 + gitkrakenImport 13 + syncTemplate 14 + releases 8 + amend/merge/rebase/cherry-pick/revert/reset/discard/workspace/aggressiveGc 등)
+    - i18n 활용 컴포넌트: 11 → **18** (ConfirmDialog / CompareModal / RemoteManageModal / ReleasesPanel + 핵심 GitKrakenImportModal / SyncTemplateModal / 다수 composable 의 i18n.global.t)
+    - vitest: 52/551 → 55/582 (+3 files / +31 tests, useConfirm 9 + useCommitMutation 12 + useTabGroups 10)
+    - **window.confirm() 0건 (44 → 0)** — UX 7원칙 P0 갭 완전 해소
+
 - **Sprint c32 — c31 후속 잔여 자율 작업 1~6 순차 진행 (2026-04-30, 3 commit)** — 사용자 "1~6 진행" → main 직접 3 commits + 3 skip 결정. typecheck 0 / lint 0 / vitest 50/529 → 52/551 (+2 files / +22 tests) / **god comp 분리 누적 9 / -1,118 LOC (-22%)** / **i18n 158 → ~189 키**:
   - **Step 1 ContextMenu reka-ui — skip 결론 재확인** (이전 sprint c31 e705534 a11y 보강 완료. reka-ui declarative trigger wrap 패턴 vs git-fried 동적 `openAt(event, items)` 패턴 차이 + 14 위치 인터페이스 변경 위험. 별도 sprint 권장)
   - **Step 2 i18n `ae434e1`** — WorktreePanel + TagPanel + PrPanel t() 마이그레이션 (~31 키 추가):

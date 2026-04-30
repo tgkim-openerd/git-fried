@@ -1,6 +1,6 @@
 # 구현 현황 인벤토리 (Implementation Status)
 
-작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 22 + c32 3 = 25 commit 누적 후 / 트리거: `/analyze` 반복 검증 완료 후 plan ↔ code 정합 cataloguing
+작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 22 + c32 3 + **c33 14** = 39 commit 누적 후 / 트리거: UX 7원칙 검토 + 자율 5작업 (F-NEW + A + C + B + D + E) 완료 후 친최종 cataloguing
 
 > **목적**: 26개 plan 문서 + CHANGELOG Unreleased + lib.rs invoke_handler + 5 SQLite migrations + 161 IPC + 191 frontend 파일 / 66 Rust 파일을 한 문서에 매핑. 신규 개발자 / 다음 세션 entry / dogfood 시점에 "어디까지 됐고 어디 남았나" 단일 진실원천.
 >
@@ -19,13 +19,14 @@
 | **Tauri IPC** | ✅ **161 등록** (lib.rs invoke_handler 직접 카운트) | `apps/desktop/src-tauri/src/lib.rs:79-241` |
 | **Frontend 코어** | ✅ Vue 3 + Pinia + TanStack Query + Tailwind + CodeMirror + xterm | `apps/desktop/package.json` |
 | **Rust 백엔드** | ✅ 15,423 LOC / 13 top-level mod / git/ 30 sub | `find apps/desktop/src-tauri/src -name "*.rs" \| xargs wc -l` |
-| **테스트** | ✅ **vitest 52 / 551 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c31 22 + c32 3 commit 후 — +8 files (useLocale 9 / BaseTooltip 5 / useCommandCatalog 17 / usePullStrategy 7 / useStatusModals 10 / useGraphSearch 14 / **useAiCommitMessage 13 / useExplainBranch 9**) |
+| **테스트** | ✅ **vitest 55 / 582 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c33 +3 file (+31 tests): useConfirm 9 / useCommitMutation 12 / useTabGroups 10 |
 | **CI/Release 인프라** | 🟡 **95%** (workflow 완비, EV/updater secret 미등록) | `.github/workflows/{ci,release}.yml` |
 | **GitHub repo public** | 🟡 **97%** — version 0.3.0 통합 완료. `git tag v0.3.0` push 만 잔여 | tauri.conf.json + Cargo.toml + 3 package.json 모두 0.3.0 (Sprint c31 PR-B) |
-| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + **~189 키 활용**) | 11 컴포넌트 t() 마이그레이션 (App / Sidebar / settings / StatusBar / HelpModal / BranchPanel / StashPanel / SubmodulePanel / **WorktreePanel / TagPanel / PrPanel**) — shortcuts 57 / branch 22 / **worktree 14 / tag 13 / pr 8** + 기존 카테고리 |
+| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + **318 키 / 18 컴포넌트 활용**) | Sprint c33 추가: ConfirmDialog / CompareModal / RemoteManageModal / ReleasesPanel + 핵심 GitKrakenImportModal / SyncTemplateModal — confirm.* 50 / compare 11 / remote 21 / gitkrakenImport 13 / syncTemplate 14 / releases 8 (총 +73 신규) |
 | **BaseTooltip primitive** | ✅ **26 위치 활용** | StatusInlineDiff 7 + GitKrakenToolbar 11 + SyncBar 3 + RepoTabBar 2 + ProfileSwitcher 1 + StatusPanel 토글 2 = 26 (kbd hint 노출 / hover delay / a11y) |
-| **God component 분리** | ✅ **9 컴포넌트 / -1,118 LOC (-22%)** | StatusPanel/CommandPalette/PrDetailModal/GitKrakenToolbar/CommitMessageInput/CommitGraph/**BranchPanel** + ConventionalCommitBuilder + StatusInlineDiff + PrFilesTab + 8 composable (Sprint c31 6 + Sprint c32 useAiCommitMessage / useExplainBranch) |
+| **God component 분리** | ✅ **13 컴포넌트 / -1,234 LOC (-23.5%)** | Sprint c33 +4 신규: useCommitMutation (CommitMessageInput -41) / useTabGroups (RepoTabBar -75) / useAiPrBody (CreatePrModal -45) / useAiResolveConflict (MergeEditorModal -35) |
 | **a11y 보강 (Sprint c31)** | ✅ **6 추가 위치** | PrFilesTab 3 (Expand/Collapse + 파일 행 :aria-expanded) + ContextMenu 3 (root/submenu role + aria-orientation + menuitem aria-haspopup) |
+| **UX 7원칙 검토 (Sprint c33)** | ✅ **P0 갭 1건 완전 해소** | window.confirm() 44곳 → ConfirmDialog (Von Restorff + i18n + Jakob's Law 동시 위반 해소). 6 원칙 ✓ (Doherty / Miller / Hick / Fitts / Jakob / Selective Attention) — 잔여 P2 갭 = light theme hardcoded 색상 (별도 sub-sprint 권장) |
 | **plan/20 baseline 측정** | ⏸️ **외부 의존** (절차 완비) | bench/README.md 완전 — `BENCH_REPO=/path cargo bench --bench git_perf` + `pwsh ./bench/memory.ps1` 실행 (사용자 환경) → baseline.json null 채움 |
 | **AI commit / PR / conflict** | ✅ Claude/Codex CLI subprocess | `src-tauri/src/ai/runner.rs::AiCli` |
 | **macOS / Linux** | ❌ Windows-only (plan/17 v1.3/v1.4) | `.github/workflows/ci.yml:1` "Windows-only matrix" |
