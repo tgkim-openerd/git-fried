@@ -9,7 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Sprint c31 — 잔여 자율 작업 16 commit 묶음 (2026-04-30)** — `/analyze` 반복 검증 + 잔여 식별 → main 직접 16 commits. typecheck 0 / lint 0 / vitest 44/467 → 49/515 (+5 files / +48 tests) / Rust bench compile 통과 / **god component 누적 -1,014 LOC (-28%)** / **i18n 96 키 활용 / BaseTooltip 24 위치**:
+- **Sprint c31 — 잔여 자율 작업 22 commit 묶음 (2026-04-30)** — `/analyze` 반복 검증 + 잔여 식별 + 사용자 "1~6 순차 진행" 결정 → main 직접 22 commits. typecheck 0 / lint 0 / vitest 44/467 → 50/529 (+6 files / +62 tests) / Rust bench compile 통과 / **god component 누적 -1,040 LOC (-23%)** / **i18n 158 키 활용 / BaseTooltip 26 위치 / aria-label 6 보강 / ContextMenu role/aria 6 보강**:
+  - **잔여 자율 작업 6 step (6 추가 commit, 사용자 "1~6 순차 진행")**:
+    - **Step 1 `d4c66d0`** — useGraphSearch composable (CommitGraph 859 → 833, -26). isMatch / matchCount / openSearch / closeSearch / onKeydown(⌘F/Esc) 통합. drawGraph callback 위임. +14 unit test
+    - **Step 2 `8cea6e2`** — BaseTooltip 추가 (StatusPanel Path/Tree 토글 2 위치). 누적 24 → 26 위치
+    - **Step 3a `07f301d`** — BranchPanel i18n (~22 키, branch.{title,filter*,hide*,restore,solo*,new*,...})
+    - **Step 3b `0645a59`** — StashPanel + SubmodulePanel i18n (~9 키, stash.{title,messagePlaceholder,aiButtonTitle,...} + submodule.{title,empty})
+    - **Step 4 `9ede407`** — PrFilesTab aria-label 보강 3 위치 (Expand/Collapse all + 파일 행 토글 :aria-label/:aria-expanded)
+    - **Step 5 `e705534`** — ContextMenu role / aria-orientation / aria-haspopup 보강 6 위치 (root/submenu container + divider role=separator + menuitem + submenu aria-expanded). reka-ui DropdownMenu 마이그레이션은 14 위치 인터페이스 차이로 별도 sprint 권장
+    - **Step 6** — plan/20 baseline 분석. `bench/README.md` 가 이미 완전 (criterion bench / pwsh memory snapshot / baseline.json 작성 흐름 / CI 통합 절차 명시). 실측은 외부 의존 (`BENCH_REPO=/path/to/repo cargo bench`)
+    - 누적 god comp 분리: 6 → 7 (useGraphSearch 추가). 누적 i18n 활용 키: 96 → **158** (+62: shortcuts 57 → branch 22 → stash 7 → submodule 2). vitest 49 → 50 files / 515 → 529 tests
   - **i18n 3차 + BaseTooltip 2차 (3 추가 commit)**:
     - **i18n 3차 `1f71b0e`** — HelpModal 단축키 catalog t() 마이그레이션 (~57 키 추가). 8 group × 50+ shortcut desc 모두 `shortcuts.{groups,global,sync,edit,layout,tabs,rightPanel,modal,vim}.*` 키. ko/en 키 카운트 일치 검증 (useLocale.test.ts) 통과
     - **BaseTooltip 2차 `4120bb3`** — SyncBar 3 + RepoTabBar 2 + ProfileSwitcher 1 = 6 위치 추가. 누적 18 → 24 위치. SyncBar 의 Fetch/Pull/Push 에 ⌘L/⌘⇧L/⌘⇧K kbd hint
