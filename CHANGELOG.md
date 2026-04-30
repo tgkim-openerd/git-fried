@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c35 — c34 후속 자율 진행 (2026-04-30, 6 commits)** — 사용자 요청 "Sprint c35 후보 4개 모두 진행". main 직접 6 commits / typecheck 0 / lint 0 / vitest 56/598 (god comp 분리는 composable test 별도 추가 안 함, 검증 위주) / **god comp 분리 누적 16 (c35 신규 2) / -1,400 LOC (-26%)**:
+  - **`d34dadb`** — `useAiReview` composable (97 LOC, god 15/N) — PrDetailModal 628 → 591 (-37). aiCodeReview IPC + onResult 콜백 (reviewBody 자동 채움). **AI composable 5 표준 완성** (useAiCommitMessage / useAiPrBody / useAiResolveConflict / useAiComposer / useAiReview — 공통 시그니처 aiProbes / availableCli / generate / run)
+  - **`876672a`** — `useFullscreenDiffQuery` composable (89 LOC, god 16/N) — FullscreenDiffView 449 → 392 (-57). queryArgs (wip/commit 분기) + diffRev (parent..commit) + patchQuery + hunkCount + hunkNavDisabled
+  - **`abd65eb`** — `ai/runner.rs` trait 준비 정비 (plan/27 단기 액션 2). AiCli::build_args(prompt) method 분리 (이전: ai_run match 인라인) + decode_korean_safe 위임 (path.rs 일관성). +5 unit test (build_args claude/codex/korean / binary names / serialize lowercase)
+  - **`3850ad2`** — `git/reflog.rs` 단일 진입점 정비 (plan/27 단기 액션 3). pub use crate::git::reset::{undo_last_action, redo_last_action, UndoResult} re-export. ipc/commands.rs 의 git_reset:: → git_reflog:: 위임. 실 구현 이동 X (risk 0). v1.x crate 'reflog-undo' 추출 시 reflog.rs 통째로
+  - **`5ebeeda`** — `IdentityCard.vue` Settings 차별점 패널 (plan/26 Phase 2, 139 LOC). 3 카드 grid (한글 🇰🇷 / Gitea 🦊 / AI ✨) + dogfood 통계 (forge 계정 / Claude·Codex 설치 / 호출 카운터). Settings → About 카테고리 마운트
+  - **`27e55e2`** — Tailwind semantic colors 1차 (plan/28 옵션 C):
+    - `tailwind.config.ts` — 6 신규 매핑 (diff-add / diff-delete / diff-rename / ai-violet / warning-amber / danger-rose)
+    - `main.css` — :root (light, 진한 채도 가독성 ↑) + .dark (밝은 채도) 양쪽 정의
+    - PrFilesTab.vue — statusBadge + diff +/- → text-diff-add/diff-delete (ROI 큼, 가장 자주 쓰는 diff 표시)
+    - ConventionalCommitBuilder.vue — subjectZone ideal/warn/over → text-diff-add/warning-amber/danger-rose
+    - 잔여 ~50곳 (PrDetailModal state / CommitMessageInput / WorktreePanel 등) — c36 진입
+  - **누적 통계 (Sprint c31~c35)**:
+    - god comp: 14 → **16** (c35 신규: useAiReview / useFullscreenDiffQuery)
+    - LOC 누적 감소: -1,306 → **-1,400 (-26%)**
+    - AI composable 5 표준 완성 — 외부 LLM 송출 confirm 일관 적용
+    - plan/27 단기 액션 3개 모두 완료 (path.rs c34 / ai trait c35 / reflog c35) — v1.x crate 추출 형태 정비
+    - plan/28 옵션 C 인프라 + 2 컴포넌트 (잔여 ~50곳 c36)
+    - plan/26 Phase 1 (QUICK_START c34) + Phase 2 (IdentityCard c35) 완료
+    - 신규 doc: QUICK_START.md / plan 26·27·28 = 4 plan 문서
+
 - **Sprint c34 — c33 후속 자율 진행 (2026-04-30, 5 commits)** — 사용자 요청 "다음 작업 진입" → main 직접 5 commits. typecheck 0 / lint 0 / vitest 55/582 → 56/598 (+1 file / +16 tests) / **god comp 분리 누적 14 (c34 신규 1) / -1,306 LOC (-24%)**:
   - **`80eb134`** — `docs/QUICK_START.md` 5분 onboarding (plan/26 Phase 1 ★★★ ROI). 3 불편 (GitKraken / SourceTree / GitHub Desktop) + 5 차별점 (한글 / Gitea / AI / Profile / Tauri light) + 설치/첫 commit 흐름 + 단축키 톱 10. README 1순위 진입점 강조 추가
   - **`be037f9`** — `plan/27-core-tech-boundaries.md` (plan/26 Phase 4, 코드 변경 0). 4 후보 평가:
