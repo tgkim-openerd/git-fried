@@ -4,6 +4,7 @@
 
 상태: **v0.3 release prep** — 76 commits / 153 파일 / 4 SQLite migrations / Cargo test 79+ pass / TypeScript 0 errors / ESLint v9 flat config 0. v1.0 핵심 기능 + GitKraken 12.0 catalog 95% 흡수 완료.
 
+→ **5분 시작**: [docs/QUICK_START.md](docs/QUICK_START.md) — 신규 진입자 1순위
 → [REVIEW.md](REVIEW.md) (현재 진행 현황) / [CHANGELOG.md](CHANGELOG.md)
 
 ## 차별화 4축
