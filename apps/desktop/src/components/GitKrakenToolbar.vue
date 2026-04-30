@@ -39,6 +39,10 @@ import { onMenuAction } from '@/composables/useMenuListener'
 import { usePullStrategy, type PullStrategy } from '@/composables/usePullStrategy'
 // Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge 회피 + a11y).
 import BaseTooltip from './BaseTooltip.vue'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   repoId: number | null
@@ -220,41 +224,32 @@ const popMut = useMutation({
 })
 
 // === Handlers ===
-function onUndo() {
+async function onUndo() {
   if (props.repoId == null) {
     toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
     return
   }
   // Sprint c25-1.5 — confirm 후 reset --soft HEAD@{1}.
   // commit/amend 만 자동 처리, 다른 액션은 backend 가 거부 + ReflogModal 자동 오픈.
-  if (
-    !confirm(
-      '마지막 작업을 되돌립니다.\n\n' +
-        '• commit / amend 만 자동 처리 (`reset --soft HEAD@{1}` — working tree 보존)\n' +
-        '• merge / rebase / branch switch 등은 ReflogModal 로 안내\n\n' +
-        '진행하시겠습니까?',
-    )
-  ) {
-    return
-  }
+  const ok = await confirmDialog({
+    title: t('confirm.undoTitle'),
+    message: t('confirm.undoMessage'),
+    danger: true,
+  })
+  if (!ok) return
   undoMut.mutate(props.repoId)
 }
-function onRedo() {
+async function onRedo() {
   if (props.repoId == null) {
     toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
     return
   }
-  if (
-    !confirm(
-      '마지막 undo 를 되돌립니다.\n\n' +
-        '• 직전 reflog action 이 reset/checkout 일 때만 자동 처리\n' +
-        '• 그 외는 ReflogModal 안내\n' +
-        '• checkout redo 는 working tree clean 필수\n\n' +
-        '진행하시겠습니까?',
-    )
-  ) {
-    return
-  }
+  const ok = await confirmDialog({
+    title: t('confirm.redoTitle'),
+    message: t('confirm.redoMessage'),
+    danger: true,
+  })
+  if (!ok) return
   redoMut.mutate(props.repoId)
 }
 function onFetch() {
@@ -278,7 +273,7 @@ function onBranch() {
   }
   dispatchShortcut('newBranch')
 }
-function onStash() {
+async function onStash() {
   if (props.repoId == null) {
     toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
     return
@@ -288,19 +283,15 @@ function onStash() {
     return
   }
   // SEC-001 fix — destructive 액션 confirm (메시지 없이 즉시 stash).
-  if (
-    !confirm(
-      '현재 working tree 변경사항을 stash 합니다.\n\n' +
-        '• 메시지 없이 즉시 stash\n' +
-        '• stash list 에 stash@{0} 으로 push\n\n' +
-        '진행하시겠습니까?',
-    )
-  ) {
-    return
-  }
+  const ok = await confirmDialog({
+    title: t('confirm.stashAllTitle'),
+    message: t('confirm.stashAllMessage'),
+    danger: true,
+  })
+  if (!ok) return
   stashMut.mutate(props.repoId)
 }
-function onPop() {
+async function onPop() {
   if (props.repoId == null) {
     toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
     return
@@ -310,16 +301,12 @@ function onPop() {
     return
   }
   // SEC-001 fix — pop 은 apply + drop 자동, conflict 시 working tree 더러워짐.
-  if (
-    !confirm(
-      `stash@{0} 을 pop 합니다.\n\n` +
-        `• working tree 에 적용 + stash 제거\n` +
-        `• conflict 발생 시 stash 만 남고 working tree 가 더러워질 수 있음\n\n` +
-        `진행하시겠습니까? (남은 stash: ${stashCount.value})`,
-    )
-  ) {
-    return
-  }
+  const ok = await confirmDialog({
+    title: t('confirm.popStashTitle'),
+    message: t('confirm.popLatestStashMessage', { remaining: stashCount.value }),
+    danger: true,
+  })
+  if (!ok) return
   popMut.mutate(props.repoId)
 }
 function onTerminal() {
