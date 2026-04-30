@@ -28,7 +28,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
 export interface ContextMenuItem {
-  label?: string  // divider 면 생략 가능
+  label?: string // divider 면 생략 가능
   icon?: string
   shortcut?: string // 표시용 (예: '⌘D'). 실제 키 바인딩 아님
   destructive?: boolean
@@ -61,10 +61,7 @@ const submenuRef = useTemplateRef<HTMLElement>('submenuRef')
 
 const visibleItems = computed(() => items.value.filter((i) => !i.divider))
 
-function openAt(
-  event: MouseEvent | { x: number; y: number },
-  next: ContextMenuItem[],
-) {
+function openAt(event: MouseEvent | { x: number; y: number }, next: ContextMenuItem[]) {
   items.value = next
   x.value = 'clientX' in event ? event.clientX : event.x
   y.value = 'clientY' in event ? event.clientY : event.y
@@ -107,9 +104,8 @@ function openSubmenu(idx: number) {
   const item = items.value[idx]
   if (!item?.submenu) return
   // submenu 위치: parent item 의 우측
-  const itemEl = rootRef.value.querySelectorAll<HTMLElement>('[data-ctx-item]')[
-    visibleIndexFromRaw(idx)
-  ]
+  const itemEl =
+    rootRef.value.querySelectorAll<HTMLElement>('[data-ctx-item]')[visibleIndexFromRaw(idx)]
   if (!itemEl) return
   const rect = itemEl.getBoundingClientRect()
   submenuX.value = rect.right + 2
@@ -246,16 +242,18 @@ defineExpose<ContextMenuExpose>({ openAt, close })
       class="fixed z-50 min-w-[180px] rounded-md border border-border bg-popover py-1 text-xs shadow-lg"
       :style="{ left: `${x}px`, top: `${y}px` }"
       role="menu"
+      aria-orientation="vertical"
+      aria-label="컨텍스트 메뉴"
     >
       <template v-for="(item, rawIdx) in items" :key="rawIdx">
-        <div
-          v-if="item.divider"
-          class="my-1 border-t border-border"
-        />
+        <div v-if="item.divider" class="my-1 border-t border-border" role="separator" />
         <button
           v-else
           type="button"
           data-ctx-item
+          role="menuitem"
+          :aria-haspopup="item.submenu ? 'menu' : undefined"
+          :aria-expanded="item.submenu ? submenuOpen && submenuParentIndex === rawIdx : undefined"
           class="flex w-full items-center justify-between gap-3 px-3 py-1 text-left hover:bg-accent disabled:opacity-50"
           :class="[
             visibleIndexFromRaw(rawIdx) === focusedIndex && !submenuOpen
@@ -272,10 +270,7 @@ defineExpose<ContextMenuExpose>({ openAt, close })
             <span>{{ item.label }}</span>
           </span>
           <span class="flex items-center gap-2">
-            <span
-              v-if="item.shortcut"
-              class="font-mono text-[10px] text-muted-foreground"
-            >
+            <span v-if="item.shortcut" class="font-mono text-[10px] text-muted-foreground">
               {{ item.shortcut }}
             </span>
             <span v-if="item.submenu" class="text-muted-foreground">▸</span>
@@ -291,29 +286,30 @@ defineExpose<ContextMenuExpose>({ openAt, close })
       class="fixed z-50 min-w-[160px] rounded-md border border-border bg-popover py-1 text-xs shadow-lg"
       :style="{ left: `${submenuX}px`, top: `${submenuY}px` }"
       role="menu"
+      aria-orientation="vertical"
+      aria-label="서브메뉴"
     >
       <template
         v-for="(sub, subRawIdx) in items[submenuParentIndex]?.submenu ?? []"
         :key="`s-${subRawIdx}`"
       >
-        <div v-if="sub.divider" class="my-1 border-t border-border" />
+        <div v-if="sub.divider" class="my-1 border-t border-border" role="separator" />
         <button
           v-else
           type="button"
+          role="menuitem"
           class="flex w-full items-center justify-between gap-3 px-3 py-1 text-left hover:bg-accent disabled:opacity-50"
           :class="[
-            subRawIdx === submenuFocusedIndex
-              ? 'bg-accent text-accent-foreground'
-              : '',
+            subRawIdx === submenuFocusedIndex ? 'bg-accent text-accent-foreground' : '',
             sub.destructive ? 'text-destructive hover:text-destructive' : '',
           ]"
           :disabled="sub.disabled"
           @click="
             !sub.disabled &&
-              (() => {
-                sub.action?.()
-                close()
-              })()
+            (() => {
+              sub.action?.()
+              close()
+            })()
           "
           @mouseenter="submenuFocusedIndex = subRawIdx"
         >
@@ -321,10 +317,7 @@ defineExpose<ContextMenuExpose>({ openAt, close })
             <span v-if="sub.icon" class="w-4 text-center">{{ sub.icon }}</span>
             <span>{{ sub.label }}</span>
           </span>
-          <span
-            v-if="sub.shortcut"
-            class="font-mono text-[10px] text-muted-foreground"
-          >
+          <span v-if="sub.shortcut" class="font-mono text-[10px] text-muted-foreground">
             {{ sub.shortcut }}
           </span>
         </button>
