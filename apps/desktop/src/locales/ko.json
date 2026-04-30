@@ -75,5 +75,24 @@
     "ko": "한국어",
     "en": "English",
     "label": "언어"
+  },
+  "nav": {
+    "home": "홈",
+    "repos": "레포",
+    "reposTitle": "모든 레포 관리 (프로젝트 그룹) — ⌘⇧R",
+    "launchpad": "Launchpad",
+    "settings": "설정",
+    "themeToDark": "다크로",
+    "themeToLight": "라이트로",
+    "themeAriaLabel": "다크 / 라이트 모드 토글"
+  },
+  "sidebar": {
+    "managementRepos": "📂 레포",
+    "managementTitle": "모든 레포 관리 (Browse / Clone / 프로젝트 그룹) — ⌘⇧R",
+    "workspaceAll": "전체",
+    "workspaceTitleAll": "전체 워크스페이스",
+    "workspaceTitle": "워크스페이스: {name}",
+    "searchPlaceholder": "검색 (브랜치 / 태그 / submodule) — ⌘⌥F",
+    "clearSearch": "검색 지우기"
   }
 }

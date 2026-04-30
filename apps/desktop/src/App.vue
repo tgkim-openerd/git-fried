@@ -23,6 +23,7 @@ import { useDeepLink } from '@/composables/useDeepLink'
 import { useMenuListener } from '@/composables/useMenuListener'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUiSettingsStore } from '@/composables/useUserSettings'
 import { useAutoFetch } from '@/composables/useAutoFetch'
 import { useReposStore } from '@/stores/repos'
@@ -32,6 +33,7 @@ import { describeError } from '@/api/errors'
 import { RouterLink, useRouter } from 'vue-router'
 
 const { theme, toggle } = useTheme()
+const { t } = useI18n()
 const reposStore = useReposStore()
 const ui = useUiState()
 const uiSettings = useUiSettingsStore()
@@ -223,15 +225,15 @@ useMenuListener()
               class="text-muted-foreground hover:text-foreground"
               active-class="text-foreground font-semibold"
             >
-              홈
+              {{ t('nav.home') }}
             </RouterLink>
             <RouterLink
               to="/repositories"
               class="text-muted-foreground hover:text-foreground"
               active-class="text-foreground font-semibold"
-              title="모든 레포 관리 (프로젝트 그룹) — ⌘⇧R"
+              :title="t('nav.reposTitle')"
             >
-              레포
+              {{ t('nav.repos') }}
             </RouterLink>
             <RouterLink
               v-if="!uiSettings.hideLaunchpad"
@@ -239,19 +241,20 @@ useMenuListener()
               class="text-muted-foreground hover:text-foreground"
               active-class="text-foreground font-semibold"
             >
-              Launchpad
+              {{ t('nav.launchpad') }}
             </RouterLink>
             <RouterLink
               to="/settings"
               class="text-muted-foreground hover:text-foreground"
               active-class="text-foreground font-semibold"
             >
-              설정
+              {{ t('nav.settings') }}
             </RouterLink>
             <button
               type="button"
               class="ml-1 rounded border border-input px-1.5 py-0.5 text-[10px] hover:bg-accent"
-              :title="theme === 'dark' ? '라이트로' : '다크로'"
+              :title="theme === 'dark' ? t('nav.themeToLight') : t('nav.themeToDark')"
+              :aria-label="t('nav.themeAriaLabel')"
               @click="toggle"
             >
               {{ theme === 'dark' ? '☾' : '☀' }}

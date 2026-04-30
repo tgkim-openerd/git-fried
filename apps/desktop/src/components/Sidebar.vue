@@ -13,6 +13,7 @@
 //   - 일괄 fetch  → /repositories 의 [⤓ Fetch All]
 
 import { computed, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRouter, RouterLink } from 'vue-router'
 import { listWorkspaces } from '@/api/git'
@@ -21,6 +22,8 @@ import { useShortcut } from '@/composables/useShortcuts'
 import { useToast } from '@/composables/useToast'
 import { useSidebarSearch } from '@/composables/useSidebarSearch'
 import ActiveRepoQuickActions from './ActiveRepoQuickActions.vue'
+
+const { t } = useI18n()
 
 const store = useReposStore()
 const qc = useQueryClient()
@@ -70,7 +73,8 @@ useShortcut('filterRepos', focusSidebarSearch)
   >
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <span class="font-mono text-sm font-semibold tracking-tight">git-fried</span>
-      <span class="text-[10px] text-muted-foreground">v0.0</span>
+      <!-- Sprint c31 PR-B — version 0.0.0 → 0.3.0 동기 (tauri.conf.json + Cargo.toml + package.json) -->
+      <span class="text-[10px] text-muted-foreground">v0.3.0</span>
     </header>
 
     <!-- Workspace context (compact) + 레포 페이지 진입.
@@ -93,9 +97,13 @@ useShortcut('filterRepos', focusSidebarSearch)
             )
         "
         class="flex-1 rounded-md border border-input bg-background px-2 py-0.5 text-xs"
-        :title="activeWorkspace ? `워크스페이스: ${activeWorkspace.name}` : '전체 워크스페이스'"
+        :title="
+          activeWorkspace
+            ? t('sidebar.workspaceTitle', { name: activeWorkspace.name })
+            : t('sidebar.workspaceTitleAll')
+        "
       >
-        <option value="">전체</option>
+        <option value="">{{ t('sidebar.workspaceAll') }}</option>
         <option v-for="w in workspaces" :key="w.id" :value="w.id">
           {{ w.name }}
         </option>
@@ -104,9 +112,9 @@ useShortcut('filterRepos', focusSidebarSearch)
         to="/repositories"
         data-testid="sidebar-repo-management-link"
         class="rounded-md border border-input px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
-        title="모든 레포 관리 (Browse / Clone / 프로젝트 그룹) — ⌘⇧R"
+        :title="t('sidebar.managementTitle')"
       >
-        📂 레포
+        {{ t('sidebar.managementRepos') }}
       </RouterLink>
     </section>
 
@@ -118,15 +126,15 @@ useShortcut('filterRepos', focusSidebarSearch)
           v-model="search.query.value"
           type="search"
           data-testid="sidebar-search"
-          placeholder="검색 (브랜치 / 태그 / submodule) — ⌘⌥F"
+          :placeholder="t('sidebar.searchPlaceholder')"
           class="w-full rounded border border-input bg-background px-2 py-1 pr-6 text-xs outline-none focus:border-primary"
         />
         <button
           v-if="search.isActive.value"
           type="button"
           class="absolute right-1 top-1/2 -translate-y-1/2 rounded text-[10px] text-muted-foreground hover:text-foreground"
-          title="검색 지우기"
-          aria-label="검색 지우기"
+          :title="t('sidebar.clearSearch')"
+          :aria-label="t('sidebar.clearSearch')"
           @click="search.clear()"
         >
           ✕

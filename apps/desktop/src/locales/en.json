@@ -75,5 +75,24 @@
     "ko": "한국어",
     "en": "English",
     "label": "Language"
+  },
+  "nav": {
+    "home": "Home",
+    "repos": "Repos",
+    "reposTitle": "Manage all repos (project groups) — Cmd+Shift+R",
+    "launchpad": "Launchpad",
+    "settings": "Settings",
+    "themeToDark": "Switch to dark",
+    "themeToLight": "Switch to light",
+    "themeAriaLabel": "Toggle dark / light mode"
+  },
+  "sidebar": {
+    "managementRepos": "📂 Repos",
+    "managementTitle": "Manage all repos (Browse / Clone / project groups) — Cmd+Shift+R",
+    "workspaceAll": "All",
+    "workspaceTitleAll": "All workspaces",
+    "workspaceTitle": "Workspace: {name}",
+    "searchPlaceholder": "Search (branch / tag / submodule) — Cmd+Alt+F",
+    "clearSearch": "Clear search"
   }
 }
