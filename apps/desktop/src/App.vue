@@ -15,6 +15,7 @@ import RepoSwitcherModal from './components/RepoSwitcherModal.vue'
 import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
 import CompareModal from './components/CompareModal.vue'
+import ConfirmDialog from './components/ConfirmDialog.vue'
 import StatusBar from './components/StatusBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useShortcut } from '@/composables/useShortcuts'
@@ -298,5 +299,6 @@ useMenuListener()
     <ToastContainer />
     <LongRunningBanner />
     <CommitSearchModal :open="commitSearchOpen" @close="commitSearchOpen = false" />
+    <ConfirmDialog />
   </div>
 </template>
