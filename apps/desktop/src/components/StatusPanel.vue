@@ -3,14 +3,13 @@
 // - staged / unstaged / untracked / conflicted 분리
 // - 파일 클릭 시 stage / unstage 토글
 // - "+ 모두 stage" / "− 모두 unstage" 단축
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import { launchMergetool } from '@/api/git'
 import { useStageMutations } from '@/composables/useStageMutations'
 import { describeError } from '@/api/errors'
-import { useShortcut } from '@/composables/useShortcuts'
 import { useToast } from '@/composables/useToast'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
@@ -25,6 +24,8 @@ import { flattenTree, useStatusTreeView } from '@/composables/useStatusTreeView'
 import { statusColor, statusLabel } from '@/utils/statusFormat'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
+// Sprint c37 god 20/N — selectedPath + vim S/U/⌘⇧S/⌘⇧U/⌘⇧H + copyPath 분리.
+import { useStatusSelection } from '@/composables/useStatusSelection'
 // Sprint c31 god comp 분리 6/N — 3 modal state (history / merge / hunk) composable.
 import { useStatusModals } from '@/composables/useStatusModals'
 // Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge + a11y).
@@ -82,17 +83,18 @@ const {
   closeHunk,
 } = useStatusModals()
 
+// Sprint c37 god 20/N — selectedPath + vim shortcuts + copyPath 통합.
+const { selectedPath, selectPath, copyPath } = useStatusSelection({
+  repoId: () => props.repoId,
+  status,
+  stageMut,
+  unstageMut,
+  stageAllMut,
+  openHistory,
+})
+
 // === Sprint 22-2 CM-3: file row 우클릭 메뉴 ===
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
-
-async function copyPath(path: string) {
-  try {
-    await navigator.clipboard.writeText(path)
-    toast.success('경로 복사', path)
-  } catch (e) {
-    toast.error('복사 실패', describeError(e))
-  }
-}
 
 function onFileContextMenu(ev: MouseEvent, path: string, isStaged: boolean) {
   ev.preventDefault()
@@ -160,70 +162,8 @@ function onLaunchMergetool(p: string) {
   mergetoolMut.mutate({ p })
 }
 
-// Vim S/U — 현재 선택된 파일 stage / unstage (Sprint A2).
-// 우선순위:
-//   1. 명시적 클릭으로 selectedPath 가 있으면 그 파일.
-//   2. unstage list 첫 파일 (stage S 의 일반 케이스).
-//   3. staged list 첫 파일 (unstage U 의 일반 케이스).
-const selectedPath = ref<string | null>(null)
-
-function pickStageTarget(): string | null {
-  if (selectedPath.value) {
-    // staged 에 있으면 이미 stage 됨 → 다음 unstaged 행으로.
-    if (status.value?.staged.some((f) => f.path === selectedPath.value)) {
-      return status.value?.unstaged[0]?.path ?? status.value?.untracked[0] ?? null
-    }
-    return selectedPath.value
-  }
-  return status.value?.unstaged[0]?.path ?? status.value?.untracked[0] ?? null
-}
-
-function pickUnstageTarget(): string | null {
-  if (selectedPath.value) {
-    if (status.value?.unstaged.some((f) => f.path === selectedPath.value)) {
-      return status.value?.staged[0]?.path ?? null
-    }
-    return selectedPath.value
-  }
-  return status.value?.staged[0]?.path ?? null
-}
-
-useShortcut('stageCurrent', () => {
-  if (props.repoId == null) return
-  const target = pickStageTarget()
-  if (!target) return
-  stageMut.mutate({ id: props.repoId, paths: [target] })
-})
-
-useShortcut('unstageCurrent', () => {
-  if (props.repoId == null) return
-  const target = pickUnstageTarget()
-  if (!target) return
-  unstageMut.mutate({ id: props.repoId, paths: [target] })
-})
-
-// Sprint B5 — ⌘⇧S / ⌘⇧U 일괄, ⌘⇧H 첫 unstaged 의 file history.
-useShortcut('stageAllExplicit', () => {
-  if (props.repoId != null) stageAllMut.mutate(props.repoId)
-})
-
-useShortcut('unstageAll', () => {
-  if (props.repoId == null) return
-  const paths = (status.value?.staged ?? []).map((f) => f.path)
-  if (paths.length === 0) return
-  unstageMut.mutate({ id: props.repoId, paths })
-})
-
-useShortcut('fileHistorySearch', () => {
-  // 현재 selected 또는 첫 번째 unstaged/staged 의 history.
-  const target =
-    selectedPath.value ?? status.value?.unstaged[0]?.path ?? status.value?.staged[0]?.path ?? null
-  if (target) openHistory(target)
-})
-
-function selectPath(path: string) {
-  selectedPath.value = selectedPath.value === path ? null : path
-}
+// Sprint c37 god 20/N — vim S/U + ⌘⇧S/⌘⇧U + ⌘⇧H 단축키 + selectedPath 토글 + copyPath 는
+//   useStatusSelection composable 위임 (위에서 destructure).
 
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 const fsDiff = useFullscreenDiff()

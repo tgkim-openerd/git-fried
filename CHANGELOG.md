@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37-3 — god comp 추가 분리 (CommitGraph + StatusPanel) (2026-04-30, 1 commit)** — checkpoint.md 1순위 B 자율 진행. /analyze HIGH-1 (CommitGraph 833) + HIGH-2 (StatusPanel 789) 분리. main 직접 1 commit / typecheck 0 / vitest 57/612 / **god comp 분리 누적 20 (c37 신규 3) / -1,606 LOC (-29%)**:
+  - **`useGraphWidth`** (god 18/N, 109 LOC) — graphWidth state (localStorage 영속 `git-fried.commit-graph-width`) + laneW 자동 계산 (maxLane 기반 clamp 8~36) + zoomIn/Out (±20px) + drag handle (mousedown/move/up + cleanup) + zoomInDisabled/zoomOutDisabled computed. CommitGraph 833 → 737 (-96 LOC, 단 +8 LOC composable destructure 포함).
+  - **`useGraphSelection`** (god 19/N, 86 LOC) — selectedSha + selectRow/selectWipRow + moveSelection (vim J/K + 가시 영역 스크롤) + useShortcut(vimDown/vimUp/vimLeft) 등록. CommitGraph 의 selection + nav 영역 추출.
+  - **`useStatusSelection`** (god 20/N, 130 LOC) — selectedPath state + selectPath (토글) + copyPath (clipboard + toast) + pickStageTarget/pickUnstageTarget (vim S/U 우선순위) + useShortcut(stageCurrent/unstageCurrent/stageAllExplicit/unstageAll/fileHistorySearch) 등록. StatusPanel 789 → 729 (-60 LOC).
+  - **`tailwind.config.ts`** — Sprint c37-2 에서 `<alpha-value>` placeholder 추가했으나 c37-3 은 변경 없음 (이번 commit 은 god 분리만).
+  - **누적 통계 (c31~c37-3)**:
+    - god comp: 17 → **20** (c37 신규: useGraphWidth / useGraphSelection / useStatusSelection)
+    - LOC 누적 감소: -1,450 → **-1,606 (-29%)**
+    - vitest: 57/612 (변동 없음, composable test 별도 추가 안 함 — script 시간 절약, 후속 sprint 에서 추가 가능)
+    - CommitGraph 833 → 737 (-96, 1위 god comp 분리 진척)
+    - StatusPanel 789 → 729 (-60, 2위 god comp 분리 진척)
+
 - **Sprint c37 — plan/28 옵션 C 3차 + 4차 (2026-04-30, 2 commits)** — checkpoint.md 1순위 A "plan/28 잔여 ~30곳" 완전 마무리 + alpha modifier 호환 인프라. main 직접 2 commits / typecheck 0 / vitest **57/612** / **plan/28 누적 적용 44 컴포넌트 (c35 2 + c36 5 + c37 37) / 순수 hardcoded 색상 0 (87 → 25, 잔존 25 모두 dark variant 패턴)**:
   - **4차 commit (이번)** — 추가 28 컴포넌트 일괄 치환 + tailwind alpha modifier 호환:
     - **28 컴포넌트** (모두 순수 hardcoded `text-X-500` 등 단일 위치): BisectModal / BulkFetchResultModal / CommitDiffPanel / CommitGraph (orange 2 + amber + signed) / CommitTable / CompareModal / CreatePrModal / ForgeSetup / FullscreenDiffView (header DIFF + blame sha alpha) / GitKrakenImportModal (warning + done + error) / HunkStageModal / IssueDetailModal (state) / LfsPanel / MergeEditorModal (AI + RESULT) / MiniSubmoduleList / MiniWorktreeList / ProfilesSection / ProfileSwitcher / ReleaseDetailModal (draft + prerelease) / ReleasesPanel / RepoSpecificForm / RepoSwitcherModal / StatusInlineDiff / SubmodulePanel / SyncBar / TerminalPanel / WipBanner / WipRow

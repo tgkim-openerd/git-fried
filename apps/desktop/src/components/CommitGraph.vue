@@ -7,7 +7,7 @@
 //  - lane 폭 16px
 //  - 노드 원 6px, 엣지 stroke 1.5px
 //  - 8개 stable color (브랜치 hash)
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useVirtualizer } from '@tanstack/vue-virtual'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
@@ -15,11 +15,14 @@ import { useGraph } from '@/composables/useGraph'
 import { useStatus } from '@/composables/useStatus'
 import { useHiddenRefMutations, useRefVisibility, useSoloRef } from '@/composables/useHiddenRefs'
 import type { HiddenRefKind } from '@/api/git'
-import { useShortcut } from '@/composables/useShortcuts'
 import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
 import { useCommitActions } from '@/composables/useCommitActions'
 // Sprint c31 god comp 분리 7/N — 검색 state + isMatch + ⌘F/Esc 통합 composable.
 import { useGraphSearch } from '@/composables/useGraphSearch'
+// Sprint c37 god 18/N — graphWidth + laneW + zoom + drag handle 분리.
+import { useGraphWidth, ROW_H } from '@/composables/useGraphWidth'
+// Sprint c37 god 19/N — selectedSha + vim nav 분리.
+import { useGraphSelection } from '@/composables/useGraphSelection'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import type { GraphRow } from '@/api/git'
@@ -86,44 +89,24 @@ function hideRefByName(name: string) {
 
 // === 검색 — Sprint c31 분리 7/N. composable 호출은 rows 정의 이후 (TDZ 회피) — line ~137 부근. ===
 
-const ROW_H = 28
-const LANE_W_MIN = 8
-const LANE_W_MAX = 36
-
-// Sprint c30 / GitKraken UX (Phase 9) — graph column width 사용자 조정.
-//   기존: laneW 가 사용자 ref, graphWidth = laneW * maxLane + 16 (lane 폭 변경)
-//   변경: graphWidth 가 사용자 ref (default 200, 80~400 range), laneW 자동 계산
-//     = clamp((graphWidth - 16) / maxLane, 8, 36).
-//   사용자가 +/- 버튼/drag handle 로 graph column width 직접 조정 (테이블 헤더 의미).
-//   maxLane 가 매우 크면 lane 자동으로 좁아져 잘릴 수 있으나 사용자 zoom 권장.
-const DEFAULT_GRAPH_W = 200
-const MIN_GRAPH_W = 80
-const MAX_GRAPH_W = 400
-const GRAPH_W_KEY = 'git-fried.commit-graph-width'
-
-function loadGraphW(): number {
-  if (typeof localStorage === 'undefined') return DEFAULT_GRAPH_W
-  const v = localStorage.getItem(GRAPH_W_KEY)
-  if (!v) return DEFAULT_GRAPH_W
-  const n = Number.parseInt(v, 10)
-  if (!Number.isFinite(n)) return DEFAULT_GRAPH_W
-  return Math.min(MAX_GRAPH_W, Math.max(MIN_GRAPH_W, n))
-}
-const graphWidth = ref<number>(loadGraphW())
-watch(graphWidth, (v) => {
-  if (typeof localStorage === 'undefined') return
-  try {
-    localStorage.setItem(GRAPH_W_KEY, String(v))
-  } catch {
-    /* ignore */
-  }
-})
-
 const containerRef = ref<HTMLDivElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 const rows = computed<GraphRow[]>(() => graph.value?.rows ?? [])
 const maxLane = computed(() => graph.value?.maxLane ?? 1)
+
+// Sprint c37 god 18/N — graphWidth + laneW + zoom + drag handle composable.
+//   graphWidth state (localStorage 영속) / laneW 자동 계산 / zoomIn,Out / onDragHandleStart.
+const {
+  graphWidth,
+  laneW,
+  zoomOutDisabled,
+  zoomInDisabled,
+  zoomIn,
+  zoomOut,
+  onDragHandleStart,
+  cleanup: cleanupGraphWidth,
+} = useGraphWidth(maxLane)
 
 // === 검색 (Sprint c31 god comp 분리 7/N — useGraphSearch composable) ===
 // v0.x 단계: 현재 그래프 (최대 500 commits) 내에서 subject / author / sha / refs 부분일치.
@@ -139,25 +122,6 @@ const {
   closeSearch,
   onKeydown,
 } = useGraphSearch(rows, { onClose: () => drawGraph() })
-
-// Sprint c30 / GitKraken UX (Phase 9) — laneW 자동 계산 (graphWidth 기반).
-//   maxLane 1 → laneW = graphWidth - 16 (clamp 36 으로 줄음)
-//   maxLane 10 → laneW ≈ (graphWidth - 16) / 10
-//   lane 잘림 회피하려면 사용자가 graphWidth 늘리거나 (drag/zoom-in).
-const laneW = computed(() => {
-  const ml = Math.max(1, maxLane.value)
-  const lw = Math.floor((graphWidth.value - 16) / ml)
-  return Math.max(LANE_W_MIN, Math.min(LANE_W_MAX, lw))
-})
-
-// Sprint c30 / GitKraken UX (Phase 9) — zoom +/- 버튼: graph column width 조정.
-//   기존: laneW +/- 2 → 변경: graphWidth +/- 20 (사용자 의도 = "테이블 헤더 늘이기/줄이기").
-function zoomIn() {
-  graphWidth.value = Math.min(MAX_GRAPH_W, graphWidth.value + 20)
-}
-function zoomOut() {
-  graphWidth.value = Math.max(MIN_GRAPH_W, graphWidth.value - 20)
-}
 
 // Sprint c30 / GitKraken UX (Phase 8a) — wipActive 시 virtualizer count + 1.
 const virtualizer = useVirtualizer(
@@ -302,7 +266,6 @@ onMounted(() => {
   window.addEventListener('keydown', onKeydown)
 })
 watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
-import { onUnmounted } from 'vue'
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 function onScroll() {
@@ -327,15 +290,15 @@ const emit = defineEmits<{
   explainAi: [sha: string]
   openInForge: [sha: string]
 }>()
-const selectedSha = ref<string | null>(null)
-function selectRow(r: GraphRow | null) {
-  if (!r) return
-  selectedSha.value = r.commit.sha
-  emit('selectCommit', r.commit.sha)
-}
-function selectWipRow() {
-  emit('selectWip')
-}
+
+// Sprint c37 god 19/N — selectedSha + moveSelection (vim J/K) + selectWip composable.
+const { selectedSha, selectRow, selectWipRow, moveSelection } = useGraphSelection({
+  rows,
+  containerRef,
+  onSelectCommit: (sha) => emit('selectCommit', sha),
+  onSelectWip: () => emit('selectWip'),
+  rowHeight: ROW_H,
+})
 
 // === Sprint 22-2 CM-1: row 우클릭 메뉴 ===
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
@@ -365,37 +328,8 @@ function onRowContextMenu(ev: MouseEvent, row: GraphRow | undefined) {
     }),
   )
 }
-
-// Vim nav (J/K) — selectedSha 다음/이전 행. 비어있으면 첫 행 선택.
-function moveSelection(delta: 1 | -1) {
-  const list = rows.value
-  if (list.length === 0) return
-  let idx = list.findIndex((r) => r.commit.sha === selectedSha.value)
-  if (idx < 0) {
-    idx = delta > 0 ? 0 : list.length - 1
-  } else {
-    idx = Math.max(0, Math.min(list.length - 1, idx + delta))
-  }
-  const r = list[idx]
-  if (!r) return
-  selectedSha.value = r.commit.sha
-  emit('selectCommit', r.commit.sha)
-  // 가시 영역으로 스크롤
-  if (containerRef.value) {
-    const targetTop = idx * ROW_H
-    const ct = containerRef.value
-    if (targetTop < ct.scrollTop) ct.scrollTop = targetTop
-    else if (targetTop + ROW_H > ct.scrollTop + ct.clientHeight) {
-      ct.scrollTop = targetTop + ROW_H - ct.clientHeight
-    }
-  }
-}
-
-useShortcut('vimDown', () => moveSelection(1))
-useShortcut('vimUp', () => moveSelection(-1))
-useShortcut('vimLeft', () => {
-  selectedSha.value = null
-})
+// moveSelection 은 useGraphSelection 에서 노출 — 사용 안 한 변수 lint 회피용.
+void moveSelection
 
 // === 컬럼 토글 / 재정렬 (Sprint A3) ===
 const cols = useCommitColumns()
@@ -449,39 +383,9 @@ function colDef(id: CommitColumnId) {
   return cols.allColumns.find((c) => c.id === id)
 }
 
-// === Sprint C5 — Graph column drag-resize ===
-// Sprint c30 / GitKraken UX (Phase 9) — drag handle 이 laneW 가 아닌 graphWidth 직접 조정.
-//   사용자 의도 = "테이블 헤더 늘이기/줄이기" — graph column 폭 직접.
-let dragStartX = 0
-let dragStartGraphW = DEFAULT_GRAPH_W
-let dragging = false
-
-function onDragHandleStart(ev: MouseEvent) {
-  ev.preventDefault()
-  dragging = true
-  dragStartX = ev.clientX
-  dragStartGraphW = graphWidth.value
-  window.addEventListener('mousemove', onDragMove)
-  window.addEventListener('mouseup', onDragEnd)
-}
-
-function onDragMove(ev: MouseEvent) {
-  if (!dragging) return
-  const dx = ev.clientX - dragStartX
-  // 1px drag = 1px graphWidth 변화 (직접 매핑 — 사용자 직관).
-  graphWidth.value = Math.min(MAX_GRAPH_W, Math.max(MIN_GRAPH_W, dragStartGraphW + dx))
-}
-
-function onDragEnd() {
-  dragging = false
-  window.removeEventListener('mousemove', onDragMove)
-  window.removeEventListener('mouseup', onDragEnd)
-}
-
-onUnmounted(() => {
-  window.removeEventListener('mousemove', onDragMove)
-  window.removeEventListener('mouseup', onDragEnd)
-})
+// Sprint c37 god 18/N — drag-resize 로직은 useGraphWidth composable 위임.
+//   onDragHandleStart 는 위에서 destructure, cleanup 은 unmount 시.
+onUnmounted(() => cleanupGraphWidth())
 </script>
 
 <template>
@@ -497,7 +401,7 @@ onUnmounted(() => {
           <button
             type="button"
             class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
-            :disabled="graphWidth <= MIN_GRAPH_W"
+            :disabled="zoomOutDisabled"
             :aria-label="`그래프 column 축소 (현재 width: ${graphWidth}px)`"
             @click="zoomOut"
           >
@@ -506,7 +410,7 @@ onUnmounted(() => {
           <button
             type="button"
             class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
-            :disabled="graphWidth >= MAX_GRAPH_W"
+            :disabled="zoomInDisabled"
             :aria-label="`그래프 column 확대 (현재 width: ${graphWidth}px)`"
             @click="zoomIn"
           >
