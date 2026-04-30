@@ -23,6 +23,8 @@ import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { parentDirName } from '@/composables/useSidebarGroups'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+// Sprint c31 — BaseTooltip primitive (kbd hint 노출).
+import BaseTooltip from './BaseTooltip.vue'
 import { visualWidth } from '@/utils/visualWidth'
 
 const OVERFLOW_THRESHOLD = 8
@@ -278,24 +280,30 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
           {{ g.tabIds.length }}
         </span>
       </button>
-      <button
+      <BaseTooltip
         v-if="isOverflow"
-        type="button"
-        class="ml-1 shrink-0 rounded border border-dashed border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
-        :title="`${overflowHiddenCount}+ 탭 — ⌘T 로 검색·전환`"
-        @click="$emit('openSwitcher')"
+        :text="`${overflowHiddenCount}+ 탭이 가려져 있음 — 검색·전환`"
+        kbd="⌘T"
+        placement="bottom"
       >
-        ▾ {{ overflowHiddenCount }}+
-      </button>
-      <button
-        type="button"
-        class="ml-1 shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
-        title="새 탭 (⌘T)"
-        aria-label="새 레포 탭 추가 (⌘T)"
-        @click="$emit('openSwitcher')"
-      >
-        +
-      </button>
+        <button
+          type="button"
+          class="ml-1 shrink-0 rounded border border-dashed border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+          @click="$emit('openSwitcher')"
+        >
+          ▾ {{ overflowHiddenCount }}+
+        </button>
+      </BaseTooltip>
+      <BaseTooltip text="새 레포 탭 추가" kbd="⌘T" placement="bottom">
+        <button
+          type="button"
+          class="ml-1 shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
+          aria-label="새 레포 탭 추가 (⌘T)"
+          @click="$emit('openSwitcher')"
+        >
+          +
+        </button>
+      </BaseTooltip>
       <!-- Phase 13-3 — Row 1 우측 trailing slot (App.vue 헤더 nav 통합). -->
       <div class="ml-auto flex shrink-0 items-center">
         <slot name="trailing" />

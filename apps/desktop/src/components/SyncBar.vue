@@ -7,6 +7,8 @@ import { describeError, humanizeGitError } from '@/api/errors'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useToast } from '@/composables/useToast'
 import { useShortcut } from '@/composables/useShortcuts'
+// Sprint c31 — BaseTooltip primitive (kbd hint 노출).
+import BaseTooltip from './BaseTooltip.vue'
 
 const toast = useToast()
 
@@ -27,10 +29,7 @@ const fetchMut = useMutation({
     if (res.success) {
       toast.success('Fetch 완료')
     } else {
-      toast.error(
-        `Fetch 실패 (exit ${res.exitCode})`,
-        humanizeGitError(res.stderr),
-      )
+      toast.error(`Fetch 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
     }
   },
   onError: (e) => toast.error('Fetch 호출 실패', describeError(e)),
@@ -52,10 +51,7 @@ const pullMut = useMutation({
         }
       }
     } else {
-      toast.error(
-        `Pull 실패 (exit ${res.exitCode})`,
-        humanizeGitError(res.stderr),
-      )
+      toast.error(`Pull 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
     }
   },
   onError: (e) => toast.error('Pull 호출 실패', describeError(e)),
@@ -71,10 +67,7 @@ const pushMut = useMutation({
     if (res.success) {
       toast.success('Push 완료')
     } else {
-      toast.error(
-        `Push 실패 (exit ${res.exitCode})`,
-        humanizeGitError(res.stderr),
-      )
+      toast.error(`Push 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
     }
   },
   onError: (e) => toast.error('Push 호출 실패', describeError(e)),
@@ -97,17 +90,13 @@ useShortcut('push', onPush)
 </script>
 
 <template>
-  <header
-    class="flex items-center justify-between border-b border-border bg-card px-4 py-2"
-  >
+  <header class="flex items-center justify-between border-b border-border bg-card px-4 py-2">
     <div class="flex items-center gap-3 text-sm">
       <span class="font-mono">
         <span class="text-muted-foreground">on</span>
         <span class="ml-1 font-semibold">{{ branch || '(no branch)' }}</span>
       </span>
-      <span v-if="upstream" class="text-xs text-muted-foreground">
-        → {{ upstream }}
-      </span>
+      <span v-if="upstream" class="text-xs text-muted-foreground"> → {{ upstream }} </span>
       <span v-if="ahead || behind" class="text-xs">
         <span v-if="ahead" class="text-emerald-500">↑{{ ahead }}</span>
         <span v-if="behind" class="ml-1 text-rose-500">↓{{ behind }}</span>
@@ -115,30 +104,48 @@ useShortcut('push', onPush)
     </div>
 
     <div class="flex items-center gap-1">
-      <button
-        type="button"
-        class="rounded-md border border-input px-2.5 py-1 text-xs hover:bg-accent disabled:opacity-50"
-        :disabled="!repoId || fetchMut.isPending.value"
-        @click="onFetch"
+      <BaseTooltip
+        :text="fetchMut.isPending.value ? 'Fetch 진행 중...' : 'origin 만 가져오기 (merge 없음)'"
+        kbd="⌘L"
+        placement="bottom"
       >
-        {{ fetchMut.isPending.value ? '...' : 'Fetch' }}
-      </button>
-      <button
-        type="button"
-        class="rounded-md border border-input px-2.5 py-1 text-xs hover:bg-accent disabled:opacity-50"
-        :disabled="!repoId || pullMut.isPending.value"
-        @click="onPull"
+        <button
+          type="button"
+          class="rounded-md border border-input px-2.5 py-1 text-xs hover:bg-accent disabled:opacity-50"
+          :disabled="!repoId || fetchMut.isPending.value"
+          @click="onFetch"
+        >
+          {{ fetchMut.isPending.value ? '...' : 'Fetch' }}
+        </button>
+      </BaseTooltip>
+      <BaseTooltip
+        :text="pullMut.isPending.value ? 'Pull 진행 중...' : 'fetch + merge'"
+        kbd="⌘⇧L"
+        placement="bottom"
       >
-        {{ pullMut.isPending.value ? '...' : 'Pull' }}
-      </button>
-      <button
-        type="button"
-        class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
-        :disabled="!repoId || pushMut.isPending.value"
-        @click="onPush"
+        <button
+          type="button"
+          class="rounded-md border border-input px-2.5 py-1 text-xs hover:bg-accent disabled:opacity-50"
+          :disabled="!repoId || pullMut.isPending.value"
+          @click="onPull"
+        >
+          {{ pullMut.isPending.value ? '...' : 'Pull' }}
+        </button>
+      </BaseTooltip>
+      <BaseTooltip
+        :text="pushMut.isPending.value ? 'Push 진행 중...' : 'origin 으로 push'"
+        kbd="⌘⇧K"
+        placement="bottom"
       >
-        {{ pushMut.isPending.value ? '...' : 'Push' }}
-      </button>
+        <button
+          type="button"
+          class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          :disabled="!repoId || pushMut.isPending.value"
+          @click="onPush"
+        >
+          {{ pushMut.isPending.value ? '...' : 'Push' }}
+        </button>
+      </BaseTooltip>
     </div>
   </header>
 </template>

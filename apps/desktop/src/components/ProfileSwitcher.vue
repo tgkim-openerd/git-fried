@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { activateProfile } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+// Sprint c31 — BaseTooltip primitive.
+import BaseTooltip from './BaseTooltip.vue'
 
 const toast = useToast()
 import { useProfiles } from '@/composables/useProfiles'
@@ -42,16 +44,20 @@ function pick(id: number) {
 
 <template>
   <div class="relative">
-    <button
-      type="button"
-      class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent"
-      :title="active ? `현재: ${active.name}` : '프로파일 미설정'"
-      @click="open = !open"
+    <BaseTooltip
+      :text="active ? `현재: ${active.name}` : '프로파일 미설정 — Settings 에서 추가'"
+      placement="bottom"
     >
-      <span v-if="active" class="font-medium">👤 {{ active.name }}</span>
-      <span v-else class="text-muted-foreground">프로파일</span>
-      <span class="ml-1 text-muted-foreground">▾</span>
-    </button>
+      <button
+        type="button"
+        class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent"
+        @click="open = !open"
+      >
+        <span v-if="active" class="font-medium">👤 {{ active.name }}</span>
+        <span v-else class="text-muted-foreground">프로파일</span>
+        <span class="ml-1 text-muted-foreground">▾</span>
+      </button>
+    </BaseTooltip>
 
     <!-- 드롭다운 -->
     <div
@@ -59,7 +65,9 @@ function pick(id: number) {
       class="absolute right-0 top-full z-30 mt-1 w-72 rounded-md border border-border bg-card shadow-lg"
       @keydown.esc="open = false"
     >
-      <div class="border-b border-border px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div
+        class="border-b border-border px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+      >
         프로파일
       </div>
       <ul class="py-1">
@@ -84,7 +92,8 @@ function pick(id: number) {
           v-if="profiles && profiles.length === 0"
           class="px-3 py-2 text-xs text-muted-foreground"
         >
-          프로파일 없음. <RouterLink to="/settings" class="underline" @click="open = false">설정</RouterLink>
+          프로파일 없음.
+          <RouterLink to="/settings" class="underline" @click="open = false">설정</RouterLink>
           에서 추가.
         </li>
       </ul>
