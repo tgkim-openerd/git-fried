@@ -1,6 +1,6 @@
 # 구현 현황 인벤토리 (Implementation Status)
 
-작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 (PR-A/B/C/D 4 commit 후) / 트리거: `/analyze` 반복 검증 완료 후 plan ↔ code 정합 cataloguing
+작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 12 commit 누적 후 / 트리거: `/analyze` 반복 검증 완료 후 plan ↔ code 정합 cataloguing
 
 > **목적**: 26개 plan 문서 + CHANGELOG Unreleased + lib.rs invoke_handler + 5 SQLite migrations + 161 IPC + 191 frontend 파일 / 66 Rust 파일을 한 문서에 매핑. 신규 개발자 / 다음 세션 entry / dogfood 시점에 "어디까지 됐고 어디 남았나" 단일 진실원천.
 >
@@ -19,11 +19,12 @@
 | **Tauri IPC** | ✅ **161 등록** (lib.rs invoke_handler 직접 카운트) | `apps/desktop/src-tauri/src/lib.rs:79-241` |
 | **Frontend 코어** | ✅ Vue 3 + Pinia + TanStack Query + Tailwind + CodeMirror + xterm | `apps/desktop/package.json` |
 | **Rust 백엔드** | ✅ 15,423 LOC / 13 top-level mod / git/ 30 sub | `find apps/desktop/src-tauri/src -name "*.rs" \| xargs wc -l` |
-| **테스트** | ✅ **vitest 46 / 481 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c31 후 — useLocale.test.ts (+9) / BaseTooltip.test.ts (+5) |
+| **테스트** | ✅ **vitest 49 / 515 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c31 12 commit 후 — +5 files (useLocale 9 / BaseTooltip 5 / useCommandCatalog 17 / usePullStrategy 7 / useStatusModals 10) |
 | **CI/Release 인프라** | 🟡 **95%** (workflow 완비, EV/updater secret 미등록) | `.github/workflows/{ci,release}.yml` |
 | **GitHub repo public** | 🟡 **97%** — version 0.3.0 통합 완료. `git tag v0.3.0` push 만 잔여 | tauri.conf.json + Cargo.toml + 3 package.json 모두 0.3.0 (Sprint c31 PR-B) |
-| **i18n 기초 인프라** | ✅ **완료** (vue-i18n 9.14.5 + ko/en.json 60+ 키 + useLocale + `<html lang>` 동기) | Sprint c31 PR-B (plan/03 §6 v0.3 잔여 영역) |
-| **Tooltip primitive** | ✅ BaseTooltip.vue (reka-ui 2.9.6 wrapper) | Sprint c31 PR-C (plan/24 Sprint B 1단계) |
+| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + 39 키 활용) | App.vue / Sidebar.vue / settings.vue / StatusBar.vue 4 컴포넌트 t() 마이그레이션 완료 |
+| **BaseTooltip primitive** | ✅ **18 위치 활용** | StatusInlineDiff 7 + GitKrakenToolbar 11 마이그레이션 (kbd hint 노출 / hover delay / a11y) |
+| **God component 분리** | ✅ **5 컴포넌트 / -1,014 LOC (-28%)** | StatusPanel/CommandPalette/PrDetailModal/GitKrakenToolbar/CommitMessageInput |
 | **AI commit / PR / conflict** | ✅ Claude/Codex CLI subprocess | `src-tauri/src/ai/runner.rs::AiCli` |
 | **macOS / Linux** | ❌ Windows-only (plan/17 v1.3/v1.4) | `.github/workflows/ci.yml:1` "Windows-only matrix" |
 | **Line-level stage v2** | ✅ **완료** (이전 세션) | plan/16 §0 self-check |
@@ -67,7 +68,7 @@
 | 영역 | 개수 | 비고 |
 | ---- | ----: | ---- |
 | Pages | 4 | index / launchpad / repositories / settings (unplugin-vue-router 자동) |
-| Components | 84 | (test 제외) — God 5 (Sprint c31 후): **StatusPanel 788** (-155 / -16%) / CommitGraph 859 / CommandPalette 802 / PrDetailModal 762 / GitKrakenToolbar 606. 신규 StatusInlineDiff (191) + BaseTooltip (71) |
+| Components | 87 | (test 제외) — God comp 분리 누적 (Sprint c31): **StatusPanel 943→782** (-17%) / **CommandPalette 802→198** (-75%) ★ / **PrDetailModal 762→607** (-20%) / **GitKrakenToolbar 606→581** (-4%) / **CommitMessageInput 545→476** (-13%) / CommitGraph 859 (미분리). 신규 추출 5 컴포넌트: StatusInlineDiff (191) / PrFilesTab (172) / ConventionalCommitBuilder (117) / BaseTooltip (71) + 추출 composable 3개 (useCommandCatalog 632 / usePullStrategy 52 / useStatusModals 85) |
 | Composables | 77 | (test 포함) — useToast 48회 import / describeError 47회 / stores/repos 31회 / queryClient 26회 / useInvalidateRepoQueries 17회 |
 | Pinia stores | 2 | repos.ts 단 1개 store + repos.test.ts |
 | API wrapper | `api/git.ts` 161 invoke / `api/forge.ts` 등 | invokeWithTimeout (devMock 지원, 30s/5min 분기) |

@@ -9,7 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Sprint c31 — 잔여 자율 작업 4 PR 묶음 (2026-04-30)** — `/analyze` 반복 검증 + 잔여 식별 → main 직접 4 commits. typecheck 0 / lint 0 / vitest 44 → 46 files / 467 → 481 tests pass / Rust bench compile 통과:
+- **Sprint c31 — 잔여 자율 작업 12 commit 묶음 (2026-04-30)** — `/analyze` 반복 검증 + 잔여 식별 → main 직접 12 commits. typecheck 0 / lint 0 / vitest 44/467 → 49/515 (+5 files / +48 tests) / Rust bench compile 통과 / **god component 누적 -1,014 LOC (-28%)**:
+  - **God component 분리 누적 (6 commit)**:
+    - **PR-A `661d97d`** — StatusPanel inline diff 분리 (943 → 788, -16%) → StatusInlineDiff.vue (191 LOC)
+    - **god 2 `0b9ef30`** — CommandPalette catalog 분리 (**802 → 198, -75%** ★ c27 패턴 정확 도달) → useCommandCatalog.ts (632 LOC) + 17 unit test
+    - **god 3 `74b217f`** — PrDetailModal Files tab 분리 (762 → 607, -20%) → PrFilesTab.vue (172 LOC)
+    - **god 4 `71949c2`** — GitKrakenToolbar Pull strategy 분리 (606 → 581) → usePullStrategy.ts (52 LOC) + 7 unit test
+    - **god 5 `a84a5af`** — CommitMessageInput Conventional builder 분리 (545 → 476, -13%) → ConventionalCommitBuilder.vue (117 LOC, defineModel 6 페어)
+    - **god 6 `59f359b`** — StatusPanel 3 modal state composable (788 → 782) → useStatusModals.ts (85 LOC) + 10 unit test
+    - **합계**: 3,658 → 2,644 LOC (-1,014, -28%)
+  - **인프라 도입 (3 commit)**:
+    - **PR-B `381abd2`** — vue-i18n 9.14.5 + ko/en.json 60+ 키 + useLocale + version 0.0.0 → 0.3.0 통합 (5개 파일 동기)
+    - **PR-C `2bb2f52`** — reka-ui 2.9.6 + BaseTooltip primitive (props: text/kbd/placement/delay/disabled, hover 200ms/focus 즉시/ESC dismiss/viewport edge 회피)
+    - **PR-D** — `cargo check --bench git_perf` 통과 (`git-fried v0.3.0` compile 검증)
+  - **인프라 활용 (3 commit)**:
+    - **i18n 1차 `4702bc0`** — App.vue nav 4 + theme button + Sidebar.vue workspace dropdown / search input / management link (15 키 활용)
+    - **i18n 2차 `7df9852`** — settings.vue 7 그룹 label + StatusBar.vue 충돌 예측 인디케이터 / shortcut hints / Launchpad badge (24 키 + named slot 6 위치)
+    - **BaseTooltip 적용 `9cf0c36`** — StatusInlineDiff 7 + GitKrakenToolbar 11 = 18 위치 마이그레이션 (kbd hint 노출 / aria-label / hover delay)
+  - **누적 검증 산출물**:
+    - vitest 44 → 49 files (+5: useLocale / BaseTooltip / useCommandCatalog / usePullStrategy / useStatusModals)
+    - vitest 467 → 515 tests (+48)
+    - 신규 추출 컴포넌트/composable 7개 (StatusInlineDiff / PrFilesTab / ConventionalCommitBuilder / BaseTooltip / useCommandCatalog / usePullStrategy / useStatusModals)
+    - i18n 활용 키 39개 (nav 8 / sidebar 7 / statusBar 17 / settings.categories 7)
+  - **잔여 명시 (외부 의존 — 사용자 본인 액션 필요)**: EV 인증서 발급 ($400/yr SSL.com) + HSM 도착 + `EV_THUMBPRINT` / `TAURI_SIGNING_PRIVATE_KEY` GitHub secret 등록 + `git tag v0.3.0` push 시 release.yml workflow 자동 트리거 → 첫 public release. plan/17 v1.x 6 마일스톤 (EV/Sentry/macOS/Linux/OAuth/수익 모델) 모두 외부 의존 미진입
+- **Sprint c31 (Initial 4 PR — 위 sprint 기록에 통합) — `/analyze` 반복 검증 + 잔여 식별 → main 직접 4 commits.**
   - **PR-A god component 분리 1/N** (`661d97d`) — StatusPanel.vue 943 → 788 LOC (-155, -16%). `StatusInlineDiff.vue` 신규 (191 LOC) — Sprint 22-7 V-5 inline diff preview 영역 (선택 파일 헤더 + Hunk ↑↓ 네비 + DiffViewer) 분리. props/emits 인터페이스로 통신. c27 의 ActiveRepoQuickActions 446→120 (73% 감소) 패턴 재적용 1단계
   - **PR-B i18n 기초 인프라 + version bump** (`381abd2`) — plan/03 §6 v0.3 잔여 유일 영역 진입:
     - `bun add -D vue-i18n@^9` → 9.14.5
@@ -39,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **c26-3** — Alt+↑/↓ hunk 키보드 단축키 (review flow 가속, inline + modal 양쪽 동등 작동)
   - **c25-review (Phase 1/2/3)** — /code-review 자율 수정 23/29 이슈 (High 6 + Medium 11 + Low 6). SEC-008 (Gitea custom host) / ARCH-013 (markdownlint) / TYPE-005 (c27 이연) 4건 의도적 유지 또는 follow-up
   - **c27-1** — God component 해소: ActiveRepoQuickActions 446→120 LOC (73% 감소), MiniSection.vue + 4 sub-list (MiniBranchList / MiniStashList / MiniWorktreeList / MiniPrList) 분리
-  - **c27-2** — flattenTree generic 통합: FlatTreeRow<T> 표준화 후 4 섹션 (Modified/Staged/Untracked/Conflicted) 단일 helper
+  - **c27-2** — flattenTree generic 통합: `FlatTreeRow<T>` 표준화 후 4 섹션 (Modified/Staged/Untracked/Conflicted) 단일 helper
   - 신규 plan/25 (`docs/plan/25-gitkraken-layout-migration.md`)
 - Sprint 22-21 — TDD-lite 정착 + Playwright MCP 글로벌 + 신규 컴포넌트 vitest 시범 (사용자 정책 변경: dogfood 최소화):
   - **Playwright MCP user scope 설치** — `claude mcp add -s user playwright -- npx -y @playwright/mcp@latest`. `~/.claude.json` 등록 + 모든 프로젝트에서 사용 가능. Claude 가 `bun run dev` (vite 1420) + devMock 환경에서 직접 E2E 시나리오 실행 가능 (browser_navigate / browser_click / browser_snapshot / browser_screenshot)
