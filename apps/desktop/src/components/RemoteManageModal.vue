@@ -55,29 +55,29 @@ const addName = ref('')
 const addUrl = ref('')
 const addMut = useMutation({
   mutationFn: () => {
-    if (repoIdRef.value == null) throw new Error('레포 미선택')
+    if (repoIdRef.value == null) throw new Error(t('remote.errRepoNotSelected'))
     return addRemote(repoIdRef.value, addName.value.trim(), addUrl.value.trim())
   },
   onSuccess: () => {
-    toast.success('Remote 추가', addName.value)
+    toast.success(t('remote.addedTitle'), addName.value)
     addName.value = ''
     addUrl.value = ''
     invalidate()
   },
-  onError: (e) => toast.error('Remote 추가 실패', describeError(e)),
+  onError: (e) => toast.error(t('remote.addFailed'), describeError(e)),
 })
 
 // === remove ===
 const removeMut = useMutation({
   mutationFn: (name: string) => {
-    if (repoIdRef.value == null) throw new Error('레포 미선택')
+    if (repoIdRef.value == null) throw new Error(t('remote.errRepoNotSelected'))
     return removeRemote(repoIdRef.value, name)
   },
   onSuccess: (_v, name) => {
-    toast.success('Remote 제거', name)
+    toast.success(t('remote.removedTitle'), name)
     invalidate()
   },
-  onError: (e) => toast.error('Remote 제거 실패', describeError(e)),
+  onError: (e) => toast.error(t('remote.removeFailed'), describeError(e)),
 })
 
 async function onRemove(name: string) {
@@ -95,16 +95,20 @@ const renameTarget = ref<string | null>(null)
 const renameNew = ref('')
 const renameMut = useMutation({
   mutationFn: () => {
-    if (repoIdRef.value == null || !renameTarget.value) throw new Error('대상 미선택')
+    if (repoIdRef.value == null || !renameTarget.value)
+      throw new Error(t('remote.errTargetNotSelected'))
     return renameRemote(repoIdRef.value, renameTarget.value, renameNew.value.trim())
   },
   onSuccess: () => {
-    toast.success('Remote 이름 변경', `${renameTarget.value} → ${renameNew.value}`)
+    toast.success(
+      t('remote.renamedTitle'),
+      t('remote.renamedMessage', { from: renameTarget.value ?? '', to: renameNew.value }),
+    )
     renameTarget.value = null
     renameNew.value = ''
     invalidate()
   },
-  onError: (e) => toast.error('Remote 이름 변경 실패', describeError(e)),
+  onError: (e) => toast.error(t('remote.renameFailed'), describeError(e)),
 })
 
 function startRename(name: string) {
@@ -117,16 +121,17 @@ const urlTarget = ref<string | null>(null)
 const urlNew = ref('')
 const urlMut = useMutation({
   mutationFn: () => {
-    if (repoIdRef.value == null || !urlTarget.value) throw new Error('대상 미선택')
+    if (repoIdRef.value == null || !urlTarget.value)
+      throw new Error(t('remote.errTargetNotSelected'))
     return setRemoteUrl(repoIdRef.value, urlTarget.value, urlNew.value.trim())
   },
   onSuccess: () => {
-    toast.success('Remote URL 변경', urlTarget.value ?? '')
+    toast.success(t('remote.urlChangedTitle'), urlTarget.value ?? '')
     urlTarget.value = null
     urlNew.value = ''
     invalidate()
   },
-  onError: (e) => toast.error('Remote URL 변경 실패', describeError(e)),
+  onError: (e) => toast.error(t('remote.urlChangeFailed'), describeError(e)),
 })
 
 function startUrlChange(r: RemoteInfo) {
@@ -147,11 +152,11 @@ const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
 
 const fetchAllMut = useMutation({
   mutationFn: () => {
-    if (repoIdRef.value == null) throw new Error('레포 미선택')
+    if (repoIdRef.value == null) throw new Error(t('remote.errRepoNotSelected'))
     return fetchAll(repoIdRef.value)
   },
   onSuccess: () => {
-    toast.success('Fetch 완료', '(전체 remote)')
+    toast.success(t('remote.fetchAllSuccess'), t('remote.fetchAllSuccessMessage'))
     invalidate()
     if (repoIdRef.value != null) {
       qc.invalidateQueries({ queryKey: ['status', repoIdRef.value] })
@@ -159,7 +164,7 @@ const fetchAllMut = useMutation({
       qc.invalidateQueries({ queryKey: ['graph', repoIdRef.value] })
     }
   },
-  onError: (e) => toast.error('Fetch 실패', describeError(e)),
+  onError: (e) => toast.error(t('remote.fetchAllFailed'), describeError(e)),
 })
 
 function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {

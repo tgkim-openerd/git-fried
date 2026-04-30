@@ -279,7 +279,21 @@
     "ctxFetchAll": "Fetch (전체 remote)",
     "ctxRename": "이름 변경",
     "ctxChangeUrl": "URL 변경",
-    "ctxRemove": "제거"
+    "ctxRemove": "제거",
+    "errRepoNotSelected": "레포 미선택",
+    "errTargetNotSelected": "대상 미선택",
+    "addedTitle": "Remote 추가",
+    "addFailed": "Remote 추가 실패",
+    "removedTitle": "Remote 제거",
+    "removeFailed": "Remote 제거 실패",
+    "renamedTitle": "Remote 이름 변경",
+    "renamedMessage": "{from} → {to}",
+    "renameFailed": "Remote 이름 변경 실패",
+    "urlChangedTitle": "Remote URL 변경",
+    "urlChangeFailed": "Remote URL 변경 실패",
+    "fetchAllSuccess": "Fetch 완료",
+    "fetchAllSuccessMessage": "(전체 remote)",
+    "fetchAllFailed": "Fetch 실패"
   },
   "gitkrakenImport": {
     "title": "GitKraken 가져오기",

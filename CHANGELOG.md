@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37-6 — i18n 마이그 RemoteManageModal toast (2026-04-30, 1 commit)** — checkpoint.md 1순위 E "i18n 추가 마이그 ~80 키" 일부 진행 (RemoteManageModal 단일 컴포넌트 13 메시지). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 383 → 397 (+14, ko/en 대칭 유지)**:
+  - **`remote.*` 14 신규 키** (ko/en 양쪽): errRepoNotSelected / errTargetNotSelected / addedTitle / addFailed / removedTitle / removeFailed / renamedTitle / renamedMessage (`{from} → {to}`) / renameFailed / urlChangedTitle / urlChangeFailed / fetchAllSuccess / fetchAllSuccessMessage / fetchAllFailed
+  - **`RemoteManageModal.vue`** — 5 mutation 의 onSuccess/onError toast + Error 4개 (`throw new Error('레포/대상 미선택')`) 모두 `t()` 호출로 교체. 영어 fallback 정상 동작 (locale='en' 시).
+
 - **Sprint c37-5 — useStashPopMutation 추출 (GitKrakenToolbar) (2026-04-30, 1 commit)** — checkpoint.md 1순위 C "GitKrakenToolbar 추가 분리 (stash/pop mutation, ~50 LOC)" 자율 진행. main 직접 1 commit / typecheck 0 / vitest 60/660 / **god comp 분리 누적 21 (c37-5 신규 1) / -1,652 LOC (-30%)**:
   - **`useStashPopMutation`** (god 21/N, 110 LOC) — stashMut + popMut + onStash + onPop 전체 영역. SEC-001 confirm 보존 (stash/pop 모두 destructive). queryClient invalidateQueries(['stash', repoId]) 도 composable 내부로. GitKrakenToolbar 549 → 503 (-46 LOC) + queryClient/popStash/pushStash/useQueryClient import 4개 정리.
   - **누적 통계 (c31~c37-5)**:

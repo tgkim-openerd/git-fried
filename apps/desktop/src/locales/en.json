@@ -279,7 +279,21 @@
     "ctxFetchAll": "Fetch (all remotes)",
     "ctxRename": "Rename",
     "ctxChangeUrl": "Change URL",
-    "ctxRemove": "Remove"
+    "ctxRemove": "Remove",
+    "errRepoNotSelected": "No repository selected",
+    "errTargetNotSelected": "No target selected",
+    "addedTitle": "Remote added",
+    "addFailed": "Failed to add remote",
+    "removedTitle": "Remote removed",
+    "removeFailed": "Failed to remove remote",
+    "renamedTitle": "Remote renamed",
+    "renamedMessage": "{from} → {to}",
+    "renameFailed": "Failed to rename remote",
+    "urlChangedTitle": "Remote URL changed",
+    "urlChangeFailed": "Failed to change remote URL",
+    "fetchAllSuccess": "Fetch complete",
+    "fetchAllSuccessMessage": "(all remotes)",
+    "fetchAllFailed": "Fetch failed"
   },
   "gitkrakenImport": {
     "title": "Import from GitKraken",
