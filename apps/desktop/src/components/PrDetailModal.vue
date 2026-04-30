@@ -28,6 +28,10 @@ import UserAvatar from './UserAvatar.vue'
 // Sprint c31 god comp 분리 3/N — Files Changed tab 분리.
 import PrFilesTab from './PrFilesTab.vue'
 import type { AiCli, MergeMethod, PullRequest, ReviewVerdict } from '@/api/git'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const toast = useToast()
 const notification = useNotification()
@@ -222,17 +226,25 @@ function stateColor(s: PullRequest['state']): string {
   }
 }
 
-function onMerge() {
-  if (
-    !window.confirm(
-      `⚠ '${mergeMethod.value}' 방식으로 PR #${props.number} 을 머지합니다. 진행할까요?`,
-    )
-  )
-    return
+async function onMerge() {
+  const ok = await confirmDialog({
+    title: t('confirm.mergePrTitle'),
+    message: t('confirm.mergePrMessage', {
+      method: mergeMethod.value,
+      number: props.number,
+    }),
+    danger: true,
+  })
+  if (!ok) return
   mergeMut.mutate()
 }
-function onClose() {
-  if (!window.confirm(`PR #${props.number} 을 닫으시겠습니까?`)) return
+async function onClose() {
+  const ok = await confirmDialog({
+    title: t('confirm.closePrTitle'),
+    message: t('confirm.closePrMessage', { number: props.number }),
+    danger: true,
+  })
+  if (!ok) return
   closeMut.mutate()
 }
 
@@ -255,9 +267,6 @@ const aiReviewMut = useMutation({
     const d = detailQuery.data.value
     if (props.repoId == null || props.number == null || !d || !availableCli.value)
       return Promise.reject(new Error('AI 사용 불가'))
-    if (!window.confirm('⚠ PR diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?')) {
-      return Promise.reject(new Error('cancelled'))
-    }
     return aiCodeReview({
       repoId: props.repoId,
       cli: availableCli.value,
@@ -283,6 +292,18 @@ const aiReviewMut = useMutation({
     toast.error('AI 호출 실패', msg)
   },
 })
+
+async function onAiReview() {
+  const d = detailQuery.data.value
+  if (props.repoId == null || props.number == null || !d || !availableCli.value) return
+  const ok = await confirmDialog({
+    title: t('confirm.aiSendTitle'),
+    message: t('confirm.aiSendMessage'),
+    danger: true,
+  })
+  if (!ok) return
+  aiReviewMut.mutate()
+}
 </script>
 
 <template>
@@ -501,7 +522,7 @@ const aiReviewMut = useMutation({
             class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
             :disabled="aiReviewMut.isPending.value"
             :title="`${availableCli} CLI 가 PR diff 분석 후 리뷰 추천`"
-            @click="aiReviewMut.mutate()"
+            @click="onAiReview()"
           >
             {{ aiReviewMut.isPending.value ? '✨ 분석 중...' : '✨ AI 리뷰' }}
           </button>

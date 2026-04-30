@@ -3,16 +3,14 @@
 // v0.0~v0.1 에서는 PAT 만 지원. OAuth 는 v1.x.
 import { ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import {
-  forgeDeleteAccount,
-  forgeListAccounts,
-  forgeSaveToken,
-  forgeWhoami,
-} from '@/api/git'
+import { forgeDeleteAccount, forgeListAccounts, forgeSaveToken, forgeWhoami } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import type { ForgeAccount, ForgeAuthor } from '@/api/git'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
 
+const { t } = useI18n()
 const toast = useToast()
 const qc = useQueryClient()
 
@@ -67,13 +65,17 @@ const deleteMut = useMutation({
   onSuccess: () => qc.invalidateQueries({ queryKey: ['forgeAccounts'] }),
 })
 
-function onDelete(a: ForgeAccount) {
-  if (
-    confirm(
-      `[${a.forgeKind}] ${a.baseUrl} (${a.username || '?'}) 계정을 삭제하시겠습니까?`,
-    )
-  )
-    deleteMut.mutate(a.id)
+async function onDelete(a: ForgeAccount) {
+  const ok = await confirmDialog({
+    title: t('confirm.deleteForgeAccountTitle'),
+    message: t('confirm.deleteForgeAccountMessage', {
+      kind: a.forgeKind,
+      url: a.baseUrl,
+      user: a.username || '?',
+    }),
+    danger: true,
+  })
+  if (ok) deleteMut.mutate(a.id)
 }
 </script>
 
@@ -179,8 +181,8 @@ function onDelete(a: ForgeAccount) {
         </div>
       </div>
       <p class="mt-2 text-[10px] text-muted-foreground">
-        토큰은 OS keychain (Windows Credential Manager / macOS Keychain) 에 저장됩니다.
-        DB 에는 keychain reference 만 보관.
+        토큰은 OS keychain (Windows Credential Manager / macOS Keychain) 에 저장됩니다. DB 에는
+        keychain reference 만 보관.
       </p>
     </section>
   </div>

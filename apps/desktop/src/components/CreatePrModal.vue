@@ -6,18 +6,17 @@
 // - 생성 후 옵션: 새 탭으로 외부 열기 / 모달 안에서 상세
 import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import {
-  aiDetectClis,
-  aiPrBody,
-  createPullRequest,
-  listBranches,
-} from '@/api/git'
+import { aiDetectClis, aiPrBody, createPullRequest, listBranches } from '@/api/git'
 import type { AiCli, BranchInfo } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { notifyAiDone } from '@/composables/useAiCli'
 import BaseModal from './BaseModal.vue'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const toast = useToast()
 
@@ -29,7 +28,7 @@ const props = defineProps<{
   /** 사전 채울 base branch (기본 main / master) */
   initialBase?: string | null
 }>()
-const emit = defineEmits<{ close: [], created: [number] }>()
+const emit = defineEmits<{ close: []; created: [number] }>()
 
 const title = ref('')
 const body = ref('')
@@ -59,9 +58,7 @@ const { data: branches } = useQuery({
   },
   enabled: computed(() => props.open && props.repoId != null),
 })
-const localBranches = computed(
-  () => branches.value?.filter((b) => b.kind === 'local') ?? [],
-)
+const localBranches = computed(() => branches.value?.filter((b) => b.kind === 'local') ?? [])
 
 // AI body
 const { data: aiProbes } = useQuery({
@@ -79,27 +76,9 @@ const availableCli = computed<AiCli | null>(() => {
 
 const aiBodyMut = useMutation({
   mutationFn: () => {
-    if (
-      props.repoId == null ||
-      !head.value ||
-      !base.value ||
-      !availableCli.value
-    )
+    if (props.repoId == null || !head.value || !base.value || !availableCli.value)
       return Promise.reject(new Error('AI 사용 불가'))
-    if (
-      !window.confirm(
-        '⚠ branch 의 commit + diff stat 이 외부 LLM 으로 송출됩니다. 회사 보안정책 확인하셨나요?',
-      )
-    ) {
-      return Promise.reject(new Error('cancelled'))
-    }
-    return aiPrBody(
-      props.repoId,
-      availableCli.value,
-      head.value,
-      base.value,
-      true,
-    )
+    return aiPrBody(props.repoId, availableCli.value, head.value, base.value, true)
   },
   onSuccess: (out) => {
     if (out.success) {
@@ -115,6 +94,17 @@ const aiBodyMut = useMutation({
     toast.error('AI 호출 실패', msg)
   },
 })
+
+async function onAiBody() {
+  if (props.repoId == null || !head.value || !base.value || !availableCli.value) return
+  const ok = await confirmDialog({
+    title: t('confirm.aiSendTitle'),
+    message: t('confirm.aiPrBodyMessage'),
+    danger: true,
+  })
+  if (!ok) return
+  aiBodyMut.mutate()
+}
 
 const createMut = useMutation({
   mutationFn: () => {
@@ -157,70 +147,68 @@ const titleLength = computed(() => title.value.length)
     @close="emit('close')"
   >
     <div class="p-4 text-sm">
-          <!-- head → base -->
-          <div class="mb-3 grid grid-cols-2 gap-2">
-            <label class="text-xs text-muted-foreground">
-              head (소스 브랜치)
-              <select
-                v-model="head"
-                class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
-              >
-                <option value="">선택...</option>
-                <option v-for="b in localBranches" :key="b.name" :value="b.name">
-                  {{ b.name }}
-                </option>
-              </select>
-            </label>
-            <label class="text-xs text-muted-foreground">
-              base (대상 브랜치)
-              <input
-                v-model="base"
-                class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
-              />
-            </label>
-          </div>
+      <!-- head → base -->
+      <div class="mb-3 grid grid-cols-2 gap-2">
+        <label class="text-xs text-muted-foreground">
+          head (소스 브랜치)
+          <select
+            v-model="head"
+            class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
+          >
+            <option value="">선택...</option>
+            <option v-for="b in localBranches" :key="b.name" :value="b.name">
+              {{ b.name }}
+            </option>
+          </select>
+        </label>
+        <label class="text-xs text-muted-foreground">
+          base (대상 브랜치)
+          <input
+            v-model="base"
+            class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
+          />
+        </label>
+      </div>
 
-          <!-- title -->
-          <div class="mb-3">
-            <label class="text-xs text-muted-foreground">제목</label>
-            <input
-              v-model="title"
-              placeholder="feat: 한글 제목 OK"
-              class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-            />
-            <div class="mt-0.5 text-right text-[10px] text-muted-foreground">
-              {{ titleLength }}/72
-            </div>
-          </div>
+      <!-- title -->
+      <div class="mb-3">
+        <label class="text-xs text-muted-foreground">제목</label>
+        <input
+          v-model="title"
+          placeholder="feat: 한글 제목 OK"
+          class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+        />
+        <div class="mt-0.5 text-right text-[10px] text-muted-foreground">{{ titleLength }}/72</div>
+      </div>
 
-          <!-- body + AI -->
-          <div class="mb-3">
-            <div class="mb-1 flex items-center justify-between">
-              <label class="text-xs text-muted-foreground">본문 (마크다운)</label>
-              <button
-                v-if="availableCli"
-                type="button"
-                class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
-                :disabled="!head || !base || aiBodyMut.isPending.value"
-                :title="`${availableCli} CLI 가 ${head} → ${base} commits 분석 후 본문 생성`"
-                @click="aiBodyMut.mutate()"
-              >
-                {{ aiBodyMut.isPending.value ? '✨ 생성 중...' : '✨ AI body 생성' }}
-              </button>
-            </div>
-            <textarea
-              v-model="body"
-              placeholder="## 요약&#10;## 변경 사항&#10;## 테스트 방법"
-              rows="14"
-              class="w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
-            />
-          </div>
+      <!-- body + AI -->
+      <div class="mb-3">
+        <div class="mb-1 flex items-center justify-between">
+          <label class="text-xs text-muted-foreground">본문 (마크다운)</label>
+          <button
+            v-if="availableCli"
+            type="button"
+            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+            :disabled="!head || !base || aiBodyMut.isPending.value"
+            :title="`${availableCli} CLI 가 ${head} → ${base} commits 분석 후 본문 생성`"
+            @click="onAiBody()"
+          >
+            {{ aiBodyMut.isPending.value ? '✨ 생성 중...' : '✨ AI body 생성' }}
+          </button>
+        </div>
+        <textarea
+          v-model="body"
+          placeholder="## 요약&#10;## 변경 사항&#10;## 테스트 방법"
+          rows="14"
+          class="w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
+        />
+      </div>
 
-          <!-- draft -->
-          <label class="flex items-center gap-1 text-xs">
-            <input v-model="draft" type="checkbox" />
-            draft 로 생성 (GitHub 전용 — Gitea 는 무시)
-          </label>
+      <!-- draft -->
+      <label class="flex items-center gap-1 text-xs">
+        <input v-model="draft" type="checkbox" />
+        draft 로 생성 (GitHub 전용 — Gitea 는 무시)
+      </label>
     </div>
 
     <template #footer>
