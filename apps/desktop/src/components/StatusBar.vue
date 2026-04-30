@@ -8,6 +8,7 @@
 //   2. Launchpad badge (활성 PR meta count — pinned + active snooze 외).
 //   3. Sync 진행 (별도 SyncBar 가 상단에 있으니 여기는 prediction + Launchpad 만).
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { aiExplainBranch, predictTargetConflict } from '@/api/git'
 import { describeError } from '@/api/errors'
@@ -21,6 +22,7 @@ import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 import AiResultModal from './AiResultModal.vue'
 
+const { t } = useI18n()
 const store = useReposStore()
 const meta = useLaunchpadMeta()
 const general = useGeneralSettings()
@@ -131,10 +133,10 @@ interface ShortcutHint {
   action?: ShortcutAction
 }
 const shortcutHints = computed<ShortcutHint[]>(() => [
-  { combo: `${modKey.value}+P`, label: 'Palette' },
-  { combo: `${modKey.value}+1~7`, label: 'View' },
-  { combo: `${modKey.value}+K`, label: '우측', action: 'toggleDetail' },
-  { combo: '?', label: '도움말', action: 'help' },
+  { combo: `${modKey.value}+P`, label: t('statusBar.shortcut.palette') },
+  { combo: `${modKey.value}+1~7`, label: t('statusBar.shortcut.view') },
+  { combo: `${modKey.value}+K`, label: t('statusBar.shortcut.detail'), action: 'toggleDetail' },
+  { combo: '?', label: t('statusBar.shortcut.help'), action: 'help' },
 ])
 function onShortcutClick(h: ShortcutHint) {
   if (!h.action) return
@@ -147,44 +149,58 @@ function onShortcutClick(h: ShortcutHint) {
     class="flex items-center gap-3 border-t border-border bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground"
   >
     <!-- Conflict prediction -->
-    <span v-if="store.activeRepoId == null">레포 미선택</span>
+    <span v-if="store.activeRepoId == null">{{ t('statusBar.noRepo') }}</span>
     <span
       v-else-if="predictionQuery.isFetching.value && !prediction"
       class="text-muted-foreground/70"
     >
-      target 충돌 예측 중...
+      {{ t('statusBar.predicting') }}
     </span>
     <span
       v-else-if="prediction?.note && prediction.ok && prediction.conflictFiles.length === 0"
       class="text-muted-foreground/70"
       :title="prediction.note"
     >
-      ⓘ 예측 불가 ({{ prediction.target }})
+      {{ t('statusBar.predictionUnavailable', { target: prediction.target }) }}
     </span>
     <span
       v-else-if="prediction?.ok"
       class="text-emerald-500"
-      :title="`merge-tree 시뮬레이션 결과 충돌 없음 (target=${prediction.target})`"
+      :title="t('statusBar.upToDateTitle', { target: prediction.target })"
     >
-      ▣ Up to Date with {{ prediction.target }}
+      {{ t('statusBar.upToDate', { target: prediction.target }) }}
     </span>
     <span
       v-else-if="prediction"
       class="text-amber-500"
       :title="prediction.conflictFiles.join('\n')"
     >
-      ⚠ Conflict in {{ prediction.conflictFiles.length }} 파일 ({{ prediction.target }})
+      {{
+        t('statusBar.conflictIn', {
+          n: prediction.conflictFiles.length,
+          target: prediction.target,
+        })
+      }}
     </span>
     <button
       v-if="prediction && !prediction.ok && ai.available.value && status.data.value?.branch"
       type="button"
       class="rounded border border-border px-1.5 py-0.5 text-[10px] text-amber-500 hover:bg-accent/40 disabled:opacity-50"
       :disabled="explainMut.isPending.value"
-      :title="`✨ ${ai.available.value} — 충돌 예상 영역 분석 (${status.data.value.branch} vs ${prediction.target})`"
-      :aria-label="`AI (${ai.available.value}) — 충돌 예상 분석`"
+      :title="
+        t('statusBar.aiAnalyzeTitle', {
+          cli: ai.available.value,
+          head: status.data.value.branch,
+          target: prediction.target,
+        })
+      "
+      :aria-label="t('statusBar.aiAnalyzeAria', { cli: ai.available.value })"
       @click="suggestResolution"
     >
-      ✨ {{ explainMut.isPending.value ? '...' : 'AI' }}
+      ✨
+      {{
+        explainMut.isPending.value ? t('statusBar.aiAnalyzePending') : t('statusBar.aiAnalyzeLabel')
+      }}
     </button>
 
     <!-- Phase 10-3 — 단축키 hint (중앙). action 매핑된 항목은 클릭 시 dispatchShortcut. -->
@@ -216,8 +232,8 @@ function onShortcutClick(h: ShortcutHint) {
       v-if="launchpadCount > 0"
       to="/launchpad"
       class="rounded border border-border px-1.5 py-0.5 hover:bg-accent/40"
-      title="Launchpad — pinned + 활성 snooze"
-      :aria-label="`Launchpad — ${launchpadCount}개 pinned + 활성 snooze PR`"
+      :title="t('statusBar.launchpadTitle')"
+      :aria-label="t('statusBar.launchpadAria', { n: launchpadCount })"
     >
       ⭐💤 {{ launchpadCount }}
     </RouterLink>
@@ -225,7 +241,7 @@ function onShortcutClick(h: ShortcutHint) {
 
   <AiResultModal
     :open="explainOpen"
-    title="충돌 예상 영역 분석"
+    :title="t('statusBar.aiResultTitle')"
     :content="explainContent"
     :loading="explainMut.isPending.value"
     :error="explainError"

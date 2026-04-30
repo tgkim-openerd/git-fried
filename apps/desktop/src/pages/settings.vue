@@ -11,6 +11,7 @@
 //
 // 영속화: localStorage (DB 통합은 v1.x). Cloud / Org / Marketing 항목은 거부.
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 import ForgeSetup from '@/components/ForgeSetup.vue'
 import GitKrakenImportModal from '@/components/GitKrakenImportModal.vue'
@@ -21,17 +22,9 @@ import { useUiState } from '@/composables/useUiState'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
-import {
-  lfsInstall,
-  maintenanceFsck,
-  maintenanceGc,
-  type MaintenanceResult,
-} from '@/api/git'
+import { lfsInstall, maintenanceFsck, maintenanceGc, type MaintenanceResult } from '@/api/git'
 import { describeError } from '@/api/errors'
-import {
-  useGeneralSettings,
-  useUiSettingsStore,
-} from '@/composables/useUserSettings'
+import { useGeneralSettings, useUiSettingsStore } from '@/composables/useUserSettings'
 
 type Category =
   | 'profiles'
@@ -99,6 +92,20 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
     ],
   },
 ]
+
+// Sprint c31 — group label 은 i18n settings.categories.* 키로 매핑.
+// items.label 은 점진 마이그레이션 (대다수가 고유명사 / Conventional 명칭이라 보존 가치 있음).
+const GROUP_I18N_KEY: Record<string, string> = {
+  account: 'settings.categories.account',
+  workspace: 'settings.categories.workspace',
+  editor: 'settings.categories.editor',
+  ui: 'settings.categories.ui',
+  maintenance: 'settings.categories.maintenance',
+  plugin: 'settings.categories.plugin',
+  start: 'settings.categories.start',
+}
+
+const { t } = useI18n()
 
 const active = ref<Category>('profiles')
 
@@ -217,13 +224,13 @@ const buildInfo = computed(() => ({
       class="w-52 shrink-0 overflow-auto border-r border-border bg-card py-4 text-sm"
       aria-label="설정 카테고리"
     >
-      <h1 class="px-4 pb-3 text-base font-semibold">설정</h1>
+      <h1 class="px-4 pb-3 text-base font-semibold">{{ t('settings.title') }}</h1>
       <ul class="flex flex-col gap-1">
         <li v-for="g in CATEGORY_GROUPS" :key="g.id">
           <div
             class="px-4 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80"
           >
-            {{ g.label }}
+            {{ t(GROUP_I18N_KEY[g.id] ?? g.label) }}
           </div>
           <ul>
             <li v-for="c in g.items" :key="c.id">
@@ -236,7 +243,7 @@ const buildInfo = computed(() => ({
                     : 'text-muted-foreground'
                 "
                 :aria-pressed="active === c.id"
-                :aria-label="`${g.label} > ${c.label}`"
+                :aria-label="`${t(GROUP_I18N_KEY[g.id] ?? g.label)} > ${c.label}`"
                 @click="active = c.id"
               >
                 {{ c.label }}
@@ -259,7 +266,9 @@ const buildInfo = computed(() => ({
           GitKraken Preferences > General 의 핵심 토글 흡수. localStorage 영속.
         </p>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span>
             <span class="font-medium">Auto-Fetch 간격 (분)</span>
             <span class="ml-2 text-xs text-muted-foreground">0 = 비활성</span>
@@ -273,7 +282,9 @@ const buildInfo = computed(() => ({
           />
         </label>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span>
             <span class="font-medium">Auto-Prune on fetch</span>
             <span class="ml-2 text-xs text-muted-foreground">사라진 remote 자동 정리</span>
@@ -281,7 +292,9 @@ const buildInfo = computed(() => ({
           <input v-model="general.autoPruneOnFetch" type="checkbox" />
         </label>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span>
             <span class="font-medium">Remember tabs per profile</span>
             <span class="ml-2 text-xs text-muted-foreground">profile 전환 시 마지막 탭 복원</span>
@@ -292,7 +305,9 @@ const buildInfo = computed(() => ({
           (영구 활성 — Sprint B10 의 useTabPerProfile composable 동작.)
         </p>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span>
             <span class="font-medium">Default 브랜치 (새 레포)</span>
           </span>
@@ -302,7 +317,9 @@ const buildInfo = computed(() => ({
           />
         </label>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span>
             <span class="font-medium">Conflict Detection</span>
             <span class="ml-2 text-xs text-muted-foreground">
@@ -312,7 +329,9 @@ const buildInfo = computed(() => ({
           <input v-model="general.conflictDetection" type="checkbox" />
         </label>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span>
             <span class="font-medium">Pull 후 submodule 자동 update</span>
             <span class="ml-2 text-xs text-muted-foreground">
@@ -334,7 +353,9 @@ const buildInfo = computed(() => ({
           Theme / Zoom / Sidebar / Detail 패널은 ⌘ 단축키 + localStorage. 추가 토글 일부 v1.x.
         </p>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span class="font-medium">Date locale</span>
           <select
             v-model="ui.dateLocale"
@@ -346,7 +367,9 @@ const buildInfo = computed(() => ({
           </select>
         </label>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span>
             <span class="font-medium">Launchpad 숨김</span>
             <span class="ml-2 text-xs text-muted-foreground">상단 헤더 링크 숨김</span>
@@ -354,7 +377,9 @@ const buildInfo = computed(() => ({
           <input v-model="ui.hideLaunchpad" type="checkbox" />
         </label>
 
-        <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+        <label
+          class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm"
+        >
           <span class="font-medium">아바타 스타일</span>
           <select
             v-model="ui.avatarStyle"
@@ -372,9 +397,13 @@ const buildInfo = computed(() => ({
         <!-- Sprint C4 — Custom theme JSON -->
         <h3 class="mt-4 text-sm font-semibold">Custom theme (JSON)</h3>
         <p class="text-xs text-muted-foreground">
-          GitKraken 11.8 부터 일시 비활성된 custom theme — git-fried 가 단순 CSS
-          변수 export/import 로 흡수.
-          {{ ctheme.customTheme.value ? `현재 적용 중: ${ctheme.customTheme.value.name}` : '커스텀 미적용' }}
+          GitKraken 11.8 부터 일시 비활성된 custom theme — git-fried 가 단순 CSS 변수 export/import
+          로 흡수.
+          {{
+            ctheme.customTheme.value
+              ? `현재 적용 중: ${ctheme.customTheme.value.name}`
+              : '커스텀 미적용'
+          }}
         </p>
         <div class="flex gap-2">
           <button
@@ -428,10 +457,12 @@ const buildInfo = computed(() => ({
       <div v-else-if="active === 'editor'" class="flex max-w-2xl flex-col gap-4">
         <h2 class="text-lg font-semibold">Editor / Terminal</h2>
         <p class="text-xs text-muted-foreground">
-          현재 Editor 옵션은 ⌘=/-/0 (Zoom) 와 Diff 3-mode 토글 (Hunk/Inline/Context) 로
-          제공. 추가 옵션 (font / EOL / line-num / wrap) 은 v1.x.
+          현재 Editor 옵션은 ⌘=/-/0 (Zoom) 와 Diff 3-mode 토글 (Hunk/Inline/Context) 로 제공. 추가
+          옵션 (font / EOL / line-num / wrap) 은 v1.x.
         </p>
-        <ul class="space-y-1 rounded border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+        <ul
+          class="space-y-1 rounded border border-border bg-muted/20 p-3 text-xs text-muted-foreground"
+        >
           <li>· 폰트 크기: ⌘=/-/0 (Zoom) — 현재 {{ buildInfo.zoomPx }}px</li>
           <li>· Diff 모드: CommitDiffModal 의 Hunk / Inline / Context 토글</li>
           <li>· Terminal: ⌘\` 토글, pwsh.exe / bash 자동 감지</li>
@@ -445,14 +476,10 @@ const buildInfo = computed(() => ({
       <RepoSpecificForm v-else-if="active === 'repoSpecific'" />
 
       <!-- 유지보수 -->
-      <div
-        v-else-if="active === 'maintenance'"
-        class="flex max-w-2xl flex-col gap-4"
-      >
+      <div v-else-if="active === 'maintenance'" class="flex max-w-2xl flex-col gap-4">
         <h2 class="text-lg font-semibold">레포 유지보수</h2>
         <p class="text-xs text-muted-foreground">
-          현재 활성 레포에 git gc / fsck / lfs install 실행. 거대 레포는 수 분
-          걸릴 수 있습니다.
+          현재 활성 레포에 git gc / fsck / lfs install 실행. 거대 레포는 수 분 걸릴 수 있습니다.
         </p>
 
         <p
@@ -462,10 +489,7 @@ const buildInfo = computed(() => ({
           ⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.
         </p>
 
-        <div
-          v-else
-          class="flex flex-col gap-3 rounded border border-border bg-muted/20 p-4"
-        >
+        <div v-else class="flex flex-col gap-3 rounded border border-border bg-muted/20 p-4">
           <div class="flex flex-wrap gap-2">
             <button
               type="button"
@@ -540,21 +564,18 @@ const buildInfo = computed(() => ({
       </div>
 
       <!-- 마이그레이션 -->
-      <div
-        v-else-if="active === 'migrate'"
-        class="flex max-w-2xl flex-col gap-4"
-      >
+      <div v-else-if="active === 'migrate'" class="flex max-w-2xl flex-col gap-4">
         <h2 class="text-lg font-semibold">마이그레이션</h2>
         <p class="text-xs text-muted-foreground">
-          기존 git client 의 로컬 데이터 (레포 / 워크스페이스 / 즐겨찾기 / 활성 탭) 를
-          git-fried 로 가져옵니다. PAT (토큰) 은 보안상 별도 재입력이 필요합니다.
+          기존 git client 의 로컬 데이터 (레포 / 워크스페이스 / 즐겨찾기 / 활성 탭) 를 git-fried 로
+          가져옵니다. PAT (토큰) 은 보안상 별도 재입력이 필요합니다.
         </p>
 
         <div class="rounded border border-border bg-muted/20 p-4 text-sm">
           <h3 class="font-semibold">📦 GitKraken</h3>
           <p class="mt-1 text-xs text-muted-foreground">
-            <code>%APPDATA%/.gitkraken/</code> 에서 자동 탐지 →
-            로컬 레포 path / Workspace / 즐겨찾기 / 활성 탭 import.
+            <code>%APPDATA%/.gitkraken/</code> 에서 자동 탐지 → 로컬 레포 path / Workspace /
+            즐겨찾기 / 활성 탭 import.
           </p>
           <button
             type="button"
@@ -576,10 +597,12 @@ const buildInfo = computed(() => ({
       <div v-else-if="active === 'plugin'" class="flex max-w-2xl flex-col gap-4">
         <h2 class="text-lg font-semibold">Plugin / Integration</h2>
         <p class="text-sm text-muted-foreground">
-          외부 도구 연결 (CI / 이슈 트래커 / 알림 / 동기화). git-fried 의 로컬-우선 / CLI-위임 정체성에 맞는 plugin 만 본 카테고리에 노출됩니다.
+          외부 도구 연결 (CI / 이슈 트래커 / 알림 / 동기화). git-fried 의 로컬-우선 / CLI-위임
+          정체성에 맞는 plugin 만 본 카테고리에 노출됩니다.
         </p>
         <p class="text-xs text-muted-foreground">
-          ❌ 의도적 제외: Cloud Workspace / Cloud AI / 자체 LLM 인프라 / Diagram. (Cloud-Free 정체성 — design §8-6).
+          ❌ 의도적 제외: Cloud Workspace / Cloud AI / 자체 LLM 인프라 / Diagram. (Cloud-Free 정체성
+          — design §8-6).
         </p>
         <div class="rounded border border-dashed border-border bg-muted/20 p-3">
           <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -632,24 +655,25 @@ const buildInfo = computed(() => ({
       <div v-else-if="active === 'about'" class="flex max-w-2xl flex-col gap-4">
         <h2 class="text-lg font-semibold">About git-fried</h2>
         <p class="text-sm text-muted-foreground">
-          GitKraken 대체 데스크탑 git client — Tauri 2 + Vue 3 + Rust.
-          Gitea 1급, 한글 안전, AI CLI 위임.
+          GitKraken 대체 데스크탑 git client — Tauri 2 + Vue 3 + Rust. Gitea 1급, 한글 안전, AI CLI
+          위임.
         </p>
         <ul class="space-y-1 rounded border border-border bg-muted/20 p-3 text-xs">
-          <li>버전: <span class="font-mono">{{ buildInfo.version }}</span></li>
-          <li>Zoom: <span class="font-mono">{{ buildInfo.zoomPx }}px</span></li>
+          <li>
+            버전: <span class="font-mono">{{ buildInfo.version }}</span>
+          </li>
+          <li>
+            Zoom: <span class="font-mono">{{ buildInfo.zoomPx }}px</span>
+          </li>
           <li>Sidebar: {{ buildInfo.sidebarVisible ? 'visible' : 'hidden' }}</li>
           <li>Detail panel: {{ buildInfo.detailVisible ? 'visible' : 'hidden' }}</li>
         </ul>
         <p class="text-[10px] text-muted-foreground">
-          ?  키보드 단축키 도움말. ⌘P Command Palette. ⌘\` Terminal.
+          ? 키보드 단축키 도움말. ⌘P Command Palette. ⌘\` Terminal.
         </p>
       </div>
     </section>
 
-    <GitKrakenImportModal
-      :open="importGkOpen"
-      @close="importGkOpen = false"
-    />
+    <GitKrakenImportModal :open="importGkOpen" @close="importGkOpen = false" />
   </div>
 </template>

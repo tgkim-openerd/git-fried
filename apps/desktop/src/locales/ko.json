@@ -94,5 +94,26 @@
     "workspaceTitle": "워크스페이스: {name}",
     "searchPlaceholder": "검색 (브랜치 / 태그 / submodule) — ⌘⌥F",
     "clearSearch": "검색 지우기"
+  },
+  "statusBar": {
+    "noRepo": "레포 미선택",
+    "predicting": "target 충돌 예측 중...",
+    "predictionUnavailable": "ⓘ 예측 불가 ({target})",
+    "upToDate": "▣ Up to Date with {target}",
+    "upToDateTitle": "merge-tree 시뮬레이션 결과 충돌 없음 (target={target})",
+    "conflictIn": "⚠ Conflict in {n} 파일 ({target})",
+    "aiAnalyzePending": "...",
+    "aiAnalyzeLabel": "AI",
+    "aiAnalyzeTitle": "✨ {cli} — 충돌 예상 영역 분석 ({head} vs {target})",
+    "aiAnalyzeAria": "AI ({cli}) — 충돌 예상 분석",
+    "aiResultTitle": "충돌 예상 영역 분석",
+    "launchpadTitle": "Launchpad — pinned + 활성 snooze",
+    "launchpadAria": "Launchpad — {n}개 pinned + 활성 snooze PR",
+    "shortcut": {
+      "palette": "Palette",
+      "view": "View",
+      "detail": "우측",
+      "help": "도움말"
+    }
   }
 }

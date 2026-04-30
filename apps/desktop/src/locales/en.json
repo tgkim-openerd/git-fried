@@ -94,5 +94,26 @@
     "workspaceTitle": "Workspace: {name}",
     "searchPlaceholder": "Search (branch / tag / submodule) — Cmd+Alt+F",
     "clearSearch": "Clear search"
+  },
+  "statusBar": {
+    "noRepo": "No repo selected",
+    "predicting": "Predicting target conflict...",
+    "predictionUnavailable": "ⓘ Prediction unavailable ({target})",
+    "upToDate": "▣ Up to Date with {target}",
+    "upToDateTitle": "merge-tree simulation: no conflict (target={target})",
+    "conflictIn": "⚠ Conflict in {n} files ({target})",
+    "aiAnalyzePending": "...",
+    "aiAnalyzeLabel": "AI",
+    "aiAnalyzeTitle": "✨ {cli} — Analyze conflict area ({head} vs {target})",
+    "aiAnalyzeAria": "AI ({cli}) — Analyze predicted conflict",
+    "aiResultTitle": "Conflict area analysis",
+    "launchpadTitle": "Launchpad — pinned + active snooze",
+    "launchpadAria": "Launchpad — {n} pinned + active snooze PRs",
+    "shortcut": {
+      "palette": "Palette",
+      "view": "View",
+      "detail": "Detail",
+      "help": "Help"
+    }
   }
 }
