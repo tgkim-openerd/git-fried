@@ -50,18 +50,19 @@ function collapseAllFiles() {
 }
 
 function statusBadge(s: PrFile['status']): { label: string; cls: string } {
+  // Sprint c35 plan/28 옵션 C — 도메인 semantic colors 사용 (light/dark 자동 분기).
   switch (s) {
     case 'added':
-      return { label: 'A', cls: 'bg-emerald-500/20 text-emerald-500' }
+      return { label: 'A', cls: 'bg-emerald-500/20 text-diff-add' }
     case 'removed':
-      return { label: 'D', cls: 'bg-rose-500/20 text-rose-500' }
+      return { label: 'D', cls: 'bg-rose-500/20 text-diff-delete' }
     case 'renamed':
-      return { label: 'R', cls: 'bg-violet-500/20 text-violet-500' }
+      return { label: 'R', cls: 'bg-violet-500/20 text-diff-rename' }
     case 'copied':
       return { label: 'C', cls: 'bg-cyan-500/20 text-cyan-500' }
     case 'modified':
     default:
-      return { label: 'M', cls: 'bg-amber-500/20 text-amber-500' }
+      return { label: 'M', cls: 'bg-amber-500/20 text-warning-amber' }
   }
 }
 
@@ -143,8 +144,8 @@ const totalDeletions = computed(
               </span>
               {{ f.path }}
             </span>
-            <span class="text-[10px] text-emerald-500">+{{ f.additions }}</span>
-            <span class="text-[10px] text-rose-500">-{{ f.deletions }}</span>
+            <span class="text-[10px] text-diff-add">+{{ f.additions }}</span>
+            <span class="text-[10px] text-diff-delete">-{{ f.deletions }}</span>
           </button>
           <div v-if="expandedFiles.has(f.path)" class="border-t border-border">
             <div v-if="!f.patch" class="p-3 text-center text-[11px] text-muted-foreground">

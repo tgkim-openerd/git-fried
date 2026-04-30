@@ -90,9 +90,9 @@ defineExpose({ subjectRef })
         <span>형식: type(scope)!: subject (이상 ≤50, 한계 ≤72)</span>
         <span
           :class="{
-            'text-emerald-500': subjectZone === 'ideal' && subjectLength > 0,
-            'text-amber-500': subjectZone === 'warn',
-            'text-rose-500': subjectZone === 'over',
+            'text-diff-add': subjectZone === 'ideal' && subjectLength > 0,
+            'text-warning-amber': subjectZone === 'warn',
+            'text-danger-rose': subjectZone === 'over',
           }"
         >
           {{ subjectLength }}/72

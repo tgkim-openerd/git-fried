@@ -50,6 +50,14 @@
     --info: 217 91% 50%;
     --info-foreground: 0 0% 98%;
 
+    /* Sprint c35 plan/28 옵션 C — 도메인 semantic colors (light: 진한 채도 가독성 ↑) */
+    --diff-add: 142 71% 35%; /* emerald-700 light, emerald-500 dark */
+    --diff-delete: 0 72% 45%; /* rose-700 light, rose-500 dark */
+    --diff-rename: 271 76% 45%; /* violet-700 light */
+    --ai-violet: 271 80% 45%; /* AI 버튼 violet */
+    --warning-amber: 38 92% 38%; /* amber-700 light (warning 보다 진함) */
+    --danger-rose: 0 72% 45%; /* rose-700 light (destructive 보다 분리) */
+
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
@@ -114,6 +122,14 @@
     --warning-foreground: 240 10% 3.9%;
     --info: 217 91% 60%;
     --info-foreground: 240 10% 3.9%;
+
+    /* Sprint c35 plan/28 옵션 C — 도메인 semantic colors (dark: 밝은 채도) */
+    --diff-add: 142 71% 50%; /* emerald-500 dark */
+    --diff-delete: 0 80% 65%; /* rose-500 dark */
+    --diff-rename: 271 76% 65%; /* violet-500 dark */
+    --ai-violet: 271 80% 65%;
+    --warning-amber: 38 92% 55%;
+    --danger-rose: 0 80% 65%;
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;

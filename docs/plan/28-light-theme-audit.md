@@ -37,6 +37,14 @@
 - `CommitMessageInput.vue` violet 1곳 (AI 메시지 생성) → 동일 패턴
 - `InteractiveRebaseModal.vue` green/red 3곳 (rebase 결과 박스 + abort 버튼) → 동일 패턴
 
+### Sprint c35 옵션 C 1차 적용 (인프라 + 핵심 2 컴포넌트)
+
+- ✅ `tailwind.config.ts` — semantic colors 6개 추가 (diff-add / diff-delete / diff-rename / ai-violet / warning-amber / danger-rose)
+- ✅ `main.css` — `:root` (light, 진한 채도) + `.dark` (밝은 채도) 변수 양쪽 정의
+- ✅ `PrFilesTab.vue` — statusBadge added/removed/renamed/modified + diff +/- 카운트: `text-emerald-500/text-rose-500` → `text-diff-add/text-diff-delete`
+- ✅ `ConventionalCommitBuilder.vue` — subjectZone ideal/warn/over: `text-emerald/amber/rose-500` → `text-diff-add/warning-amber/danger-rose`
+- 🟡 잔여 ~50곳: PrDetailModal (state) / CommitMessageInput / WorktreePanel / BranchPanel / 외 다수 — c36 진입
+
 ---
 
 ## 2. 시스템적 fix 전략 (3 후보)
