@@ -18,6 +18,7 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import { confirmDialog } from '@/composables/useConfirm'
 
 const reposStore = useReposStore()
 const { t } = useI18n()
@@ -82,8 +83,13 @@ function isAiAgent(branch: string | null): boolean {
   return !!branch && /worktree-agent-/i.test(branch)
 }
 
-function confirmRemove(path: string) {
-  if (window.confirm(`worktree '${path}' 제거?`)) {
+async function confirmRemove(path: string) {
+  const ok = await confirmDialog({
+    title: t('confirm.removeWorktreeTitle'),
+    message: t('confirm.removeWorktreeMessage', { path }),
+    danger: true,
+  })
+  if (ok) {
     removeMut.mutate({ p: path, force: false })
   }
 }

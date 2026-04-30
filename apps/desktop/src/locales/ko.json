@@ -111,6 +111,8 @@
     "closeGroupTabsMessage": "'{label}' 그룹의 {n}개 탭을 모두 닫을까요?",
     "reflogResetTitle": "Reflog Reset",
     "reflogResetMessage": "현재 브랜치를 reflog 항목 '{label}' 으로 리셋할까요?",
+    "headResetMixedTitle": "HEAD restore (mixed)",
+    "headResetMixedMessage": "HEAD 를 {sha} 로 reset --mixed 합니다.\nworking tree 변경은 보존되지만, 이후 commit/push 한 변경은 reflog 에 남으니 다시 복구 가능합니다. 계속할까요?",
     "mergeAcceptTitle": "Merge 수동 해소 적용",
     "mergeAcceptMessage": "선택한 해소를 적용할까요?",
     "mergeAcceptAllTitle": "전체 자동 해소",

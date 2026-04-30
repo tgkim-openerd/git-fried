@@ -18,7 +18,10 @@ import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import EmptyState from './EmptyState.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
 
+const { t } = useI18n()
 const toast = useToast()
 const props = defineProps<{ repoId: number | null }>()
 const qc = useQueryClient()
@@ -112,8 +115,13 @@ const pruneMut = useMutation({
   onError: (e) => toast.error('LFS prune 실패', describeError(e)),
 })
 
-function confirmUntrack(p: string) {
-  if (window.confirm(`패턴 '${p}' 추적 해제?`)) {
+async function confirmUntrack(p: string) {
+  const ok = await confirmDialog({
+    title: t('confirm.removeLfsPatternTitle'),
+    message: t('confirm.removeLfsPatternMessage', { pattern: p }),
+    danger: true,
+  })
+  if (ok) {
     untrackMut.mutate(p)
   }
 }
@@ -172,10 +180,7 @@ function fmtSize(b: number | null): string {
     </div>
 
     <!-- 추적 패턴 -->
-    <section
-      v-else-if="statusQuery.data.value"
-      class="border-b border-border px-3 py-2"
-    >
+    <section v-else-if="statusQuery.data.value" class="border-b border-border px-3 py-2">
       <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
         추적 패턴 ({{ statusQuery.data.value.trackedPatterns.length }})
       </div>
@@ -224,8 +229,9 @@ function fmtSize(b: number | null): string {
       <span class="font-medium">Pre-push:</span>
       {{ pushSizeQuery.data.value.commitCount }} commit
       <span v-if="pushSizeQuery.data.value.fileCount > 0" class="text-amber-500">
-        · LFS {{ pushSizeQuery.data.value.fileCount }}개
-        ({{ fmtSize(pushSizeQuery.data.value.totalBytes) }})
+        · LFS {{ pushSizeQuery.data.value.fileCount }}개 ({{
+          fmtSize(pushSizeQuery.data.value.totalBytes)
+        }})
       </span>
       <span v-else class="text-muted-foreground">· LFS 변경 없음</span>
     </section>

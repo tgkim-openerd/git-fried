@@ -111,6 +111,8 @@
     "closeGroupTabsMessage": "Close all {n} tabs in group '{label}'?",
     "reflogResetTitle": "Reflog reset",
     "reflogResetMessage": "Reset current branch to reflog entry '{label}'?",
+    "headResetMixedTitle": "HEAD restore (mixed)",
+    "headResetMixedMessage": "Reset HEAD to {sha} with --mixed.\nWorking tree changes are preserved; any commits/pushes since then remain in reflog and can be restored. Continue?",
     "mergeAcceptTitle": "Apply manual merge",
     "mergeAcceptMessage": "Apply the selected resolution?",
     "mergeAcceptAllTitle": "Auto-resolve all",

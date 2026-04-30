@@ -11,6 +11,10 @@ import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import BaseModal from './BaseModal.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{
@@ -87,13 +91,12 @@ async function copySha(sha: string) {
 
 async function restoreHeadTo(sha: string) {
   if (repoId.value == null) return
-  if (
-    !window.confirm(
-      `⚠ HEAD 를 ${sha.slice(0, 8)} 로 reset --mixed 합니다.\n` +
-        `working tree 변경은 보존되지만, 이후 commit/push 한 변경은 reflog 에 남으니 다시 복구 가능.\n진행?`,
-    )
-  )
-    return
+  const ok = await confirmDialog({
+    title: t('confirm.headResetMixedTitle'),
+    message: t('confirm.headResetMixedMessage', { sha: sha.slice(0, 8) }),
+    danger: true,
+  })
+  if (!ok) return
   try {
     await ipcReset(repoId.value, 'mixed', sha)
     toast.success('HEAD restore', sha.slice(0, 8))

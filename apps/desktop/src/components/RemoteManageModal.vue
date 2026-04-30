@@ -21,6 +21,10 @@ import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import BaseModal from './BaseModal.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 const props = defineProps<{ open: boolean; repoId: number | null }>()
 const emit = defineEmits<{ close: [] }>()
@@ -76,8 +80,13 @@ const removeMut = useMutation({
   onError: (e) => toast.error('Remote 제거 실패', describeError(e)),
 })
 
-function onRemove(name: string) {
-  if (!confirm(`'${name}' remote 를 제거할까요?`)) return
+async function onRemove(name: string) {
+  const ok = await confirmDialog({
+    title: t('confirm.removeRemoteTitle'),
+    message: t('confirm.removeRemoteMessage', { name }),
+    danger: true,
+  })
+  if (!ok) return
   removeMut.mutate(name)
 }
 
@@ -86,8 +95,7 @@ const renameTarget = ref<string | null>(null)
 const renameNew = ref('')
 const renameMut = useMutation({
   mutationFn: () => {
-    if (repoIdRef.value == null || !renameTarget.value)
-      throw new Error('대상 미선택')
+    if (repoIdRef.value == null || !renameTarget.value) throw new Error('대상 미선택')
     return renameRemote(repoIdRef.value, renameTarget.value, renameNew.value.trim())
   },
   onSuccess: () => {
@@ -109,8 +117,7 @@ const urlTarget = ref<string | null>(null)
 const urlNew = ref('')
 const urlMut = useMutation({
   mutationFn: () => {
-    if (repoIdRef.value == null || !urlTarget.value)
-      throw new Error('대상 미선택')
+    if (repoIdRef.value == null || !urlTarget.value) throw new Error('대상 미선택')
     return setRemoteUrl(repoIdRef.value, urlTarget.value, urlNew.value.trim())
   },
   onSuccess: () => {
@@ -197,138 +204,131 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
     @close="close"
   >
     <div class="p-4 text-sm">
-          <!-- list -->
-          <div v-if="remotesQuery.isFetching.value" class="text-muted-foreground">
-            불러오는 중...
-          </div>
-          <div
-            v-else-if="!remotesQuery.data.value?.length"
-            class="text-muted-foreground"
-          >
-            등록된 remote 가 없습니다.
-          </div>
-          <ul v-else class="space-y-2">
-            <li
-              v-for="r in remotesQuery.data.value"
-              :key="r.name"
-              class="rounded border border-border bg-muted/20 p-2"
-              @contextmenu="onRemoteContextMenu($event, r)"
-            >
-              <div class="flex items-center justify-between gap-2">
-                <span class="font-mono text-xs font-semibold">{{ r.name }}</span>
-                <div class="flex gap-1 text-[11px]">
-                  <button
-                    class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
-                    @click="startRename(r.name)"
-                  >
-                    이름 변경
-                  </button>
-                  <button
-                    class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
-                    @click="startUrlChange(r)"
-                  >
-                    URL 변경
-                  </button>
-                  <button
-                    class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
-                    @click="onRemove(r.name)"
-                  >
-                    제거
-                  </button>
-                </div>
-              </div>
-              <div class="mt-1 text-[11px] text-muted-foreground">
-                <div>fetch: <span class="font-mono">{{ r.fetchUrl ?? '—' }}</span></div>
-                <div v-if="r.pushUrl !== r.fetchUrl">
-                  push: <span class="font-mono">{{ r.pushUrl ?? '—' }}</span>
-                </div>
-              </div>
-
-              <!-- inline rename form -->
-              <form
-                v-if="renameTarget === r.name"
-                class="mt-2 flex gap-1"
-                @submit.prevent="renameMut.mutate()"
-              >
-                <input
-                  v-model="renameNew"
-                  class="flex-1 rounded border border-input bg-background px-2 py-0.5 text-xs"
-                  placeholder="새 이름"
-                />
-                <button
-                  type="submit"
-                  class="rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground"
-                  :disabled="
-                    !renameNew.trim() ||
-                    renameNew.trim() === renameTarget ||
-                    renameMut.isPending.value
-                  "
-                >
-                  변경
-                </button>
-                <button
-                  type="button"
-                  class="rounded border border-border px-2 py-0.5 text-[11px]"
-                  @click="renameTarget = null"
-                >
-                  취소
-                </button>
-              </form>
-
-              <!-- inline url form -->
-              <form
-                v-if="urlTarget === r.name"
-                class="mt-2 flex gap-1"
-                @submit.prevent="urlMut.mutate()"
-              >
-                <input
-                  v-model="urlNew"
-                  class="flex-1 rounded border border-input bg-background px-2 py-0.5 font-mono text-[11px]"
-                  placeholder="새 URL (https:// or git@)"
-                />
-                <button
-                  type="submit"
-                  class="rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground"
-                  :disabled="!urlNew.trim() || urlMut.isPending.value"
-                >
-                  변경
-                </button>
-                <button
-                  type="button"
-                  class="rounded border border-border px-2 py-0.5 text-[11px]"
-                  @click="urlTarget = null"
-                >
-                  취소
-                </button>
-              </form>
-            </li>
-          </ul>
-
-          <!-- add new -->
-          <div class="mt-5 rounded border border-dashed border-border p-3">
-            <h3 class="mb-2 text-xs font-semibold">+ Remote 추가</h3>
-            <form class="flex flex-col gap-2" @submit.prevent="addMut.mutate()">
-              <input
-                v-model="addName"
-                placeholder="이름 (예: upstream)"
-                class="rounded border border-input bg-background px-2 py-1 text-xs"
-              />
-              <input
-                v-model="addUrl"
-                placeholder="URL (예: https://github.com/owner/repo.git)"
-                class="rounded border border-input bg-background px-2 py-1 font-mono text-[11px]"
-              />
+      <!-- list -->
+      <div v-if="remotesQuery.isFetching.value" class="text-muted-foreground">불러오는 중...</div>
+      <div v-else-if="!remotesQuery.data.value?.length" class="text-muted-foreground">
+        등록된 remote 가 없습니다.
+      </div>
+      <ul v-else class="space-y-2">
+        <li
+          v-for="r in remotesQuery.data.value"
+          :key="r.name"
+          class="rounded border border-border bg-muted/20 p-2"
+          @contextmenu="onRemoteContextMenu($event, r)"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-xs font-semibold">{{ r.name }}</span>
+            <div class="flex gap-1 text-[11px]">
               <button
-                type="submit"
-                class="self-end rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                :disabled="
-                  !addName.trim() || !addUrl.trim() || addMut.isPending.value
-                "
+                class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
+                @click="startRename(r.name)"
               >
-                추가
+                이름 변경
               </button>
-            </form>
+              <button
+                class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
+                @click="startUrlChange(r)"
+              >
+                URL 변경
+              </button>
+              <button
+                class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
+                @click="onRemove(r.name)"
+              >
+                제거
+              </button>
+            </div>
           </div>
+          <div class="mt-1 text-[11px] text-muted-foreground">
+            <div>
+              fetch: <span class="font-mono">{{ r.fetchUrl ?? '—' }}</span>
+            </div>
+            <div v-if="r.pushUrl !== r.fetchUrl">
+              push: <span class="font-mono">{{ r.pushUrl ?? '—' }}</span>
+            </div>
+          </div>
+
+          <!-- inline rename form -->
+          <form
+            v-if="renameTarget === r.name"
+            class="mt-2 flex gap-1"
+            @submit.prevent="renameMut.mutate()"
+          >
+            <input
+              v-model="renameNew"
+              class="flex-1 rounded border border-input bg-background px-2 py-0.5 text-xs"
+              placeholder="새 이름"
+            />
+            <button
+              type="submit"
+              class="rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground"
+              :disabled="
+                !renameNew.trim() || renameNew.trim() === renameTarget || renameMut.isPending.value
+              "
+            >
+              변경
+            </button>
+            <button
+              type="button"
+              class="rounded border border-border px-2 py-0.5 text-[11px]"
+              @click="renameTarget = null"
+            >
+              취소
+            </button>
+          </form>
+
+          <!-- inline url form -->
+          <form
+            v-if="urlTarget === r.name"
+            class="mt-2 flex gap-1"
+            @submit.prevent="urlMut.mutate()"
+          >
+            <input
+              v-model="urlNew"
+              class="flex-1 rounded border border-input bg-background px-2 py-0.5 font-mono text-[11px]"
+              placeholder="새 URL (https:// or git@)"
+            />
+            <button
+              type="submit"
+              class="rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground"
+              :disabled="!urlNew.trim() || urlMut.isPending.value"
+            >
+              변경
+            </button>
+            <button
+              type="button"
+              class="rounded border border-border px-2 py-0.5 text-[11px]"
+              @click="urlTarget = null"
+            >
+              취소
+            </button>
+          </form>
+        </li>
+      </ul>
+
+      <!-- add new -->
+      <div class="mt-5 rounded border border-dashed border-border p-3">
+        <h3 class="mb-2 text-xs font-semibold">+ Remote 추가</h3>
+        <form class="flex flex-col gap-2" @submit.prevent="addMut.mutate()">
+          <input
+            v-model="addName"
+            placeholder="이름 (예: upstream)"
+            class="rounded border border-input bg-background px-2 py-1 text-xs"
+          />
+          <input
+            v-model="addUrl"
+            placeholder="URL (예: https://github.com/owner/repo.git)"
+            class="rounded border border-input bg-background px-2 py-1 font-mono text-[11px]"
+          />
+          <button
+            type="submit"
+            class="self-end rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            :disabled="!addName.trim() || !addUrl.trim() || addMut.isPending.value"
+          >
+            추가
+          </button>
+        </form>
+      </div>
     </div>
 
     <template #footer>
