@@ -17,11 +17,13 @@
 
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { getDiff, readFile } from '@/api/git'
+import { readFile } from '@/api/git'
 import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
 import FileViewer from './FileViewer.vue'
 import FileHistoryModal from './FileHistoryModal.vue'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
+// Sprint c35 god 16/N — diff query 영역 분리.
+import { useFullscreenDiffQuery } from '@/composables/useFullscreenDiffQuery'
 import { useFileBlame } from '@/composables/useFileHistory'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
@@ -32,58 +34,9 @@ const props = defineProps<{
 
 const fs = useFullscreenDiff()
 
-const queryArgs = computed(() => {
-  const cur = fs.current.value
-  if (!cur || props.repoId == null) return null
-  if (cur.source === 'wip') {
-    return {
-      repoId: props.repoId,
-      staged: cur.isStaged,
-      path: cur.path,
-      rev: null as string | null,
-    }
-  }
-  return {
-    repoId: props.repoId,
-    staged: false,
-    path: cur.path,
-    rev: cur.sha,
-  }
-})
-
-// Phase 14-3 — diff query 전용 rev (parent..commit). File / Blame 쿼리는 단일 sha 유지.
-//   기존: getDiff(rev=sha) → backend `git diff sha -- path` = sha~working dir 비교 → 같으면 empty.
-//   변경: diff query 만 rev=`sha~..sha` → backend `git diff sha~..sha -- path` = 그 commit 의 파일 변경.
-//   (root commit 의 경우 ~ 없어서 git error — rare 케이스, fallback 추후.)
-const diffRev = computed<string | null>(() => {
-  const cur = fs.current.value
-  if (!cur || cur.source !== 'commit') return null
-  return `${cur.sha}~..${cur.sha}`
-})
-
-const patchQuery = useQuery({
-  queryKey: computed(() => {
-    const a = queryArgs.value
-    if (!a) return ['fullscreen-diff', 'idle'] as const
-    // Phase 14-3 — commit context 시 diffRev (parent..commit) 사용.
-    const rev = diffRev.value ?? a.rev
-    return ['fullscreen-diff', a.repoId, a.staged, a.path, rev] as const
-  }),
-  queryFn: () => {
-    const a = queryArgs.value
-    if (!a) return Promise.resolve('')
-    const rev = diffRev.value ?? a.rev
-    return getDiff({
-      repoId: a.repoId,
-      staged: a.staged,
-      path: a.path,
-      rev,
-      context: 3,
-    })
-  },
-  enabled: computed(() => queryArgs.value != null),
-  staleTime: STALE_TIME.REALTIME,
-})
+// Sprint c35 god 16/N — patch query + hunkCount 영역 분리.
+const fsq = useFullscreenDiffQuery(() => props.repoId)
+const patchQuery = fsq.patchQuery
 
 const headerLabel = computed(() => {
   const cur = fs.current.value
@@ -98,13 +51,9 @@ const headerLabel = computed(() => {
 // DiffViewer expose (nextHunk / prevHunk / hunkCount) wire up.
 const diffViewerRef = useTemplateRef<DiffViewerExpose>('diffViewer')
 
-// patch 의 hunk 헤더 카운트 — DiffViewer.hunkCount() 는 reactive 아님이므로 자체 셈.
-const hunkCount = computed(() => {
-  const p = patchQuery.data.value
-  if (!p) return 0
-  return (p.match(/^@@\s/gm) ?? []).length
-})
-const hunkNavDisabled = computed(() => hunkCount.value <= 1)
+// patch 의 hunk 헤더 카운트 — useFullscreenDiffQuery 위임.
+const hunkCount = fsq.hunkCount
+const hunkNavDisabled = fsq.hunkNavDisabled
 
 function onPrevHunk() {
   if (hunkNavDisabled.value) return
@@ -140,16 +89,16 @@ const currentPath = computed(() => fs.current.value?.path ?? null)
 // Sprint c30 / GitKraken UX (Phase 6b) — File View raw content fetch.
 const fileQuery = useQuery({
   queryKey: computed(() => {
-    const a = queryArgs.value
+    const a = fsq.queryArgs.value
     if (!a) return ['fullscreen-file', 'idle'] as const
     return ['fullscreen-file', a.repoId, a.staged, a.path, a.rev] as const
   }),
   queryFn: () => {
-    const a = queryArgs.value
+    const a = fsq.queryArgs.value
     if (!a) return Promise.resolve('')
     return readFile(a.repoId, a.path, a.rev, a.staged)
   },
-  enabled: computed(() => viewMode.value === 'file' && queryArgs.value != null),
+  enabled: computed(() => viewMode.value === 'file' && fsq.queryArgs.value != null),
   staleTime: STALE_TIME.REALTIME,
 })
 
