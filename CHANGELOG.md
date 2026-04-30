@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c34 — c33 후속 자율 진행 (2026-04-30, 5 commits)** — 사용자 요청 "다음 작업 진입" → main 직접 5 commits. typecheck 0 / lint 0 / vitest 55/582 → 56/598 (+1 file / +16 tests) / **god comp 분리 누적 14 (c34 신규 1) / -1,306 LOC (-24%)**:
+  - **`80eb134`** — `docs/QUICK_START.md` 5분 onboarding (plan/26 Phase 1 ★★★ ROI). 3 불편 (GitKraken / SourceTree / GitHub Desktop) + 5 차별점 (한글 / Gitea / AI / Profile / Tauri light) + 설치/첫 commit 흐름 + 단축키 톱 10. README 1순위 진입점 강조 추가
+  - **`be037f9`** — `plan/27-core-tech-boundaries.md` (plan/26 Phase 4, 코드 변경 0). 4 후보 평가:
+    - 한글 normalization (★★★) — `git-korean-safe` v1.x crate 후보
+    - AI CLI subprocess (★★★) — `local-ai-cli` v1.x crate 후보
+    - Multi-forge profile (★) — publish 보류 (git GUI 한정)
+    - Reflog-based undo (★★) — 모듈 분리 선행 필요
+    - 단기/중기/장기 우선순위 표 + Premature abstraction 위험 self-critique
+  - **`34fc15a`** — `git/path.rs` 한글 normalization helper 통합 (158 LOC, plan/27 단기 액션 1):
+    - 이전: `git/runner.rs::decode_lossy` + `git/read_file.rs::decode_bytes` + `git/status.rs::nfc()` 3 파일 산재
+    - 이후: `decode_korean_safe(bytes, normalize)` + `nfc_normalize(s)` + `nfc_normalize_path(s)` 단일 진입점
+    - 호출처 위임: runner.rs (NFC) / read_file.rs (NFC X — content 보존) / status.rs (path)
+    - +10 unit test (utf8 / empty / ascii / nfd→nfc / nfd 보존 / mixed / alias / realistic / invalid bytes panic 방어)
+    - 기존 runner.rs::tests::decode_lossy_* 4 test 회귀 보호 유지
+  - **`3d54811`** — `useAiComposer` composable (140 LOC, god 14/N) — InteractiveRebaseModal 468 → 396 (-72):
+    - parseComposerPlan(text) — JSON array 파싱 (마크다운 코드블록 [ ] 추출 + 5 action filter, named export)
+    - applyComposerPlan(todo, plan) — sha 매칭 병합 + reword newMessage (순수 함수, named export)
+    - useAiComposer({repoId, todo, onPlanApplied?}) — confirmAiSend + aiComposerPlan IPC + plan 적용
+    - +16 unit test (parseComposerPlan 10 + applyComposerPlan 6)
+    - **AI composable 4 표준화 누적**: useAiCommitMessage (c32) / useAiPrBody (c33) / useAiResolveConflict (c33) / useAiComposer (c34) — 공통 시그니처 (aiProbes / availableCli / generate / run = confirm + mutate + onResult)
+  - **`ecc49a1`** — light theme 가독성 시범 5곳 + plan/28 (Sprint c33 작업 E 후속):
+    - PrDetailModal violet 4곳 / CommitMessageInput violet 1곳 / InteractiveRebaseModal green/red 3곳
+    - 패턴: `text-X-500` → `text-X-700 dark:text-X-500` (light 채도 ↑, dark 보존)
+    - plan/28 — 잔여 ~55곳 일괄 fix sub-sprint (옵션 C: Tailwind config semantic colors 권장 — diff-add / ai-violet / danger-rose 등)
+  - **누적 통계 (Sprint c31~c34)**:
+    - god comp: 13 → **14** (Sprint c34 신규 1: useAiComposer)
+    - LOC 누적 감소: -1,234 → **-1,306 (-24%)**
+    - 신규 plan: 26 (3 constraints 정체성) + 27 (core tech 경계) + 28 (light theme audit)
+    - 신규 doc: QUICK_START.md (5분 onboarding 진입점)
+    - vitest: 55/582 → **56/598** (+1 file / +16 tests, useAiComposer)
+    - 한글 normalization 단일 진입점 — v1.x crate 추출 형태 정비
+
 - **Sprint c33 — UX 검토 + ConfirmDialog 도입 + i18n + god comp 분리 (2026-04-30, 14 commits)** — 사용자 요청 "자율로 작업할 수 있는 모든 작업 진행 + Laws of UX 비판 검토 후 UX 갭 fix". main 직접 14 commits / typecheck 0 / lint 0 / vitest 53/560 → 55/582 (+2 files / +22 tests) / **god comp 분리 누적 13 (Sprint c33 신규 4) / -1,234 LOC (-23.5%)** / **i18n 248 → 318 키**:
   - **Phase 0 — UX 7원칙 점검** (Laws of UX + hada.io 비판적 검토):
     - 7 원칙 압축 채택 (30 → 7): Doherty / Miller / Hick / Fitts / Jakob / Von Restorff / Selective Attention+Zeigarnik
