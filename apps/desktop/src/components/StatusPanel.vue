@@ -231,6 +231,15 @@ function openFullscreen(path: string, isStaged: boolean) {
   fsDiff.openWip(path, isStaged)
 }
 
+// Sprint c37 — 파일 단일 클릭 = 좌측 fullscreen 진입 + selectedPath set.
+//   사용자 요청 (2026-04-30): "변경사항 파일도 클릭하면 커밋 diff 와 같이 좌측 영역 사용".
+//   기존 selectPath (토글) 는 키보드 / 외부 호출 (vim shortcut) 용도로 보존.
+//   FileRow 클릭은 항상 selectedPath 설정 + fullscreen 진입.
+function onFileClick(path: string, isStaged: boolean) {
+  selectedPath.value = path
+  fsDiff.openWip(path, isStaged)
+}
+
 // === Sprint 22-6 F-I1: 파일 필터 (50+ 파일 환경) ===
 // composables/useStatusFilter.ts 로 추출 (StatusPanel.vue God comp 분리 1차).
 const { fileFilter, filteredStaged, filteredUnstaged, filteredUntracked, filteredConflicted } =
@@ -379,7 +388,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               action="−"
               action-title="unstage"
               :selected="isSelected(f.path)"
-              @select="selectPath(f.path)"
+              @select="onFileClick(f.path, true)"
               @action="onUnstageOne(f.path)"
               @dblclick="openFullscreen(f.path, true)"
               @contextmenu="onFileContextMenu($event, f.path, true)"
@@ -418,7 +427,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
                 :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                @click="selectPath(row.path)"
+                @click="onFileClick(row.path, true)"
                 @contextmenu="onFileContextMenu($event, row.path, true)"
               >
                 <span
@@ -469,8 +478,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
               :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
-              title="더블클릭 — fullscreen diff"
-              @click="selectPath(f.path)"
+              title="클릭 — fullscreen diff"
+              @click="onFileClick(f.path, false)"
               @dblclick="openFullscreen(f.path, false)"
               @contextmenu="onFileContextMenu($event, f.path, false)"
               @dragstart="
@@ -541,7 +550,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
                 draggable="true"
-                @click="selectPath(row.path)"
+                @click="onFileClick(row.path, false)"
                 @contextmenu="onFileContextMenu($event, row.path, false)"
                 @dragstart="
                   (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.path)
@@ -611,8 +620,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
               :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
-              title="더블클릭 — fullscreen diff"
-              @click="selectPath(p)"
+              title="클릭 — fullscreen diff"
+              @click="onFileClick(p, false)"
               @dblclick="openFullscreen(p, false)"
               @dragstart="
                 (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)
@@ -650,7 +659,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
                 :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                @click="selectPath(row.path)"
+                @click="onFileClick(row.path, false)"
               >
                 <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">new</span>
                 <span class="flex-1 truncate font-mono text-xs" :title="row.path">{{
