@@ -35,6 +35,8 @@ import { useShortcut, dispatchShortcut } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { onMenuAction } from '@/composables/useMenuListener'
+// Sprint c31 — Pull strategy ref + helper 외부 분리.
+import { usePullStrategy, type PullStrategy } from '@/composables/usePullStrategy'
 
 const props = defineProps<{
   repoId: number | null
@@ -93,8 +95,7 @@ const fetchMut = useMutation({
   },
   onError: (e) => toast.error('Fetch 호출 실패', describeError(e)),
 })
-// Phase 12-3 — Pull 옵션 매개 (dropdown 액션 수신).
-type PullStrategy = 'default' | 'rebase' | 'ff-only' | 'no-rebase'
+// Phase 12-3 — Pull 옵션 매개 (dropdown 액션 수신). Sprint c31 — 타입은 usePullStrategy import.
 const pullMut = useMutation({
   mutationFn: ({ id, strategy }: { id: number; strategy: PullStrategy }) =>
     pull({
@@ -123,35 +124,9 @@ const pullMut = useMutation({
 })
 
 // Pull dropdown 가시성 + 마지막 사용 strategy 기억 (localStorage).
-const PULL_STRATEGY_KEY = 'git-fried.pull-strategy'
-const pullStrategy = ref<PullStrategy>(
-  (typeof localStorage !== 'undefined'
-    ? (localStorage.getItem(PULL_STRATEGY_KEY) as PullStrategy | null)
-    : null) ?? 'default',
-)
-function setPullStrategy(s: PullStrategy) {
-  pullStrategy.value = s
-  if (typeof localStorage !== 'undefined') {
-    try {
-      localStorage.setItem(PULL_STRATEGY_KEY, s)
-    } catch {
-      /* ignore */
-    }
-  }
-}
+// Sprint c31 — usePullStrategy composable 로 추출 (localStorage 영속 + label 헬퍼).
+const { pullStrategy, setPullStrategy, pullStrategyLabel } = usePullStrategy()
 const pullDropdownOpen = ref(false)
-function pullStrategyLabel(s: PullStrategy): string {
-  switch (s) {
-    case 'rebase':
-      return '--rebase'
-    case 'ff-only':
-      return '--ff-only'
-    case 'no-rebase':
-      return '--no-rebase'
-    default:
-      return 'merge'
-  }
-}
 const pushMut = useMutation({
   mutationFn: (id: number) =>
     push({
