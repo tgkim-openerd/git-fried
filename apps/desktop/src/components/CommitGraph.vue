@@ -18,6 +18,8 @@ import type { HiddenRefKind } from '@/api/git'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
 import { useCommitActions } from '@/composables/useCommitActions'
+// Sprint c31 god comp 분리 7/N — 검색 state + isMatch + ⌘F/Esc 통합 composable.
+import { useGraphSearch } from '@/composables/useGraphSearch'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import type { GraphRow } from '@/api/git'
@@ -82,50 +84,7 @@ function hideRefByName(name: string) {
   hideMut.mutate({ refName: trimmed, refKind: refKindOf(trimmed) })
 }
 
-// === 검색 (in-memory) ===
-// v0.x 단계: 현재 그래프 (최대 500 commits) 내에서 subject / author / sha 부분일치.
-// FTS5 인덱싱은 v1.0 (Cross-repo + 5000+ commits 시).
-const searchQuery = ref('')
-const searchOpen = ref(false)
-const searchInputRef = ref<HTMLInputElement | null>(null)
-
-function isMatch(r: GraphRow, q: string): boolean {
-  if (!q) return true
-  const lower = q.toLowerCase()
-  return (
-    r.commit.subject.toLowerCase().includes(lower) ||
-    r.commit.authorName.toLowerCase().includes(lower) ||
-    r.commit.sha.startsWith(lower) ||
-    r.commit.refs.some((x) => x.toLowerCase().includes(lower))
-  )
-}
-
-const matchCount = computed(() => {
-  if (!searchQuery.value) return 0
-  return rows.value.filter((r) => isMatch(r, searchQuery.value)).length
-})
-
-function openSearch() {
-  searchOpen.value = true
-  nextTick(() => searchInputRef.value?.focus())
-}
-function closeSearch() {
-  searchOpen.value = false
-  searchQuery.value = ''
-  drawGraph()
-}
-
-// ⌘F / Ctrl+F 단축키
-function onKeydown(e: KeyboardEvent) {
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
-    e.preventDefault()
-    if (searchOpen.value) closeSearch()
-    else openSearch()
-  } else if (e.key === 'Escape' && searchOpen.value) {
-    e.preventDefault()
-    closeSearch()
-  }
-}
+// === 검색 — Sprint c31 분리 7/N. composable 호출은 rows 정의 이후 (TDZ 회피) — line ~137 부근. ===
 
 const ROW_H = 28
 const LANE_W_MIN = 8
@@ -165,6 +124,21 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 const rows = computed<GraphRow[]>(() => graph.value?.rows ?? [])
 const maxLane = computed(() => graph.value?.maxLane ?? 1)
+
+// === 검색 (Sprint c31 god comp 분리 7/N — useGraphSearch composable) ===
+// v0.x 단계: 현재 그래프 (최대 500 commits) 내에서 subject / author / sha / refs 부분일치.
+// FTS5 인덱싱은 v1.0 (Cross-repo + 5000+ commits 시).
+// drawGraph 는 function declaration (hoisting 됨) 이라 callback 으로 안전하게 참조.
+const {
+  searchQuery,
+  searchOpen,
+  searchInputRef,
+  matchCount,
+  isMatch,
+  openSearch,
+  closeSearch,
+  onKeydown,
+} = useGraphSearch(rows, { onClose: () => drawGraph() })
 
 // Sprint c30 / GitKraken UX (Phase 9) — laneW 자동 계산 (graphWidth 기반).
 //   maxLane 1 → laneW = graphWidth - 16 (clamp 36 으로 줄음)
