@@ -4,22 +4,21 @@
 // - 파일 클릭 시 stage / unstage 토글
 // - "+ 모두 stage" / "− 모두 unstage" 단축
 import { computed, ref, useTemplateRef } from 'vue'
-import { useMutation, useQuery } from '@tanstack/vue-query'
+import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
-// TYPE-003 / ARCH-004 fix — DiffViewer 가 export 하는 공통 expose 타입 import.
-import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
-import { getDiff, launchMergetool } from '@/api/git'
+import { launchMergetool } from '@/api/git'
 import { useStageMutations } from '@/composables/useStageMutations'
 import { describeError } from '@/api/errors'
 import { useShortcut } from '@/composables/useShortcuts'
 import { useToast } from '@/composables/useToast'
-import { STALE_TIME } from '@/api/queryClient'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
 import HunkStageModal from './HunkStageModal.vue'
 // Sprint c30 / HIGH 1 — 4 섹션 sticky header sub-component.
 import StatusSectionHeader from './StatusSectionHeader.vue'
+// Sprint c31 — inline diff preview 분리 (StatusPanel.vue God comp 분리 1/N).
+import StatusInlineDiff from './StatusInlineDiff.vue'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import { useStatusFilter } from '@/composables/useStatusFilter'
 import { flattenTree, useStatusTreeView } from '@/composables/useStatusTreeView'
@@ -275,53 +274,14 @@ const conflictedTreeRows = computed<StringTreeRow[]>(() => {
   const tree = buildPathTree(items, { collapseSingleChild: true })
   return flattenTree(tree, collapsedDirs.value)
 })
-// === Sprint 22-7 V-5: 선택 파일 inline diff preview ===
+
+// 선택 파일이 staged 인지 — StatusInlineDiff 에 prop 으로 전달.
 const selectedIsStaged = computed<boolean>(() => {
   if (!selectedPath.value) return false
   return status.value?.staged.some((f) => f.path === selectedPath.value) ?? false
 })
 
-const detailDiffQuery = useQuery({
-  queryKey: computed(
-    () => ['file-diff', props.repoId, selectedPath.value, selectedIsStaged.value] as const,
-  ),
-  queryFn: () => {
-    if (props.repoId == null || !selectedPath.value) return Promise.resolve('')
-    return getDiff({
-      repoId: props.repoId,
-      staged: selectedIsStaged.value,
-      path: selectedPath.value,
-      context: 3,
-    })
-  },
-  enabled: computed(() => props.repoId != null && !!selectedPath.value),
-  staleTime: STALE_TIME.REALTIME,
-})
-
 const isSelected = computed(() => (path: string) => selectedPath.value === path)
-
-// === Sprint c25-4 (`docs/plan/25 §5`) — inline diff 헤더 폴리시 ===
-// DiffViewer ref + Hunk ↑↓ 네비게이션 (GitKraken Image #2 흡수).
-const inlineDiffRef = useTemplateRef<DiffViewerExpose>('inlineDiff')
-
-// Hunk count 는 patch 텍스트에서 직접 셈 — DiffViewer.hunkCount() 는 reactive 하지 않음.
-// `@@ -... +... @@` 라인 매칭 (split 모드 외).
-const inlineHunkCount = computed(() => {
-  const patch = detailDiffQuery.data.value
-  if (!patch) return 0
-  const m = patch.match(/^@@\s/gm)
-  return m ? m.length : 0
-})
-const hunkNavDisabled = computed(() => inlineHunkCount.value <= 1)
-
-function onPrevHunk() {
-  if (hunkNavDisabled.value) return
-  inlineDiffRef.value?.prevHunk()
-}
-function onNextHunk() {
-  if (hunkNavDisabled.value) return
-  inlineDiffRef.value?.nextHunk()
-}
 </script>
 
 <template>
@@ -789,134 +749,19 @@ function onNextHunk() {
         </div>
       </div>
 
-      <!-- Sprint 22-7 V-5: 선택 파일 inline diff preview (하단 fixed 30%) -->
-      <div
+      <!-- Sprint 22-7 V-5: 선택 파일 inline diff preview (하단 fixed 30%) — Sprint c31 분리 1/N -->
+      <StatusInlineDiff
         v-if="selectedPath"
-        class="flex shrink-0 flex-col border-t border-border bg-muted/10"
-        style="height: 30%; min-height: 140px"
-      >
-        <div class="flex items-center justify-between border-b border-border bg-card px-3 py-1.5">
-          <div class="flex min-w-0 items-center gap-2 text-xs">
-            <span
-              class="shrink-0 rounded px-1.5 text-[10px] font-bold"
-              :class="
-                selectedIsStaged
-                  ? 'bg-emerald-500/20 text-emerald-500'
-                  : 'bg-amber-500/20 text-amber-500'
-              "
-            >
-              {{ selectedIsStaged ? 'STAGED' : 'WORKDIR' }}
-            </span>
-            <span class="truncate font-mono">{{ selectedPath }}</span>
-          </div>
-          <div class="flex shrink-0 items-center gap-1 text-[11px]">
-            <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (GitKraken Image #2). 1-hunk 이하면 disabled -->
-            <div
-              class="flex items-center gap-0.5 rounded border border-border bg-muted/30 px-0.5"
-              :title="
-                hunkNavDisabled
-                  ? '이 patch 는 hunk 1개 이하 — nav 불필요'
-                  : `${inlineHunkCount}개 hunk — ↑↓ 로 이동`
-              "
-            >
-              <button
-                type="button"
-                class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
-                :disabled="hunkNavDisabled"
-                title="이전 hunk"
-                aria-label="이전 hunk 로 이동"
-                @click="onPrevHunk"
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                class="px-1.5 py-0.5 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:hover:text-muted-foreground"
-                :disabled="hunkNavDisabled"
-                title="다음 hunk"
-                aria-label="다음 hunk 로 이동"
-                @click="onNextHunk"
-              >
-                ↓
-              </button>
-            </div>
-            <button
-              type="button"
-              class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
-              title="파일 히스토리 / Blame (⌘⇧H)"
-              aria-label="파일 히스토리 보기"
-              @click="openHistory(selectedPath)"
-            >
-              📜 History
-            </button>
-            <button
-              v-if="!selectedIsStaged"
-              type="button"
-              class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
-              title="이 파일 stage"
-              @click="onStageOne(selectedPath)"
-            >
-              + stage
-            </button>
-            <button
-              v-else
-              type="button"
-              class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
-              title="이 파일 unstage"
-              @click="onUnstageOne(selectedPath)"
-            >
-              − unstage
-            </button>
-            <button
-              type="button"
-              class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
-              title="Hunk-level"
-              @click="openHunk(selectedPath, selectedIsStaged)"
-            >
-              ✂ hunk
-            </button>
-            <button
-              v-if="!selectedIsStaged"
-              type="button"
-              class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
-              title="discard"
-              @click="onDiscardOne(selectedPath)"
-            >
-              ⤺ discard
-            </button>
-            <button
-              type="button"
-              class="rounded border border-border px-2 py-0.5 text-muted-foreground hover:bg-accent/40"
-              aria-label="diff preview 닫기"
-              title="닫기"
-              @click="selectedPath = null"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-        <div class="flex-1 overflow-hidden">
-          <div
-            v-if="detailDiffQuery.isFetching.value && !detailDiffQuery.data.value"
-            class="p-4 text-center text-xs text-muted-foreground"
-          >
-            diff 불러오는 중...
-          </div>
-          <div
-            v-else-if="detailDiffQuery.error.value"
-            class="m-2 rounded border border-destructive bg-destructive/10 p-2 text-xs"
-          >
-            {{ describeError(detailDiffQuery.error.value) }}
-          </div>
-          <div
-            v-else-if="!detailDiffQuery.data.value"
-            class="p-4 text-center text-xs text-muted-foreground"
-          >
-            (변경 없음 — binary 파일이거나 untracked)
-          </div>
-          <DiffViewer v-else ref="inlineDiff" :patch="detailDiffQuery.data.value" class="h-full" />
-        </div>
-      </div>
+        :repo-id="repoId"
+        :path="selectedPath"
+        :is-staged="selectedIsStaged"
+        @close="selectedPath = null"
+        @stage="onStageOne"
+        @unstage="onUnstageOne"
+        @discard="onDiscardOne"
+        @hunk="(p, s) => openHunk(p, s)"
+        @history="openHistory"
+      />
     </template>
 
     <FileHistoryModal
