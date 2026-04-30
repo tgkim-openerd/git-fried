@@ -6,17 +6,12 @@
 // - 생성 후 옵션: 새 탭으로 외부 열기 / 모달 안에서 상세
 import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { aiDetectClis, aiPrBody, createPullRequest, listBranches } from '@/api/git'
-import type { AiCli, BranchInfo } from '@/api/git'
+import { createPullRequest, listBranches } from '@/api/git'
+import type { BranchInfo } from '@/api/git'
 import { describeError } from '@/api/errors'
-import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
-import { notifyAiDone } from '@/composables/useAiCli'
+import { useAiPrBody } from '@/composables/useAiPrBody'
 import BaseModal from './BaseModal.vue'
-import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
-
-const { t } = useI18n()
 
 const toast = useToast()
 
@@ -60,50 +55,20 @@ const { data: branches } = useQuery({
 })
 const localBranches = computed(() => branches.value?.filter((b) => b.kind === 'local') ?? [])
 
-// AI body
-const { data: aiProbes } = useQuery({
-  queryKey: ['aiProbes'],
-  queryFn: aiDetectClis,
-  staleTime: STALE_TIME.STATIC,
-})
-const availableCli = computed<AiCli | null>(() => {
-  const p = aiProbes.value
-  if (!p) return null
-  if (p.find((x) => x.cli === 'claude' && x.installed)) return 'claude'
-  if (p.find((x) => x.cli === 'codex' && x.installed)) return 'codex'
-  return null
-})
-
-const aiBodyMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || !head.value || !base.value || !availableCli.value)
-      return Promise.reject(new Error('AI 사용 불가'))
-    return aiPrBody(props.repoId, availableCli.value, head.value, base.value, true)
+// AI body — Sprint c33 god 13/N: useAiPrBody composable 위임.
+const aiPr = useAiPrBody({
+  repoId: () => props.repoId,
+  head: () => head.value,
+  base: () => base.value,
+  onResult: (text) => {
+    body.value = text
   },
-  onSuccess: (out) => {
-    if (out.success) {
-      body.value = out.text.trim()
-      notifyAiDone('AI PR body 생성', out.text.split(/\r?\n/)[0])
-    } else {
-      toast.error('AI body 생성 실패', out.stderr || out.text)
-    }
-  },
-  onError: (e) => {
-    const msg = describeError(e)
-    if (msg.includes('cancelled')) return
-    toast.error('AI 호출 실패', msg)
-  },
+  onError: (e) => toast.error('AI 호출 실패', describeError(e)),
 })
-
-async function onAiBody() {
-  if (props.repoId == null || !head.value || !base.value || !availableCli.value) return
-  const ok = await confirmDialog({
-    title: t('confirm.aiSendTitle'),
-    message: t('confirm.aiPrBodyMessage'),
-    danger: true,
-  })
-  if (!ok) return
-  aiBodyMut.mutate()
+const availableCli = aiPr.availableCli
+const aiBodyMut = aiPr.generate
+async function onAiBody(): Promise<void> {
+  await aiPr.run()
 }
 
 const createMut = useMutation({

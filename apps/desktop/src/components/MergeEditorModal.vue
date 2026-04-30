@@ -9,12 +9,10 @@
 // 추후 v1.x 에서 @codemirror/merge 의 MergeView 적용.
 import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { aiDetectClis, aiResolveConflict, readConflicted, takeSide, writeResolved } from '@/api/git'
-import type { AiCli } from '@/api/git'
+import { readConflicted, takeSide, writeResolved } from '@/api/git'
 import { describeError } from '@/api/errors'
-import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
-import { notifyAiDone } from '@/composables/useAiCli'
+import { useAiResolveConflict } from '@/composables/useAiResolveConflict'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import BaseModal from './BaseModal.vue'
 import { useI18n } from 'vue-i18n'
@@ -109,51 +107,20 @@ async function takeFullSide(side: 'ours' | 'theirs') {
   sideMut.mutate(side)
 }
 
-// === AI merge resolve (Claude / Codex CLI) ===
-const { data: aiProbes } = useQuery({
-  queryKey: ['aiProbes'],
-  queryFn: aiDetectClis,
-  staleTime: STALE_TIME.STATIC,
-})
-const availableCli = computed<AiCli | null>(() => {
-  const p = aiProbes.value
-  if (!p) return null
-  if (p.find((x) => x.cli === 'claude' && x.installed)) return 'claude'
-  if (p.find((x) => x.cli === 'codex' && x.installed)) return 'codex'
-  return null
-})
-
-const aiMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || !props.path || !availableCli.value)
-      return Promise.reject(new Error('AI 사용 불가'))
-    return aiResolveConflict(props.repoId, availableCli.value, props.path, true)
+// === AI merge resolve — Sprint c33 god 13/N: useAiResolveConflict composable 위임 ===
+const aiR = useAiResolveConflict({
+  repoId: () => props.repoId,
+  path: () => props.path,
+  onResult: (text) => {
+    // result textarea 에 자동 채움 — 사용자 검토 후 저장.
+    resolved.value = text
   },
-  onSuccess: (out) => {
-    if (out.success) {
-      // result textarea 에 자동 채움 — 사용자 검토 후 저장
-      resolved.value = out.text.trim()
-      notifyAiDone('AI 충돌 해결 제안', props.path ?? undefined)
-    } else {
-      toast.error('AI 응답 실패', out.stderr || out.text)
-    }
-  },
-  onError: (e) => {
-    const msg = describeError(e)
-    if (msg.includes('cancelled')) return
-    toast.error('AI 호출 실패', msg)
-  },
+  onError: (e) => toast.error('AI 호출 실패', describeError(e)),
 })
-
-async function onAiResolve() {
-  if (props.repoId == null || !props.path || !availableCli.value) return
-  const ok = await confirmDialog({
-    title: t('confirm.aiSendTitle'),
-    message: t('confirm.aiResolveConflictMessage'),
-    danger: true,
-  })
-  if (!ok) return
-  aiMut.mutate()
+const availableCli = aiR.availableCli
+const aiMut = aiR.generate
+async function onAiResolve(): Promise<void> {
+  await aiR.run()
 }
 </script>
 
