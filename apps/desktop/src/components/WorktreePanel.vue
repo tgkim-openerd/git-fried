@@ -3,6 +3,7 @@
 // 사용자 8개 동시 사용 패턴 (`docs/plan/02 §3 W2`).
 // AI 에이전트 자동 worktree (`worktree-agent-*`) 식별 가능.
 import { ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useWorktrees } from '@/composables/useWorktrees'
 import {
@@ -19,6 +20,7 @@ import { useReposStore } from '@/stores/repos'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 
 const reposStore = useReposStore()
+const { t } = useI18n()
 
 const toast = useToast()
 
@@ -42,8 +44,7 @@ function onWorktreeDblClick(t: { path: string; isMain: boolean }) {
 
 const addMut = useMutation({
   mutationFn: () => {
-    if (props.repoId == null || !newPath.value)
-      return Promise.reject(new Error('no path'))
+    if (props.repoId == null || !newPath.value) return Promise.reject(new Error('no path'))
     return addWorktree({
       repoId: props.repoId,
       path: newPath.value,
@@ -61,14 +62,12 @@ const addMut = useMutation({
 const removeMut = useMutation({
   mutationFn: ({ p, force }: { p: string; force: boolean }) =>
     removeWorktree(props.repoId!, p, force),
-  onSuccess: () =>
-    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] }),
+  onSuccess: () => qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] }),
 })
 
 const pruneMut = useMutation({
   mutationFn: () => pruneWorktrees(props.repoId!),
-  onSuccess: () =>
-    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] }),
+  onSuccess: () => qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] }),
 })
 
 function fmtSize(bytes: number | null): string {
@@ -111,10 +110,7 @@ const unlockMut = useMutation({
 
 function onLock(path: string) {
   if (props.repoId == null) return
-  const reason = window.prompt(
-    `'${path}' 잠금 사유 (선택, 외장 디스크 / 비활성 등)`,
-    '',
-  )
+  const reason = window.prompt(`'${path}' 잠금 사유 (선택, 외장 디스크 / 비활성 등)`, '')
   // reason 이 null = cancel.
   if (reason === null) return
   lockMut.mutate({ p: path, reason: reason.trim() || null })
@@ -174,15 +170,13 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
 
 <template>
   <section class="flex h-full flex-col border-l border-border bg-card">
-    <header
-      class="flex items-center justify-between border-b border-border px-3 py-2"
-    >
-      <h3 class="text-sm font-semibold">Worktree</h3>
+    <header class="flex items-center justify-between border-b border-border px-3 py-2">
+      <h3 class="text-sm font-semibold">{{ t('worktree.title') }}</h3>
       <button
         type="button"
         class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent disabled:opacity-50"
         :disabled="!repoId || pruneMut.isPending.value"
-        aria-label="prunable worktree 정리 (디스크 정리)"
+        :aria-label="t('worktree.pruneAria')"
         @click="pruneMut.mutate()"
       >
         prune
@@ -193,13 +187,13 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
     <div class="flex flex-col gap-1 border-b border-border px-3 py-2 text-xs">
       <input
         v-model="newPath"
-        placeholder="새 worktree 경로 (예: ../proj-feat-abc)"
+        :placeholder="t('worktree.pathPlaceholder')"
         class="rounded-md border border-input bg-background px-2 py-1"
       />
       <div class="flex gap-1">
         <input
           v-model="newBranch"
-          placeholder="새 브랜치 (선택, -b)"
+          :placeholder="t('worktree.branchPlaceholder')"
           class="flex-1 rounded-md border border-input bg-background px-2 py-1"
         />
         <button
@@ -216,34 +210,45 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
     <div class="flex-1 overflow-auto px-2 py-2 text-sm">
       <ul>
         <li
-          v-for="t in trees"
-          :key="t.path"
+          v-for="wt in trees"
+          :key="wt.path"
           class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
-          :class="selectedPath === t.path ? 'bg-accent/60 ring-1 ring-primary/40' : ''"
-          :title="`${t.path}\nclick=focus, dblclick=Switch (main repo 활성화), 우클릭=메뉴`"
-          @click="selectedPath = t.path"
-          @dblclick="onWorktreeDblClick(t)"
-          @contextmenu="onWorktreeContextMenu($event, t)"
+          :class="selectedPath === wt.path ? 'bg-accent/60 ring-1 ring-primary/40' : ''"
+          :title="t('worktree.rowTitle', { path: wt.path })"
+          @click="selectedPath = wt.path"
+          @dblclick="onWorktreeDblClick(wt)"
+          @contextmenu="onWorktreeContextMenu($event, wt)"
         >
           <div class="flex items-center justify-between">
             <span class="truncate text-xs">
-              <span v-if="t.isMain" class="text-emerald-500" title="main worktree">●</span>
-              <span v-if="isAiAgent(t.branch)" class="text-violet-500" title="AI agent">🤖</span>
-              <span v-if="t.isLocked" class="text-amber-500" title="locked">🔒</span>
-              <span v-if="t.isPrunable" class="text-rose-500" title="prunable">⚠</span>
-              <span class="ml-1 font-mono">{{ t.branch || '(detached)' }}</span>
+              <span v-if="wt.isMain" class="text-emerald-500" :title="$t('worktree.mainTitle')"
+                >●</span
+              >
+              <span
+                v-if="isAiAgent(wt.branch)"
+                class="text-violet-500"
+                :title="$t('worktree.aiAgentTitle')"
+                >🤖</span
+              >
+              <span v-if="wt.isLocked" class="text-amber-500" :title="$t('worktree.lockedTitle')"
+                >🔒</span
+              >
+              <span v-if="wt.isPrunable" class="text-rose-500" :title="$t('worktree.prunableTitle')"
+                >⚠</span
+              >
+              <span class="ml-1 font-mono">{{ wt.branch || $t('worktree.detached') }}</span>
             </span>
-            <span class="text-[10px] text-muted-foreground">{{ fmtSize(t.sizeBytes) }}</span>
+            <span class="text-[10px] text-muted-foreground">{{ fmtSize(wt.sizeBytes) }}</span>
           </div>
-          <div class="truncate font-mono text-[10px] text-muted-foreground">{{ t.path }}</div>
-          <div v-if="!t.isMain" class="mt-1 flex justify-end gap-2">
+          <div class="truncate font-mono text-[10px] text-muted-foreground">{{ wt.path }}</div>
+          <div v-if="!wt.isMain" class="mt-1 flex justify-end gap-2">
             <button
-              v-if="!t.isLocked"
+              v-if="!wt.isLocked"
               type="button"
               class="text-[10px] text-amber-500 hover:underline"
               :disabled="lockMut.isPending.value"
-              :aria-label="`worktree '${t.path}' 잠금`"
-              @click="onLock(t.path)"
+              :aria-label="t('worktree.lockAria', { path: wt.path })"
+              @click="onLock(wt.path)"
             >
               lock
             </button>
@@ -252,18 +257,18 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
               type="button"
               class="text-[10px] text-amber-500 hover:underline"
               :disabled="unlockMut.isPending.value"
-              :aria-label="`worktree '${t.path}' 잠금 해제`"
-              @click="onUnlock(t.path)"
+              :aria-label="t('worktree.unlockAria', { path: wt.path })"
+              @click="onUnlock(wt.path)"
             >
               unlock
             </button>
             <button
               type="button"
               class="text-[10px] text-destructive hover:underline"
-              :disabled="t.isLocked"
-              :title="t.isLocked ? 'unlock 후 제거' : ''"
-              :aria-label="`worktree '${t.path}' 제거`"
-              @click="confirmRemove(t.path)"
+              :disabled="wt.isLocked"
+              :title="wt.isLocked ? t('worktree.removeBlockedTitle') : ''"
+              :aria-label="t('worktree.removeAria', { path: wt.path })"
+              @click="confirmRemove(wt.path)"
             >
               remove
             </button>

@@ -95,6 +95,47 @@
     "searchPlaceholder": "검색 (브랜치 / 태그 / submodule) — ⌘⌥F",
     "clearSearch": "검색 지우기"
   },
+  "worktree": {
+    "title": "Worktree",
+    "pruneAria": "prunable worktree 정리 (디스크 정리)",
+    "pathPlaceholder": "새 worktree 경로 (예: ../proj-feat-abc)",
+    "branchPlaceholder": "새 브랜치 (선택, -b)",
+    "rowTitle": "{path}\nclick=focus, dblclick=Switch (main repo 활성화), 우클릭=메뉴",
+    "mainTitle": "main worktree",
+    "aiAgentTitle": "AI agent",
+    "lockedTitle": "locked",
+    "prunableTitle": "prunable",
+    "detached": "(detached)",
+    "lockAria": "worktree '{path}' 잠금",
+    "unlockAria": "worktree '{path}' 잠금 해제",
+    "removeAria": "worktree '{path}' 제거",
+    "removeBlockedTitle": "unlock 후 제거"
+  },
+  "tag": {
+    "loading": "불러오는 중...",
+    "namePlaceholder": "새 tag 이름 (예: v0.3.0)",
+    "annotatedPlaceholder": "annotated 메시지 (비워두면 lightweight)",
+    "annotatedTitle": "annotated tag",
+    "noMessage": "(메시지 없음)",
+    "pushOriginTitle": "origin 으로 push",
+    "empty": "tag 없음",
+    "createButton": "+ Tag 생성",
+    "annotatedBadge": "ann",
+    "ctxHint": "⌥ 우클릭 메뉴: Push / Checkout / Create branch / Copy SHA / Delete",
+    "pushAria": "tag '{name}' origin 에 push",
+    "delLocalAria": "로컬 tag '{name}' 삭제",
+    "delRemoteAria": "원격 tag 'origin/{name}' 삭제"
+  },
+  "pr": {
+    "title": "Pull Requests",
+    "emptyOpen": "열린 PR 없음",
+    "emptyAll": "PR 없음",
+    "emptyOpenDesc": "필터를 closed / all 로 바꾸거나 새 PR 을 만들어보세요.",
+    "newPrButton": "+ 새 PR",
+    "newPrAria": "새 Pull Request 생성",
+    "stateFilterAria": "PR 상태 필터: {state}",
+    "stateAll": "전체"
+  },
   "stash": {
     "title": "Stash",
     "newFormCollapsed": "(새 stash 폼 접힘 — 우클릭으로 펴기)",

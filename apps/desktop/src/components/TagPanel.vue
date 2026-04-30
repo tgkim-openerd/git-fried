@@ -5,6 +5,7 @@
 // ReleasesPanel 이 Forge API 의 release 만 보여주므로 이 패널이 lightweight tag
 // + annotated tag 를 모두 표시. tag 이름 클릭 시 commit 으로 점프 (v1.x).
 import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   createBranch,
@@ -28,6 +29,7 @@ import SkeletonBlock from './SkeletonBlock.vue'
 const props = defineProps<{ repoId: number | null }>()
 
 const toast = useToast()
+const { t } = useI18n()
 const qc = useQueryClient()
 
 const tagsQuery = useQuery({
@@ -51,12 +53,7 @@ const newMessage = ref('') // 빈 = lightweight, 채워지면 annotated
 const createMut = useMutation({
   mutationFn: () => {
     if (props.repoId == null) throw new Error('레포 미선택')
-    return createTag(
-      props.repoId,
-      newName.value.trim(),
-      null,
-      newMessage.value.trim() || null,
-    )
+    return createTag(props.repoId, newName.value.trim(), null, newMessage.value.trim() || null)
   },
   onSuccess: () => {
     toast.success('Tag 생성', newName.value)
@@ -144,7 +141,10 @@ async function checkoutTag(t: TagInfo) {
 
 async function createBranchFromTag(t: TagInfo) {
   if (props.repoId == null) return
-  const name = window.prompt(`tag '${t.name}' 에서 브랜치 생성 — 새 브랜치 이름:`, t.name + '-branch')
+  const name = window.prompt(
+    `tag '${t.name}' 에서 브랜치 생성 — 새 브랜치 이름:`,
+    t.name + '-branch',
+  )
   if (!name?.trim()) return
   try {
     await createBranch(props.repoId, name.trim(), t.name)
@@ -214,11 +214,9 @@ function onTagContextMenu(ev: MouseEvent, t: TagInfo) {
   <div class="flex h-full flex-col">
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <h2 class="text-xs font-semibold">Tags</h2>
-      <span
-        v-if="tagsQuery.isFetching.value"
-        class="text-[10px] text-muted-foreground"
-        >불러오는 중...</span
-      >
+      <span v-if="tagsQuery.isFetching.value" class="text-[10px] text-muted-foreground">{{
+        t('tag.loading')
+      }}</span>
     </header>
 
     <!-- create form -->
@@ -228,12 +226,12 @@ function onTagContextMenu(ev: MouseEvent, t: TagInfo) {
     >
       <input
         v-model="newName"
-        placeholder="새 tag 이름 (예: v0.3.0)"
+        :placeholder="t('tag.namePlaceholder')"
         class="rounded border border-input bg-background px-2 py-1 text-xs"
       />
       <input
         v-model="newMessage"
-        placeholder="annotated 메시지 (비워두면 lightweight)"
+        :placeholder="t('tag.annotatedPlaceholder')"
         class="rounded border border-input bg-background px-2 py-1 text-[11px]"
       />
       <button
@@ -241,87 +239,88 @@ function onTagContextMenu(ev: MouseEvent, t: TagInfo) {
         class="self-end rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground hover:opacity-90 disabled:opacity-50"
         :disabled="!newName.trim() || createMut.isPending.value"
       >
-        + Tag 생성
+        {{ t('tag.createButton') }}
       </button>
     </form>
 
     <ul class="flex-1 overflow-auto">
       <li
-        v-for="t in tagsQuery.data.value"
-        :key="t.name"
+        v-for="tg in tagsQuery.data.value"
+        :key="tg.name"
         class="cursor-pointer border-b border-border px-3 py-2 hover:bg-accent/30"
-        :class="expandedTag === t.name ? 'bg-accent/20' : ''"
-        @click="toggleTagExpand(t.name)"
-        @contextmenu="onTagContextMenu($event, t)"
+        :class="expandedTag === tg.name ? 'bg-accent/20' : ''"
+        @click="toggleTagExpand(tg.name)"
+        @contextmenu="onTagContextMenu($event, tg)"
       >
         <div class="flex items-center justify-between gap-2">
           <span class="font-mono text-xs font-semibold">
             <span class="mr-1 text-[10px] text-muted-foreground">
-              {{ expandedTag === t.name ? '▼' : '▸' }}
+              {{ expandedTag === tg.name ? '▼' : '▸' }}
             </span>
-            {{ t.name }}
+            {{ tg.name }}
             <span
-              v-if="t.annotated"
+              v-if="tg.annotated"
               class="ml-1 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground"
-              title="annotated tag"
+              :title="t('tag.annotatedTitle')"
             >
-              ann
+              {{ t('tag.annotatedBadge') }}
             </span>
           </span>
           <span class="text-[10px] text-muted-foreground">
-            {{ fmt(t.taggerAt) }}
+            {{ fmt(tg.taggerAt) }}
           </span>
         </div>
         <div
-          v-if="t.subject"
+          v-if="tg.subject"
           class="truncate text-[11px] text-muted-foreground"
-          :title="t.subject"
+          :title="tg.subject"
         >
-          {{ t.subject }}
+          {{ tg.subject }}
         </div>
         <div class="mt-1 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
-          <span class="font-mono">{{ t.commitSha?.slice(0, 8) ?? '?' }}</span>
-          <span v-if="t.taggerName">{{ t.taggerName }}</span>
+          <span class="font-mono">{{ tg.commitSha?.slice(0, 8) ?? '?' }}</span>
+          <span v-if="tg.taggerName">{{ tg.taggerName }}</span>
         </div>
         <!-- Sprint 22-4 V-4: 펼침 영역 (annotated msg + 전체 SHA + 액션 힌트) -->
         <div
-          v-if="expandedTag === t.name"
+          v-if="expandedTag === tg.name"
           class="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px]"
           @click.stop
         >
           <div class="mb-1 flex items-center gap-2 text-muted-foreground">
-            <span class="font-semibold">{{ t.annotated ? 'annotated' : 'lightweight' }}</span>
-            <span v-if="t.commitSha" class="font-mono">{{ t.commitSha }}</span>
+            <span class="font-semibold">{{ tg.annotated ? 'annotated' : 'lightweight' }}</span>
+            <span v-if="tg.commitSha" class="font-mono">{{ tg.commitSha }}</span>
           </div>
           <pre
-            v-if="t.subject"
+            v-if="tg.subject"
             class="whitespace-pre-wrap font-mono text-[11px] text-foreground"
-          >{{ t.subject }}</pre>
-          <div v-else class="italic text-muted-foreground">(메시지 없음)</div>
+            >{{ tg.subject }}</pre
+          >
+          <div v-else class="italic text-muted-foreground">{{ t('tag.noMessage') }}</div>
           <p class="mt-2 text-[10px] text-muted-foreground">
-            ⌥ 우클릭 메뉴: Push / Checkout / Create branch / Copy SHA / Delete
+            {{ t('tag.ctxHint') }}
           </p>
         </div>
         <div class="mt-1 flex gap-2 text-[11px]">
           <button
             class="hover:underline"
-            title="origin 으로 push"
-            :aria-label="`tag '${t.name}' origin 에 push`"
-            @click.stop="pushMut.mutate(t.name)"
+            :title="t('tag.pushOriginTitle')"
+            :aria-label="t('tag.pushAria', { name: tg.name })"
+            @click.stop="pushMut.mutate(tg.name)"
           >
             push
           </button>
           <button
             class="hover:underline text-destructive"
-            :aria-label="`로컬 tag '${t.name}' 삭제`"
-            @click.stop="onDelete(t.name)"
+            :aria-label="t('tag.delLocalAria', { name: tg.name })"
+            @click.stop="onDelete(tg.name)"
           >
             del local
           </button>
           <button
             class="hover:underline text-destructive"
-            :aria-label="`원격 tag 'origin/${t.name}' 삭제`"
-            @click.stop="onDeleteRemote(t.name)"
+            :aria-label="t('tag.delRemoteAria', { name: tg.name })"
+            @click.stop="onDeleteRemote(tg.name)"
           >
             del remote
           </button>
@@ -332,7 +331,7 @@ function onTagContextMenu(ev: MouseEvent, t: TagInfo) {
         <SkeletonBlock :count="4" height="sm" />
       </li>
       <li v-else-if="tagsQuery.data.value && tagsQuery.data.value.length === 0">
-        <EmptyState icon="🏷" title="tag 없음" size="sm" />
+        <EmptyState icon="🏷" :title="t('tag.empty')" size="sm" />
       </li>
     </ul>
     <ContextMenu ref="tagCtxMenu" />

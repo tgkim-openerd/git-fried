@@ -95,6 +95,47 @@
     "searchPlaceholder": "Search (branch / tag / submodule) — Cmd+Alt+F",
     "clearSearch": "Clear search"
   },
+  "worktree": {
+    "title": "Worktree",
+    "pruneAria": "Prune prunable worktrees (disk cleanup)",
+    "pathPlaceholder": "New worktree path (e.g. ../proj-feat-abc)",
+    "branchPlaceholder": "New branch (optional, -b)",
+    "rowTitle": "{path}\nclick=focus, dblclick=Switch (activate main repo), right-click=menu",
+    "mainTitle": "main worktree",
+    "aiAgentTitle": "AI agent",
+    "lockedTitle": "locked",
+    "prunableTitle": "prunable",
+    "detached": "(detached)",
+    "lockAria": "Lock worktree '{path}'",
+    "unlockAria": "Unlock worktree '{path}'",
+    "removeAria": "Remove worktree '{path}'",
+    "removeBlockedTitle": "Unlock before removing"
+  },
+  "tag": {
+    "loading": "Loading...",
+    "namePlaceholder": "New tag name (e.g. v0.3.0)",
+    "annotatedPlaceholder": "Annotated message (blank for lightweight)",
+    "annotatedTitle": "annotated tag",
+    "noMessage": "(no message)",
+    "pushOriginTitle": "Push to origin",
+    "empty": "No tags",
+    "createButton": "+ Create Tag",
+    "annotatedBadge": "ann",
+    "ctxHint": "⌥ Right-click: Push / Checkout / Create branch / Copy SHA / Delete",
+    "pushAria": "Push tag '{name}' to origin",
+    "delLocalAria": "Delete local tag '{name}'",
+    "delRemoteAria": "Delete remote tag 'origin/{name}'"
+  },
+  "pr": {
+    "title": "Pull Requests",
+    "emptyOpen": "No open PRs",
+    "emptyAll": "No PRs",
+    "emptyOpenDesc": "Switch filter to closed / all, or create a new PR.",
+    "newPrButton": "+ New PR",
+    "newPrAria": "Create new Pull Request",
+    "stateFilterAria": "PR state filter: {state}",
+    "stateAll": "all"
+  },
   "stash": {
     "title": "Stash",
     "newFormCollapsed": "(new stash form collapsed — right-click to expand)",

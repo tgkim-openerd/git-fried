@@ -2,6 +2,7 @@
 // PR 패널 — 현재 레포의 PR 목록 (Gitea / GitHub) + 상세 read-only.
 // v0.3 단계: 봇 PR 그룹핑 (release-please / dependabot / renovate) — collapsible.
 import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { usePullRequests } from '@/composables/usePullRequests'
 import { describeError } from '@/api/errors'
 import { useStatus } from '@/composables/useStatus'
@@ -18,7 +19,11 @@ import type { PrState, PullRequest } from '@/api/git'
 const props = defineProps<{ repoId: number | null }>()
 
 const stateFilter = ref<PrState | null>('open')
-const { data: prs, isFetching, error } = usePullRequests(
+const {
+  data: prs,
+  isFetching,
+  error,
+} = usePullRequests(
   () => props.repoId,
   () => stateFilter.value,
 )
@@ -79,6 +84,7 @@ function toggleBot(name: string) {
 // === Sprint 22-4 CM-9: PR row 우클릭 (7 액션) ===
 const prCtxMenu = useTemplateRef<ContextMenuExpose>('prCtxMenu')
 const toast = useToast()
+const { t } = useI18n()
 const meta = useLaunchpadMeta()
 
 async function copyText(text: string, label: string) {
@@ -158,7 +164,7 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
   <div class="flex h-full flex-col">
     <header class="border-b border-border px-3 py-2">
       <div class="flex items-center justify-between gap-2">
-        <h3 class="text-sm font-semibold">Pull Requests</h3>
+        <h3 class="text-sm font-semibold">{{ t('pr.title') }}</h3>
         <div class="flex items-center gap-2">
           <div class="flex gap-1 text-[10px]">
             <button
@@ -167,11 +173,9 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
               type="button"
               class="rounded px-1.5 py-0.5"
               :class="
-                stateFilter === s
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground'
+                stateFilter === s ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
               "
-              :aria-label="`PR 상태 필터: ${s ?? '전체'}`"
+              :aria-label="t('pr.stateFilterAria', { state: s ?? t('pr.stateAll') })"
               :aria-pressed="stateFilter === s"
               @click="stateFilter = s"
             >
@@ -182,10 +186,10 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
             type="button"
             class="rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground hover:opacity-90 disabled:opacity-50"
             :disabled="!repoId"
-            aria-label="새 Pull Request 생성"
+            :aria-label="t('pr.newPrAria')"
             @click="createOpen = true"
           >
-            + 새 PR
+            {{ t('pr.newPrButton') }}
           </button>
         </div>
       </div>
@@ -244,11 +248,7 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
 
       <!-- 봇 PR 그룹 -->
       <div v-if="botGroups.length" class="mt-2">
-        <div
-          v-for="[name, list] in botGroups"
-          :key="name"
-          class="border-t border-border/50"
-        >
+        <div v-for="[name, list] in botGroups" :key="name" class="border-t border-border/50">
           <button
             type="button"
             class="flex w-full items-center justify-between px-2 py-1 text-xs text-muted-foreground hover:bg-accent/40"
@@ -277,8 +277,8 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
       <EmptyState
         v-if="prs && prs.length === 0 && !isFetching"
         icon="📭"
-        :title="stateFilter === 'open' ? '열린 PR 없음' : 'PR 없음'"
-        :description="stateFilter === 'open' ? '필터를 closed / all 로 바꾸거나 새 PR 을 만들어보세요.' : ''"
+        :title="stateFilter === 'open' ? t('pr.emptyOpen') : t('pr.emptyAll')"
+        :description="stateFilter === 'open' ? t('pr.emptyOpenDesc') : ''"
         size="sm"
       />
     </div>
@@ -297,7 +297,12 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
       :initial-head="currentBranch"
       initial-base="main"
       @close="createOpen = false"
-      @created="(n: number) => { createOpen = false; selectedNumber = n }"
+      @created="
+        (n: number) => {
+          createOpen = false
+          selectedNumber = n
+        }
+      "
     />
     <ContextMenu ref="prCtxMenu" />
   </div>
