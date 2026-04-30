@@ -13,22 +13,18 @@
 //   working dir 파일은 std::fs::read 후 동일 처리.
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::decode_korean_safe;
 use crate::git::runner::{git_run, GitRunOpts};
 use std::path::Path;
 
 const MAX_FILE_BYTES: usize = 4 * 1024 * 1024; // 4 MB cap (frontend memory + render)
 
+/// 파일 raw content → string. NFC 미적용 (content 의도 보존).
+///
+/// Sprint c34 — `git::path::decode_korean_safe(bytes, false)` 위임 (plan/27 단기 액션).
+#[inline]
 fn decode_bytes(bytes: &[u8]) -> AppResult<String> {
-    if bytes.is_empty() {
-        return Ok(String::new());
-    }
-    let (cow, _, had_err) = encoding_rs::UTF_8.decode(bytes);
-    if !had_err {
-        return Ok(cow.into_owned());
-    }
-    // Fallback — CP949 / GBK (한글 환경 대비).
-    let (cow2, _, _) = encoding_rs::GBK.decode(bytes);
-    Ok(cow2.into_owned())
+    Ok(decode_korean_safe(bytes, false))
 }
 
 /// 파일 raw content 읽기.

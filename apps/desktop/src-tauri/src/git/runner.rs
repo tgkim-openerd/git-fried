@@ -16,7 +16,6 @@
 use crate::error::{AppError, AppResult};
 use std::path::Path;
 use tokio::process::Command;
-use unicode_normalization::UnicodeNormalization;
 
 /// git CLI 실행 결과.
 #[derive(Debug, Clone)]
@@ -122,17 +121,11 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
 
 /// 바이트 → UTF-8 lossy decode + NFC 정규화.
 ///
-/// 디코딩 실패는 `\u{FFFD}` 로 대체. 호출자가 stderr 에서 mojibake 패턴 감지 가능.
+/// Sprint c34 — `git::path::decode_korean_safe(bytes, true)` 위임 (plan/27 단기 액션).
+/// 본 wrapper 는 기존 호출처 (git_run / commit_with_message) 인터페이스 보존용.
+#[inline]
 fn decode_lossy(bytes: &[u8]) -> String {
-    let (cow, _, had_errors) = encoding_rs::UTF_8.decode(bytes);
-    let s = if had_errors {
-        // UTF-8 강제 환경변수에도 mojibake 가 발생하면 GBK/CP949 fallback 시도.
-        let (cow2, _, _) = encoding_rs::GBK.decode(bytes);
-        cow2.into_owned()
-    } else {
-        cow.into_owned()
-    };
-    s.nfc().collect::<String>()
+    crate::git::path::decode_korean_safe(bytes, true)
 }
 
 /// `git --version` 호출. 시스템에 git CLI 가 있는지 검증.

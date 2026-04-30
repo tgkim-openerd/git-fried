@@ -4,10 +4,10 @@
 // staged / unstaged / untracked / conflicted 분리.
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::nfc_normalize_path;
 use git2::{BranchType, Repository, Status as GitStatus, StatusOptions};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use unicode_normalization::UnicodeNormalization;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -141,7 +141,7 @@ pub fn read_status(path: &Path) -> AppResult<RepoStatus> {
 
     for entry in statuses.iter() {
         let path_raw = entry.path().unwrap_or("");
-        let path_norm: String = path_raw.nfc().collect();
+        let path_norm: String = nfc_normalize_path(path_raw);
         let s = entry.status();
 
         if s.is_conflicted() {
