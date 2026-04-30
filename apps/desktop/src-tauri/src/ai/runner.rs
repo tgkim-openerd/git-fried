@@ -3,13 +3,16 @@
 // `docs/plan/04 §11` 참조.
 //
 // 호출 형식:
-//   - Claude: `claude -p "<prompt>" --output-format stream-json`
-//     (또는 `--output-format json` 단일 응답)
-//   - Codex:  `codex exec "<prompt>" --json`
+//   - Claude: `claude -p "<prompt>" --output-format text`
+//   - Codex:  `codex exec "<prompt>"`
 //
-// stdin/stdout 은 UTF-8 강제. 바이트 디코딩은 git_run 과 동일 패턴.
+// stdin/stdout 은 UTF-8 강제. 바이트 디코딩은 git/path::decode_korean_safe 위임.
+//
+// Sprint c35 — plan/27 단기 액션 2: AiCli enum 의 binary / build_args 메서드 분리.
+// trait 추출 (v1.x crate 'local-ai-cli') 시 시그니처 그대로 trait 로 이동.
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::decode_korean_safe;
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use tokio::process::Command;
@@ -22,10 +25,23 @@ pub enum AiCli {
 }
 
 impl AiCli {
+    /// 실행 binary 이름 (PATH 검색 대상).
     pub fn binary(self) -> &'static str {
         match self {
             Self::Claude => "claude",
             Self::Codex => "codex",
+        }
+    }
+
+    /// non-interactive prompt 실행을 위한 CLI args 조립.
+    ///
+    /// Sprint c35 — `ai_run` 의 match 인라인 제거. trait 변환 시 그대로 trait method.
+    pub fn build_args<'a>(self, prompt: &'a str) -> Vec<&'a str> {
+        match self {
+            // Claude Code: -p (non-interactive) + --output-format text
+            Self::Claude => vec!["-p", prompt, "--output-format", "text"],
+            // Codex CLI: exec (non-interactive) — 출력은 plain text
+            Self::Codex => vec!["exec", prompt],
         }
     }
 }
@@ -59,7 +75,7 @@ pub async fn detect_clis() -> Vec<AiProbe> {
             .stderr(Stdio::piped());
         let probe = match cmd.output().await {
             Ok(o) if o.status.code() == Some(0) => {
-                let v = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                let v = decode_korean_safe(&o.stdout, false).trim().to_string();
                 AiProbe {
                     cli,
                     installed: true,
@@ -79,25 +95,14 @@ pub async fn detect_clis() -> Vec<AiProbe> {
 
 /// 한 번의 prompt 실행 (single-shot, non-stream).
 ///
-/// Claude / Codex 모두 비대화식 모드 (`-p` / `exec`) 사용.
-/// stream 은 v0.2 다음 단계 (Tauri Channel<String>).
+/// Claude / Codex 모두 비대화식 모드. stream 은 v0.2 다음 단계 (Tauri Channel<String>).
+/// Sprint c35 — `cli.build_args(prompt)` 위임으로 match 인라인 제거.
 pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
     let start = std::time::Instant::now();
-    let bin = cli.binary();
 
-    let mut cmd = Command::new(bin);
-    match cli {
-        AiCli::Claude => {
-            // Claude Code: -p (non-interactive) + --output-format text
-            cmd.args(["-p", prompt, "--output-format", "text"]);
-        }
-        AiCli::Codex => {
-            // Codex CLI: exec (non-interactive) — 출력은 plain text
-            cmd.args(["exec", prompt]);
-        }
-    };
-
-    cmd.env("LANG", "C.UTF-8")
+    let mut cmd = Command::new(cli.binary());
+    cmd.args(cli.build_args(prompt))
+        .env("LANG", "C.UTF-8")
         .env("LC_ALL", "C.UTF-8")
         .env("PYTHONIOENCODING", "utf-8")
         .stdin(Stdio::null())
@@ -106,14 +111,10 @@ pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
 
     let output = cmd.output().await.map_err(AppError::Io)?;
 
-    // 바이트 → UTF-8 lossy 디코딩 (git_run 과 동일 패턴)
-    let (stdout_cow, _, had_err) = encoding_rs::UTF_8.decode(&output.stdout);
-    let stdout = if had_err {
-        encoding_rs::GBK.decode(&output.stdout).0.into_owned()
-    } else {
-        stdout_cow.into_owned()
-    };
-    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    // Sprint c35 — git/path::decode_korean_safe 위임 (UTF-8 + GBK fallback).
+    // stdout 은 NFC 미적용 (AI 응답 content 보존), stderr 도 동일.
+    let stdout = decode_korean_safe(&output.stdout, false);
+    let stderr = decode_korean_safe(&output.stderr, false);
 
     Ok(AiOutput {
         success: output.status.code() == Some(0),
@@ -121,4 +122,43 @@ pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
         stderr,
         took_ms: start.elapsed().as_millis() as u64,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_args_claude_format() {
+        let args = AiCli::Claude.build_args("hello");
+        assert_eq!(args, vec!["-p", "hello", "--output-format", "text"]);
+    }
+
+    #[test]
+    fn build_args_codex_format() {
+        let args = AiCli::Codex.build_args("hello");
+        assert_eq!(args, vec!["exec", "hello"]);
+    }
+
+    #[test]
+    fn build_args_korean_prompt_passthrough() {
+        let prompt = "한글 prompt 테스트";
+        assert!(AiCli::Claude.build_args(prompt).contains(&prompt));
+        assert!(AiCli::Codex.build_args(prompt).contains(&prompt));
+    }
+
+    #[test]
+    fn binary_names() {
+        assert_eq!(AiCli::Claude.binary(), "claude");
+        assert_eq!(AiCli::Codex.binary(), "codex");
+    }
+
+    #[test]
+    fn ai_cli_serializes_lowercase() {
+        // serde rename_all = "lowercase" 검증 (frontend AiCli 타입과 호환).
+        let json = serde_json::to_string(&AiCli::Claude).unwrap();
+        assert_eq!(json, r#""claude""#);
+        let json = serde_json::to_string(&AiCli::Codex).unwrap();
+        assert_eq!(json, r#""codex""#);
+    }
 }
