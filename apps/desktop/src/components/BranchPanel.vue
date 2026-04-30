@@ -9,8 +9,10 @@ import { createBranch, deleteBranch, switchBranch } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useHiddenRefs, useHiddenRefMutations, useSoloRef } from '@/composables/useHiddenRefs'
-import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
-import { aiExplainBranch, cherryPickSha, mergeBranch, rebaseBranch } from '@/api/git'
+import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
+// Sprint c32 god comp 분리 9/N — Explain branch (modal state + IPC) composable.
+import { useExplainBranch } from '@/composables/useExplainBranch'
+import { cherryPickSha, mergeBranch, rebaseBranch } from '@/api/git'
 import AiResultModal from './AiResultModal.vue'
 import RemoteManageModal from './RemoteManageModal.vue'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
@@ -154,13 +156,17 @@ function branchHoverTitle(b: BranchInfo): string {
   return lines.join('\n')
 }
 
-// === AI Explain branch (Sprint B7) ===
+// === AI Explain branch (Sprint B7 → Sprint c32 useExplainBranch composable) ===
 const ai = useAiCli()
-const explainOpen = ref(false)
-const explainTitle = ref('')
-const explainContent = ref('')
-const explainError = ref<string | null>(null)
-const explainPending = ref(false)
+const {
+  explainOpen,
+  explainTitle,
+  explainContent,
+  explainError,
+  explainPending,
+  explain: explainBranchAi,
+  close: closeExplainBranch,
+} = useExplainBranch()
 
 // === Sprint B8 — drag-drop ===
 const dragOverIdx = ref<number | null>(null)
@@ -296,24 +302,8 @@ async function onExplainBranch(b: BranchInfo) {
   const base = window.prompt(`브랜치 ${head} 을(를) 어떤 base 와 비교?`, guessBase)
   if (!base?.trim()) return
   if (!confirmAiSend()) return
-  explainOpen.value = true
-  explainTitle.value = `Branch ${head} (vs ${base.trim()})`
-  explainContent.value = ''
-  explainError.value = null
-  explainPending.value = true
-  try {
-    const out = await aiExplainBranch(props.repoId, ai.available.value, head, base.trim(), true)
-    if (out.success) {
-      explainContent.value = out.text
-      notifyAiDone('AI 브랜치 설명', `${head} vs ${base.trim()}`)
-    } else {
-      explainError.value = out.stderr || out.text || '응답 실패'
-    }
-  } catch (e) {
-    explainError.value = describeError(e)
-  } finally {
-    explainPending.value = false
-  }
+  // Sprint c32 — composable 위임 (modal open + IPC + 결과 ref 갱신).
+  await explainBranchAi(props.repoId, ai.available.value, head, base.trim())
 }
 </script>
 
@@ -423,7 +413,7 @@ async function onExplainBranch(b: BranchInfo) {
       :content="explainContent"
       :loading="explainPending"
       :error="explainError"
-      @close="explainOpen = false"
+      @close="closeExplainBranch"
     />
 
     <div class="flex-1 overflow-auto px-1 py-2">
