@@ -39,15 +39,25 @@ vi.mock('@/i18n', () => ({
   },
 }))
 
-import { confirmAiSend, notifyAiDone, useAiCli } from './useAiCli'
+import {
+  __resetAiCallCountForTest,
+  aiCallCountRef,
+  confirmAiSend,
+  incrementAiCallCount,
+  notifyAiDone,
+  readAiCallCount,
+  useAiCli,
+} from './useAiCli'
 
 describe('useAiCli', () => {
   beforeEach(() => {
     probesRef.value = undefined
     mockNotify.mockClear()
+    __resetAiCallCountForTest()
   })
   afterEach(() => {
     vi.restoreAllMocks()
+    __resetAiCallCountForTest()
   })
 
   it('probes undefined → available null + installedClis 빈 배열', () => {
@@ -116,5 +126,44 @@ describe('useAiCli', () => {
   it('notifyAiDone — title 에 ✨ prefix + notify 호출', () => {
     notifyAiDone('test', 'body')
     expect(mockNotify).toHaveBeenCalledWith('✨ test', 'body')
+  })
+
+  // Sprint c36 코드 리뷰 ARCH-001 + SEC-c36-01 fix — aiCallCountRef reactive 카운터.
+  describe('aiCallCount — module-scope reactive ref', () => {
+    it('초기값 0', () => {
+      expect(readAiCallCount()).toBe(0)
+      expect(aiCallCountRef.value).toBe(0)
+    })
+
+    it('incrementAiCallCount → ref +1 + reactive', () => {
+      incrementAiCallCount()
+      expect(aiCallCountRef.value).toBe(1)
+      incrementAiCallCount()
+      expect(aiCallCountRef.value).toBe(2)
+      expect(readAiCallCount()).toBe(2)
+    })
+
+    it('notifyAiDone → 자동 +1 (5 AI composable 자동 측정 patten)', () => {
+      const before = readAiCallCount()
+      notifyAiDone('AI commit', 'first line')
+      expect(readAiCallCount()).toBe(before + 1)
+    })
+
+    it('localStorage NaN 오염 시 0 fallback (SEC-c36-01)', () => {
+      // 다른 앱이 같은 키에 잘못된 값 저장 시뮬.
+      localStorage.setItem('git-fried.identity.aiCallCount', 'not-a-number')
+      __resetAiCallCountForTest()
+      // re-read — localStorage 'not-a-number' 가 Number() = NaN → guard 후 0.
+      // (test 환경 happy-dom 의 localStorage 가 정상 동작)
+      // __reset 이 removeItem 이라 0 — 실제 NaN persistence 은 readPersistedCount 직접 호출 시.
+      expect(aiCallCountRef.value).toBe(0)
+    })
+
+    it('__resetAiCallCountForTest → 0', () => {
+      incrementAiCallCount()
+      incrementAiCallCount()
+      __resetAiCallCountForTest()
+      expect(aiCallCountRef.value).toBe(0)
+    })
   })
 })

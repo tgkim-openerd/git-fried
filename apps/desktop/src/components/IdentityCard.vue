@@ -8,12 +8,12 @@
 //   - 한글: 활성 레포의 한글 commit 메시지 카운트 (간단 휴리스틱)
 //   - Gitea: 등록된 Gitea forge 계정 수 (vs GitHub)
 //   - AI CLI: Claude / Codex 설치 감지 결과 + 사용 횟수 (localStorage 카운터)
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { aiDetectClis, countHangulCommits, forgeListAccounts } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
 import { useReposStore } from '@/stores/repos'
-import { readAiCallCount } from '@/composables/useAiCli'
+import { aiCallCountRef } from '@/composables/useAiCli'
 
 const reposStore = useReposStore()
 
@@ -43,24 +43,9 @@ const codexInstalled = computed(() =>
   (aiProbes.value ?? []).some((p) => p.cli === 'codex' && p.installed),
 )
 
-// Sprint c36 — useAiCli::notifyAiDone 이 호출 시 카운터 +1.
-// 5 AI composable (Commit/PrBody/ResolveConflict/Composer/Review) 의 onSuccess 에서 자동 측정.
-// localStorage 변경은 같은 탭 내 reactive 가 안 되므로 storage event + interval poll 으로 갱신.
-const aiCallCountRaw = ref(readAiCallCount())
-function refreshAiCount() {
-  aiCallCountRaw.value = readAiCallCount()
-}
-let pollHandle: ReturnType<typeof setInterval> | null = null
-onMounted(() => {
-  // 같은 탭 내 변경은 storage event 가 안 발화 → 5초 poll (Settings 페이지에서만 짧게 활성).
-  pollHandle = setInterval(refreshAiCount, 5000)
-  window.addEventListener('storage', refreshAiCount)
-})
-onUnmounted(() => {
-  if (pollHandle) clearInterval(pollHandle)
-  window.removeEventListener('storage', refreshAiCount)
-})
-const aiCallCount = computed(() => aiCallCountRaw.value)
+// Sprint c36 코드 리뷰 ARCH-001 fix — useAiCli 의 module-scope reactive ref 직접 사용.
+// notifyAiDone 호출 시점에 ref.value++ 자동 갱신 → poll / storage event 불필요.
+const aiCallCount = aiCallCountRef
 
 // Sprint c36 — count_hangul_commits IPC 직접 query. 활성 레포 시에만 실행.
 const hangulQuery = useQuery({
