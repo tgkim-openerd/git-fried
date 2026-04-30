@@ -121,7 +121,7 @@ async function onActivate(p: Profile) {
         class="flex items-center justify-between rounded px-2 py-1 hover:bg-accent/40"
       >
         <span class="flex items-center gap-2">
-          <span :class="p.isActive ? 'text-emerald-500' : 'text-muted-foreground'">●</span>
+          <span :class="p.isActive ? 'text-diff-add' : 'text-muted-foreground'">●</span>
           <span :class="p.isActive ? 'font-semibold' : ''">{{ p.name }}</span>
           <span class="text-[10px] text-muted-foreground">
             {{ p.gitUserName }} &lt;{{ p.gitUserEmail || '?' }}&gt;

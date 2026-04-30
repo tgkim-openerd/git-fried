@@ -51,9 +51,9 @@ function statusIcon(s: SubmoduleEntry): string {
 function statusColor(s: SubmoduleEntry): string {
   switch (s.status) {
     case 'modified':
-      return 'text-amber-500'
+      return 'text-warning-amber'
     case 'conflicted':
-      return 'text-rose-500'
+      return 'text-danger-rose'
     case 'uninitialized':
       return 'text-muted-foreground/50'
     default:

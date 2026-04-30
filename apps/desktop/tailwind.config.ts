@@ -61,12 +61,13 @@ export default {
         // Sprint c35 plan/28 옵션 C — 도메인 semantic colors (light/dark 자동 분기).
         // 사용 의도: text-emerald-500 → text-diff-add, text-violet-500 → text-ai-violet 등.
         // light 에서 진한 채도 (가독성 ↑), dark 에서 밝은 채도 (눈 부담 ↓).
-        'diff-add': 'hsl(var(--diff-add))',
-        'diff-delete': 'hsl(var(--diff-delete))',
-        'diff-rename': 'hsl(var(--diff-rename))',
-        'ai-violet': 'hsl(var(--ai-violet))',
-        'warning-amber': 'hsl(var(--warning-amber))',
-        'danger-rose': 'hsl(var(--danger-rose))',
+        // Sprint c37 — `<alpha-value>` placeholder 추가로 `text-diff-add/80` 같은 alpha modifier 호환.
+        'diff-add': 'hsl(var(--diff-add) / <alpha-value>)',
+        'diff-delete': 'hsl(var(--diff-delete) / <alpha-value>)',
+        'diff-rename': 'hsl(var(--diff-rename) / <alpha-value>)',
+        'ai-violet': 'hsl(var(--ai-violet) / <alpha-value>)',
+        'warning-amber': 'hsl(var(--warning-amber) / <alpha-value>)',
+        'danger-rose': 'hsl(var(--danger-rose) / <alpha-value>)',
       },
       borderRadius: {
         lg: 'var(--radius)',

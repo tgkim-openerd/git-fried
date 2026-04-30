@@ -98,8 +98,8 @@ useShortcut('push', onPush)
       </span>
       <span v-if="upstream" class="text-xs text-muted-foreground"> → {{ upstream }} </span>
       <span v-if="ahead || behind" class="text-xs">
-        <span v-if="ahead" class="text-emerald-500">↑{{ ahead }}</span>
-        <span v-if="behind" class="ml-1 text-rose-500">↓{{ behind }}</span>
+        <span v-if="ahead" class="text-diff-add">↑{{ ahead }}</span>
+        <span v-if="behind" class="ml-1 text-danger-rose">↓{{ behind }}</span>
       </span>
     </div>
 

@@ -156,7 +156,7 @@ async function onDelete(a: ForgeAccount) {
       </div>
       <div class="mt-3 flex items-center justify-between gap-2 text-xs">
         <div>
-          <span v-if="verified" class="text-emerald-500">
+          <span v-if="verified" class="text-diff-add">
             ✓ 검증 완료 — {{ verified.username }} ({{ verified.displayName || '?' }})
           </span>
           <span v-else-if="verifyError" class="text-destructive">{{ verifyError }}</span>

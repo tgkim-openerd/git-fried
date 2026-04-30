@@ -659,7 +659,7 @@ onUnmounted(() => {
             <span class="font-mono text-muted-foreground">// WIP</span>
             <span
               v-if="wipChangeCount > 0"
-              class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-600"
+              class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-warning-amber"
             >
               {{ wipChangeCount }}
             </span>
@@ -714,7 +714,7 @@ onUnmounted(() => {
                     class="ref-pill inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
                     :class="
                       soloRef === r
-                        ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
+                        ? 'bg-orange-500/20 text-orange-700 dark:text-orange-500 ring-1 ring-orange-500/40'
                         : 'bg-muted text-muted-foreground'
                     "
                   >
@@ -764,7 +764,7 @@ onUnmounted(() => {
                       class="ref-pill ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
                       :class="
                         soloRef === r
-                          ? 'bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/40'
+                          ? 'bg-orange-500/20 text-orange-700 dark:text-orange-500 ring-1 ring-orange-500/40'
                           : 'bg-muted text-muted-foreground'
                       "
                     >
@@ -814,7 +814,7 @@ onUnmounted(() => {
                 :class="[col.widthClass, 'text-xs']"
                 :title="commitRowAt(v.index)?.commit.signed ? 'GPG 서명' : ''"
               >
-                <span v-if="commitRowAt(v.index)?.commit.signed" class="text-emerald-500">✓</span>
+                <span v-if="commitRowAt(v.index)?.commit.signed" class="text-diff-add">✓</span>
               </span>
             </template>
           </div>

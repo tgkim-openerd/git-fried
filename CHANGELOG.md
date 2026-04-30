@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Sprint c37 — plan/28 옵션 C 3차 + statusFormat semantic 전환 (2026-04-30, 1 commit)** — checkpoint.md 1순위 A "plan/28 잔여 ~30곳" 자율 진행. main 직접 1 commit / typecheck 0 / vitest **57/612** (+5 tests, statusFormat semantic update) / **plan/28 누적 적용 17 컴포넌트 (c35 2 + c36 5 + c37 10) / 잔존 87 → 68 (19 위치 감소)**:
+- **Sprint c37 — plan/28 옵션 C 3차 + 4차 (2026-04-30, 2 commits)** — checkpoint.md 1순위 A "plan/28 잔여 ~30곳" 완전 마무리 + alpha modifier 호환 인프라. main 직접 2 commits / typecheck 0 / vitest **57/612** / **plan/28 누적 적용 44 컴포넌트 (c35 2 + c36 5 + c37 37) / 순수 hardcoded 색상 0 (87 → 25, 잔존 25 모두 dark variant 패턴)**:
+  - **4차 commit (이번)** — 추가 28 컴포넌트 일괄 치환 + tailwind alpha modifier 호환:
+    - **28 컴포넌트** (모두 순수 hardcoded `text-X-500` 등 단일 위치): BisectModal / BulkFetchResultModal / CommitDiffPanel / CommitGraph (orange 2 + amber + signed) / CommitTable / CompareModal / CreatePrModal / ForgeSetup / FullscreenDiffView (header DIFF + blame sha alpha) / GitKrakenImportModal (warning + done + error) / HunkStageModal / IssueDetailModal (state) / LfsPanel / MergeEditorModal (AI + RESULT) / MiniSubmoduleList / MiniWorktreeList / ProfilesSection / ProfileSwitcher / ReleaseDetailModal (draft + prerelease) / ReleasesPanel / RepoSpecificForm / RepoSwitcherModal / StatusInlineDiff / SubmodulePanel / SyncBar / TerminalPanel / WipBanner / WipRow
+    - **`tailwind.config.ts`** — semantic colors 6개 모두 `hsl(var(--X) / <alpha-value>)` 형식으로 업그레이드. `text-diff-add/80` 같은 alpha modifier 호환 (FullscreenDiffView blame sha 적용처).
+    - 매핑 규칙: 의미 매핑 명확 → semantic class (text-diff-add / text-warning-amber / text-danger-rose / text-ai-violet / text-diff-delete / text-diff-rename) / state 의미 (PR/issue open·closed, AI 외 violet, orange solo) → text-X-700 dark:text-X-500 패턴.
+  - **3차 commit (`212ee1a`)** — 11 컴포넌트 + statusFormat util semantic 전환:
   - **이번 commit** — 11 컴포넌트 + statusFormat util + test 일괄 치환:
     - **c37 진입 후보 8개** (plan/28 §c36 명시): ToastContainer (success/warning/error 3) / StatusBar (clean/conflict/AI button 3) / ReflogModal (commit/reset/rebase/merge 4) / GitKrakenToolbar (stash/ahead/behind 3) / ChangeCountBadge (staged/unstaged/untracked/conflicted 4) / MiniBranchList (HEAD/ahead/behind 3) / SyncTemplateModal (success/conflict/fail 3) / PrPanel (PR state 3)
     - **추가 ROI 큰 3개**: PrDetailModal (AI 헤더 + AI 리뷰 버튼 → text-ai-violet 2 위치 단순화) / InteractiveRebaseModal (drop/reword/squash/fixup action + warning/success/error/abort box 6) / BranchPanel (solo orange + ahead/behind 4)

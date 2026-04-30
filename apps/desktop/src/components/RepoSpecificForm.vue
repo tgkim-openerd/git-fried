@@ -31,9 +31,7 @@ watch(
 const dirty = computed(() => {
   const a = form.value
   const b = original.value
-  return (Object.keys(a) as (keyof RepoConfigSnapshot)[]).some(
-    (k) => (a[k] ?? '') !== (b[k] ?? ''),
-  )
+  return (Object.keys(a) as (keyof RepoConfigSnapshot)[]).some((k) => (a[k] ?? '') !== (b[k] ?? ''))
 })
 
 function save() {
@@ -72,8 +70,8 @@ const gpgsignBool = computed({
 
     <template v-else>
       <p class="text-xs text-muted-foreground">
-        선택한 레포의 <code>.git/config --local</code> 키를 직접 수정합니다.
-        빈 값으로 두고 저장 = unset.
+        선택한 레포의 <code>.git/config --local</code> 키를 직접 수정합니다. 빈 값으로 두고 저장 =
+        unset.
       </p>
 
       <!-- B1 Hooks -->
@@ -204,7 +202,7 @@ const gpgsignBool = computed({
       </fieldset>
 
       <div class="flex items-center justify-end gap-2 pt-2">
-        <span v-if="dirty" class="text-[11px] text-amber-600">변경됨</span>
+        <span v-if="dirty" class="text-[11px] text-warning-amber">변경됨</span>
         <button
           type="button"
           class="rounded border border-border px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"

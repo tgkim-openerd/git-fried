@@ -165,9 +165,7 @@ watch(
       class="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-1.5 text-xs"
     >
       <div class="min-w-0 flex-1 truncate font-mono" :title="headerLabel">
-        <span
-          class="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-500"
-        >
+        <span class="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-diff-add">
           DIFF
         </span>
         <span class="ml-2">{{ headerLabel }}</span>
@@ -343,7 +341,7 @@ watch(
             @click="onBlameRowClick(line.sha)"
           >
             <td
-              class="w-16 shrink-0 px-2 text-right text-[10px] text-emerald-500/80 hover:text-emerald-500"
+              class="w-16 shrink-0 px-2 text-right text-[10px] text-diff-add/80 hover:text-diff-add"
             >
               {{ line.shortSha }}
             </td>

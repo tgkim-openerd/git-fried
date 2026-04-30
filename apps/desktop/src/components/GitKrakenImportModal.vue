@@ -191,7 +191,7 @@ watch(
         </details>
 
         <details v-if="plan.skippedPaths.length" class="mb-3">
-          <summary class="cursor-pointer text-xs text-amber-600">
+          <summary class="cursor-pointer text-xs text-warning-amber">
             스킵될 path (디렉토리 존재 안 함):
             {{ plan.skippedPaths.length }}개
           </summary>
@@ -215,7 +215,7 @@ watch(
 
       <!-- done -->
       <div v-else-if="phase === 'done' && result">
-        <p class="mb-3 text-sm font-semibold text-green-600">✅ 완료</p>
+        <p class="mb-3 text-sm font-semibold text-diff-add">✅ 완료</p>
         <ul class="ml-4 list-disc text-xs">
           <li>Workspace 생성: {{ result.workspacesCreated }}</li>
           <li>Repo 추가: {{ result.reposAdded }}</li>
@@ -224,7 +224,7 @@ watch(
           <li v-if="result.tabsToOpen.length">탭 복원 시도: {{ result.tabsToOpen.length }}</li>
         </ul>
         <details v-if="result.warnings.length" class="mt-3">
-          <summary class="cursor-pointer text-xs text-amber-600">
+          <summary class="cursor-pointer text-xs text-warning-amber">
             경고 {{ result.warnings.length }}건
           </summary>
           <ul class="mt-1 ml-4 list-disc text-xs">
@@ -234,7 +234,7 @@ watch(
       </div>
 
       <!-- error -->
-      <div v-else-if="phase === 'error'" class="text-sm text-red-600">
+      <div v-else-if="phase === 'error'" class="text-sm text-danger-rose">
         <p class="mb-2 font-semibold">❌ 실패</p>
         <pre class="whitespace-pre-wrap text-xs">{{ errorMessage }}</pre>
       </div>

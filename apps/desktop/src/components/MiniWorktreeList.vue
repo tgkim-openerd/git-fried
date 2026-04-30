@@ -50,19 +50,20 @@ function worktreeName(path: string): string {
         :title="`${w.path}${w.branch ? ' [' + w.branch + ']' : ''}${w.isLocked ? ' (locked)' : ''}`"
       >
         <span class="shrink-0 w-3 text-center text-[10px]">
-          <span v-if="w.isMain" class="text-amber-500" title="main worktree">★</span>
-          <span v-else-if="w.isLocked" class="text-rose-500" title="locked">🔒</span>
+          <span v-if="w.isMain" class="text-warning-amber" title="main worktree">★</span>
+          <span v-else-if="w.isLocked" class="text-danger-rose" title="locked">🔒</span>
           <span v-else class="text-muted-foreground">·</span>
         </span>
         <span class="flex-1 truncate font-mono">{{ worktreeName(w.path) }}</span>
-        <span v-if="w.branch" class="truncate text-[9px] text-muted-foreground" :style="{ maxWidth: '80px' }">
+        <span
+          v-if="w.branch"
+          class="truncate text-[9px] text-muted-foreground"
+          :style="{ maxWidth: '80px' }"
+        >
           {{ w.branch }}
         </span>
       </li>
-      <li
-        v-if="moreCount > 0"
-        class="px-1 py-0.5 text-[10px] text-muted-foreground"
-      >
+      <li v-if="moreCount > 0" class="px-1 py-0.5 text-[10px] text-muted-foreground">
         ⋯ +{{ moreCount }}개 더 (전체 → 클릭)
       </li>
     </ul>

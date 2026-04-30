@@ -50,7 +50,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
       class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1.5"
     >
       <div class="flex items-center gap-2 font-mono text-xs">
-        <span class="rounded bg-emerald-500/15 px-1.5 text-[10px] font-bold text-emerald-500">
+        <span class="rounded bg-emerald-500/15 px-1.5 text-[10px] font-bold text-diff-add">
           INLINE DIFF
         </span>
         <span>commit</span>

@@ -150,7 +150,7 @@ async function onAiResolve(): Promise<void> {
       </button>
       <button
         v-if="availableCli"
-        class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+        class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-ai-violet hover:bg-violet-500/20 disabled:opacity-50"
         :disabled="aiMut.isPending.value"
         :title="`${availableCli} CLI 가 ours/theirs/base 분석 후 result 추천`"
         @click="onAiResolve()"
@@ -186,7 +186,7 @@ async function onAiResolve(): Promise<void> {
         <header
           class="flex items-center justify-between border-b border-border bg-emerald-500/10 px-2 py-1"
         >
-          <span class="text-xs font-semibold text-emerald-500">✓ RESULT (편집)</span>
+          <span class="text-xs font-semibold text-diff-add">✓ RESULT (편집)</span>
           <button
             v-if="conflictQuery.data.value?.base != null"
             class="text-[10px] text-muted-foreground hover:text-foreground"

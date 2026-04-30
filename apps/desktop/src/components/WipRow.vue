@@ -41,7 +41,7 @@ const emit = defineEmits<{
   >
     <!-- BRANCH/TAG 컬럼 placeholder (graph row column 폭 정렬용) -->
     <div class="w-24 shrink-0 truncate font-mono text-[10px] text-muted-foreground">
-      <span v-if="branch" class="rounded bg-emerald-500/15 px-1 py-0.5 text-emerald-500">
+      <span v-if="branch" class="rounded bg-emerald-500/15 px-1 py-0.5 text-diff-add">
         ●&nbsp;{{ branch }}
       </span>
     </div>
@@ -70,7 +70,7 @@ const emit = defineEmits<{
       <span class="font-mono text-muted-foreground">// WIP</span>
       <span
         v-if="changeCount > 0"
-        class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-600"
+        class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-warning-amber"
       >
         {{ changeCount }}
       </span>

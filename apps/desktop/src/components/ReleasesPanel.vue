@@ -103,12 +103,12 @@ function onReleaseContextMenu(ev: MouseEvent, r: ForgeRelease) {
             <span class="font-mono text-xs">
               <span
                 v-if="r.draft"
-                class="rounded bg-amber-500/30 px-1 py-0.5 text-[10px] text-amber-500 mr-1"
+                class="rounded bg-amber-500/30 px-1 py-0.5 text-[10px] text-warning-amber mr-1"
                 >{{ t('releases.draftBadge') }}</span
               >
               <span
                 v-if="r.prerelease"
-                class="rounded bg-violet-500/30 px-1 py-0.5 text-[10px] text-violet-500 mr-1"
+                class="rounded bg-violet-500/30 px-1 py-0.5 text-[10px] text-violet-700 dark:text-violet-500 mr-1"
                 >{{ t('releases.preReleaseBadge') }}</span
               >
               {{ r.tag }}

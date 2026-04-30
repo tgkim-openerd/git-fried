@@ -153,7 +153,7 @@ const titleLength = computed(() => title.value.length)
           <button
             v-if="availableCli"
             type="button"
-            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-[10px] text-ai-violet hover:bg-violet-500/20 disabled:opacity-50"
             :disabled="!head || !base || aiBodyMut.isPending.value"
             :title="`${availableCli} CLI 가 ${head} → ${base} commits 분석 후 본문 생성`"
             @click="onAiBody()"
@@ -178,7 +178,7 @@ const titleLength = computed(() => title.value.length)
 
     <template #footer>
       <div class="flex items-center justify-end gap-2 text-xs">
-        <span v-if="head && base && head === base" class="mr-auto text-amber-500">
+        <span v-if="head && base && head === base" class="mr-auto text-warning-amber">
           ⚠ head 와 base 가 같습니다
         </span>
         <button

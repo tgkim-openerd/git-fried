@@ -27,7 +27,9 @@ function fmtDate(unix: number): string {
 }
 
 function stateColor(s: string): string {
-  return s === 'open' ? 'text-emerald-500' : 'text-violet-500'
+  return s === 'open'
+    ? 'text-emerald-700 dark:text-emerald-500'
+    : 'text-violet-700 dark:text-violet-500'
 }
 </script>
 
@@ -75,7 +77,10 @@ function stateColor(s: string): string {
         </span>
       </div>
 
-      <pre class="whitespace-pre-wrap rounded border border-border bg-muted/30 p-3 font-mono text-[12px]">{{ issue.bodyMd || '(본문 없음)' }}</pre>
+      <pre
+        class="whitespace-pre-wrap rounded border border-border bg-muted/30 p-3 font-mono text-[12px]"
+        >{{ issue.bodyMd || '(본문 없음)' }}</pre
+      >
 
       <p class="mt-3 text-[10px] text-muted-foreground">
         💡 코멘트 스레드 / state change / labels 는 v1.x.

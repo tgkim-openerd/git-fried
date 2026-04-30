@@ -70,7 +70,7 @@ function onNextHunk() {
         <span
           class="shrink-0 rounded px-1.5 text-[10px] font-bold"
           :class="
-            isStaged ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/20 text-amber-500'
+            isStaged ? 'bg-emerald-500/20 text-diff-add' : 'bg-amber-500/20 text-warning-amber'
           "
         >
           {{ isStaged ? 'STAGED' : 'WORKDIR' }}

@@ -123,53 +123,53 @@ function onKeydown(e: KeyboardEvent) {
         aria-label="레포 검색"
         @keydown="onKeydown"
       />
-        <ul class="max-h-96 overflow-auto py-1">
-          <li
-            v-for="(r, i) in filtered"
-            :key="r.id"
-            class="cursor-pointer px-3 py-1.5 text-sm"
-            :class="i === selected ? 'bg-accent text-accent-foreground' : ''"
-            @mouseenter="selected = i"
-            @click="pick(r)"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <span class="flex items-center gap-2 truncate">
-                <span v-if="r.isPinned" class="text-amber-500">⭐</span>
-                <span
-                  class="font-medium"
-                  :class="aliases.resolveLocal(r.id, r.name).aliased ? 'italic' : ''"
-                >
-                  {{ aliases.resolveLocal(r.id, r.name).display }}
-                </span>
-                <span
-                  v-if="aliases.resolveLocal(r.id, r.name).aliased"
-                  class="text-[10px] text-muted-foreground"
-                  :title="`원본: ${r.name}`"
-                >
-                  ({{ r.name }})
-                </span>
-                <span
-                  v-if="r.forgeKind !== 'unknown'"
-                  class="rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
-                >
-                  {{ r.forgeKind }}
-                </span>
+      <ul class="max-h-96 overflow-auto py-1">
+        <li
+          v-for="(r, i) in filtered"
+          :key="r.id"
+          class="cursor-pointer px-3 py-1.5 text-sm"
+          :class="i === selected ? 'bg-accent text-accent-foreground' : ''"
+          @mouseenter="selected = i"
+          @click="pick(r)"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="flex items-center gap-2 truncate">
+              <span v-if="r.isPinned" class="text-warning-amber">⭐</span>
+              <span
+                class="font-medium"
+                :class="aliases.resolveLocal(r.id, r.name).aliased ? 'italic' : ''"
+              >
+                {{ aliases.resolveLocal(r.id, r.name).display }}
               </span>
-              <span class="shrink-0 text-[10px] text-muted-foreground">
-                {{ r.defaultBranch || '?' }}
+              <span
+                v-if="aliases.resolveLocal(r.id, r.name).aliased"
+                class="text-[10px] text-muted-foreground"
+                :title="`원본: ${r.name}`"
+              >
+                ({{ r.name }})
               </span>
-            </div>
-            <div class="truncate font-mono text-[10px] text-muted-foreground">
-              {{ r.localPath }}
-            </div>
-          </li>
-          <li
-            v-if="filtered.length === 0"
-            class="px-3 py-3 text-center text-xs text-muted-foreground"
-          >
-            결과 없음
-          </li>
-        </ul>
+              <span
+                v-if="r.forgeKind !== 'unknown'"
+                class="rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+              >
+                {{ r.forgeKind }}
+              </span>
+            </span>
+            <span class="shrink-0 text-[10px] text-muted-foreground">
+              {{ r.defaultBranch || '?' }}
+            </span>
+          </div>
+          <div class="truncate font-mono text-[10px] text-muted-foreground">
+            {{ r.localPath }}
+          </div>
+        </li>
+        <li
+          v-if="filtered.length === 0"
+          class="px-3 py-3 text-center text-xs text-muted-foreground"
+        >
+          결과 없음
+        </li>
+      </ul>
       <div class="border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
         ↑↓ 탐색 · Enter 선택 · Esc 닫기 · ⭐ pinned 우선
       </div>

@@ -37,13 +37,13 @@ function fmtDate(unix: number): string {
       <h2 v-if="release" class="text-sm font-semibold">
         <span
           v-if="release.draft"
-          class="mr-1 rounded bg-amber-500/30 px-1 py-0.5 text-[10px] text-amber-500"
+          class="mr-1 rounded bg-amber-500/30 px-1 py-0.5 text-[10px] text-warning-amber"
         >
           draft
         </span>
         <span
           v-if="release.prerelease"
-          class="mr-1 rounded bg-violet-500/30 px-1 py-0.5 text-[10px] text-violet-500"
+          class="mr-1 rounded bg-violet-500/30 px-1 py-0.5 text-[10px] text-violet-700 dark:text-violet-500"
         >
           pre
         </span>
@@ -54,12 +54,15 @@ function fmtDate(unix: number): string {
 
     <div v-if="release" class="p-4 text-sm">
       <p class="mb-3 text-xs text-muted-foreground">
-        {{ release.forgeKind }} · {{ release.owner }}/{{ release.repo }}
-        · {{ fmtDate(release.createdAt) }}
+        {{ release.forgeKind }} · {{ release.owner }}/{{ release.repo }} ·
+        {{ fmtDate(release.createdAt) }}
       </p>
 
       <h3 class="mb-1 text-xs uppercase tracking-wider text-muted-foreground">Changelog</h3>
-      <pre class="whitespace-pre-wrap rounded border border-border bg-muted/30 p-3 font-mono text-[12px]">{{ release.bodyMd || '(changelog 없음)' }}</pre>
+      <pre
+        class="whitespace-pre-wrap rounded border border-border bg-muted/30 p-3 font-mono text-[12px]"
+        >{{ release.bodyMd || '(changelog 없음)' }}</pre
+      >
 
       <p class="mt-3 text-[10px] text-muted-foreground">
         💡 asset list / 다운로드 / signature 검증은 v1.x.

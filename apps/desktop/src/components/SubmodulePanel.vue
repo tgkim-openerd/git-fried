@@ -30,9 +30,9 @@ const syncMut = useMutation({
 function statusColor(s: SubmoduleEntry['status']): string {
   switch (s) {
     case 'initialized':
-      return 'text-emerald-500'
+      return 'text-diff-add'
     case 'modified':
-      return 'text-amber-500'
+      return 'text-warning-amber'
     case 'conflicted':
       return 'text-destructive'
     case 'uninitialized':

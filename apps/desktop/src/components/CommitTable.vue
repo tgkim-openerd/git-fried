@@ -18,12 +18,14 @@ const emit = defineEmits<{
   openInForge: [sha: string]
 }>()
 
-const { data: commits, isFetching, error } = useQuery({
+const {
+  data: commits,
+  isFetching,
+  error,
+} = useQuery({
   queryKey: computed(() => ['log', props.repoId]),
   queryFn: () =>
-    props.repoId == null
-      ? Promise.resolve([])
-      : getLog({ repoId: props.repoId, limit: 200 }),
+    props.repoId == null ? Promise.resolve([]) : getLog({ repoId: props.repoId, limit: 200 }),
   enabled: computed(() => props.repoId != null),
 })
 
@@ -97,11 +99,17 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
       </div>
     </header>
 
-    <div v-if="error" class="m-4 rounded border border-destructive bg-destructive/10 p-3 text-sm whitespace-pre-wrap">
+    <div
+      v-if="error"
+      class="m-4 rounded border border-destructive bg-destructive/10 p-3 text-sm whitespace-pre-wrap"
+    >
       {{ describeError(error) }}
     </div>
 
-    <div v-else-if="repoId == null" class="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+    <div
+      v-else-if="repoId == null"
+      class="flex flex-1 items-center justify-center text-sm text-muted-foreground"
+    >
       좌측에서 레포를 선택하세요.
     </div>
 
@@ -143,12 +151,7 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
               {{ formatDate(c.authorAt) }}
             </td>
             <td class="px-3 py-1.5">
-              <span
-                v-if="c.signed"
-                class="text-xs text-emerald-500"
-                title="GPG 서명됨"
-                >✓</span
-              >
+              <span v-if="c.signed" class="text-xs text-diff-add" title="GPG 서명됨">✓</span>
             </td>
           </tr>
           <tr v-if="filteredCommits.length === 0">

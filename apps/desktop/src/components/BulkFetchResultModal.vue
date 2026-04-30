@@ -15,12 +15,8 @@ const emit = defineEmits<{ close: [] }>()
 
 const { last } = useBulkFetchResult()
 
-const failedCount = computed(
-  () => last.value?.results.filter((r) => !r.success).length ?? 0,
-)
-const okCount = computed(
-  () => (last.value?.results.length ?? 0) - failedCount.value,
-)
+const failedCount = computed(() => last.value?.results.filter((r) => !r.success).length ?? 0)
+const okCount = computed(() => (last.value?.results.length ?? 0) - failedCount.value)
 
 function fmtTime(ms: number): string {
   return formatDateLocalized(Math.floor(ms / 1000), {
@@ -38,17 +34,14 @@ function fmtTime(ms: number): string {
         📡 일괄 Fetch 결과
         <span v-if="last" class="ml-2 text-[11px] text-muted-foreground">
           {{ fmtTime(last.ranAt) }} · {{ okCount }}/{{ last.results.length }} 성공
-          <span v-if="failedCount > 0" class="ml-1 text-amber-500">
+          <span v-if="failedCount > 0" class="ml-1 text-warning-amber">
             · {{ failedCount }} 실패
           </span>
         </span>
       </h2>
     </template>
     <div class="p-4 text-sm">
-      <p
-        v-if="!last"
-        class="text-center text-xs text-muted-foreground"
-      >
+      <p v-if="!last" class="text-center text-xs text-muted-foreground">
         아직 일괄 Fetch 를 실행하지 않았습니다.
       </p>
       <table v-else class="w-full text-xs">
@@ -66,10 +59,7 @@ function fmtTime(ms: number): string {
             class="border-t border-border align-top hover:bg-accent/30"
           >
             <td class="px-2 py-1 font-mono">{{ r.repoName }}</td>
-            <td
-              class="px-2 py-1"
-              :class="r.success ? 'text-emerald-500' : 'text-red-500'"
-            >
+            <td class="px-2 py-1" :class="r.success ? 'text-diff-add' : 'text-danger-rose'">
               {{ r.success ? '✓ ok' : '✕ fail' }}
             </td>
             <td class="px-2 py-1">
@@ -78,12 +68,7 @@ function fmtTime(ms: number): string {
                 class="whitespace-pre-wrap break-all font-mono text-[10px] text-muted-foreground"
                 >{{ humanizeGitError(r.error) }}</pre
               >
-              <span
-                v-else-if="r.success"
-                class="text-[10px] text-muted-foreground"
-              >
-                fetched
-              </span>
+              <span v-else-if="r.success" class="text-[10px] text-muted-foreground"> fetched </span>
             </td>
           </tr>
         </tbody>

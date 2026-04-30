@@ -228,7 +228,7 @@ function fmtSize(b: number | null): string {
     >
       <span class="font-medium">Pre-push:</span>
       {{ pushSizeQuery.data.value.commitCount }} commit
-      <span v-if="pushSizeQuery.data.value.fileCount > 0" class="text-amber-500">
+      <span v-if="pushSizeQuery.data.value.fileCount > 0" class="text-warning-amber">
         · LFS {{ pushSizeQuery.data.value.fileCount }}개 ({{
           fmtSize(pushSizeQuery.data.value.totalBytes)
         }})
@@ -253,7 +253,7 @@ function fmtSize(b: number | null): string {
           :key="`${f.oid}-${f.path}`"
           class="flex items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-accent/40"
         >
-          <span :class="f.downloaded ? 'text-emerald-500' : 'text-muted-foreground'">
+          <span :class="f.downloaded ? 'text-diff-add' : 'text-muted-foreground'">
             {{ f.downloaded ? '●' : '◌' }}
           </span>
           <span class="flex-1 truncate font-mono">{{ f.path }}</span>

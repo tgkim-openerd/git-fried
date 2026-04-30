@@ -213,16 +213,13 @@ defineExpose({ refit: () => fit.value?.fit() })
 </script>
 
 <template>
-  <div
-    v-show="visible"
-    class="flex h-full flex-col border-t border-border bg-[#0a0a0a]"
-  >
+  <div v-show="visible" class="flex h-full flex-col border-t border-border bg-[#0a0a0a]">
     <header
       class="flex items-center justify-between border-b border-border bg-card px-3 py-1 text-xs"
     >
       <span class="text-muted-foreground">
         Terminal — {{ defaultShell }}
-        <span v-if="error" class="ml-2 text-red-500">{{ error }}</span>
+        <span v-if="error" class="ml-2 text-danger-rose">{{ error }}</span>
       </span>
       <div class="flex items-center gap-2">
         <button
@@ -243,11 +240,6 @@ defineExpose({ refit: () => fit.value?.fit() })
         </button>
       </div>
     </header>
-    <div
-      ref="container"
-      class="flex-1 overflow-hidden p-1"
-      @dragover="onDragOver"
-      @drop="onDrop"
-    />
+    <div ref="container" class="flex-1 overflow-hidden p-1" @dragover="onDragOver" @drop="onDrop" />
   </div>
 </template>

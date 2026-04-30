@@ -8,9 +8,7 @@ import { useWipNote } from '@/composables/useWipNote'
 
 const props = defineProps<{ repoId: number | null }>()
 
-const wip = computed(() =>
-  props.repoId == null ? null : useWipNote(props.repoId),
-)
+const wip = computed(() => (props.repoId == null ? null : useWipNote(props.repoId)))
 </script>
 
 <template>
@@ -20,7 +18,7 @@ const wip = computed(() =>
   >
     <span
       class="shrink-0 font-mono text-[10px]"
-      :class="wip.value ? 'text-amber-500' : 'text-muted-foreground'"
+      :class="wip.value ? 'text-warning-amber' : 'text-muted-foreground'"
     >
       // WIP
     </span>

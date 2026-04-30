@@ -107,10 +107,10 @@ function swap() {
         {{ cmpQuery.isFetching.value ? '...' : t('compare.compareButton') }}
       </button>
       <span v-if="data" class="ml-auto text-muted-foreground">
-        <span class="text-amber-500">↓ {{ data.leftCount }}</span>
+        <span class="text-warning-amber">↓ {{ data.leftCount }}</span>
         {{ t('compare.ref1Only') }}
         ·
-        <span class="text-emerald-500">↑ {{ data.rightCount }}</span>
+        <span class="text-diff-add">↑ {{ data.rightCount }}</span>
         {{ t('compare.ref2Only') }}
       </span>
     </div>

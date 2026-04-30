@@ -82,7 +82,7 @@ async function pick(id: number) {
         >
           <div class="flex items-center justify-between">
             <span>
-              <span v-if="p.isActive" class="text-emerald-500">●</span>
+              <span v-if="p.isActive" class="text-diff-add">●</span>
               {{ p.name }}
             </span>
             <span class="text-[10px] text-muted-foreground">
