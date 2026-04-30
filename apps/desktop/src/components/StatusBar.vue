@@ -76,17 +76,17 @@ const explainContent = ref('')
 const explainError = ref<string | null>(null)
 
 const explainMut = useMutation({
-  mutationFn: () => {
+  mutationFn: async () => {
     const repoId = store.activeRepoId
     const head = status.data.value?.branch ?? null
     const target = prediction.value?.target ?? null
     if (repoId == null || !head || !target) {
-      return Promise.reject(new Error('레포/브랜치/target 미확정'))
+      throw new Error('레포/브랜치/target 미확정')
     }
     if (ai.available.value == null) {
-      return Promise.reject(new Error('Claude/Codex CLI 미설치'))
+      throw new Error('Claude/Codex CLI 미설치')
     }
-    if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
+    if (!(await confirmAiSend())) throw new Error('cancelled')
     return aiExplainBranch(repoId, ai.available.value, head, target, true)
   },
   onSuccess: (out) => {

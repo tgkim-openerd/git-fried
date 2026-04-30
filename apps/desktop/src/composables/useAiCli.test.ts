@@ -25,6 +25,20 @@ vi.mock('./useNotification', () => ({
   useNotification: () => ({ notify: mockNotify }),
 }))
 
+// Sprint c33 — confirmAiSend 가 confirmDialog 로 마이그레이션됨. mock 으로 직접 결과 제어.
+const mockConfirmDialog = vi.fn()
+vi.mock('@/composables/useConfirm', () => ({
+  confirmDialog: (opts: unknown) => mockConfirmDialog(opts),
+}))
+
+vi.mock('@/i18n', () => ({
+  i18n: {
+    global: {
+      t: (key: string) => key,
+    },
+  },
+}))
+
 import { confirmAiSend, notifyAiDone, useAiCli } from './useAiCli'
 
 describe('useAiCli', () => {
@@ -82,14 +96,21 @@ describe('useAiCli', () => {
     expect(installedClis.value).toEqual([])
   })
 
-  it('confirmAiSend — window.confirm true 시 true', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-    expect(confirmAiSend()).toBe(true)
+  it('confirmAiSend — confirmDialog resolve true 시 true', async () => {
+    mockConfirmDialog.mockResolvedValueOnce(true)
+    await expect(confirmAiSend()).resolves.toBe(true)
+    expect(mockConfirmDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'confirm.aiSendTitle',
+        message: 'confirm.aiSendMessage',
+        danger: true,
+      }),
+    )
   })
 
-  it('confirmAiSend — window.confirm false 시 false', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-    expect(confirmAiSend()).toBe(false)
+  it('confirmAiSend — confirmDialog resolve false 시 false', async () => {
+    mockConfirmDialog.mockResolvedValueOnce(false)
+    await expect(confirmAiSend()).resolves.toBe(false)
   })
 
   it('notifyAiDone — title 에 ✨ prefix + notify 호출', () => {

@@ -15,6 +15,10 @@ import {
 } from '@/api/git'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { confirmDialog } from '@/composables/useConfirm'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export function useCommitActions(getRepoId: () => number | null) {
   const toast = useToast()
@@ -41,7 +45,11 @@ export function useCommitActions(getRepoId: () => number | null) {
   async function cherryPick(sha: string) {
     const id = repoIdOrToast()
     if (id == null) return
-    if (!window.confirm(`현재 HEAD 에 cherry-pick: ${sha.slice(0, 8)}?`)) return
+    const ok = await confirmDialog({
+      title: t('confirm.cherryPickTitle'),
+      message: t('confirm.cherryPickHeadMessage', { sha: sha.slice(0, 8) }),
+    })
+    if (!ok) return
     try {
       await cherryPickSha(id, sha)
       toast.success('Cherry-pick 완료', sha.slice(0, 8))
@@ -54,8 +62,11 @@ export function useCommitActions(getRepoId: () => number | null) {
   async function revert(sha: string) {
     const id = repoIdOrToast()
     if (id == null) return
-    if (!window.confirm(`Revert commit (새 commit 생성): ${sha.slice(0, 8)}?`))
-      return
+    const ok = await confirmDialog({
+      title: t('confirm.revertCommitTitle'),
+      message: t('confirm.revertCommitMessage', { sha: sha.slice(0, 8) }),
+    })
+    if (!ok) return
     try {
       await ipcRevert(id, sha, false)
       toast.success('Revert 완료', sha.slice(0, 8))
@@ -81,7 +92,12 @@ export function useCommitActions(getRepoId: () => number | null) {
       }
     } else {
       // soft / mixed / keep — 단순 confirm 으로 충분 (working tree 보존).
-      if (!window.confirm(`Reset --${mode} → ${sha.slice(0, 8)}?`)) return
+      const ok = await confirmDialog({
+        title: t('confirm.resetCommitTitle'),
+        message: t('confirm.resetCommitMessage', { sha: sha.slice(0, 8), mode }),
+        danger: true,
+      })
+      if (!ok) return
     }
     try {
       await ipcReset(id, mode, sha)

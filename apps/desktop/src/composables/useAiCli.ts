@@ -7,9 +7,15 @@ import { useQuery } from '@tanstack/vue-query'
 import { aiDetectClis, type AiCli, type AiProbe } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
 import { useNotification } from '@/composables/useNotification'
+import { confirmDialog } from '@/composables/useConfirm'
+import { i18n } from '@/i18n'
 
 export function useAiCli() {
-  const { data: probes, isFetching, refetch } = useQuery<AiProbe[]>({
+  const {
+    data: probes,
+    isFetching,
+    refetch,
+  } = useQuery<AiProbe[]>({
     queryKey: ['aiProbes'],
     queryFn: aiDetectClis,
     staleTime: STALE_TIME.STATIC,
@@ -24,21 +30,27 @@ export function useAiCli() {
   })
 
   const installedClis = computed<AiCli[]>(() => {
-    return (probes.value ?? [])
-      .filter((p) => p.installed)
-      .map((p) => p.cli)
+    return (probes.value ?? []).filter((p) => p.installed).map((p) => p.cli)
   })
 
   return { probes, available, installedClis, isFetching, refetch }
 }
 
 /**
- * 회사 보안정책 강제 공통 confirm — true 면 송출 동의.
+ * 회사 보안정책 강제 공통 confirm — Promise<boolean> resolve.
+ *  - true: 송출 동의
+ *  - false: 취소 / Esc / backdrop
+ *
+ * Sprint c33 — window.confirm() 의 OS 다이얼로그 → 커스텀 ConfirmDialog 마이그레이션.
+ * vue setup context 외부에서도 호출되므로 i18n.global.t 사용 (useI18n() 안 됨).
  */
-export function confirmAiSend(): boolean {
-  return confirm(
-    '⚠ 변경 내용 / diff 가 외부 LLM 으로 송출됩니다.\n회사 보안정책을 확인하셨나요?',
-  )
+export function confirmAiSend(): Promise<boolean> {
+  const t = i18n.global.t
+  return confirmDialog({
+    title: t('confirm.aiSendTitle'),
+    message: t('confirm.aiSendMessage'),
+    danger: true,
+  })
 }
 
 /**

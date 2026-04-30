@@ -16,6 +16,10 @@ import type { Workspace } from '@/types/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
+import { confirmDialog } from '@/composables/useConfirm'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export const WORKSPACE_COLOR_PRESETS = [
   '#0ea5e9', // sky
@@ -84,10 +88,15 @@ export function useWorkspaceMutations(workspaces: () => Workspace[] | undefined)
     if (newName.value.trim()) createMut.mutate()
   }
 
-  function confirmDelete(): void {
+  async function confirmDelete(): Promise<void> {
     const w = activeWorkspace.value
     if (!w) return
-    if (window.confirm(`워크스페이스 '${w.name}' 삭제? 레포는 보존되고 그룹 해제만.`)) {
+    const ok = await confirmDialog({
+      title: t('confirm.deleteWorkspaceTitle'),
+      message: t('confirm.deleteWorkspaceMessage', { name: w.name }),
+      danger: true,
+    })
+    if (ok) {
       deleteMut.mutate(w.id)
     }
   }

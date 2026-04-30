@@ -11,6 +11,10 @@ import { useMutation } from '@tanstack/vue-query'
 import { discardPaths, stageAll, stagePaths, unstagePaths } from '@/api/git'
 import type { RepoStatus } from '@/types/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { confirmDialog } from '@/composables/useConfirm'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export function useStageMutations(
   repoId: () => number | null,
@@ -43,10 +47,15 @@ export function useStageMutations(
     const id = repoId()
     if (id != null) unstageMut.mutate({ id, paths: [path] })
   }
-  function discardOne(path: string): void {
+  async function discardOne(path: string): Promise<void> {
     const id = repoId()
     if (id == null) return
-    if (window.confirm(`'${path}' 의 변경을 폐기하시겠습니까? 되돌릴 수 없습니다.`)) {
+    const ok = await confirmDialog({
+      title: t('confirm.discardFileTitle'),
+      message: t('confirm.discardFileMessage', { path }),
+      danger: true,
+    })
+    if (ok) {
       discardMut.mutate({ id, paths: [path] })
     }
   }

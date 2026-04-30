@@ -308,7 +308,7 @@ async function onExplainBranch(b: BranchInfo) {
   const guessBase = b.kind === 'local' ? 'main' : 'main'
   const base = window.prompt(`브랜치 ${head} 을(를) 어떤 base 와 비교?`, guessBase)
   if (!base?.trim()) return
-  if (!confirmAiSend()) return
+  if (!(await confirmAiSend())) return
   // Sprint c32 — composable 위임 (modal open + IPC + 결과 ref 갱신).
   await explainBranchAi(props.repoId, ai.available.value, head, base.trim())
 }

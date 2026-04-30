@@ -17,6 +17,10 @@ import {
 } from '@/api/git'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { confirmDialog } from '@/composables/useConfirm'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export interface BranchActionCallbacks {
   onCompare?: (branch: BranchInfo) => void
@@ -87,10 +91,7 @@ export function useBranchActions(getRepoId: () => number | null) {
       toast.warning('Rename 불가', 'remote 브랜치는 rename 미지원')
       return
     }
-    const next = window.prompt(
-      `'${branch.name}' 새 이름:`,
-      branch.name,
-    )
+    const next = window.prompt(`'${branch.name}' 새 이름:`, branch.name)
     if (!next?.trim() || next.trim() === branch.name) return
     try {
       await renameBranch(id, branch.name, next.trim())
@@ -109,10 +110,14 @@ export function useBranchActions(getRepoId: () => number | null) {
       return
     }
     const force = branch.ahead > 0
-    const msg =
-      `브랜치 '${branch.name}' 삭제?` +
-      (force ? '\n⚠ 머지되지 않은 커밋이 있어 강제 삭제 -D 합니다.' : '')
-    if (!window.confirm(msg)) return
+    const ok = await confirmDialog({
+      title: t('confirm.deleteBranchTitle'),
+      message:
+        t('confirm.deleteBranchMessage', { name: branch.name }) +
+        (force ? '\n⚠ ' + t('confirm.deleteBranchForceHint') : ''),
+      danger: true,
+    })
+    if (!ok) return
     try {
       await deleteBranch(id, localBranchName(branch.name), force)
       toast.success('Delete', branch.name)
@@ -129,7 +134,12 @@ export function useBranchActions(getRepoId: () => number | null) {
       toast.warning('Merge 불가', '자기 자신 merge 불가')
       return
     }
-    if (!window.confirm(`현재 HEAD 에 '${branch.name}' 머지?`)) return
+    const ok = await confirmDialog({
+      title: t('confirm.mergeIntoHeadTitle'),
+      message: t('confirm.mergeIntoHeadMessage', { name: branch.name }),
+      danger: true,
+    })
+    if (!ok) return
     try {
       const r = await mergeBranch(id, localBranchName(branch.name), true, false)
       if (r.success) {
@@ -152,12 +162,12 @@ export function useBranchActions(getRepoId: () => number | null) {
       toast.warning('Rebase 불가', '자기 자신 rebase 불가')
       return
     }
-    if (
-      !window.confirm(
-        `현재 HEAD 를 '${branch.name}' 위로 rebase?\n⚠ 충돌 시 --continue 필요.`,
-      )
-    )
-      return
+    const ok = await confirmDialog({
+      title: t('confirm.rebaseOntoTitle'),
+      message: t('confirm.rebaseOntoMessage', { name: branch.name }),
+      danger: true,
+    })
+    if (!ok) return
     try {
       const r = await rebaseBranch(id, localBranchName(branch.name))
       if (r.success) {

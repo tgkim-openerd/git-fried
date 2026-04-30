@@ -130,11 +130,11 @@ async function onApplyFile(path: string) {
 // === AI stash message (Sprint B7) ===
 const ai = useAiCli()
 const aiMut = useMutation({
-  mutationFn: () => {
+  mutationFn: async () => {
     if (props.repoId == null || ai.available.value == null) {
-      return Promise.reject(new Error('AI 사용 불가 — Claude/Codex CLI 미설치'))
+      throw new Error('AI 사용 불가 — Claude/Codex CLI 미설치')
     }
-    if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
+    if (!(await confirmAiSend())) throw new Error('cancelled')
     return aiStashMessage(props.repoId, ai.available.value, includeUntracked.value, true)
   },
   onSuccess: (out) => {

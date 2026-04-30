@@ -147,14 +147,14 @@ const explainOpen = ref(false)
 const explainContent = ref('')
 const explainError = ref<string | null>(null)
 const explainMut = useMutation({
-  mutationFn: () => {
+  mutationFn: async () => {
     if (props.repoId == null || !props.sha) {
-      return Promise.reject(new Error('레포/commit 미확정'))
+      throw new Error('레포/commit 미확정')
     }
     if (ai.available.value == null) {
-      return Promise.reject(new Error('Claude/Codex CLI 미설치'))
+      throw new Error('Claude/Codex CLI 미설치')
     }
-    if (!confirmAiSend()) return Promise.reject(new Error('cancelled'))
+    if (!(await confirmAiSend())) throw new Error('cancelled')
     return aiExplainCommit(props.repoId, ai.available.value, props.sha, true)
   },
   onSuccess: (out) => {
