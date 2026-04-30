@@ -11,7 +11,6 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useMutation } from '@tanstack/vue-query'
 import {
-  aiComposerPlan,
   rebasePrepareTodo,
   rebaseRun,
   rebaseAbort,
@@ -27,7 +26,8 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
-import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
+// Sprint c34 god comp 14/N — AI Commit Composer 영역 분리.
+import { useAiComposer } from '@/composables/useAiComposer'
 import BaseModal from './BaseModal.vue'
 
 type Step = 'setup' | 'edit' | 'running' | 'result'
@@ -149,85 +149,13 @@ function setAction(idx: number, action: RebaseAction) {
   }
 }
 
-// === Sprint B3 — AI Commit Composer ===
-const ai = useAiCli()
-
-interface ComposerPlanEntry {
-  sha: string
-  action: RebaseAction
-  newMessage: string | null
-}
-
-function parseComposerPlan(text: string): ComposerPlanEntry[] {
-  // 응답에 마크다운 코드블록이 끼어 있을 가능성 → 첫/마지막 [ ] 추출.
-  const start = text.indexOf('[')
-  const end = text.lastIndexOf(']')
-  if (start < 0 || end <= start) return []
-  const json = text.slice(start, end + 1)
-  try {
-    const arr = JSON.parse(json) as unknown
-    if (!Array.isArray(arr)) return []
-    const out: ComposerPlanEntry[] = []
-    const allowed: RebaseAction[] = ['pick', 'reword', 'squash', 'fixup', 'drop']
-    for (const item of arr) {
-      if (!item || typeof item !== 'object') continue
-      const obj = item as Record<string, unknown>
-      const sha = typeof obj.sha === 'string' ? obj.sha : null
-      const action = typeof obj.action === 'string' ? obj.action : null
-      const newMessage = typeof obj.newMessage === 'string' ? obj.newMessage : null
-      if (!sha || !action) continue
-      if (!allowed.includes(action as RebaseAction)) continue
-      out.push({ sha, action: action as RebaseAction, newMessage })
-    }
-    return out
-  } catch {
-    return []
-  }
-}
-
-function applyComposerPlan(plan: ComposerPlanEntry[]) {
-  const bySha = new Map<string, ComposerPlanEntry>()
-  for (const p of plan) bySha.set(p.sha, p)
-  todo.value = todo.value.map((e) => {
-    const p = bySha.get(e.sha)
-    if (!p) return e
-    return {
-      ...e,
-      action: p.action,
-      newMessage: p.action === 'reword' ? (p.newMessage ?? e.subject) : null,
-    }
-  })
-}
-
-const composerMut = useMutation({
-  mutationFn: async () => {
-    if (repoId.value == null || ai.available.value == null) {
-      throw new Error('AI 사용 불가 — Claude/Codex CLI 미설치')
-    }
-    if (!(await confirmAiSend())) throw new Error('cancelled')
-    return aiComposerPlan(repoId.value, ai.available.value, todo.value.length, true)
-  },
-  onSuccess: (out) => {
-    if (!out.success) {
-      toast.error('AI 응답 실패', out.stderr || out.text || '')
-      return
-    }
-    const plan = parseComposerPlan(out.text)
-    if (plan.length === 0) {
-      toast.error('AI 응답 파싱 실패', '응답이 JSON array 가 아니거나 비어있음.')
-      return
-    }
-    applyComposerPlan(plan)
-    const changed = plan.filter((p) => p.action !== 'pick').length
-    toast.success(`✨ AI 제안 적용 (${changed}건 변경)`, 'pick 외 액션 검토 후 Run rebase.')
-    notifyAiDone('AI Commit Composer', `${changed}건 변경 제안`)
-  },
-  onError: (e) => {
-    const m = describeError(e)
-    if (m.includes('cancelled')) return
-    toast.error('AI 호출 실패', m)
-  },
+// === Sprint c34 god 14/N — AI Commit Composer composable 위임 ===
+const aiComp = useAiComposer({
+  repoId: () => repoId.value,
+  todo,
 })
+const ai = { available: aiComp.availableCli }
+const composerMut = aiComp.generate
 
 const canRun = computed(() => {
   if (todo.value.length === 0) return false
