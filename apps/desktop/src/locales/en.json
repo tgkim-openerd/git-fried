@@ -95,6 +95,86 @@
     "searchPlaceholder": "Search (branch / tag / submodule) — Cmd+Alt+F",
     "clearSearch": "Clear search"
   },
+  "shortcuts": {
+    "title": "⌨ Keyboard shortcuts",
+    "groups": {
+      "global": "Global",
+      "sync": "Sync (GitKraken standard)",
+      "edit": "Edit",
+      "layout": "Layout / Zoom",
+      "tabs": "Repo Tabs (Sprint G)",
+      "rightPanel": "Right Panel switch",
+      "modal": "Modal / Commands",
+      "vim": "Vim navigation (outside inputs, single key)"
+    },
+    "global": {
+      "commandPalette": "Command Palette",
+      "repoSwitch": "Quick repo switch",
+      "graphSearch": "Commit graph search",
+      "help": "This help",
+      "escape": "Close modal / search"
+    },
+    "sync": {
+      "fetch": "Fetch (all remotes)",
+      "pull": "Pull",
+      "push": "Push"
+    },
+    "edit": {
+      "commit": "Commit (in input)",
+      "stageAndCommit": "Stage all + Commit",
+      "stageAll": "Stage all",
+      "unstageAll": "Unstage all",
+      "focusMessage": "Focus message input",
+      "newPr": "New PR modal",
+      "branchTab": "Switch to Branch tab",
+      "diff": "Show selected commit diff",
+      "inlineDiff": "Toggle inline diff panel (Sprint c25-4.5)",
+      "hunkNav": "Diff prev/next hunk jump (Sprint c26-3)",
+      "fileHistory": "File history (current file)"
+    },
+    "layout": {
+      "toggleSidebar": "Toggle left sidebar",
+      "toggleDetail": "Toggle right panel (status/branches/...)",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Zoom reset",
+      "closeModal": "Close active modal",
+      "newTab": "Quick repo switch (⌘⇧P alias)",
+      "openInExplorer": "Open repo folder (OS file manager)",
+      "fullscreen": "Toggle fullscreen",
+      "filterRepos": "Focus sidebar repo filter"
+    },
+    "tabs": {
+      "nextTab": "Next tab",
+      "prevTab": "Previous tab",
+      "closeTab": "Close active tab",
+      "middleClick": "Close tab"
+    },
+    "rightPanel": {
+      "tab1": "Status",
+      "tab2": "Branches",
+      "tab3": "Stash",
+      "tab4": "Submodule",
+      "tab5": "LFS",
+      "tab6": "PR (Forge)",
+      "tab7": "Worktree"
+    },
+    "modal": {
+      "syncTemplate": "Sync template (multi-repo cherry-pick)",
+      "bisect": "Bisect",
+      "reflog": "Reflog viewer",
+      "rebase": "Interactive rebase (option A)",
+      "terminal": "Toggle integrated terminal"
+    },
+    "vim": {
+      "j": "Commit graph next row",
+      "k": "Commit graph previous row",
+      "l": "(reserved — expand detail)",
+      "h": "Clear selection",
+      "s": "Stage current file (status panel)",
+      "u": "Unstage current file"
+    }
+  },
   "statusBar": {
     "noRepo": "No repo selected",
     "predicting": "Predicting target conflict...",

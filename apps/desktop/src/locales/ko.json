@@ -95,6 +95,86 @@
     "searchPlaceholder": "검색 (브랜치 / 태그 / submodule) — ⌘⌥F",
     "clearSearch": "검색 지우기"
   },
+  "shortcuts": {
+    "title": "⌨ 키보드 단축키",
+    "groups": {
+      "global": "글로벌",
+      "sync": "동기화 (GitKraken 표준)",
+      "edit": "편집",
+      "layout": "레이아웃 / Zoom",
+      "tabs": "레포 탭 (Sprint G)",
+      "rightPanel": "우측 탭 전환",
+      "modal": "모달 / 명령",
+      "vim": "Vim navigation (입력창 외에서, 단일 키)"
+    },
+    "global": {
+      "commandPalette": "Command Palette",
+      "repoSwitch": "빠른 레포 전환",
+      "graphSearch": "커밋 그래프 검색",
+      "help": "이 도움말",
+      "escape": "모달 / 검색 닫기"
+    },
+    "sync": {
+      "fetch": "Fetch (모든 remote)",
+      "pull": "Pull",
+      "push": "Push"
+    },
+    "edit": {
+      "commit": "Commit (입력창에서)",
+      "stageAndCommit": "Stage all + Commit",
+      "stageAll": "모두 stage",
+      "unstageAll": "모두 unstage",
+      "focusMessage": "메시지 입력창 focus",
+      "newPr": "새 PR 모달",
+      "branchTab": "Branch 탭으로 이동",
+      "diff": "선택 commit diff 모달",
+      "inlineDiff": "Inline diff panel 토글 (Sprint c25-4.5)",
+      "hunkNav": "Diff 이전/다음 hunk 점프 (Sprint c26-3)",
+      "fileHistory": "File history (현재 파일)"
+    },
+    "layout": {
+      "toggleSidebar": "좌측 사이드바 토글",
+      "toggleDetail": "우측 패널 (변경/브랜치/...) 토글",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Zoom reset",
+      "closeModal": "활성 모달 닫기",
+      "newTab": "Repo 빠른 전환 (⌘⇧P alias)",
+      "openInExplorer": "레포 폴더 열기 (OS 파일 매니저)",
+      "fullscreen": "전체화면 토글",
+      "filterRepos": "Sidebar 레포 필터 focus"
+    },
+    "tabs": {
+      "nextTab": "다음 탭",
+      "prevTab": "이전 탭",
+      "closeTab": "활성 탭 닫기",
+      "middleClick": "탭 닫기"
+    },
+    "rightPanel": {
+      "tab1": "변경 (Status)",
+      "tab2": "브랜치",
+      "tab3": "Stash",
+      "tab4": "Submodule",
+      "tab5": "LFS",
+      "tab6": "PR (Forge)",
+      "tab7": "Worktree"
+    },
+    "modal": {
+      "syncTemplate": "Sync template (다중 레포 cherry-pick)",
+      "bisect": "Bisect",
+      "reflog": "Reflog viewer",
+      "rebase": "Interactive rebase (옵션 A)",
+      "terminal": "통합 터미널 토글"
+    },
+    "vim": {
+      "j": "커밋 그래프 다음 행",
+      "k": "커밋 그래프 이전 행",
+      "l": "(예약 — 우측 detail 확장)",
+      "h": "선택 해제",
+      "s": "현재 파일 stage (변경 패널)",
+      "u": "현재 파일 unstage"
+    }
+  },
   "statusBar": {
     "noRepo": "레포 미선택",
     "predicting": "target 충돌 예측 중...",
