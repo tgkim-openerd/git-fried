@@ -12,10 +12,13 @@
 // - Terminal: terminal 토글 (dispatchShortcut('terminal'))
 
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { fetchAll, popStash, pull, pushStash, push, updateSubmodules } from '@/api/git'
+import { useMutation } from '@tanstack/vue-query'
+// queryClient 는 stash/pop mutation 분리 후 GitKrakenToolbar 에서 직접 미사용.
+import { fetchAll, pull, push, updateSubmodules } from '@/api/git'
 // Sprint c36 god 17/N — undo/redo mutation 영역 분리.
 import { useUndoRedo } from '@/composables/useUndoRedo'
+// Sprint c37 god 21/N — stash/pop mutation + handler 분리.
+import { useStashPopMutation } from '@/composables/useStashPopMutation'
 import { useQuery } from '@tanstack/vue-query'
 import { listRepos } from '@/api/git'
 import { useStash } from '@/composables/useStash'
@@ -47,7 +50,6 @@ const props = defineProps<{
 
 const toast = useToast()
 const invalidate = useInvalidateRepoQueries()
-const queryClient = useQueryClient()
 const general = useGeneralSettings()
 
 const repoIdRef = computed(() => props.repoId)
@@ -147,24 +149,11 @@ const pushMut = useMutation({
 // commit/amend 만 자동 reset --soft, 나머지 거부 → ReflogModal 자동 오픈.
 const { undoMut, redoMut } = useUndoRedo(() => props.repoId)
 
-// === Stash / Pop (toolbar 자체 mutation) ===
-const stashMut = useMutation({
-  mutationFn: (id: number) => pushStash(id, null, false),
-  onSuccess: () => {
-    invalidate(props.repoId)
-    queryClient.invalidateQueries({ queryKey: ['stash', props.repoId] })
-    toast.success('Stash 완료', '메시지 없이 즉시 stash 됨')
-  },
-  onError: (e) => toast.error('Stash 실패', describeError(e)),
-})
-const popMut = useMutation({
-  mutationFn: (id: number) => popStash(id, 0),
-  onSuccess: () => {
-    invalidate(props.repoId)
-    queryClient.invalidateQueries({ queryKey: ['stash', props.repoId] })
-    toast.success('Pop 완료', '가장 최근 stash@{0} 적용')
-  },
-  onError: (e) => toast.error('Pop 실패', describeError(e)),
+// === Sprint c37 god 21/N — stash/pop mutation + onStash/onPop handler 위임 ===
+const { stashMut, popMut, onStash, onPop } = useStashPopMutation({
+  repoId: () => props.repoId,
+  hasChanges,
+  stashCount,
 })
 
 // === Handlers ===
@@ -217,42 +206,7 @@ function onBranch() {
   }
   dispatchShortcut('newBranch')
 }
-async function onStash() {
-  if (props.repoId == null) {
-    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
-    return
-  }
-  if (!hasChanges.value) {
-    toast.info('Stash 할 변경사항 없음')
-    return
-  }
-  // SEC-001 fix — destructive 액션 confirm (메시지 없이 즉시 stash).
-  const ok = await confirmDialog({
-    title: t('confirm.stashAllTitle'),
-    message: t('confirm.stashAllMessage'),
-    danger: true,
-  })
-  if (!ok) return
-  stashMut.mutate(props.repoId)
-}
-async function onPop() {
-  if (props.repoId == null) {
-    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
-    return
-  }
-  if (stashCount.value === 0) {
-    toast.info('Stash 없음', 'pop 할 stash 가 없습니다.')
-    return
-  }
-  // SEC-001 fix — pop 은 apply + drop 자동, conflict 시 working tree 더러워짐.
-  const ok = await confirmDialog({
-    title: t('confirm.popStashTitle'),
-    message: t('confirm.popLatestStashMessage', { remaining: stashCount.value }),
-    danger: true,
-  })
-  if (!ok) return
-  popMut.mutate(props.repoId)
-}
+// onStash / onPop 는 useStashPopMutation 위임 (위에서 destructure).
 function onTerminal() {
   dispatchShortcut('terminal')
 }

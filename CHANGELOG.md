@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37-5 — useStashPopMutation 추출 (GitKrakenToolbar) (2026-04-30, 1 commit)** — checkpoint.md 1순위 C "GitKrakenToolbar 추가 분리 (stash/pop mutation, ~50 LOC)" 자율 진행. main 직접 1 commit / typecheck 0 / vitest 60/660 / **god comp 분리 누적 21 (c37-5 신규 1) / -1,652 LOC (-30%)**:
+  - **`useStashPopMutation`** (god 21/N, 110 LOC) — stashMut + popMut + onStash + onPop 전체 영역. SEC-001 confirm 보존 (stash/pop 모두 destructive). queryClient invalidateQueries(['stash', repoId]) 도 composable 내부로. GitKrakenToolbar 549 → 503 (-46 LOC) + queryClient/popStash/pushStash/useQueryClient import 4개 정리.
+  - **누적 통계 (c31~c37-5)**:
+    - god comp: 20 → **21** (c37-5 신규: useStashPopMutation)
+    - LOC 누적 감소: -1,606 → **-1,652 (-30% 돌파)**
+    - vitest: 60/660 (composable test 추가는 c37-4 에서 완료, c37-5 는 분리만)
+
+- **Sprint c37-4 — composable 단위 테스트 추가 (2026-04-30, 1 commit)** — c37-3 의 god 18/19/20 composable 단위 테스트. main 직접 1 commit / **vitest 57/612 → 60/660 (+3 files / +48 tests)**:
+  - **`useGraphWidth.test.ts`** (18 tests) — 초기값 (default/localStorage/clamp/NaN) / laneW 자동 계산 (maxLane 1/10/100) / zoom +/- 20 + clamp / disabled computed / localStorage 영속 / 상수 export
+  - **`useGraphSelection.test.ts`** (13 tests) — selectRow (null/유효) / selectWipRow (콜백/미제공) / moveSelection (빈/첫·마지막/clamp) / vim shortcut 등록 + handler 효과
+  - **`useStatusSelection.test.ts`** (17 tests) — selectPath 토글 / copyPath (성공/실패 + vi.stubGlobal navigator) / 5개 단축키 등록 / stageCurrent (repoId null/unstaged 우선/untracked fallback/selectedPath) / stageAllExplicit / unstageAll / fileHistorySearch
+  - **vitest mock 패턴**: useShortcut → registered Map, useToast → toastCalls 배열, navigator.clipboard → vi.stubGlobal (happy-dom getter only 회피)
+
 - **Sprint c37-3 — god comp 추가 분리 (CommitGraph + StatusPanel) (2026-04-30, 1 commit)** — checkpoint.md 1순위 B 자율 진행. /analyze HIGH-1 (CommitGraph 833) + HIGH-2 (StatusPanel 789) 분리. main 직접 1 commit / typecheck 0 / vitest 57/612 / **god comp 분리 누적 20 (c37 신규 3) / -1,606 LOC (-29%)**:
   - **`useGraphWidth`** (god 18/N, 109 LOC) — graphWidth state (localStorage 영속 `git-fried.commit-graph-width`) + laneW 자동 계산 (maxLane 기반 clamp 8~36) + zoomIn/Out (±20px) + drag handle (mousedown/move/up + cleanup) + zoomInDisabled/zoomOutDisabled computed. CommitGraph 833 → 737 (-96 LOC, 단 +8 LOC composable destructure 포함).
   - **`useGraphSelection`** (god 19/N, 86 LOC) — selectedSha + selectRow/selectWipRow + moveSelection (vim J/K + 가시 영역 스크롤) + useShortcut(vimDown/vimUp/vimLeft) 등록. CommitGraph 의 selection + nav 영역 추출.

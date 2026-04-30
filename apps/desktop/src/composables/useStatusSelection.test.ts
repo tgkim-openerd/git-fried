@@ -25,7 +25,7 @@ vi.mock('@/composables/useToast', () => ({
 import { useStatusSelection } from './useStatusSelection'
 
 function fc(path: string, status: FileChange['status'] = 'modified'): FileChange {
-  return { path, status }
+  return { path, oldPath: null, status }
 }
 
 function makeStatus(
