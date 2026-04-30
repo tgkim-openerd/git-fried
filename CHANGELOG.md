@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c36 — c35 후속 자율 진행 (2026-04-30, 4 commits)** — 사용자 요청 "Sprint c36 후보 4개 모두 진행". main 직접 4 commits / typecheck 0 / lint 0 / vitest 56/598 → 57/607 (+1 file / +9 tests) / **god comp 분리 누적 17 (c36 신규 1) / -1,450 LOC (-27%)**:
+  - **`9774c08`** — AI 호출 카운터 wiring (plan/26 IdentityCard 활성). useAiCli::notifyAiDone 에 incrementAiCallCount 통합 — 5 AI composable 의 onSuccess 에서 자연 측정. localStorage 'git-fried.identity.aiCallCount' + IdentityCard ref + 5초 poll
+  - **`6c66341`** — 한글 commit 카운트 IPC 신규 (Rust `git/identity_stats.rs` 107 LOC). `count_hangul_commits` — git log --no-merges --pretty=%s -n 10000 + regex `[\u{AC00}-\u{D7A3}]`. +5 unit test (한국어 매칭 / ASCII skip / NFD 자모 skip / 중일 negative). lib.rs invoke_handler 등록 (162→163). IdentityCard useQuery 직접 호출 — "한글 commit: 42 / 100 (42%)" 실시간 표시
+  - **`c1241df`** — plan/28 옵션 C 2차 적용 — 상위 5 컴포넌트 29 위치 일괄 치환:
+    - PrDetailModal stateColor (open/merged/closed) + bg-X-500/20 → text-X-700 dark:text-X-500 (state 의미)
+    - CommitDetailSidebar changeColor (added/deleted/renamed) + diff +/- → semantic colors (text-diff-add/delete/rename/warning-amber)
+    - WorktreePanel (main/AI agent/locked/prunable) → semantic + dark 변형
+    - ActiveRepoQuickActions (ahead/behind/staged/unstaged/conflicted) → semantic
+    - CommitMessageInput (amend warning / force push danger) → text-warning-amber / text-danger-rose
+    - 잔여 ~30곳 (ToastContainer / SyncTemplateModal / StatusBar / ReflogModal 등 각 3곳 미만) — c37 진입
+  - **`dfa72e9`** — `useUndoRedo` composable (god 17/N, 71 LOC) — GitKrakenToolbar 605 → 555 (-50). undoMut + redoMut + handleResult 공통 + sanitizeReflogPreview (SEC-005 control char 위생화) named export. +9 unit test (sanitizeReflogPreview: 빈/ASCII/한글/CRLF/50자/ANSI escape/NUL byte/실제 reflog 시뮬)
+  - **누적 통계 (Sprint c31~c36)**:
+    - god comp: 16 → **17** (c36 신규: useUndoRedo)
+    - LOC 누적 감소: -1,400 → **-1,450 (-27%)**
+    - vitest: 56/598 → **57/607** (+1 file / +9 tests, useUndoRedo)
+    - IdentityCard dogfood 통계 활성 (AI call counter + 한글 commit 비율)
+    - plan/28 옵션 C 누적: c35 인프라 + 2 컴포넌트 / c36 5 컴포넌트 = 7 컴포넌트 적용 (잔여 ~30곳 c37)
+
 - **Sprint c35 — c34 후속 자율 진행 (2026-04-30, 6 commits)** — 사용자 요청 "Sprint c35 후보 4개 모두 진행". main 직접 6 commits / typecheck 0 / lint 0 / vitest 56/598 (god comp 분리는 composable test 별도 추가 안 함, 검증 위주) / **god comp 분리 누적 16 (c35 신규 2) / -1,400 LOC (-26%)**:
   - **`d34dadb`** — `useAiReview` composable (97 LOC, god 15/N) — PrDetailModal 628 → 591 (-37). aiCodeReview IPC + onResult 콜백 (reviewBody 자동 채움). **AI composable 5 표준 완성** (useAiCommitMessage / useAiPrBody / useAiResolveConflict / useAiComposer / useAiReview — 공통 시그니처 aiProbes / availableCli / generate / run)
   - **`876672a`** — `useFullscreenDiffQuery` composable (89 LOC, god 16/N) — FullscreenDiffView 449 → 392 (-57). queryArgs (wip/commit 분기) + diffRev (parent..commit) + patchQuery + hunkCount + hunkNavDisabled

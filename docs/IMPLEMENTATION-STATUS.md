@@ -1,6 +1,6 @@
 # 구현 현황 인벤토리 (Implementation Status)
 
-작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 22 + c32 3 + c33 14 + c34 5 + **c35 6** = 50 commit 누적 후 / 트리거: c34 종료 후 자율 진행 (useAiReview / useFullscreenDiffQuery / ai trait 정비 / reflog 진입점 / IdentityCard / semantic colors 1차)
+작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 22 + c32 3 + c33 14 + c34 5 + c35 6 + **c36 4** = 54 commit 누적 후 / 트리거: c35 종료 후 자율 진행 (AI call counter / 한글 commit IPC / semantic colors 2차 / useUndoRedo)
 
 > **목적**: 26개 plan 문서 + CHANGELOG Unreleased + lib.rs invoke_handler + 5 SQLite migrations + 161 IPC + 191 frontend 파일 / 66 Rust 파일을 한 문서에 매핑. 신규 개발자 / 다음 세션 entry / dogfood 시점에 "어디까지 됐고 어디 남았나" 단일 진실원천.
 >
@@ -19,16 +19,17 @@
 | **Tauri IPC** | ✅ **161 등록** (lib.rs invoke_handler 직접 카운트) | `apps/desktop/src-tauri/src/lib.rs:79-241` |
 | **Frontend 코어** | ✅ Vue 3 + Pinia + TanStack Query + Tailwind + CodeMirror + xterm | `apps/desktop/package.json` |
 | **Rust 백엔드** | ✅ 15,423 LOC / 13 top-level mod / git/ 30 sub | `find apps/desktop/src-tauri/src -name "*.rs" \| xargs wc -l` |
-| **테스트** | ✅ **vitest 56 / 598 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c34 +1 file (+16 tests): useAiComposer (parseComposerPlan 10 + applyComposerPlan 6) |
+| **테스트** | ✅ **vitest 57 / 607 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c36 +1 file (+9 tests): useUndoRedo (sanitizeReflogPreview — 빈/ASCII/한글/CRLF/50자/ANSI/NUL/실제 시뮬) |
 | **CI/Release 인프라** | 🟡 **95%** (workflow 완비, EV/updater secret 미등록) | `.github/workflows/{ci,release}.yml` |
 | **GitHub repo public** | 🟡 **97%** — version 0.3.0 통합 완료. `git tag v0.3.0` push 만 잔여 | tauri.conf.json + Cargo.toml + 3 package.json 모두 0.3.0 (Sprint c31 PR-B) |
 | **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + **318 키 / 18 컴포넌트 활용**) | Sprint c33 추가: ConfirmDialog / CompareModal / RemoteManageModal / ReleasesPanel + 핵심 GitKrakenImportModal / SyncTemplateModal — confirm.* 50 / compare 11 / remote 21 / gitkrakenImport 13 / syncTemplate 14 / releases 8 (총 +73 신규) |
 | **BaseTooltip primitive** | ✅ **26 위치 활용** | StatusInlineDiff 7 + GitKrakenToolbar 11 + SyncBar 3 + RepoTabBar 2 + ProfileSwitcher 1 + StatusPanel 토글 2 = 26 (kbd hint 노출 / hover delay / a11y) |
-| **God component 분리** | ✅ **16 컴포넌트 / -1,400 LOC (-26%)** | Sprint c35 +2 신규: useAiReview (PrDetailModal -37) / useFullscreenDiffQuery (FullscreenDiffView -57) — **AI composable 5 표준 완성** (Commit/PrBody/ResolveConflict/Composer/Review) |
+| **God component 분리** | ✅ **17 컴포넌트 / -1,450 LOC (-27%)** | Sprint c36 +1 신규: useUndoRedo (GitKrakenToolbar 605→555, -50). AI composable 5 표준 (c35 완성) |
 | **a11y 보강 (Sprint c31)** | ✅ **6 추가 위치** | PrFilesTab 3 (Expand/Collapse + 파일 행 :aria-expanded) + ContextMenu 3 (root/submenu role + aria-orientation + menuitem aria-haspopup) |
 | **UX 7원칙 검토 (Sprint c33)** | ✅ **P0 갭 1건 완전 해소** | window.confirm() 44곳 → ConfirmDialog (Von Restorff + i18n + Jakob's Law 동시 위반 해소). 6 원칙 ✓ |
 | **Light theme 가독성 (c33~c35)** | 🟡 **인프라 + 2 컴포넌트 / 잔여 ~50곳** | c34 시범 5곳 + **c35 옵션 C 인프라** (tailwind.config.ts + main.css 6 semantic colors: diff-add/diff-delete/diff-rename/ai-violet/warning-amber/danger-rose) + PrFilesTab/ConventionalCommitBuilder 적용. 잔여 ~50곳 c36 |
-| **차별점 패널 (c35)** | ✅ **IdentityCard.vue** | Settings → About 카테고리 노출. 3 카드 (한글 🇰🇷 / Gitea 🦊 / AI ✨) + dogfood 통계 (forge 계정 / Claude·Codex 설치 / 호출 카운터). plan/26 Phase 2 완료 |
+| **차별점 패널 (c35+c36)** | ✅ **IdentityCard.vue dogfood 통계 활성화** | c35: 3 카드 (한글 🇰🇷 / Gitea 🦊 / AI ✨) 노출. c36: AI 호출 카운터 wiring (notifyAiDone 통합) + 한글 commit IPC (count_hangul_commits 실측 비율). plan/26 Phase 2 완료 |
+| **Light theme 누적 (c33~c36)** | 🟡 **인프라 + 7 컴포넌트 / 잔여 ~30곳** | c34 시범 5곳 / c35 옵션 C 인프라 + 2 컴포넌트 / **c36 5 컴포넌트 29 위치**. 잔여 ~30곳 c37 (ToastContainer / SyncTemplateModal / StatusBar 외) |
 | **plan/27 단기 액션 (c34~c35)** | ✅ **3/3 완료** | 1: git/path.rs 한글 helper (c34) / 2: ai/runner.rs build_args + decode 위임 (c35) / 3: git/reflog.rs 단일 진입점 (c35) — v1.x crate 추출 형태 정비 |
 | **신규 진입점 (c34)** | ✅ **docs/QUICK_START.md** | 5분 onboarding (3 불편 / 5 차별점 / 첫 commit 흐름 / 단축키 10) — README 1순위 링크 |
 | **Core tech 경계 (plan/27)** | ✅ **분석 완료** (코드 0) | 4 후보: 한글 normalization (★★★ v1.x crate) / AI subprocess (★★★) / multi-forge (★ 보류) / reflog-undo (★★). path.rs 통합 완료 (단기 액션 1) |
