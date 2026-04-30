@@ -1,0 +1,310 @@
+# 구현 현황 인벤토리 (Implementation Status)
+
+작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 (PR-A/B/C/D 4 commit 후) / 트리거: `/analyze` 반복 검증 완료 후 plan ↔ code 정합 cataloguing
+
+> **목적**: 26개 plan 문서 + CHANGELOG Unreleased + lib.rs invoke_handler + 5 SQLite migrations + 161 IPC + 191 frontend 파일 / 66 Rust 파일을 한 문서에 매핑. 신규 개발자 / 다음 세션 entry / dogfood 시점에 "어디까지 됐고 어디 남았나" 단일 진실원천.
+>
+> **연계**: [docs/plan/13-implementation-vs-plan-diff.md](plan/13-implementation-vs-plan-diff.md) (76 commits 시점 95% 흡수 검증), [CHANGELOG.md](../CHANGELOG.md) (Sprint c25~c30 Phase 10 누적), [docs/plan/INDEX.md](plan/) (없음 — `ls docs/plan/` 으로 26 문서 인덱스 대체).
+>
+> **검증 SoT**: `apps/desktop/src-tauri/src/lib.rs` invoke_handler (161 IPC), `apps/desktop/src-tauri/src/storage/migrations/` (5 migration), CHANGELOG `[Unreleased]`, plan/13 + plan/14 + plan/16 + plan/22 + plan/25 의 자체 self-check 표.
+
+---
+
+## 1. 30초 요약
+
+| 영역 | 상태 | 근거 |
+| ---- | ---- | ---- |
+| **GitKraken 11 catalog** | ✅ **95% + 14 잔여 100%** | plan/13 §1 / plan/14 §12 |
+| **GitKraken 12 layout (Sprint c25)** | ✅ **PR #1 머지 완료** (`ae0cafe`) | plan/25 §7, CHANGELOG |
+| **Tauri IPC** | ✅ **161 등록** (lib.rs invoke_handler 직접 카운트) | `apps/desktop/src-tauri/src/lib.rs:79-241` |
+| **Frontend 코어** | ✅ Vue 3 + Pinia + TanStack Query + Tailwind + CodeMirror + xterm | `apps/desktop/package.json` |
+| **Rust 백엔드** | ✅ 15,423 LOC / 13 top-level mod / git/ 30 sub | `find apps/desktop/src-tauri/src -name "*.rs" \| xargs wc -l` |
+| **테스트** | ✅ **vitest 46 / 481 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c31 후 — useLocale.test.ts (+9) / BaseTooltip.test.ts (+5) |
+| **CI/Release 인프라** | 🟡 **95%** (workflow 완비, EV/updater secret 미등록) | `.github/workflows/{ci,release}.yml` |
+| **GitHub repo public** | 🟡 **97%** — version 0.3.0 통합 완료. `git tag v0.3.0` push 만 잔여 | tauri.conf.json + Cargo.toml + 3 package.json 모두 0.3.0 (Sprint c31 PR-B) |
+| **i18n 기초 인프라** | ✅ **완료** (vue-i18n 9.14.5 + ko/en.json 60+ 키 + useLocale + `<html lang>` 동기) | Sprint c31 PR-B (plan/03 §6 v0.3 잔여 영역) |
+| **Tooltip primitive** | ✅ BaseTooltip.vue (reka-ui 2.9.6 wrapper) | Sprint c31 PR-C (plan/24 Sprint B 1단계) |
+| **AI commit / PR / conflict** | ✅ Claude/Codex CLI subprocess | `src-tauri/src/ai/runner.rs::AiCli` |
+| **macOS / Linux** | ❌ Windows-only (plan/17 v1.3/v1.4) | `.github/workflows/ci.yml:1` "Windows-only matrix" |
+| **Line-level stage v2** | ✅ **완료** (이전 세션) | plan/16 §0 self-check |
+| **plan/24 Sprint B~F (visual refactor 코드 적용)** | 🟡 **design 100%, code 적용 보류** (사용자 결정) | plan/24 §11 |
+
+---
+
+## 2. 5 SQLite Migrations
+
+| 파일 | 내용 |
+| ---- | ---- |
+| `0001_initial.sql` | 기본 — repos / workspaces / settings KV |
+| `0002_hide_solo_branches.sql` | Sprint A1 + K — hidden refs 영속 |
+| `0003_launchpad_pr_meta.sql` | Sprint A4 — pin / snooze / saved_views |
+| `0004_repo_alias.sql` | Sprint B4 — per-profile + per-repo 별칭 |
+| `0005_commits_lookup_index.sql` | log 페이지네이션 성능 INDEX |
+
+> Repository-Specific 설정은 별도 migration 없이 `.git/config` 직접 read/write (`git/config_local.rs`, plan/14 §3 결정 1).
+
+---
+
+## 3. 161 IPC 분포 (lib.rs 직접 카운트)
+
+| 모듈 | 개수 | 대표 명령 |
+| ---- | ----: | ---- |
+| `commands.rs` | **73** | get_log, get_status, stage_paths, commit, push/pull/fetch_all, list_branches/switch/create/delete/rename, list_stash + 6 stash ops, compare_refs, reset/revert, undo/redo_last_action, get_graph, search_commits_by_message, list_submodules + 3 ops, bulk_fetch/status/quick_status/list_prs, 5 remote ops, maintenance_gc/fsck, read/apply_repo_config, 5 tag ops, clone_repo, 3 import_gitkraken_* |
+| `forge_commands.rs` | **17** | forge_save_token, list/get/create/merge/close/reopen_pr, list_pr_files, list_pr_comments, add_pr_comment, **add_review_comment** (line suggestion), submit_pr_review, list_issues, list_releases |
+| `v02_commands.rs` | **44** | 6 worktree, 3 conflict (read/write/take_side), launch_mergetool, open_in_explorer, 4 bisect, list_reflog, **9 LFS** (status/list/install/track/untrack/fetch/pull/prune/push_size), file_history/blame, **9 AI** (detect_clis/commit_message/pr_body/resolve_conflict/code_review/explain_commit/explain_branch/stash_message/composer_plan), predict_target_conflict, 6 rebase (prepare_todo/run/status/continue/abort/skip) |
+| `pty_commands.rs` | 4 | pty_open/write/resize/close (portable-pty + xterm.js) |
+| `hide_commands.rs` | 6 | list/hide/unhide/bulk/by_kind/all |
+| `launchpad_commands.rs` | 8 | list_active/for_repo/set_pinned/snooze/cleanup_defaults/list_views/save_view/delete_view |
+| `alias_commands.rs` | 4 | list_all/resolve/set/unset |
+| `profile_commands.rs` | 5 | list/create/update/delete/activate |
+
+> **v02_commands.rs 는 "legacy" 가 아님** — 이전 `/analyze` Recommendation MEDIUM-1 ("v02_commands legacy 정리") 는 **REJECTED**. 모든 44 IPC 가 `lib.rs` invoke_handler 에 등록되어 active. 이름이 v0.2 phase 의 IPC 모음을 의미할 뿐 dead code 아님.
+
+---
+
+## 4. Frontend 카탈로그 (191 파일)
+
+| 영역 | 개수 | 비고 |
+| ---- | ----: | ---- |
+| Pages | 4 | index / launchpad / repositories / settings (unplugin-vue-router 자동) |
+| Components | 84 | (test 제외) — God 5 (Sprint c31 후): **StatusPanel 788** (-155 / -16%) / CommitGraph 859 / CommandPalette 802 / PrDetailModal 762 / GitKrakenToolbar 606. 신규 StatusInlineDiff (191) + BaseTooltip (71) |
+| Composables | 77 | (test 포함) — useToast 48회 import / describeError 47회 / stores/repos 31회 / queryClient 26회 / useInvalidateRepoQueries 17회 |
+| Pinia stores | 2 | repos.ts 단 1개 store + repos.test.ts |
+| API wrapper | `api/git.ts` 161 invoke / `api/forge.ts` 등 | invokeWithTimeout (devMock 지원, 30s/5min 분기) |
+| AI 통합 | `ai/` | useAiCli (probe 1회 캐시) + Claude/Codex CLI subprocess |
+| Vitest 단위 | 44 | utils 6 / composables 30 / components 4 / api 3 / stores 1 |
+| Playwright E2E | 6 | smoke / commit / status / actions / shortcuts / gitkraken-parity |
+
+---
+
+## 5. Rust 백엔드 카탈로그 (66 파일 / 15,423 LOC)
+
+### 5-1. Top-level (13 mod, 1,830 LOC)
+
+| 모듈 | LOC | 역할 |
+| ---- | ----: | ---- |
+| `lib.rs` | 244 | tauri Builder + AppState + 161 IPC 등록 |
+| `error.rs` | 252 | AppError thiserror + 14 variant + AppResult<T> |
+| `auth.rs` | 45 | OS keyring — `git-fried:{forge}|{base_url}|{user}` |
+| `menu.rs` | 217 | OS native 메뉴 (File/Edit/View/Repo/History/Help, c30 Phase 10) |
+| `profiles.rs` | 319 | 회사/개인 1-click 토글 (user.name/email/signing_key/SSH/forge) |
+| `alias.rs` | 285 | per-profile + per-repo 별칭 |
+| `launchpad.rs` | 468 | PR 통합 보드 + Pin/Snooze/Saved Views |
+| `ai/` (3 file) | — | runner.rs (Claude/Codex CLI subprocess), prompts.rs, mod.rs |
+| `pty/mod.rs` | — | portable-pty + xterm.js |
+| `importer/gitkraken.rs` | — | %APPDATA%/.gitkraken/profiles/ 자동 탐지 + 3 JSON parse + dry-run + apply |
+| `forge/` (4 file) | — | gitea.rs (Bearer + reqwest) + github.rs + model.rs + mod.rs |
+| `storage/` | — | sqlx + 5 migrations |
+| `git/` (30 sub) | 8,046 LOC | 아래 §5-2 |
+
+### 5-2. git/ 30 서브모듈 (8,046 LOC)
+
+repository / status / stage / commit / branch / merge / rebase / cherry_pick / reset / revert (`commands::revert` IPC) / stash / tag / worktree / submodule / sync / lfs / bisect / reflog / read_file / file_history / config_local / bulk / remote / clone / compare / hide / conflict_prediction / graph / runner (한글 spawn 표준) / tests (582 LOC)
+
+상위 5: rebase 483 / reset 396 / hide 390 / repository 384 / graph 337.
+
+---
+
+## 6. Plan 흡수 매트릭스
+
+### 6-1. Plan별 상태 (26 문서)
+
+| # | 제목 | 상태 |
+| --: | ---- | ---- |
+| 00 | overview | reference 유지 |
+| 01 | why-and-positioning | reference 유지 |
+| 02 | user-workflow-evidence | reference 유지 |
+| 03 | feature-matrix (must/next/late/skip) | ✅ M16 v0.1 must = 100% / N v0.2 = 100% / N+ v0.3 = 95% (i18n 만 미진입) |
+| 04 | tech-architecture | ✅ 100% (Tauri 2 + Vue 3 + Pinia + TanStack Query + git2/CLI 하이브리드) |
+| 05 | roadmap-v0.1-v1.0 | ✅ v0.0~v0.3 진입 / v1.0~v1.6 미진입 |
+| 06 | risks-and-pitfalls | ✅ R1~R12 reference (R7 SmartScreen / R8-R9 macOS-Linux 는 v1.x) |
+| 07 | design-decisions | reference 유지 |
+| 08 | references | reference 유지 |
+| 09 | interactive-rebase (Option A) | ✅ **100%** (drop/reword/squash/fixup + drag-drop) |
+| 10 | integrated-terminal (Option A) | ✅ **100%** (xterm + portable-pty + pwsh + drag-drop file→terminal) |
+| 11 | gitkraken-benchmark | ✅ **95%** (단축키 ⌘⇧H 등 1 누락은 plan/14 H1 에서 보강) |
+| 12 | ui-improvement-plan v3 | ✅ **100%** (21 row 모두 commit hash 매핑) |
+| 13 | implementation-vs-plan-diff | ✅ self-check |
+| 14 | additional-gitkraken-gaps | ✅ **22/22 = 100%** (A14 + B14-1/2/3 + C14-1/2/3) |
+| 15 | quality-cleanup | ✅ STALE_TIME 3-tier / 11 mutation onError / window.d.ts / noUnused* / SkeletonBlock / Q-7 HSL 검증 |
+| 16 | line-stage-v2 | ✅ **완료** (이전 세션, plan/16 §0 self-check) |
+| 17 | v1.x-roadmap (EV/Sentry/macOS/Linux/OAuth/수익) | ❌ **6 마일스톤 모두 미진입** |
+| 18 | dogfood-feedback (template) | template 형식 — 채울 항목 0 (D-001~D-006 양식 예시만) |
+| 19 | v0.3-release-prep | 🟡 **95%** (workflow / 6 문서 / Issue 템플릿 모두 완비, version + tag + EV 발급만 잔여) |
+| 20 | performance-benchmark | 🟡 도구만 완비 (criterion bench / memory.ps1 / baseline.json placeholder) — 실 측정 미수행 |
+| 21 | gitkraken-migration | ✅ **100%** (importer/gitkraken.rs + GitKrakenImportModal + Settings 마이그레이션 카테고리) |
+| 22 | ui-polish-v2 | ✅ **22-1 ~ 22-21 모두 완료** (CRITICAL 5 + ContextMenu 14/14 + Modal BaseModal 18/18 + aria-label 47/47 + Skeleton 8 panel + Q-3/4/5/6/7 + F-P3 + F-P5 + ★Playwright MCP) |
+| 23 | design-system-extraction | ✅ Phase 1/2/3 옵션 B 완료 (36 PNG + 7 design-context 문서 + Figma file 7 page / 60+ artboard) |
+| 24 | visual-refactor (Sprint A~F) | 🟡 **Sprint A 완료, B~F 코드 적용 보류** (사용자 결정 — design 100% / code 점진) |
+| 25 | gitkraken-layout-migration (Sprint c25) | ✅ **PR #1 머지** `ae0cafe` (22 commits / +2900 LOC / 83 tests) — c25-1~4.5 + c26-1~3 + c25-review Phase 1/2/3 + c27 |
+
+### 6-2. v0.0 ~ v0.3 (plan/05 기준)
+
+- **v0.0** Hello World ✅ 100%
+- **v0.1** must (16 기능 그룹) ✅ 100%
+- **v0.2** next (Power user + AI 페어) ✅ 100%
+- **v0.3** next+ (Profiles/Search/AI/i18n) ✅ **95%** — 잔여: i18n 한↔영
+- **v1.0** late ❌ 미진입 (Pre-commit panel / PR review / Launchpad ✅ / AI conflict ✅ / AI code review ✅ / LFS ✅ / Bisect ✅ / Reflog ✅ / EV 서명 / Sentry / 통합 터미널 ✅ — 부분 진입, 단일 v1.0 출시 미발표)
+
+---
+
+## 7. 미진입 / 잔여 (5-Check 통과 후만 기록)
+
+### 7-1. v1.x 인프라 (plan/17, 6 마일스톤 미진입)
+
+> 5-Check: tauri-plugin-updater Cargo.toml + package.json grep miss / EV_THUMBPRINT secret 미등록 / `version: "0.0.0"` 유지 / `git tag v*` 0개. confidence: certain.
+
+| # | 영역 | 작업량 (AI pair) | 외부 의존 |
+| ---- | ---- | ---- | ---- |
+| v1.1 | EV 인증서 + tauri-plugin-updater | ~12.5h | EV 발급 1~2주, HSM eToken |
+| v1.2 | Sentry self-hosted (opt-in) | ~11h | VPS Hetzner $10/mo |
+| v1.3 | macOS 베타 (universal binary + notarization) | ~18h | Apple Developer $99/yr |
+| v1.4 | Linux 베타 (AppImage + flatpak) | ~14h | flathub 검토 1~3주 |
+| v1.5 | OAuth (Custom URL scheme — deep-link 재사용) | ~18h | — |
+| v1.6 | 수익 모델 (Solo 무료 + Team Pro) | ~5주 | Stripe/Lemon Squeezy |
+
+### 7-2. plan/19 GitHub repo public (95% 완료)
+
+잔여 5-Check (모두 confidence: certain):
+- `tauri.conf.json:4` `"version": "0.0.0"` → 0.3.0 변경
+- `git tag v0.3.0` + push (없음)
+- EV 인증서 발급 → `EV_THUMBPRINT` secret 등록 (release.yml `if: env.EV_THUMBPRINT != ''` 자동 wired)
+- TAURI_SIGNING_PRIVATE_KEY secret 등록 (Tauri 자체 서명용)
+- README 스크린샷 갱신 (현재 캡처 36 PNG 활용 가능)
+
+### 7-3. plan/24 Sprint B~F (디자인 100% / 코드 적용 보류)
+
+> 5-Check: Figma file `git-fried Design System.html` 7 페이지 / 60+ artboard 산출물 보존 / `apps/desktop/src/components/` 에 reka-ui 미설치 (`grep "reka-ui" package.json` empty) / pretendard self-host 만 적용 (Sprint A) / Tooltip primitive 부재. confidence: certain.
+
+| Sprint | 내용 | 코드 적용 |
+| ---- | ---- | ---- |
+| A | Foundation 토큰 | ✅ pretendard / Q2 색 / Status semantic / Elevation 3 / Z-index 6 |
+| B | Primitives + reka-ui | ❌ Tooltip / ContextMenu reka 래핑 미적용 |
+| C | Hub Screens 코드 적용 | 🟡 부분 (Tab overflow / Settings 2-level 6 그룹 / Sidebar Integrations slot 은 Sprint 22-12/14/15 에서 흡수) |
+| D | Modal Audit | 🟡 BaseModal 18/18 마이그레이션은 Sprint 22 에서 완료, 미캡처 5 신규 (MergeEditor/HunkStage/RemoteManage/AiResult/GitKrakenImport) 흡수 일부 |
+| E | UX Polish | 🟡 부분 (Skeleton 8/4 / EmptyState 4 / aria-label 47/47 / Motion 12 prefers-reduced 일부) |
+| F | 검증 (Lighthouse a11y ≥90 + visual diff ≥95%) | ❌ 미진입 |
+
+> 사용자 결정: Sprint 22 의 점진 흡수로 Sprint B~F 의 ~70% 가 자연 흡수됨. 잔여는 reka-ui 도입 트리거 발생 시 진입.
+
+### 7-4. v0.3 잔여 (plan/05)
+
+- **i18n 한↔영** — 미진입 (한국어만 1급)
+- **외부 출시 (HackerNews/r/git/한국 community)** — 미진입 (개인 dogfood만)
+
+---
+
+## 8. 의존성 / 외부 통합 현황
+
+### 8-1. Tauri 2 plugin (5)
+
+deep-link / dialog / fs / notification / shell. capabilities/default.json 에 권한 명시. **deep-link `git-fried://` scheme 완전 통합** (composables/useDeepLink.ts:115 `onOpenUrl` listener).
+
+### 8-2. Forge 통합
+
+| 측면 | Gitea | GitHub |
+| ---- | ---- | ---- |
+| PAT 저장 | OS keyring | OS keyring |
+| PR list/detail/create | ✅ | ✅ |
+| PR merge/close/reopen | ✅ | ✅ |
+| PR 코멘트 | ✅ list_pr_comments / add_pr_comment / **add_review_comment (line suggestion)** | ✅ 동일 |
+| PR review submit | ✅ submit_pr_review | ✅ 동일 |
+| PR files | ✅ list_pr_files (page=100) | ✅ 동일 |
+| Issues / Releases | ✅ list | ✅ list |
+| OAuth | ❌ (PAT 만, plan/17 v1.5) | ❌ (PAT 만) |
+
+### 8-3. AI 통합 (9 IPC)
+
+`ai/runner.rs::AiCli { Claude, Codex }` enum + `Command::new(bin)` subprocess. probe 결과 useAiCli 1회 캐시.
+
+| IPC | 입력 | 산출 |
+| ---- | ---- | ---- |
+| ai_detect_clis | — | { claude: installed, codex: installed } |
+| ai_commit_message | staged diff | conventional commit 한국어 |
+| ai_pr_body | branch commits + diff stat | 한국어 PR body (CLAUDE.md trailer 금지 자동) |
+| ai_resolve_conflict | conflict 청크 | 추천 + 근거 |
+| ai_code_review | branch diff | 인라인 코멘트 후보 |
+| ai_explain_commit | commit sha | 한국어 요약 |
+| ai_explain_branch | branch | 한국어 요약 |
+| ai_stash_message | working tree | "// WIP {topic}" |
+| ai_composer_plan | 요청 | conventional commit body 후보 |
+
+`predict_target_conflict` IPC = AI 사전 충돌 예측 (StatusBar ✨ 미리해결).
+
+### 8-4. AI Provider Cloud BYO
+
+- **자체 LLM 인프라 = 없음** (plan/03 §5 — 사용자 CLI 위임으로 대체. Cloud Patches / Cloud Workspace / Diagram / Agent Session = `S` 영구 거부)
+
+---
+
+## 9. 보안 / 한글 / 회귀 차단 표준
+
+| 표준 | 위치 |
+| ---- | ---- |
+| OS keyring (keyring crate 3.4) | `auth.rs:14-15` Entry::new + `git-fried:{forge}|{url}|{user}` |
+| 한글 NFC 정규화 | `api/git.ts` 의 toNFC() 10+ 호출 — IPC 직전 모든 입력 |
+| 한글 spawn 표준 | `git/runner.rs::git_run` (Sprint v0.0 표준 함수) |
+| 한글 commit body file-based | `commands::commit` HEREDOC 등가 — `--data-binary @file` 패턴 |
+| visualWidth (CJK=2) | `utils/visualWidth.ts` (RepoTabBar 한글 tab 보정 / CommitMessageInput amber warning) |
+| Conventional Commits 검증 | `scripts/lefthook-commit-msg.sh` |
+| Claude attribution 차단 | `scripts/lefthook-commit-msg.sh` (CLAUDE.md 글로벌 정합) |
+| try/catch + describeError + toast | composables 표준 (47 import) |
+| silent failure 0건 | 표본 5 catch 블록 모두 명시 처리 |
+| IPC 5분 timeout (long-running prefix) | `api/invokeWithTimeout.ts` — bulk_/clone_/fetch_/push/pull/ai_/maintenance_/import_gitkraken_apply |
+| reduced-motion media query | `main.css` `@media (prefers-reduced-motion: reduce)` 전역 폴백 |
+| coverage threshold | `vite.config.ts:99-104` lines/statements 11.3 / branches 76 / functions 35 |
+
+---
+
+## 10. 다음 진입 후보 (우선순위)
+
+### 10-1. 즉시 (M~L)
+
+1. **plan/19 잔여 5%** — `version` 0.3.0 + EV 인증서 + secret 등록 + `git tag v0.3.0`. **외부 의존 1~2주** (EV 발급)
+2. **god component 분리 (StatusPanel 943)** — c27 의 `MiniSection.vue + 4 sub-list` 패턴 (446→120 LOC, 73% 감소) 재적용. confidence: certain (선례)
+3. **Tauri 실 환경 dogfood** — c30 Phase 10 흡수 후 사용자 본인 cargo update 후 실제 앱 실행 검증
+
+### 10-2. 트리거 발생 시
+
+1. **plan/17 v1.1 (EV + Updater)** — plan/19 잔여 완료 후 자연 진입
+2. **plan/24 Sprint B~F** — reka-ui 도입 또는 Tooltip 필요 시
+3. **i18n (plan/03 §6 / v0.3 잔여)** — 글로벌 OSS 진출 결정 시
+
+### 10-3. dogfood 누적 시
+
+- **plan/18 §3** 양식에 D-001~ 누적 → P0 1+ 발견 시 D-fix sprint 즉시
+- **plan/20 baseline 측정** — `BENCH_REPO` 환경변수로 50k commit / 큰 diff / 메모리 baseline 확보
+
+---
+
+## 11. 검증 SoT 명령어
+
+| 측정 | 명령어 |
+| ---- | ---- |
+| IPC 161 카운트 | `grep "ipc::.*::" apps/desktop/src-tauri/src/lib.rs \| wc -l` |
+| Frontend 191 / Rust 66 파일 | `find apps/desktop/src -type f \| wc -l` / `find apps/desktop/src-tauri/src -name "*.rs" \| wc -l` |
+| Vitest 44 / E2E 6 | `find apps/desktop/src \( -name "*.test.ts" -o -name "*.spec.ts" \) \| wc -l` / `find e2e -name "*.spec.ts" \| wc -l` |
+| Rust 15,423 LOC | `find apps/desktop/src-tauri/src -name "*.rs" \| xargs wc -l \| tail -1` |
+| God component 검출 | `find apps/desktop/src/components -name "*.vue" -exec wc -l {} + \| sort -rn \| head -10` |
+| @iconify/vue 사용 검증 | `grep -r "@iconify/vue\|Iconify" apps/desktop/src` (현재 0 hit, package.json 만) |
+
+---
+
+## 12. 결정 로그 (2026-04-30)
+
+| # | 결정 | 근거 |
+| ---- | ---- | ---- |
+| 1 | **v02_commands.rs `legacy 정리` 제안 = REJECTED** | 44 IPC 모두 lib.rs invoke_handler 등록 — active code |
+| 2 | **plan/24 Sprint B~F 코드 적용 = 점진 진행** | Sprint 22 가 ~70% 자연 흡수, reka-ui 도입 트리거 발생 시 잔여 진입 |
+| 3 | **plan/19 v0.3.0 첫 release prep = 95% 완료** | workflow 완비, EV 발급 / version bump / tag push 만 잔여 |
+| 4 | **plan/17 v1.x = 모두 미진입** | v0.x 사용자 본인 dogfood 단계 — 외부 출시 전제 |
+| 5 | **i18n 한↔영 = v0.3 잔여 유일** | 한국어 1급 / 영어 2번째 (글로벌 OSS 진출 결정 시) |
+| 6 | **god component 5개 분리 후속 권장** | StatusPanel 943 / CommitGraph 859 / CommandPalette 802. c27 패턴 (446→120) 재적용 가능 |
+
+---
+
+## 13. 다음 문서 후보
+
+- `docs/IMPLEMENTATION-STATUS.md` (본 문서) — **새 세션 진입 시 5분 within 현황 파악용**
+- `docs/plan/INDEX.md` (없음 — 작성 시 26 plan 의 1줄 요약 + status 표)
+- `docs/plan/26-*.md` (다음 plan — 트리거 발생 시)

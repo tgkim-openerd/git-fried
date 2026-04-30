@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c31 — 잔여 자율 작업 4 PR 묶음 (2026-04-30)** — `/analyze` 반복 검증 + 잔여 식별 → main 직접 4 commits. typecheck 0 / lint 0 / vitest 44 → 46 files / 467 → 481 tests pass / Rust bench compile 통과:
+  - **PR-A god component 분리 1/N** (`661d97d`) — StatusPanel.vue 943 → 788 LOC (-155, -16%). `StatusInlineDiff.vue` 신규 (191 LOC) — Sprint 22-7 V-5 inline diff preview 영역 (선택 파일 헤더 + Hunk ↑↓ 네비 + DiffViewer) 분리. props/emits 인터페이스로 통신. c27 의 ActiveRepoQuickActions 446→120 (73% 감소) 패턴 재적용 1단계
+  - **PR-B i18n 기초 인프라 + version bump** (`381abd2`) — plan/03 §6 v0.3 잔여 유일 영역 진입:
+    - `bun add -D vue-i18n@^9` → 9.14.5
+    - `src/locales/{ko,en}.json` — 6 카테고리 (common/status/menu/toast/settings/locale) 60+ 키. settings.categories 7 그룹 정합 (계정/워크스페이스/에디터·터미널/UI/유지보수/Plugin/시작·마이그레이션)
+    - `src/i18n/index.ts` — createI18n (legacy:false / globalInjection). 초기 locale = localStorage `git-fried.locale.v1` → navigator.language → ko fallback. missing/fallback warn OFF (점진 마이그레이션)
+    - `src/composables/useLocale.ts` — currentLocale / setLocale / toggleLocale. `<html lang>` 자동 동기화 (스크린리더 / OS IME hint)
+    - `main.ts: app.use(i18n)`
+    - **version 0.0.0 → 0.3.0** 통합 — root + apps/desktop/package.json + Cargo.toml + Cargo.lock + tauri.conf.json (plan/19 §5 release prep 정합 — `git tag v0.3.0` 푸시 시 release.yml 자동 트리거)
+    - `useLocale.test.ts` 신규 (9 test) — locale 토글 / setLocale / `<html lang>` 동기 / messages ko/en 키 카운트 동일 검증
+  - **PR-C reka-ui Tooltip primitive** (`2bb2f52`) — plan/24 Sprint B 1단계:
+    - `bun add reka-ui` → 2.9.6
+    - `BaseTooltip.vue` (71 LOC) wrapper — props: text / kbd (키보드 hint, " · ${kbd}" 형식) / placement / delay / disabled. hover 200ms delay (default) + focus 즉시 (a11y) + ESC dismiss + viewport edge 자동 회피. role="tooltip" + popover/border/shadow 토큰. disabled 시 TooltipRoot v-if 우회 (a11y: disabled trigger 는 tooltip 안 띄움)
+    - `BaseTooltip.test.ts` 신규 (5 test) — slot 렌더 / disabled 우회 / props 검증
+    - 점진 후속: 47+ inline title attribute 마이그레이션 (Hunk nav / GitKrakenToolbar / StatusInlineDiff 우선) + ContextMenu reka-ui DropdownMenu 래핑 (Sprint B 2단계)
+  - **PR-D bench 도구 검증** — `cargo check --bench git_perf` 통과. `git-fried v0.3.0` compile 검증 — version bump 정합. `bench/baseline.json` schema 무결 (memory_mb / graph_render_ms / ipc_ms / ai_seconds / bulk_seconds 5 그룹 + regression_threshold_pct=20). 실 측정은 사용자 본인 환경에서 `BENCH_REPO=/path cargo bench` 트리거 시
+  - **잔여 명시 (외부 의존 — 사용자 본인 액션 필요)**: EV 인증서 발급 ($400/yr SSL.com) + HSM 도착 + `EV_THUMBPRINT` / `TAURI_SIGNING_PRIVATE_KEY` GitHub secret 등록 + `git tag v0.3.0` push 시 release.yml workflow 자동 트리거 → 첫 public release. plan/17 v1.x 6 마일스톤 (EV/Sentry/macOS/Linux/OAuth/수익 모델) 모두 외부 의존 미진입
 - **Sprint c25 그룹 — GitKraken 레이아웃 흡수 (PR #1 머지 `ae0cafe`, 22 commits, +2900 LOC)** — 사용자 본인 dogfood 캡처 (GitKraken 12.0) 의 빨간 동그라미 3 영역 + 후속 polish + /code-review 자율 수정 + c27 follow-up 흡수. 모든 변경 typecheck + vitest 83 tests pass + Playwright dogfood 9/9 시나리오 통과:
   - **c25-1** — 상단 8-button Action Toolbar (`GitKrakenToolbar.vue`): Undo · Redo · Pull · Push · Branch · Stash · Pop³(count) · Terminal · Fetch. SyncBar 보존 (단계적 마이그레이션)
   - **c25-1.5** — Undo 백엔드 (`reset.rs::undo_last_action`): reflog HEAD subject 파싱 → commit/amend 화이트리스트 → `git reset --soft HEAD@{1}`. 비지원 액션은 ReflogModal 자동 진입. confirm dialog + toast
