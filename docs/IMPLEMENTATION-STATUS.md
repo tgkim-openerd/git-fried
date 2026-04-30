@@ -1,6 +1,6 @@
 # 구현 현황 인벤토리 (Implementation Status)
 
-작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 12 commit 누적 후 / 트리거: `/analyze` 반복 검증 완료 후 plan ↔ code 정합 cataloguing
+작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 16 commit 누적 후 / 트리거: `/analyze` 반복 검증 완료 후 plan ↔ code 정합 cataloguing
 
 > **목적**: 26개 plan 문서 + CHANGELOG Unreleased + lib.rs invoke_handler + 5 SQLite migrations + 161 IPC + 191 frontend 파일 / 66 Rust 파일을 한 문서에 매핑. 신규 개발자 / 다음 세션 entry / dogfood 시점에 "어디까지 됐고 어디 남았나" 단일 진실원천.
 >
@@ -22,8 +22,8 @@
 | **테스트** | ✅ **vitest 49 / 515 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c31 12 commit 후 — +5 files (useLocale 9 / BaseTooltip 5 / useCommandCatalog 17 / usePullStrategy 7 / useStatusModals 10) |
 | **CI/Release 인프라** | 🟡 **95%** (workflow 완비, EV/updater secret 미등록) | `.github/workflows/{ci,release}.yml` |
 | **GitHub repo public** | 🟡 **97%** — version 0.3.0 통합 완료. `git tag v0.3.0` push 만 잔여 | tauri.conf.json + Cargo.toml + 3 package.json 모두 0.3.0 (Sprint c31 PR-B) |
-| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + 39 키 활용) | App.vue / Sidebar.vue / settings.vue / StatusBar.vue 4 컴포넌트 t() 마이그레이션 완료 |
-| **BaseTooltip primitive** | ✅ **18 위치 활용** | StatusInlineDiff 7 + GitKrakenToolbar 11 마이그레이션 (kbd hint 노출 / hover delay / a11y) |
+| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + **96 키 활용**) | App.vue / Sidebar.vue / settings.vue / StatusBar.vue / **HelpModal.vue** 5 컴포넌트 t() 마이그레이션 완료 (shortcuts catalog 57 키 + nav/sidebar/statusBar/settings 39 키) |
+| **BaseTooltip primitive** | ✅ **24 위치 활용** | StatusInlineDiff 7 + GitKrakenToolbar 11 + SyncBar 3 + RepoTabBar 2 + ProfileSwitcher 1 = 24 (kbd hint 노출 / hover delay / a11y) |
 | **God component 분리** | ✅ **5 컴포넌트 / -1,014 LOC (-28%)** | StatusPanel/CommandPalette/PrDetailModal/GitKrakenToolbar/CommitMessageInput |
 | **AI commit / PR / conflict** | ✅ Claude/Codex CLI subprocess | `src-tauri/src/ai/runner.rs::AiCli` |
 | **macOS / Linux** | ❌ Windows-only (plan/17 v1.3/v1.4) | `.github/workflows/ci.yml:1` "Windows-only matrix" |

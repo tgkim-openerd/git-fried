@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Sprint c31 — 잔여 자율 작업 12 commit 묶음 (2026-04-30)** — `/analyze` 반복 검증 + 잔여 식별 → main 직접 12 commits. typecheck 0 / lint 0 / vitest 44/467 → 49/515 (+5 files / +48 tests) / Rust bench compile 통과 / **god component 누적 -1,014 LOC (-28%)**:
+- **Sprint c31 — 잔여 자율 작업 16 commit 묶음 (2026-04-30)** — `/analyze` 반복 검증 + 잔여 식별 → main 직접 16 commits. typecheck 0 / lint 0 / vitest 44/467 → 49/515 (+5 files / +48 tests) / Rust bench compile 통과 / **god component 누적 -1,014 LOC (-28%)** / **i18n 96 키 활용 / BaseTooltip 24 위치**:
+  - **i18n 3차 + BaseTooltip 2차 (3 추가 commit)**:
+    - **i18n 3차 `1f71b0e`** — HelpModal 단축키 catalog t() 마이그레이션 (~57 키 추가). 8 group × 50+ shortcut desc 모두 `shortcuts.{groups,global,sync,edit,layout,tabs,rightPanel,modal,vim}.*` 키. ko/en 키 카운트 일치 검증 (useLocale.test.ts) 통과
+    - **BaseTooltip 2차 `4120bb3`** — SyncBar 3 + RepoTabBar 2 + ProfileSwitcher 1 = 6 위치 추가. 누적 18 → 24 위치. SyncBar 의 Fetch/Pull/Push 에 ⌘L/⌘⇧L/⌘⇧K kbd hint
+    - **CommitGraph 검색바 분리 검토 → 보류** — closeSearch ↔ drawGraph callback chain 응집도 높음. ROI 낮아 별도 sprint
+    - 누적 i18n 활용 키: 39 → **96** (nav 8 / sidebar 7 / statusBar 17 / settings 7 / **shortcuts 57**)
   - **God component 분리 누적 (6 commit)**:
     - **PR-A `661d97d`** — StatusPanel inline diff 분리 (943 → 788, -16%) → StatusInlineDiff.vue (191 LOC)
     - **god 2 `0b9ef30`** — CommandPalette catalog 분리 (**802 → 198, -75%** ★ c27 패턴 정확 도달) → useCommandCatalog.ts (632 LOC) + 17 unit test
