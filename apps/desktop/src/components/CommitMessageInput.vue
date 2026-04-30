@@ -232,7 +232,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         v-if="availableCli"
         type="button"
         data-testid="compose-with-ai"
-        class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+        class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
         :disabled="!repoId || aiMut.isPending.value"
         :title="`${availableCli} CLI 로 staged diff 분석 → commit 메시지 생성`"
         :aria-label="`Compose with AI (${availableCli})`"

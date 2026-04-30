@@ -341,11 +341,14 @@ onUnmounted(() => {
       </div>
       <div
         v-else-if="lastResult?.success"
-        class="rounded border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-500"
+        class="rounded border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-500"
       >
         ✔ Rebase 완료 ({{ todo.length }}개 commit 처리)
       </div>
-      <div v-else class="rounded border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-500">
+      <div
+        v-else
+        class="rounded border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-500"
+      >
         Rebase 실패 (exit {{ lastResult?.exitCode }})
       </div>
 
@@ -359,7 +362,7 @@ onUnmounted(() => {
         <template v-if="status?.inProgress">
           <button
             type="button"
-            class="rounded border border-red-500/60 px-3 py-1 text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+            class="rounded border border-red-500/60 px-3 py-1 text-sm text-red-700 dark:text-red-500 hover:bg-red-500/10 disabled:opacity-50"
             :disabled="abortMut.isPending.value"
             @click="abortMut.mutate()"
           >
