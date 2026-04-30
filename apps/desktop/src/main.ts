@@ -9,6 +9,8 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
 import { queryClient } from './api/queryClient'
+// Sprint c31 / plan/03 §6 — i18n (한국어 1순위 / 영어 2순위).
+import { i18n } from './i18n'
 import './styles/main.css'
 
 // Tauri 데스크탑 앱은 SPA 모드로만 동작 (SSR / hydration 없음).
@@ -22,5 +24,6 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.use(VueQueryPlugin, { queryClient })
+app.use(i18n)
 
 app.mount('#app')

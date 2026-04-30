@@ -1,0 +1,79 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "close": "Close",
+    "edit": "Edit",
+    "create": "Create",
+    "rename": "Rename",
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "search": "Search",
+    "copy": "Copy",
+    "open": "Open",
+    "remove": "Remove",
+    "apply": "Apply",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "yes": "Yes",
+    "no": "No",
+    "retry": "Retry",
+    "settings": "Settings"
+  },
+  "status": {
+    "staged": "Staged",
+    "modified": "Modified",
+    "untracked": "Untracked",
+    "conflicted": "Conflicted",
+    "noChanges": "No changes ✓",
+    "selectRepo": "Select a repo.",
+    "filterPlaceholder": "🔍 Filter file paths (substring match)",
+    "filterClear": "Clear filter",
+    "stageAll": "Stage all",
+    "unstageAll": "Unstage all",
+    "discard": "Discard changes",
+    "stage": "stage",
+    "unstage": "unstage",
+    "viewModePath": "Path",
+    "viewModeTree": "Tree",
+    "viewModeTitle": "Modified file list view mode (persisted in localStorage)",
+    "diffLoading": "Loading diff...",
+    "diffEmpty": "(No changes — binary file or untracked)"
+  },
+  "menu": {
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "repo": "Repo",
+    "history": "History",
+    "help": "Help"
+  },
+  "toast": {
+    "success": "Success",
+    "error": "Error",
+    "info": "Info",
+    "warning": "Warning",
+    "copyPath": "Path copied",
+    "copyFailed": "Copy failed"
+  },
+  "settings": {
+    "title": "Settings",
+    "categories": {
+      "account": "Account",
+      "workspace": "Workspaces",
+      "editor": "Editor & Terminal",
+      "ui": "UI",
+      "maintenance": "Maintenance",
+      "plugin": "Plugins",
+      "start": "Start & Migration"
+    }
+  },
+  "locale": {
+    "ko": "한국어",
+    "en": "English",
+    "label": "Language"
+  }
+}

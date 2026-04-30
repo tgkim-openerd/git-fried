@@ -1,0 +1,79 @@
+{
+  "common": {
+    "ok": "확인",
+    "cancel": "취소",
+    "save": "저장",
+    "delete": "삭제",
+    "close": "닫기",
+    "edit": "편집",
+    "create": "생성",
+    "rename": "이름 변경",
+    "loading": "불러오는 중...",
+    "refresh": "갱신",
+    "search": "검색",
+    "copy": "복사",
+    "open": "열기",
+    "remove": "제거",
+    "apply": "적용",
+    "back": "뒤로",
+    "next": "다음",
+    "submit": "제출",
+    "yes": "예",
+    "no": "아니오",
+    "retry": "다시 시도",
+    "settings": "설정"
+  },
+  "status": {
+    "staged": "Staged",
+    "modified": "Modified",
+    "untracked": "Untracked",
+    "conflicted": "Conflicted",
+    "noChanges": "변경사항 없음 ✓",
+    "selectRepo": "레포를 선택하세요.",
+    "filterPlaceholder": "🔍 파일 경로 필터 (부분 매칭)",
+    "filterClear": "필터 초기화",
+    "stageAll": "모두 stage",
+    "unstageAll": "모두 unstage",
+    "discard": "변경 폐기",
+    "stage": "stage",
+    "unstage": "unstage",
+    "viewModePath": "Path",
+    "viewModeTree": "Tree",
+    "viewModeTitle": "Modified 파일 목록 표시 모드 (localStorage 영속)",
+    "diffLoading": "diff 불러오는 중...",
+    "diffEmpty": "(변경 없음 — binary 파일이거나 untracked)"
+  },
+  "menu": {
+    "file": "파일",
+    "edit": "편집",
+    "view": "보기",
+    "repo": "레포",
+    "history": "히스토리",
+    "help": "도움말"
+  },
+  "toast": {
+    "success": "성공",
+    "error": "오류",
+    "info": "안내",
+    "warning": "경고",
+    "copyPath": "경로 복사",
+    "copyFailed": "복사 실패"
+  },
+  "settings": {
+    "title": "설정",
+    "categories": {
+      "account": "계정",
+      "workspace": "워크스페이스",
+      "editor": "에디터·터미널",
+      "ui": "UI",
+      "maintenance": "유지보수",
+      "plugin": "Plugin",
+      "start": "시작·마이그레이션"
+    }
+  },
+  "locale": {
+    "ko": "한국어",
+    "en": "English",
+    "label": "언어"
+  }
+}

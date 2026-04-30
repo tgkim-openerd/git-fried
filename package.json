@@ -1,6 +1,6 @@
 {
   "name": "git-fried",
-  "version": "0.0.0",
+  "version": "0.3.0",
   "private": true,
   "description": "GitKraken alternative desktop git client. Gitea first-class, Korean-safe, Tauri-light, multi-repo native.",
   "license": "MIT",

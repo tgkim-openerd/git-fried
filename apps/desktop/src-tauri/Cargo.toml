@@ -1,6 +1,6 @@
 [package]
 name = "git-fried"
-version = "0.0.0"
+version = "0.3.0"
 description = "GitKraken alternative desktop git client"
 authors = ["tgkim"]
 edition = "2021"
