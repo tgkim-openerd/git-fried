@@ -440,12 +440,22 @@
     "ref2Placeholder": "ref2 (e.g. feature/x)",
     "swapTitle": "Swap ref1 ↔ ref2",
     "compareButton": "Compare",
+    "modeDiff": "Diff",
+    "modeRange": "Range Diff",
+    "modeToggleTitle": "Diff = ref1..ref2 patch / Range Diff = compare patch series (review rebase or PR updates)",
     "ref1Only": "(ref1 only)",
     "ref2Only": "(ref2 only)",
     "commitsHeader": "commits",
     "promptInputs": "Enter both refs, then click [Compare]",
     "noCommitDiff": "No commit difference",
     "noDiff": "No diff"
+  },
+  "rangeDiff": {
+    "headerSuffix": "patch series compare (3-dot)",
+    "entriesSuffix": "entries",
+    "promptInputs": "Enter both refs to compare patch series (for rebase / PR update review)",
+    "noEntries": "No entries — refs are identical or base is too far apart",
+    "interDiffSummary": "Expand inter-diff (actual line changes for changed patches)"
   },
   "remote": {
     "title": "🔗 Manage Remotes",

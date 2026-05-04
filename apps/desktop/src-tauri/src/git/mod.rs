@@ -22,6 +22,7 @@ pub mod lfs;
 pub mod maintenance;
 pub mod merge;
 pub mod path;
+pub mod range_diff;
 pub mod read_file;
 pub mod rebase;
 pub mod reflog;

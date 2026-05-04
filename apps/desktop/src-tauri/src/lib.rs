@@ -121,6 +121,7 @@ pub fn run() {
             ipc::commands::apply_stash_file,
             ipc::commands::edit_stash_message,
             ipc::commands::compare_refs,
+            ipc::commands::range_diff,
             ipc::commands::reset,
             ipc::commands::revert,
             ipc::commands::undo_last_action,

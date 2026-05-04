@@ -11,6 +11,8 @@ import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import BaseModal from './BaseModal.vue'
+// Sprint c38 / plan/29 E2 — Range Diff 모드 패널.
+import RangeDiffPanel from './RangeDiffPanel.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -26,6 +28,10 @@ defineEmits<{ close: [] }>()
 
 const ref1 = ref<string>(props.initialRef1 ?? '')
 const ref2 = ref<string>(props.initialRef2 ?? '')
+
+// Sprint c38 / plan/29 E2 — 모드 토글: 'diff' (기존) / 'range' (range-diff).
+type CompareMode = 'diff' | 'range'
+const mode = ref<CompareMode>('diff')
 
 watch(
   () => props.open,
@@ -106,7 +112,31 @@ function swap() {
       >
         {{ cmpQuery.isFetching.value ? '...' : t('compare.compareButton') }}
       </button>
-      <span v-if="data" class="ml-auto text-muted-foreground">
+      <!-- Sprint c38 / plan/29 E2 — 모드 토글 (Diff / Range Diff). -->
+      <div
+        class="ml-2 flex overflow-hidden rounded-md border border-input"
+        :title="t('compare.modeToggleTitle')"
+      >
+        <button
+          type="button"
+          class="px-2 py-1 text-xs"
+          :class="mode === 'diff' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'"
+          :aria-pressed="mode === 'diff'"
+          @click="mode = 'diff'"
+        >
+          {{ t('compare.modeDiff') }}
+        </button>
+        <button
+          type="button"
+          class="px-2 py-1 text-xs"
+          :class="mode === 'range' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'"
+          :aria-pressed="mode === 'range'"
+          @click="mode = 'range'"
+        >
+          {{ t('compare.modeRange') }}
+        </button>
+      </div>
+      <span v-if="mode === 'diff' && data" class="ml-auto text-muted-foreground">
         <span class="text-warning-amber">↓ {{ data.leftCount }}</span>
         {{ t('compare.ref1Only') }}
         ·
@@ -115,8 +145,17 @@ function swap() {
       </span>
     </div>
 
-    <!-- 결과 -->
-    <div class="flex flex-1 overflow-hidden">
+    <!-- Sprint c38 / plan/29 E2 — Range Diff 모드: 단일 RangeDiffPanel 렌더 -->
+    <RangeDiffPanel
+      v-if="mode === 'range'"
+      :repo-id="repoId"
+      :rev1="ref1"
+      :rev2="ref2"
+      :active="open && mode === 'range'"
+    />
+
+    <!-- 기존 Diff 모드 결과 -->
+    <div v-else class="flex flex-1 overflow-hidden">
       <!-- 좌: commit list (ref1..ref2) -->
       <aside class="w-80 shrink-0 overflow-auto border-r border-border bg-muted/20">
         <header

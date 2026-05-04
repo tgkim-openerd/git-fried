@@ -440,12 +440,22 @@
     "ref2Placeholder": "ref2 (예: feature/x)",
     "swapTitle": "ref1 ↔ ref2 swap",
     "compareButton": "비교",
+    "modeDiff": "Diff",
+    "modeRange": "Range Diff",
+    "modeToggleTitle": "Diff = ref1..ref2 patch / Range Diff = patch series 비교 (rebase·PR 업데이트 검토)",
     "ref1Only": "(ref1 only)",
     "ref2Only": "(ref2 only)",
     "commitsHeader": "커밋",
     "promptInputs": "두 ref 입력 후 [비교] 클릭",
     "noCommitDiff": "커밋 차이 없음",
     "noDiff": "diff 없음"
+  },
+  "rangeDiff": {
+    "headerSuffix": "patch series 비교 (3-dot)",
+    "entriesSuffix": "entries",
+    "promptInputs": "두 ref 입력 후 patch series 비교가 시작됩니다 (rebase / PR 업데이트 검토용)",
+    "noEntries": "비교 결과 없음 — 두 ref 가 동일하거나 base 가 너무 멀 수 있습니다",
+    "interDiffSummary": "inter-diff 펼치기 (변경된 patch 의 실제 라인 차이)"
   },
   "remote": {
     "title": "🔗 Remote 관리",

@@ -11,10 +11,10 @@ use crate::error::{AppError, AppResult};
 use crate::git::{
     branch as git_branch, bulk as git_bulk, clone as git_clone, commit as git_commit,
     config_local as git_cfg_local, diff as git_diff, graph as git_graph,
-    identity_stats as git_identity, maintenance as git_maint, read_file as git_read_file,
-    reflog as git_reflog, remote as git_remote, repository as repo, reset as git_reset,
-    restore as git_restore, runner, stage, stash as git_stash, status as git_status,
-    submodule as git_sub, sync as git_sync, tag as git_tag,
+    identity_stats as git_identity, maintenance as git_maint, range_diff as git_range_diff,
+    read_file as git_read_file, reflog as git_reflog, remote as git_remote, repository as repo,
+    reset as git_reset, restore as git_restore, runner, stage, stash as git_stash,
+    status as git_status, submodule as git_sub, sync as git_sync, tag as git_tag,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -311,6 +311,39 @@ pub async fn apply_patch(args: PatchArgs, state: tauri::State<'_, Arc<AppState>>
         stage::unstage_patch(&path, &args.patch).await
     } else {
         stage::stage_patch(&path, &args.patch).await
+    }
+}
+
+// ====== Range Diff (Sprint c38 / plan/29 E2 — Range Diff Panel) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RangeDiffArgs {
+    pub repo_id: i64,
+    /// "base..tip1" 형태. 없으면 rev1/rev2 로 3-dot 자동 base.
+    #[serde(default)]
+    pub range1: Option<String>,
+    #[serde(default)]
+    pub range2: Option<String>,
+    /// 자동 base (3-dot) 모드.
+    #[serde(default)]
+    pub rev1: Option<String>,
+    #[serde(default)]
+    pub rev2: Option<String>,
+}
+
+#[tauri::command]
+pub async fn range_diff(
+    args: RangeDiffArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_range_diff::RangeDiffEntry>> {
+    let path = repo_path(&state, args.repo_id).await?;
+    match (args.range1, args.range2, args.rev1, args.rev2) {
+        (Some(r1), Some(r2), _, _) => git_range_diff::range_diff(&path, &r1, &r2).await,
+        (_, _, Some(a), Some(b)) => git_range_diff::range_diff_auto(&path, &a, &b).await,
+        _ => Err(AppError::validation(
+            "range-diff: range1/range2 또는 rev1/rev2 둘 중 하나의 쌍이 필요합니다.",
+        )),
     }
 }
 

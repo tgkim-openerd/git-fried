@@ -261,6 +261,39 @@ export const pushStashStaged = (repoId: number, message?: string | null): Promis
 export const stashToBranch = (repoId: number, index: number, branch: string): Promise<void> =>
   invoke('stash_to_branch', { args: { repoId, index, branch: toNFC(branch) } })
 
+// --- Range Diff (Sprint c38 / plan/29 E2 — Range Diff Panel) ---
+//
+// `git range-diff` 결과 — patch series 비교 (rebase / PR 업데이트 후).
+export interface RangeDiffEntry {
+  /** "=" / "!" / ">" / "<" / "?" (unknown) */
+  status: string
+  leftIndex: number | null
+  rightIndex: number | null
+  leftSha: string | null
+  rightSha: string | null
+  summary: string
+  /** status="!" 일 때만 inter-diff body. 그 외 null. */
+  patchDiff: string | null
+}
+
+/**
+ * 명시적 두 range — `git range-diff base..tip1 base..tip2`.
+ */
+export const rangeDiff = (
+  repoId: number,
+  range1: string,
+  range2: string,
+): Promise<RangeDiffEntry[]> => invoke('range_diff', { args: { repoId, range1, range2 } })
+
+/**
+ * 자동 base — `git range-diff rev1...rev2` (3-dot, merge-base).
+ */
+export const rangeDiffAuto = (
+  repoId: number,
+  rev1: string,
+  rev2: string,
+): Promise<RangeDiffEntry[]> => invoke('range_diff', { args: { repoId, rev1, rev2 } })
+
 // --- Compare (`docs/plan/14 §2 A1`) ---
 export interface CompareCommit {
   sha: string
