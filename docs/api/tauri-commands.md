@@ -3,19 +3,22 @@
 > 자동 생성: `bun scripts/generate-tauri-commands-index.mjs`
 > 소스: `apps/desktop/src-tauri/src/ipc/*.rs`
 
-**총 168 commands**, 9 파일, 65 카테고리.
+**총 168 commands**, 12 파일, 65 카테고리.
 
 ## 파일별 분포
 
 | 파일 | commands |
 |---|---:|
 | `ipc/commands.rs` | 79 |
-| `ipc/v02_commands.rs` | 45 |
+| `ipc/v02_commands.rs` | 26 |
 | `ipc/forge_commands.rs` | 17 |
+| `ipc/lfs_commands.rs` | 9 |
 | `ipc/launchpad_commands.rs` | 8 |
 | `ipc/hide_commands.rs` | 6 |
+| `ipc/rebase_commands.rs` | 6 |
 | `ipc/profile_commands.rs` | 5 |
 | `ipc/alias_commands.rs` | 4 |
+| `ipc/bisect_commands.rs` | 4 |
 | `ipc/pty_commands.rs` | 4 |
 | `ipc/mod.rs` | 0 |
 
@@ -33,11 +36,11 @@
 | `delete_*` | 5 |
 | `add_*` | 5 |
 | `bulk_*` | 5 |
+| `bisect_*` | 4 |
 | `apply_*` | 4 |
 | `push_*` | 4 |
 | `forge_*` | 4 |
 | `pty_*` | 4 |
-| `bisect_*` | 4 |
 | `set_*` | 3 |
 | `update_*` | 3 |
 | `remove_*` | 3 |
@@ -125,15 +128,15 @@
 
 ### `lfs_*` (9)
 
-- **`lfs_status(repo_id: i64) -> AppResult<git_lfs::LfsStatus>`** — `ipc/v02_commands.rs`
-- **`lfs_list_files(repo_id: i64) -> AppResult<Vec<git_lfs::LfsFile>>`** — `ipc/v02_commands.rs`
-- **`lfs_track(args: LfsPatternArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
-- **`lfs_untrack(args: LfsPatternArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
-- **`lfs_install(repo_id: i64) -> AppResult<()>`** — `ipc/v02_commands.rs`
-- **`lfs_fetch(repo_id: i64) -> AppResult<()>`** — `ipc/v02_commands.rs`
-- **`lfs_pull(repo_id: i64) -> AppResult<()>`** — `ipc/v02_commands.rs`
-- **`lfs_prune(repo_id: i64) -> AppResult<()>`** — `ipc/v02_commands.rs`
-- **`lfs_push_size(repo_id: i64) -> AppResult<git_lfs::LfsPushSize>`** — `ipc/v02_commands.rs`
+- **`lfs_status(repo_id: i64) -> AppResult<git_lfs::LfsStatus>`** — `ipc/lfs_commands.rs`
+- **`lfs_list_files(repo_id: i64) -> AppResult<Vec<git_lfs::LfsFile>>`** — `ipc/lfs_commands.rs`
+- **`lfs_track(args: LfsPatternArgs) -> AppResult<()>`** — `ipc/lfs_commands.rs`
+- **`lfs_untrack(args: LfsPatternArgs) -> AppResult<()>`** — `ipc/lfs_commands.rs`
+- **`lfs_install(repo_id: i64) -> AppResult<()>`** — `ipc/lfs_commands.rs`
+- **`lfs_fetch(repo_id: i64) -> AppResult<()>`** — `ipc/lfs_commands.rs`
+- **`lfs_pull(repo_id: i64) -> AppResult<()>`** — `ipc/lfs_commands.rs`
+- **`lfs_prune(repo_id: i64) -> AppResult<()>`** — `ipc/lfs_commands.rs`
+- **`lfs_push_size(repo_id: i64) -> AppResult<git_lfs::LfsPushSize>`** — `ipc/lfs_commands.rs`
 
 ### `ai_*` (9)
 
@@ -161,12 +164,12 @@
 ### `rebase_*` (7)
 
 - **`rebase_branch(args: RebaseBranchArgs) -> AppResult<crate::git::branch::MergeResult>`** — `ipc/commands.rs`
-- **`rebase_prepare_todo(args: RebasePrepareArgs) -> AppResult<Vec<git_rebase::RebaseTodoEntry>>`** — `ipc/v02_commands.rs`
-- **`rebase_run(args: RebaseRunArgs) -> AppResult<RebaseRunResult>`** — `ipc/v02_commands.rs`
-- **`rebase_status(repo_id: i64) -> AppResult<git_rebase::RebaseStatus>`** — `ipc/v02_commands.rs`
-- **`rebase_continue(repo_id: i64) -> AppResult<RebaseRunResult>`** — `ipc/v02_commands.rs`
-- **`rebase_abort(repo_id: i64) -> AppResult<()>`** — `ipc/v02_commands.rs`
-- **`rebase_skip(repo_id: i64) -> AppResult<RebaseRunResult>`** — `ipc/v02_commands.rs`
+- **`rebase_prepare_todo(args: RebasePrepareArgs) -> AppResult<Vec<git_rebase::RebaseTodoEntry>>`** — `ipc/rebase_commands.rs`
+- **`rebase_run(args: RebaseRunArgs) -> AppResult<RebaseRunResult>`** — `ipc/rebase_commands.rs`
+- **`rebase_status(repo_id: i64) -> AppResult<git_rebase::RebaseStatus>`** — `ipc/rebase_commands.rs`
+- **`rebase_continue(repo_id: i64) -> AppResult<RebaseRunResult>`** — `ipc/rebase_commands.rs`
+- **`rebase_abort(repo_id: i64) -> AppResult<()>`** — `ipc/rebase_commands.rs`
+- **`rebase_skip(repo_id: i64) -> AppResult<RebaseRunResult>`** — `ipc/rebase_commands.rs`
 
 ### `create_*` (5)
 
@@ -200,6 +203,13 @@
 - **`bulk_list_prs(args: BulkPrsArgs) -> AppResult<Vec<git_bulk::BulkResult<Vec<crate::forge::PullRequest>>>>`** — `ipc/commands.rs`
 - **`bulk_cherry_pick(args: BulkCherryPickArgs) -> AppResult<Vec<git_cp::CherryPickResult>>`** — `ipc/v02_commands.rs`
 
+### `bisect_*` (4)
+
+- **`bisect_status(repo_id: i64) -> AppResult<git_bisect::BisectStatus>`** — `ipc/bisect_commands.rs`
+- **`bisect_start(repo_id: i64) -> AppResult<String>`** — `ipc/bisect_commands.rs`
+- **`bisect_mark(args: BisectMarkArgs) -> AppResult<String>`** — `ipc/bisect_commands.rs`
+- **`bisect_reset(repo_id: i64) -> AppResult<()>`** — `ipc/bisect_commands.rs`
+
 ### `apply_*` (4)
 
 - **`apply_patch(args: PatchArgs) -> AppResult<()>`** — `ipc/commands.rs`
@@ -227,13 +237,6 @@
 - **`pty_write(args: PtyWriteArgs) -> AppResult<()>`** — `ipc/pty_commands.rs`
 - **`pty_resize(args: PtyResizeArgs) -> AppResult<()>`** — `ipc/pty_commands.rs`
 - **`pty_close(id: u64) -> AppResult<()>`** — `ipc/pty_commands.rs`
-
-### `bisect_*` (4)
-
-- **`bisect_status(repo_id: i64) -> AppResult<git_bisect::BisectStatus>`** — `ipc/v02_commands.rs`
-- **`bisect_start(repo_id: i64) -> AppResult<String>`** — `ipc/v02_commands.rs`
-- **`bisect_mark(args: BisectMarkArgs) -> AppResult<String>`** — `ipc/v02_commands.rs`
-- **`bisect_reset(repo_id: i64) -> AppResult<()>`** — `ipc/v02_commands.rs`
 
 ### `set_*` (3)
 
