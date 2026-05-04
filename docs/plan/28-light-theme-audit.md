@@ -54,6 +54,21 @@
 - ✅ `CommitMessageInput.vue` — amend warning + force push danger 4 위치 → text-warning-amber / text-danger-rose
 - 🟡 잔여 ~30곳: ToastContainer / SyncTemplateModal / StatusBar / ReflogModal / PrPanel / MiniBranchList / IdentityCard / GitKrakenToolbar / ChangeCountBadge / 외 (각 3곳 미만, 영향 작음) — c37 진입
 
+### Sprint c37 옵션 C 3·4차 적용 (✅ 100% 완료)
+
+- ✅ **c37-1 (`212ee1a`)** 3차 — 11 컴포넌트 + statusFormat util semantic 전환:
+  - c37 진입 후보 8: ToastContainer / StatusBar / ReflogModal / GitKrakenToolbar / ChangeCountBadge / MiniBranchList / SyncTemplateModal / PrPanel
+  - 추가 ROI 3: PrDetailModal AI 영역 (text-ai-violet) / InteractiveRebaseModal action+box / BranchPanel solo+ahead/behind
+  - statusFormat util (StatusPanel/MiniSubmoduleList/SubmodulePanel 공유): added/modified/deleted/renamed → diff-add/warning-amber/diff-delete/diff-rename
+- ✅ **c37-2 (`0642d40`)** 4차 — 28 컴포넌트 + tailwind alpha modifier 호환:
+  - 단일 위치 hardcoded 28개 일괄 치환 (BisectModal/BulkFetchResult/CommitDiff/CommitGraph/CommitTable/Compare/CreatePr/ForgeSetup/FullscreenDiff/GitKrakenImport/HunkStage/IssueDetail/Lfs/MergeEditor/MiniSubmodule/MiniWorktree/Profile{s,Switcher}/Release{,s}Detail/RepoSpecific/RepoSwitcher/StatusInlineDiff/Submodule/SyncBar/Terminal/WipBanner/WipRow)
+  - **`tailwind.config.ts`** semantic colors 6개 모두 `hsl(var(--X) / <alpha-value>)` 형식 — `text-diff-add/80` 같은 alpha modifier 호환 (FullscreenDiffView blame sha alpha)
+- **누적 결과 (c34~c37-2)**:
+  - 적용 컴포넌트: **44** (c34 5 + c35 인프라 + 2 + c36 5 + c37-1 11 + c37-2 28 + statusFormat util)
+  - **순수 hardcoded 색상 0** (49 → 0 / 100% 적용)
+  - 전체 grep 매치 87 → 25 (잔존 25 모두 c36/c37 dark variant 패턴 — 의미 매핑 모호한 PR/issue/branch state, light/dark 모두 가독성 OK)
+  - typecheck 0 / vitest 60/660
+
 ---
 
 ## 2. 시스템적 fix 전략 (3 후보)
