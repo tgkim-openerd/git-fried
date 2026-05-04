@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37-8 — i18n 마이그 StatusPanel +30 키 (2026-04-30, 1 commit)** — checkpoint.md 1순위 E "i18n 추가 마이그 ~80 키" 추가 진행 (StatusPanel 단일 컴포넌트). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 397 → 427 (+30, ko/en 대칭)**:
+  - **`status.*` +30 신규 키** (ko/en 양쪽): changesHeader / refreshing / viewModePathTooltip + Aria / viewModeTreeTooltip + Aria / filterAria / bulkUnstageAria + bulkStageAria (`{n}` interpolation) / hunkUnstageTooltip + Aria + hunkStageTooltip + Aria (`{path}`) / mergetoolDoneTitle / mergetoolFailedTitle / mergetoolErrorTitle / ctxUnstage·ctxStage·ctxDiscard·ctxHunkUnstage·ctxHunkStage·ctxFileHistory·ctxCopyPath / dirToggleTitle (`{path}`) / discardAria (`{path}`) / fullscreenTitle / mergetoolTitle / mergetoolShort / resolve / stageAllTitle
+  - **`StatusPanel.vue`** 마이그:
+    - useI18n 임포트 + `const { t } = useI18n()` 추가
+    - ContextMenu items 7 라벨 (Unstage/Stage/Discard/Hunk-level unstage·stage/File history/Copy path) → t() 교체
+    - mergetoolMut onSuccess/onError 3 toast → t() 교체
+    - template: header (변경사항/갱신 중) / view mode toggles (Path/Tree tooltips + aria-labels) / filter input (placeholder + aria + clear) / 4 섹션 bulk labels + tooltip + aria-labels + dirToggleTitle (4 위치) + hunk Aria/Tooltip + discard Aria + fullscreen title + mergetool titles + 해결 라벨 모두 t() 교체
+
 - **Sprint c37-7 — ContextMenu a11y 보강 (DOM focus 동기화) (2026-04-30, 1 commit)** — checkpoint.md 1순위 D "a11y 보강 (ContextMenu submenu / 모달 focus trap 점검)" 자율 진행. main 직접 1 commit / typecheck 0 / vitest 60/660 / **WCAG 2.1.1 (Keyboard) + ARIA menu 패턴 준수 강화**:
   - **`ContextMenu.vue`** — keyboard nav (↑↓) 시 visual highlight 만 변경되고 실제 DOM focus 미동기화 갭 fix. screen reader 사용자가 menuitem 변경을 인지하도록 button.focus() 호출.
     - `focusVisibleMenuItem(visIdx)` — main menu 의 visible index → DOM focus (nextTick 안전)

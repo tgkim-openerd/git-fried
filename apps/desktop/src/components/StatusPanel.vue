@@ -30,6 +30,9 @@ import { useStatusSelection } from '@/composables/useStatusSelection'
 import { useStatusModals } from '@/composables/useStatusModals'
 // Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge + a11y).
 import BaseTooltip from './BaseTooltip.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
@@ -101,42 +104,42 @@ function onFileContextMenu(ev: MouseEvent, path: string, isStaged: boolean) {
   selectPath(path)
   const items: ContextMenuItem[] = isStaged
     ? [
-        { label: 'Unstage', icon: '−', action: () => onUnstageOne(path) },
+        { label: t('status.ctxUnstage'), icon: '−', action: () => onUnstageOne(path) },
         { divider: true },
         {
-          label: 'Hunk-level unstage',
+          label: t('status.ctxHunkUnstage'),
           icon: '✂',
           action: () => openHunk(path, true),
         },
         { divider: true },
         {
-          label: 'File history',
+          label: t('status.ctxFileHistory'),
           icon: '📜',
           action: () => openHistory(path),
         },
-        { label: 'Copy path', icon: '📋', action: () => void copyPath(path) },
+        { label: t('status.ctxCopyPath'), icon: '📋', action: () => void copyPath(path) },
       ]
     : [
-        { label: 'Stage', icon: '+', action: () => onStageOne(path) },
+        { label: t('status.ctxStage'), icon: '+', action: () => onStageOne(path) },
         {
-          label: 'Discard',
+          label: t('status.ctxDiscard'),
           icon: '⤺',
           destructive: true,
           action: () => onDiscardOne(path),
         },
         { divider: true },
         {
-          label: 'Hunk-level stage',
+          label: t('status.ctxHunkStage'),
           icon: '✂',
           action: () => openHunk(path, false),
         },
         { divider: true },
         {
-          label: 'File history',
+          label: t('status.ctxFileHistory'),
           icon: '📜',
           action: () => openHistory(path),
         },
-        { label: 'Copy path', icon: '📋', action: () => void copyPath(path) },
+        { label: t('status.ctxCopyPath'), icon: '📋', action: () => void copyPath(path) },
       ]
   ctxMenu.value?.openAt(ev, items)
 }
@@ -149,13 +152,16 @@ const mergetoolMut = useMutation({
   },
   onSuccess: (res) => {
     if (res.success) {
-      toast.success('Mergetool 종료', '')
+      toast.success(t('status.mergetoolDoneTitle'), '')
       invalidate(props.repoId)
     } else {
-      toast.error('Mergetool 실패', res.stderr.slice(0, 200) || `exit ${res.exitCode}`)
+      toast.error(
+        t('status.mergetoolFailedTitle'),
+        res.stderr.slice(0, 200) || `exit ${res.exitCode}`,
+      )
     }
   },
-  onError: (e) => toast.error('Mergetool 호출 실패', describeError(e)),
+  onError: (e) => toast.error(t('status.mergetoolErrorTitle'), describeError(e)),
 })
 function onLaunchMergetool(p: string) {
   if (props.repoId == null) return
@@ -233,14 +239,16 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
   <section class="flex h-full flex-col border-l border-border bg-card">
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <div class="flex items-center gap-2">
-        <h3 class="text-sm font-semibold">변경사항</h3>
-        <span v-if="isFetching" class="text-xs text-muted-foreground">갱신 중...</span>
+        <h3 class="text-sm font-semibold">{{ t('status.changesHeader') }}</h3>
+        <span v-if="isFetching" class="text-xs text-muted-foreground">
+          {{ t('status.refreshing') }}
+        </span>
       </div>
       <!-- Sprint c25-2.1 — Path / Tree 토글 (Modified 섹션에 적용) -->
       <div
         class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5 text-[10px]"
       >
-        <BaseTooltip text="전체 경로 한 줄 표시 (localStorage 영속)" placement="bottom">
+        <BaseTooltip :text="t('status.viewModePathTooltip')" placement="bottom">
           <button
             type="button"
             class="rounded px-1.5 py-0.5"
@@ -249,13 +257,13 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 ? 'bg-accent text-accent-foreground font-semibold'
                 : 'text-muted-foreground hover:text-foreground'
             "
-            aria-label="평탄 path 모드"
+            :aria-label="t('status.viewModePathAria')"
             @click="setViewMode('path')"
           >
             Path
           </button>
         </BaseTooltip>
-        <BaseTooltip text="디렉토리 그룹핑 (collapse 가능, localStorage 영속)" placement="bottom">
+        <BaseTooltip :text="t('status.viewModeTreeTooltip')" placement="bottom">
           <button
             type="button"
             class="rounded px-1.5 py-0.5"
@@ -264,7 +272,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 ? 'bg-accent text-accent-foreground font-semibold'
                 : 'text-muted-foreground hover:text-foreground'
             "
-            aria-label="디렉토리 트리 모드"
+            :aria-label="t('status.viewModeTreeAria')"
             @click="setViewMode('tree')"
           >
             Tree
@@ -274,11 +282,11 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
     </header>
 
     <div v-if="!repoId" class="p-4 text-center text-xs text-muted-foreground">
-      레포를 선택하세요.
+      {{ t('status.selectRepo') }}
     </div>
 
     <div v-else-if="status?.isClean" class="p-4 text-center text-xs text-muted-foreground">
-      변경사항 없음 ✓
+      {{ t('status.noChanges') }}
     </div>
 
     <template v-else>
@@ -288,16 +296,16 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
           <input
             v-model="fileFilter"
             type="text"
-            placeholder="🔍 파일 경로 필터 (부분 매칭)"
+            :placeholder="t('status.filterPlaceholder')"
             class="w-full rounded border border-input bg-background px-2 py-1 text-[11px]"
-            aria-label="변경 파일 경로 필터"
+            :aria-label="t('status.filterAria')"
           />
           <button
             v-if="fileFilter"
             type="button"
             class="absolute right-1 top-1/2 -translate-y-1/2 px-1 text-xs text-muted-foreground hover:text-foreground"
-            aria-label="필터 초기화"
-            title="필터 초기화"
+            :aria-label="t('status.filterClear')"
+            :title="t('status.filterClear')"
             @click="fileFilter = ''"
           >
             ✕
@@ -312,9 +320,9 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
             title="Staged"
             :count="status.staged.length"
             :collapsed="collapsedStaged"
-            bulk-label="모두 unstage"
-            bulk-title="모두 unstage (⌘⇧U)"
-            :bulk-aria-label="`staged ${status.staged.length}개 모두 unstage`"
+            :bulk-label="t('status.unstageAll')"
+            :bulk-title="`${t('status.unstageAll')} (⌘⇧U)`"
+            :bulk-aria-label="t('status.bulkUnstageAria', { n: status.staged.length })"
             @update:collapsed="collapsedStaged = $event"
             @bulk="onUnstageAll"
           />
@@ -337,8 +345,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 <button
                   type="button"
                   class="text-[10px] text-muted-foreground/70 hover:text-foreground"
-                  title="Hunk-level unstage — 특정 라인만 골라 unstage (`docs/plan/14 §H1`)"
-                  :aria-label="`'${f.path}' hunk 단위 unstage`"
+                  :title="t('status.hunkUnstageTooltip')"
+                  :aria-label="t('status.hunkUnstageAria', { path: f.path })"
                   @click.stop="openHunk(f.path, true)"
                 >
                   ✂ hunk
@@ -354,7 +362,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 v-if="row.kind === 'dir'"
                 class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+                :title="t('status.dirToggleTitle', { path: row.path })"
                 @click="toggleDir(row.path)"
               >
                 <span class="text-[10px] text-muted-foreground">{{
@@ -382,7 +390,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                   type="button"
                   class="text-[10px] text-muted-foreground/70 hover:text-foreground"
                   title="Hunk-level unstage"
-                  :aria-label="`'${row.path}' hunk 단위 unstage`"
+                  :aria-label="t('status.hunkUnstageAria', { path: row.path })"
                   @click.stop="openHunk(row.path, true)"
                 >
                   ✂ hunk
@@ -407,7 +415,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
             title="Modified"
             :count="status.unstaged.length"
             :collapsed="collapsedUnstaged"
-            bulk-label="모두 stage"
+            :bulk-label="t('status.stageAll')"
             @update:collapsed="collapsedUnstaged = $event"
             @bulk="onStageAll"
           />
@@ -418,7 +426,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
               :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
-              title="클릭 — fullscreen diff"
+              :title="t('status.fullscreenTitle')"
               @click="onFileClick(f.path, false)"
               @dblclick="openFullscreen(f.path, false)"
               @contextmenu="onFileContextMenu($event, f.path, false)"
@@ -443,7 +451,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 type="button"
                 class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="discard"
-                :aria-label="`'${f.path}' 변경 폐기`"
+                :aria-label="t('status.discardAria', { path: f.path })"
                 @click.stop="onDiscardOne(f.path)"
               >
                 ⤺
@@ -451,8 +459,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <button
                 type="button"
                 class="text-[10px] text-muted-foreground/70 hover:text-foreground"
-                title="Hunk-level stage — 특정 라인만 골라 stage (`docs/plan/14 §H1`)"
-                :aria-label="`'${f.path}' hunk 단위 stage`"
+                :title="t('status.hunkStageTooltip')"
+                :aria-label="t('status.hunkStageAria', { path: f.path })"
                 @click.stop="openHunk(f.path, false)"
               >
                 ✂ hunk
@@ -476,7 +484,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 v-if="row.kind === 'dir'"
                 class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+                :title="t('status.dirToggleTitle', { path: row.path })"
                 @click="toggleDir(row.path)"
               >
                 <span class="text-[10px] text-muted-foreground">{{
@@ -517,7 +525,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                   type="button"
                   class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                   title="discard"
-                  :aria-label="`'${row.path}' 변경 폐기`"
+                  :aria-label="t('status.discardAria', { path: row.path })"
                   @click.stop="onDiscardOne(row.path)"
                 >
                   ⤺
@@ -526,7 +534,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                   type="button"
                   class="text-[10px] text-muted-foreground/70 hover:text-foreground"
                   title="Hunk-level stage"
-                  :aria-label="`'${row.path}' hunk 단위 stage`"
+                  :aria-label="t('status.hunkStageAria', { path: row.path })"
                   @click.stop="openHunk(row.path, false)"
                 >
                   ✂ hunk
@@ -560,7 +568,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
               :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
-              title="클릭 — fullscreen diff"
+              :title="t('status.fullscreenTitle')"
               @click="onFileClick(p, false)"
               @dblclick="openFullscreen(p, false)"
               @dragstart="
@@ -586,7 +594,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 v-if="row.kind === 'dir'"
                 class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+                :title="t('status.dirToggleTitle', { path: row.path })"
                 @click="toggleDir(row.path)"
               >
                 <span class="text-[10px] text-muted-foreground">{{
@@ -638,7 +646,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
-                :title="`외부 mergetool (git config merge.tool)`"
+                :title="t('status.mergetoolTitle')"
                 :disabled="mergetoolMut.isPending.value"
                 @click="onLaunchMergetool(p)"
               >
@@ -649,7 +657,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
                 @click="openMerge(p)"
               >
-                해결
+                {{ t('status.resolve') }}
               </button>
             </li>
           </ul>
@@ -661,7 +669,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 v-if="row.kind === 'dir'"
                 class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 text-destructive hover:bg-destructive/10"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                :title="`디렉토리 ${row.path} — 클릭으로 ${row.collapsed ? '펴기' : '접기'}`"
+                :title="t('status.dirToggleTitle', { path: row.path })"
                 @click="toggleDir(row.path)"
               >
                 <span class="text-[10px]">{{ row.collapsed ? '▶' : '▼' }}</span>
@@ -676,7 +684,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 <button
                   type="button"
                   class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
-                  title="외부 mergetool"
+                  :title="t('status.mergetoolShort')"
                   :disabled="mergetoolMut.isPending.value"
                   @click="onLaunchMergetool(row.path)"
                 >
@@ -687,7 +695,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                   class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
                   @click="openMerge(row.path)"
                 >
-                  해결
+                  {{ t('status.resolve') }}
                 </button>
               </li>
             </template>
