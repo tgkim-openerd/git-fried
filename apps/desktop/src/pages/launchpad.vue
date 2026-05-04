@@ -6,7 +6,7 @@
 //
 // Sprint A4 추가: Pin / Snooze / Saved Views (`docs/plan/11 §14`).
 import { ref } from 'vue'
-import type { PrState, PullRequest } from '@/api/git'
+import type { PrState } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { describeError } from '@/api/errors'
 import {
@@ -16,13 +16,13 @@ import {
 } from '@/composables/useLaunchpadMeta'
 import { useLaunchpadFilter } from '@/composables/useLaunchpadFilter'
 // /analyze 후속 (2026-05-04) — launchpad.vue (620 LOC) row derivation 분리.
-import { useLaunchpadRows, type FlatRow } from '@/composables/useLaunchpadRows'
-import { useToast } from '@/composables/useToast'
+import { useLaunchpadRows } from '@/composables/useLaunchpadRows'
+// Sprint c40 — snooze + saved views + togglePin/rowKey 분리.
+import { useLaunchpadActions, SNOOZE_OPTIONS } from '@/composables/useLaunchpadActions'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import UserAvatar from '@/components/UserAvatar.vue'
 
 const store = useReposStore()
-const toast = useToast()
 const stateFilter = ref<PrState | null>('open')
 const showBots = ref(false)
 type Tab = 'active' | 'pinned' | 'snoozed'
@@ -93,78 +93,24 @@ function stateColor(s: PrState): string {
   }
 }
 
-function togglePin(pr: PullRequest) {
-  meta.pinMut.mutate(
-    { pr, pinned: !meta.isPinned(pr) },
-    {
-      onError: (e) => toast.error('Pin 실패', describeError(e)),
-    },
-  )
-}
-
-interface SnoozeOption {
-  label: string
-  sec: number
-}
-const SNOOZE_OPTIONS: SnoozeOption[] = [
-  { label: '1시간', sec: 3600 },
-  { label: '하루', sec: 86400 },
-  { label: '일주일', sec: 604800 },
-  { label: '한 달', sec: 2592000 },
-]
-
-const snoozeMenuFor = ref<string | null>(null)
-function rowKey(row: FlatRow): string {
-  return `${row.pr.forgeKind}|${row.pr.owner}|${row.pr.repo}|${row.pr.number}`
-}
-function openSnoozeMenu(row: FlatRow) {
-  const k = rowKey(row)
-  snoozeMenuFor.value = snoozeMenuFor.value === k ? null : k
-}
-function applySnooze(row: FlatRow, opt: SnoozeOption) {
-  meta.snoozeFor(row.pr, opt.sec)
-  snoozeMenuFor.value = null
-}
-function unsnooze(row: FlatRow) {
-  meta.clearSnooze(row.pr)
-}
-
-// Saved views — 매우 단순한 v1 UI: 현재 filter 를 이름 받아 저장 + 목록 클릭 시
-// 적용. v1.x 에서 더 풍부한 filter set 가능.
-const newViewName = ref('')
-function saveCurrentView() {
-  const name = newViewName.value.trim()
-  if (!name) return
-  const filterJson = JSON.stringify({
-    state: stateFilter.value,
-    showBots: showBots.value,
-    tab: tab.value,
-  })
-  savedViews.saveMut.mutate(
-    { name, filterJson },
-    {
-      onSuccess: () => {
-        toast.success('View 저장', name)
-        newViewName.value = ''
-      },
-      onError: (e) => toast.error('View 저장 실패', describeError(e)),
-    },
-  )
-}
-function applyView(v: { filterJson: string }) {
-  try {
-    const obj = JSON.parse(v.filterJson) as {
-      state?: PrState | null
-      showBots?: boolean
-      tab?: Tab
-    }
-    if (obj.state !== undefined) stateFilter.value = obj.state
-    if (obj.showBots !== undefined) showBots.value = obj.showBots
-    if (obj.tab !== undefined) tab.value = obj.tab
-  } catch {
-    /* ignore */
-  }
-}
+// Sprint c40 — togglePin + snooze 메뉴 + saved views composable 위임.
+const {
+  togglePin,
+  snoozeMenuFor,
+  openSnoozeMenu,
+  applySnooze,
+  unsnooze,
+  newViewName,
+  saveCurrentView,
+  applyView,
+  rowKey,
+} = useLaunchpadActions({
+  meta,
+  savedViews,
+  stateFilterRef: stateFilter,
+  showBotsRef: showBots,
+  tabRef: tab,
+})
 </script>
 
 <template>
