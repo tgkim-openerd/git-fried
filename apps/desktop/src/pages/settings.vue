@@ -16,15 +16,15 @@ import ForgeSetup from '@/components/ForgeSetup.vue'
 import GitKrakenImportModal from '@/components/GitKrakenImportModal.vue'
 // Sprint c35 — plan/26 Phase 2: 차별점 패널.
 import IdentityCard from '@/components/IdentityCard.vue'
-import PlaceholderButton from '@/components/PlaceholderButton.vue'
 import ProfilesSection from '@/components/ProfilesSection.vue'
 import RepoSpecificForm from '@/components/RepoSpecificForm.vue'
-import { useReposStore } from '@/stores/repos'
+// Sprint c40 — settings template 분해 (Maintenance + Plugin sub-component).
+import SettingsMaintenance from '@/components/SettingsMaintenance.vue'
+import SettingsPluginIntegration from '@/components/SettingsPluginIntegration.vue'
 import { useUiState } from '@/composables/useUiState'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useGeneralSettings, useUiSettingsStore } from '@/composables/useUserSettings'
 // /analyze 후속 (2026-05-04) — settings.vue god component (689 LOC) composable 추출.
-import { useMaintenanceActions } from '@/composables/useMaintenanceActions'
 import { useThemeIO } from '@/composables/useThemeIO'
 
 type Category =
@@ -113,11 +113,7 @@ const active = ref<Category>('profiles')
 // ===== GitKraken 마이그레이션 =====
 const importGkOpen = ref(false)
 
-// ===== 유지보수 (gc / fsck / lfs install) — Sprint B14-2 =====
-//   composable 추출 (2026-05-04 /analyze 후속).
-const reposStore = useReposStore()
-const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiveGc } =
-  useMaintenanceActions()
+// 유지보수 영역은 SettingsMaintenance 로 이전 (c40 후속).
 
 // ===== General + UI settings — Sprint D1 공용 store 로 추출 =====
 const general = useGeneralSettings()
@@ -408,92 +404,7 @@ const buildInfo = computed(() => ({
       <RepoSpecificForm v-else-if="active === 'repoSpecific'" />
 
       <!-- 유지보수 -->
-      <div v-else-if="active === 'maintenance'" class="flex max-w-2xl flex-col gap-4">
-        <h2 class="text-lg font-semibold">레포 유지보수</h2>
-        <p class="text-xs text-muted-foreground">
-          현재 활성 레포에 git gc / fsck / lfs install 실행. 거대 레포는 수 분 걸릴 수 있습니다.
-        </p>
-
-        <p
-          v-if="reposStore.activeRepoId == null"
-          class="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400"
-        >
-          ⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.
-        </p>
-
-        <div v-else class="flex flex-col gap-3 rounded border border-border bg-muted/20 p-4">
-          <div class="flex flex-wrap gap-2">
-            <button
-              type="button"
-              class="rounded border border-border bg-background px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
-              :disabled="gcMut.isPending.value"
-              @click="gcMut.mutate(false)"
-            >
-              git gc
-              <span class="ml-1 text-[10px] text-muted-foreground">(housekeeping)</span>
-            </button>
-            <button
-              type="button"
-              class="rounded border border-border bg-background px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
-              :disabled="gcMut.isPending.value"
-              @click="confirmAggressiveGc"
-            >
-              git gc --aggressive --prune=now
-            </button>
-            <button
-              type="button"
-              class="rounded border border-border bg-background px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
-              :disabled="fsckMut.isPending.value"
-              @click="fsckMut.mutate()"
-            >
-              git fsck --full
-              <span class="ml-1 text-[10px] text-muted-foreground">(무결성 검증)</span>
-            </button>
-            <button
-              type="button"
-              class="rounded border border-border bg-background px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
-              :disabled="lfsInstallMut.isPending.value"
-              @click="lfsInstallMut.mutate()"
-            >
-              git lfs install
-              <span class="ml-1 text-[10px] text-muted-foreground">(LFS hook 등록)</span>
-            </button>
-          </div>
-
-          <p
-            v-if="gcMut.isPending.value || fsckMut.isPending.value || lfsInstallMut.isPending.value"
-            class="text-xs text-muted-foreground"
-          >
-            실행 중...
-          </p>
-
-          <div v-if="maintResult" class="mt-2 border-t border-border pt-3">
-            <h3 class="text-xs font-semibold">
-              {{ maintLabel }}
-              <span
-                class="ml-1 text-[10px]"
-                :class="maintResult.success ? 'text-green-600' : 'text-red-600'"
-              >
-                exit={{ maintResult.exitCode ?? '?' }}
-              </span>
-            </h3>
-            <pre
-              v-if="maintResult.stdout"
-              class="mt-1 max-h-48 overflow-auto rounded bg-muted/30 p-2 font-mono text-[10px]"
-              >{{ maintResult.stdout }}</pre
-            >
-            <pre
-              v-if="maintResult.stderr"
-              class="mt-1 max-h-48 overflow-auto rounded bg-amber-500/10 p-2 font-mono text-[10px] text-amber-700 dark:text-amber-400"
-              >{{ maintResult.stderr }}</pre
-            >
-          </div>
-        </div>
-
-        <p class="text-[10px] text-muted-foreground">
-          v1.x 추가 후보: gc 진행률 incremental progress / 정기 자동 maintenance.
-        </p>
-      </div>
+      <SettingsMaintenance v-else-if="active === 'maintenance'" />
 
       <!-- 마이그레이션 -->
       <div v-else-if="active === 'migrate'" class="flex max-w-2xl flex-col gap-4">
@@ -525,63 +436,9 @@ const buildInfo = computed(() => ({
 
       <!-- Sprint 22-19 E-8 — Plugin / Integration slot (design §8-3 hard constraint).
            외부 도구 연결 placeholder. v0.5+ 에서 plugin API 도입 시 본 영역 채워짐.
+           c40 sub-component 분리 — SettingsPluginIntegration.vue.
       -->
-      <div v-else-if="active === 'plugin'" class="flex max-w-2xl flex-col gap-4">
-        <h2 class="text-lg font-semibold">Plugin / Integration</h2>
-        <p class="text-sm text-muted-foreground">
-          외부 도구 연결 (CI / 이슈 트래커 / 알림 / 동기화). git-fried 의 로컬-우선 / CLI-위임
-          정체성에 맞는 plugin 만 본 카테고리에 노출됩니다.
-        </p>
-        <p class="text-xs text-muted-foreground">
-          ❌ 의도적 제외: Cloud Workspace / Cloud AI / 자체 LLM 인프라 / Diagram. (Cloud-Free 정체성
-          — design §8-6).
-        </p>
-        <div class="rounded border border-dashed border-border bg-muted/20 p-3">
-          <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            예정 (placeholder)
-          </h3>
-          <div class="flex flex-wrap gap-1.5">
-            <PlaceholderButton
-              label="GitHub Actions"
-              eta="v0.4"
-              icon="⚡"
-              detail="CI run 상태 인디케이터 (per-branch / per-PR)"
-              size="md"
-            />
-            <PlaceholderButton
-              label="Linear / Jira"
-              eta="v0.5"
-              icon="🔗"
-              detail="commit / branch 이름 → 이슈 자동 매핑"
-              size="md"
-            />
-            <PlaceholderButton
-              label="Discord 알림"
-              eta="v0.5"
-              icon="🔔"
-              detail="bulk fetch / push 결과 webhook"
-              size="md"
-            />
-            <PlaceholderButton
-              label="Slack 알림"
-              eta="v0.5"
-              icon="💬"
-              detail="bulk fetch / PR 머지 webhook"
-              size="md"
-            />
-            <PlaceholderButton
-              label="GPG 서명"
-              eta="v0.6"
-              icon="🔐"
-              detail="commit / tag 자동 GPG 서명 (per-repo 토글)"
-              size="md"
-            />
-          </div>
-        </div>
-        <p class="text-[10px] text-muted-foreground">
-          진행 상황: <code class="font-mono">docs/plan/05-roadmap-v0.1-v1.0.md</code>
-        </p>
-      </div>
+      <SettingsPluginIntegration v-else-if="active === 'plugin'" />
 
       <!-- About -->
       <div v-else-if="active === 'about'" class="flex max-w-2xl flex-col gap-4">
