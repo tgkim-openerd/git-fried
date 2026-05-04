@@ -6,6 +6,7 @@
 //
 // Sprint A4 추가: Pin / Snooze / Saved Views (`docs/plan/11 §14`).
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { PrState } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { describeError } from '@/api/errors'
@@ -18,14 +19,14 @@ import { useLaunchpadFilter } from '@/composables/useLaunchpadFilter'
 // /analyze 후속 (2026-05-04) — launchpad.vue (620 LOC) row derivation 분리.
 import { useLaunchpadRows } from '@/composables/useLaunchpadRows'
 // Sprint c40 — snooze + saved views + togglePin/rowKey 분리.
-import { useLaunchpadActions, SNOOZE_OPTIONS } from '@/composables/useLaunchpadActions'
+import { useLaunchpadActions, SNOOZE_OPTIONS, type Tab } from '@/composables/useLaunchpadActions'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import UserAvatar from '@/components/UserAvatar.vue'
 
+const { t } = useI18n()
 const store = useReposStore()
 const stateFilter = ref<PrState | null>('open')
 const showBots = ref(false)
-type Tab = 'active' | 'pinned' | 'snoozed'
 const tab = ref<Tab>('active')
 
 // === Sprint C14-2 F2 (`docs/plan/14 §7 F2`): PR Filter syntax ===
@@ -359,7 +360,7 @@ const {
                         class="cursor-pointer px-3 py-1 text-left hover:bg-accent/40"
                         @click="applySnooze(row, opt)"
                       >
-                        {{ opt.label }}
+                        {{ t(opt.label) }}
                       </li>
                     </ul>
                   </div>

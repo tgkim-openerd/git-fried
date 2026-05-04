@@ -61,7 +61,9 @@ export function useGraphCanvasRenderer(opts: UseGraphCanvasRendererOptions) {
     c.height = h * dpi
     c.style.width = `${w}px`
     c.style.height = `${h}px`
-    const ctx = c.getContext('2d')!
+    // headless 환경 (jsdom 등) 에서 getContext('2d') 가 null 반환 가능 — silent return.
+    const ctx = c.getContext('2d')
+    if (!ctx) return
     ctx.setTransform(dpi, 0, 0, dpi, 0, 0)
     ctx.clearRect(0, 0, w, h)
 

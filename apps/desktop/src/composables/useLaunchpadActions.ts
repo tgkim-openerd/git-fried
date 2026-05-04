@@ -24,15 +24,16 @@ import { useToast } from '@/composables/useToast'
 import type { useLaunchpadMeta, useSavedViews } from '@/composables/useLaunchpadMeta'
 
 export interface SnoozeOption {
+  /** i18n 키 (page header.* namespace 의 snooze*). template 에서 `t(opt.label)`. */
   label: string
   sec: number
 }
 
 export const SNOOZE_OPTIONS: SnoozeOption[] = [
-  { label: '1시간', sec: 3600 },
-  { label: '하루', sec: 86400 },
-  { label: '일주일', sec: 604800 },
-  { label: '한 달', sec: 2592000 },
+  { label: 'header.snooze1h', sec: 3600 },
+  { label: 'header.snoozeDay', sec: 86400 },
+  { label: 'header.snoozeWeek', sec: 604800 },
+  { label: 'header.snoozeMonth', sec: 2592000 },
 ]
 
 export interface RowLike {
