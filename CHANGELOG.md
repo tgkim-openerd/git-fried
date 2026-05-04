@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37-11 — i18n 마이그 PrDetailModal +41 키 (2026-04-30, 1 commit)** — checkpoint.md 1순위 E 마무리 (PrDetailModal — PR 작업 핵심 화면). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 493 → 534 (+41, ko/en 대칭)**:
+  - **`pr.*` +41 신규 키** (ko/en 양쪽): errPathLineRequired / errNewCodeRequired / suggestionAdded·Failed / commentAddFailed / reviewSubmitFailed / mergeSuccess·Failed / closeFailed / reopenFailed / aiInvokeFailed / openExternal / bodyEmpty / commentsHeader (`{n}`) / commentsEmpty / newCommentPlaceholder / suggestionToggleTitle / suggestionClose / suggestionOpen / addCommentButton / suggestionTitle / suggestionNewCodePlaceholder / suggestionContextPlaceholder / suggestionFooterHint / suggestionCancel / suggestionSubmitting / suggestionSubmit / reviewSection / aiReviewTitle (`{cli}`) / aiReviewAnalyzing / aiReviewLabel / verdictApprove / verdictRequestChanges / reviewBodyPlaceholder / reviewSubmit / mergeMethodLabel / mergeMethodAria / reopen / close / merging / merge
+  - **`PrDetailModal.vue`** 마이그:
+    - 6 mutation (suggestion / comment / review / merge / close / reopen) 의 onSuccess + onError + Error throw 일괄 t() 교체
+    - useAiReview onError → t('pr.aiInvokeFailed')
+    - mergeMut onSuccess: toast.success + notification.notify 둘 다 t('pr.mergeSuccess')
+    - template 마이그 ~25 위치: ↗ 외부 열기 / 본문 없음 / 코멘트 헤더(n) / 코멘트 없음 / placeholder 4개 (newComment / sugNewCode / sugContext / reviewBody) / suggestion form 전체 (title·footer·취소·등록) / 리뷰 제출 섹션 (header·AI 리뷰 버튼·verdict 라벨·제출) / footer (머지 방식·다시 열기·닫기·머지)
+
 - **Sprint c37-10 — i18n 마이그 GitKrakenToolbar +32 키 (2026-04-30, 1 commit)** — checkpoint.md 1순위 E 마무리 (GitKrakenToolbar — 사용자 가장 자주 노출 영역). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 461 → 493 (+32, ko/en 대칭)**:
   - **`toolbar.*` +32 신규 키** (ko/en 양쪽): noRepoTitle / noRepoMessage / fetchSuccess / fetchFailedExit (`{code}`) / fetchInvokeFailed / fetchPending / fetchTitle / pullSuccess / pullFailedExit / pullInvokeFailed / pullPending / pullTitle (`{strategy}`) / pullStrategyTitle / submoduleUpdateSuccess + Failed / pushSuccess / pushFailedExit / pushInvokeFailed / pushPending / undoPending + undoTitle / redoPending + redoTitle / branchTitle / stashEmpty + stashPending + stashTitle / popEmpty + popPending + popTitle (`{n}`) / terminalToggle / aliasTitle (`{name}`)
   - **`GitKrakenToolbar.vue`** 마이그:

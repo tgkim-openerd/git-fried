@@ -105,10 +105,10 @@ const suggestionMut = useMutation({
     if (props.repoId == null || props.number == null)
       return Promise.reject(new Error('no selection'))
     if (!sugPath.value.trim() || sugLine.value == null || sugLine.value < 1) {
-      return Promise.reject(new Error('path / line 입력 필요'))
+      return Promise.reject(new Error(t('pr.errPathLineRequired')))
     }
     if (!sugNewCode.value.trim()) {
-      return Promise.reject(new Error('새 코드 입력 필요'))
+      return Promise.reject(new Error(t('pr.errNewCodeRequired')))
     }
     // ```suggestion wrap (GitHub + Gitea 공통 markdown 패턴)
     const ctx = sugContext.value.trim()
@@ -117,7 +117,7 @@ const suggestionMut = useMutation({
     return addReviewComment(props.repoId, props.number, sugPath.value.trim(), sugLine.value, body)
   },
   onSuccess: () => {
-    toast.success('Suggestion 등록', `${sugPath.value}:${sugLine.value}`)
+    toast.success(t('pr.suggestionAdded'), `${sugPath.value}:${sugLine.value}`)
     suggestionOpen.value = false
     sugPath.value = ''
     sugLine.value = null
@@ -125,7 +125,7 @@ const suggestionMut = useMutation({
     sugContext.value = ''
     qc.invalidateQueries({ queryKey: ['pr-comments', props.repoId, props.number] })
   },
-  onError: (e) => toast.error('Suggestion 등록 실패', describeError(e)),
+  onError: (e) => toast.error(t('pr.suggestionAddFailed'), describeError(e)),
 })
 
 const addCommentMut = useMutation({
@@ -138,7 +138,7 @@ const addCommentMut = useMutation({
     newComment.value = ''
     qc.invalidateQueries({ queryKey: ['pr-comments', props.repoId, props.number] })
   },
-  onError: (e) => toast.error('코멘트 등록 실패', describeError(e)),
+  onError: (e) => toast.error(t('pr.commentAddFailed'), describeError(e)),
 })
 
 const reviewMut = useMutation({
@@ -155,7 +155,7 @@ const reviewMut = useMutation({
     qc.invalidateQueries({ queryKey: ['prs'] })
     qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
   },
-  onError: (e) => toast.error('리뷰 제출 실패', describeError(e)),
+  onError: (e) => toast.error(t('pr.reviewSubmitFailed'), describeError(e)),
 })
 
 const mergeMut = useMutation({
@@ -168,11 +168,11 @@ const mergeMut = useMutation({
     qc.invalidateQueries({ queryKey: ['pr'] })
     qc.invalidateQueries({ queryKey: ['prs'] })
     qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
-    toast.success('PR 머지 완료', `#${props.number ?? ''}`)
-    void notification.notify('PR 머지 완료', `#${props.number ?? ''}`)
+    toast.success(t('pr.mergeSuccess'), `#${props.number ?? ''}`)
+    void notification.notify(t('pr.mergeSuccess'), `#${props.number ?? ''}`)
     emit('close')
   },
-  onError: (e) => toast.error('PR 머지 실패', describeError(e)),
+  onError: (e) => toast.error(t('pr.mergeFailed'), describeError(e)),
 })
 
 const closeMut = useMutation({
@@ -185,7 +185,7 @@ const closeMut = useMutation({
     qc.invalidateQueries({ queryKey: ['pr'] })
     qc.invalidateQueries({ queryKey: ['prs'] })
   },
-  onError: (e) => toast.error('PR 닫기 실패', describeError(e)),
+  onError: (e) => toast.error(t('pr.closeFailed'), describeError(e)),
 })
 
 const reopenMut = useMutation({
@@ -198,7 +198,7 @@ const reopenMut = useMutation({
     qc.invalidateQueries({ queryKey: ['pr'] })
     qc.invalidateQueries({ queryKey: ['prs'] })
   },
-  onError: (e) => toast.error('PR 다시 열기 실패', describeError(e)),
+  onError: (e) => toast.error(t('pr.reopenFailed'), describeError(e)),
 })
 
 function fmtDate(unix: number): string {
@@ -256,7 +256,7 @@ const aiR = useAiReview({
     // 리뷰 본문 textarea 에 자동 채움 → 사용자가 verdict 선택 후 제출.
     reviewBody.value = text
   },
-  onError: (e) => toast.error('AI 호출 실패', describeError(e)),
+  onError: (e) => toast.error(t('pr.aiInvokeFailed'), describeError(e)),
 })
 const availableCli = aiR.availableCli
 const aiReviewMut = aiR.generate
@@ -341,18 +341,18 @@ async function onAiReview(): Promise<void> {
             rel="noopener"
             class="ml-2 hover:underline"
           >
-            ↗ 외부 열기
+            {{ t('pr.openExternal') }}
           </a>
         </div>
         <pre
           class="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded border border-border bg-muted/30 p-2 font-mono text-[11px]"
-          >{{ detailQuery.data.value.bodyMd || '(본문 없음)' }}</pre
+          >{{ detailQuery.data.value.bodyMd || t('pr.bodyEmpty') }}</pre
         >
       </div>
 
       <!-- 코멘트 스레드 -->
       <h3 class="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
-        코멘트 ({{ commentsQuery.data.value?.length ?? 0 }})
+        {{ t('pr.commentsHeader', { n: commentsQuery.data.value?.length ?? 0 }) }}
       </h3>
       <ul class="mb-3 space-y-2">
         <li
@@ -377,7 +377,7 @@ async function onAiReview(): Promise<void> {
           v-if="commentsQuery.data.value && commentsQuery.data.value.length === 0"
           class="text-xs text-muted-foreground"
         >
-          코멘트 없음
+          {{ t('pr.commentsEmpty') }}
         </li>
       </ul>
 
@@ -385,7 +385,7 @@ async function onAiReview(): Promise<void> {
       <div class="mb-4">
         <textarea
           v-model="newComment"
-          placeholder="새 코멘트 (마크다운, 한국어 OK)"
+          :placeholder="t('pr.newCommentPlaceholder')"
           rows="3"
           class="w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
         />
@@ -393,17 +393,17 @@ async function onAiReview(): Promise<void> {
           <button
             type="button"
             class="rounded-md border border-input px-3 py-1 text-xs hover:bg-accent"
-            title="코드 라인 변경 제안 (`docs/plan/14 §7 F1`)"
+            :title="t('pr.suggestionToggleTitle')"
             @click="suggestionOpen = !suggestionOpen"
           >
-            {{ suggestionOpen ? '✕ Suggestion' : '+ Code suggestion' }}
+            {{ suggestionOpen ? t('pr.suggestionClose') : t('pr.suggestionOpen') }}
           </button>
           <button
             class="rounded-md border border-input px-3 py-1 text-xs hover:bg-accent disabled:opacity-50"
             :disabled="!newComment.trim() || addCommentMut.isPending.value"
             @click="addCommentMut.mutate()"
           >
-            {{ addCommentMut.isPending.value ? '...' : '코멘트 등록' }}
+            {{ addCommentMut.isPending.value ? '...' : t('pr.addCommentButton') }}
           </button>
         </div>
       </div>
@@ -414,7 +414,7 @@ async function onAiReview(): Promise<void> {
         class="mb-4 rounded-md border border-violet-500/40 bg-violet-500/5 p-3"
       >
         <h3 class="mb-2 text-xs font-semibold text-ai-violet">
-          💡 Code suggestion — diff 의 특정 라인을 새 코드로 제안
+          {{ t('pr.suggestionTitle') }}
         </h3>
         <div class="mb-2 grid grid-cols-[1fr_120px] gap-2">
           <input
@@ -432,20 +432,18 @@ async function onAiReview(): Promise<void> {
         </div>
         <textarea
           v-model="sugNewCode"
-          placeholder="새 코드 (해당 line 을 이 내용으로 대체) — multi-line OK"
+          :placeholder="t('pr.suggestionNewCodePlaceholder')"
           rows="3"
           class="w-full rounded border border-input bg-background px-2 py-1 font-mono text-xs"
         />
         <textarea
           v-model="sugContext"
-          placeholder="(선택) 변경 이유 / 추가 설명"
+          :placeholder="t('pr.suggestionContextPlaceholder')"
           rows="2"
           class="mt-2 w-full rounded border border-input bg-background px-2 py-1 text-xs"
         />
         <p class="mt-1 text-[10px] text-muted-foreground">
-          GitHub 와 Gitea 모두
-          <code class="rounded bg-muted/40 px-1">```suggestion</code>
-          형식으로 자동 wrap. PR diff 의 RIGHT side (새 코드) 기준 line.
+          {{ t('pr.suggestionFooterHint') }}
         </p>
         <div class="mt-2 flex justify-end gap-2">
           <button
@@ -453,7 +451,7 @@ async function onAiReview(): Promise<void> {
             class="rounded border border-border px-2 py-1 text-xs hover:bg-muted/40"
             @click="suggestionOpen = false"
           >
-            취소
+            {{ t('pr.suggestionCancel') }}
           </button>
           <button
             type="button"
@@ -466,7 +464,11 @@ async function onAiReview(): Promise<void> {
             "
             @click="suggestionMut.mutate()"
           >
-            {{ suggestionMut.isPending.value ? '등록 중...' : '제안 등록' }}
+            {{
+              suggestionMut.isPending.value
+                ? t('pr.suggestionSubmitting')
+                : t('pr.suggestionSubmit')
+            }}
           </button>
         </div>
       </section>
@@ -474,16 +476,16 @@ async function onAiReview(): Promise<void> {
       <!-- 리뷰 제출 -->
       <section class="rounded-md border border-border p-3">
         <div class="mb-2 flex items-center justify-between">
-          <h3 class="text-xs font-semibold">리뷰 제출</h3>
+          <h3 class="text-xs font-semibold">{{ t('pr.reviewSection') }}</h3>
           <button
             v-if="availableCli"
             type="button"
             class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] text-ai-violet hover:bg-violet-500/20 disabled:opacity-50"
             :disabled="aiReviewMut.isPending.value"
-            :title="`${availableCli} CLI 가 PR diff 분석 후 리뷰 추천`"
+            :title="t('pr.aiReviewTitle', { cli: availableCli })"
             @click="onAiReview()"
           >
-            {{ aiReviewMut.isPending.value ? '✨ 분석 중...' : '✨ AI 리뷰' }}
+            {{ aiReviewMut.isPending.value ? t('pr.aiReviewAnalyzing') : t('pr.aiReviewLabel') }}
           </button>
         </div>
         <div class="mb-2 flex gap-1 text-xs">
@@ -505,16 +507,16 @@ async function onAiReview(): Promise<void> {
           >
             {{
               v === 'approve'
-                ? '✓ Approve'
+                ? t('pr.verdictApprove')
                 : v === 'request_changes'
-                  ? '✕ Request changes'
+                  ? t('pr.verdictRequestChanges')
                   : '💬 Comment'
             }}
           </button>
         </div>
         <textarea
           v-model="reviewBody"
-          placeholder="리뷰 본문 (Comment 일 땐 비워도 OK, Approve/Request changes 는 권장)"
+          :placeholder="t('pr.reviewBodyPlaceholder')"
           rows="3"
           class="w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
         />
@@ -524,7 +526,7 @@ async function onAiReview(): Promise<void> {
             :disabled="reviewMut.isPending.value"
             @click="reviewMut.mutate()"
           >
-            {{ reviewMut.isPending.value ? '...' : '리뷰 제출' }}
+            {{ reviewMut.isPending.value ? '...' : t('pr.reviewSubmit') }}
           </button>
         </div>
       </section>
@@ -542,11 +544,11 @@ async function onAiReview(): Promise<void> {
     <template v-if="detailQuery.data.value" #footer>
       <div class="flex items-center justify-between gap-2 text-xs">
         <div class="flex items-center gap-2">
-          <span class="text-muted-foreground">머지 방식:</span>
+          <span class="text-muted-foreground">{{ t('pr.mergeMethodLabel') }}</span>
           <select
             v-model="mergeMethod"
             class="rounded-md border border-input bg-background px-2 py-1"
-            aria-label="머지 방식 선택"
+            :aria-label="t('pr.mergeMethodAria')"
           >
             <option value="merge">merge (traditional)</option>
             <option value="squash">squash</option>
@@ -560,7 +562,7 @@ async function onAiReview(): Promise<void> {
             :disabled="reopenMut.isPending.value"
             @click="reopenMut.mutate()"
           >
-            다시 열기
+            {{ t('pr.reopen') }}
           </button>
           <button
             v-if="
@@ -570,7 +572,7 @@ async function onAiReview(): Promise<void> {
             :disabled="closeMut.isPending.value"
             @click="onClose"
           >
-            닫기
+            {{ t('pr.close') }}
           </button>
           <button
             v-if="detailQuery.data.value.state === 'open'"
@@ -578,7 +580,7 @@ async function onAiReview(): Promise<void> {
             :disabled="mergeMut.isPending.value"
             @click="onMerge"
           >
-            {{ mergeMut.isPending.value ? '머지 중...' : '머지' }}
+            {{ mergeMut.isPending.value ? t('pr.merging') : t('pr.merge') }}
           </button>
         </div>
       </div>
