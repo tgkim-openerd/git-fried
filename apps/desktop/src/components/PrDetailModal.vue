@@ -4,20 +4,10 @@
 // v0.x 단계: line 코멘트 (특정 diff 라인) 는 v1.x. 일반 issue-comment 만.
 // 전체 PR review submit (verdict + body) 는 GitHub/Gitea API 직접 호출.
 import { computed, ref, watch } from 'vue'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import {
-  addPrComment,
-  addReviewComment,
-  closePr,
-  getPullRequest,
-  listPrComments,
-  mergePr,
-  reopenPr,
-  submitPrReview,
-} from '@/api/git'
+import { useQuery } from '@tanstack/vue-query'
+import { getPullRequest, listPrComments } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
-import { useNotification } from '@/composables/useNotification'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import BaseModal from './BaseModal.vue'
 import UserAvatar from './UserAvatar.vue'
@@ -25,14 +15,14 @@ import UserAvatar from './UserAvatar.vue'
 import PrFilesTab from './PrFilesTab.vue'
 // Sprint c35 god 15/N — AI 코드 리뷰 영역 분리.
 import { useAiReview } from '@/composables/useAiReview'
+// Sprint c40 god comp 분리 — 6 mutation + onMerge/onClose + suggestion 분리.
+import { usePrMutations } from '@/composables/usePrMutations'
 import type { MergeMethod, PullRequest, ReviewVerdict } from '@/api/git'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
 
 const { t } = useI18n()
 
 const toast = useToast()
-const notification = useNotification()
 
 const props = defineProps<{
   repoId: number | null
@@ -40,7 +30,6 @@ const props = defineProps<{
   open: boolean
 }>()
 const emit = defineEmits<{ close: [] }>()
-const qc = useQueryClient()
 
 // PR 본문
 const detailQuery = useQuery({
@@ -74,6 +63,28 @@ const reviewBody = ref('')
 const verdict = ref<ReviewVerdict>('comment')
 const mergeMethod = ref<MergeMethod>('merge')
 
+// Sprint c40 — 6 mutation + onMerge/onClose + suggestion form composable 위임.
+const { addCommentMut, reviewMut, mergeMut, closeMut, reopenMut, suggestion, onMerge, onClose } =
+  usePrMutations({
+    repoId: () => props.repoId,
+    number: () => props.number,
+    newComment,
+    reviewBody,
+    verdict,
+    mergeMethod,
+    onMergeClose: () => emit('close'),
+  })
+// Template 호환성을 위해 ref 들은 같은 이름으로 노출 (ref destructure 는 reactivity 보존).
+const {
+  open: suggestionOpen,
+  path: sugPath,
+  line: sugLine,
+  newCode: sugNewCode,
+  context: sugContext,
+  mut: suggestionMut,
+  reset: resetSuggestion,
+} = suggestion
+
 watch(
   () => props.open,
   (o) => {
@@ -81,125 +92,13 @@ watch(
       newComment.value = ''
       reviewBody.value = ''
       verdict.value = 'comment'
-      // suggestion form 도 초기화
-      suggestionOpen.value = false
-      sugPath.value = ''
-      sugLine.value = null
-      sugNewCode.value = ''
-      sugContext.value = ''
+      // suggestion form 도 초기화 (composable helper).
+      resetSuggestion()
       // Sprint 22-3 V-2: tab 상태 초기화 (PrFilesTab 내부 expandedFiles 는 unmount 시 GC)
       activeTab.value = 'conversation'
     }
   },
 )
-
-// === Sprint C14-3 F1 (`docs/plan/14 §7 F1`): Code suggestion ===
-const suggestionOpen = ref(false)
-const sugPath = ref('')
-const sugLine = ref<number | null>(null)
-const sugNewCode = ref('')
-const sugContext = ref('') // optional 추가 설명
-
-const suggestionMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || props.number == null)
-      return Promise.reject(new Error('no selection'))
-    if (!sugPath.value.trim() || sugLine.value == null || sugLine.value < 1) {
-      return Promise.reject(new Error(t('pr.errPathLineRequired')))
-    }
-    if (!sugNewCode.value.trim()) {
-      return Promise.reject(new Error(t('pr.errNewCodeRequired')))
-    }
-    // ```suggestion wrap (GitHub + Gitea 공통 markdown 패턴)
-    const ctx = sugContext.value.trim()
-    const body =
-      (ctx ? `${ctx}\n\n` : '') + '```suggestion\n' + sugNewCode.value.replace(/\n+$/, '') + '\n```'
-    return addReviewComment(props.repoId, props.number, sugPath.value.trim(), sugLine.value, body)
-  },
-  onSuccess: () => {
-    toast.success(t('pr.suggestionAdded'), `${sugPath.value}:${sugLine.value}`)
-    suggestionOpen.value = false
-    sugPath.value = ''
-    sugLine.value = null
-    sugNewCode.value = ''
-    sugContext.value = ''
-    qc.invalidateQueries({ queryKey: ['pr-comments', props.repoId, props.number] })
-  },
-  onError: (e) => toast.error(t('pr.suggestionAddFailed'), describeError(e)),
-})
-
-const addCommentMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || props.number == null)
-      return Promise.reject(new Error('no selection'))
-    return addPrComment(props.repoId, props.number, newComment.value)
-  },
-  onSuccess: () => {
-    newComment.value = ''
-    qc.invalidateQueries({ queryKey: ['pr-comments', props.repoId, props.number] })
-  },
-  onError: (e) => toast.error(t('pr.commentAddFailed'), describeError(e)),
-})
-
-const reviewMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || props.number == null)
-      return Promise.reject(new Error('no selection'))
-    return submitPrReview(props.repoId, props.number, verdict.value, reviewBody.value)
-  },
-  onSuccess: () => {
-    reviewBody.value = ''
-    verdict.value = 'comment'
-    qc.invalidateQueries({ queryKey: ['pr-comments'] })
-    qc.invalidateQueries({ queryKey: ['pr'] })
-    qc.invalidateQueries({ queryKey: ['prs'] })
-    qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
-  },
-  onError: (e) => toast.error(t('pr.reviewSubmitFailed'), describeError(e)),
-})
-
-const mergeMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || props.number == null)
-      return Promise.reject(new Error('no selection'))
-    return mergePr(props.repoId, props.number, mergeMethod.value)
-  },
-  onSuccess: () => {
-    qc.invalidateQueries({ queryKey: ['pr'] })
-    qc.invalidateQueries({ queryKey: ['prs'] })
-    qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
-    toast.success(t('pr.mergeSuccess'), `#${props.number ?? ''}`)
-    void notification.notify(t('pr.mergeSuccess'), `#${props.number ?? ''}`)
-    emit('close')
-  },
-  onError: (e) => toast.error(t('pr.mergeFailed'), describeError(e)),
-})
-
-const closeMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || props.number == null)
-      return Promise.reject(new Error('no selection'))
-    return closePr(props.repoId, props.number)
-  },
-  onSuccess: () => {
-    qc.invalidateQueries({ queryKey: ['pr'] })
-    qc.invalidateQueries({ queryKey: ['prs'] })
-  },
-  onError: (e) => toast.error(t('pr.closeFailed'), describeError(e)),
-})
-
-const reopenMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || props.number == null)
-      return Promise.reject(new Error('no selection'))
-    return reopenPr(props.repoId, props.number)
-  },
-  onSuccess: () => {
-    qc.invalidateQueries({ queryKey: ['pr'] })
-    qc.invalidateQueries({ queryKey: ['prs'] })
-  },
-  onError: (e) => toast.error(t('pr.reopenFailed'), describeError(e)),
-})
 
 function fmtDate(unix: number): string {
   return formatDateLocalized(unix, {
@@ -223,28 +122,6 @@ function stateColor(s: PullRequest['state']): string {
     case 'draft':
       return 'text-muted-foreground'
   }
-}
-
-async function onMerge() {
-  const ok = await confirmDialog({
-    title: t('confirm.mergePrTitle'),
-    message: t('confirm.mergePrMessage', {
-      method: mergeMethod.value,
-      number: props.number,
-    }),
-    danger: true,
-  })
-  if (!ok) return
-  mergeMut.mutate()
-}
-async function onClose() {
-  const ok = await confirmDialog({
-    title: t('confirm.closePrTitle'),
-    message: t('confirm.closePrMessage', { number: props.number }),
-    danger: true,
-  })
-  if (!ok) return
-  closeMut.mutate()
 }
 
 // === AI 코드 리뷰 — Sprint c35 god 15/N: useAiReview composable 위임 ===
