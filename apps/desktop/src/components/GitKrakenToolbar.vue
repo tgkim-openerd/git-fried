@@ -89,12 +89,15 @@ const fetchMut = useMutation({
   onSuccess: (res) => {
     invalidate(props.repoId)
     if (res.success) {
-      toast.success('Fetch 완료')
+      toast.success(t('toolbar.fetchSuccess'))
     } else {
-      toast.error(`Fetch 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
+      toast.error(
+        t('toolbar.fetchFailedExit', { code: res.exitCode }),
+        humanizeGitError(res.stderr),
+      )
     }
   },
-  onError: (e) => toast.error('Fetch 호출 실패', describeError(e)),
+  onError: (e) => toast.error(t('toolbar.fetchInvokeFailed'), describeError(e)),
 })
 // Phase 12-3 — Pull 옵션 매개 (dropdown 액션 수신). Sprint c31 — 타입은 usePullStrategy import.
 const pullMut = useMutation({
@@ -108,20 +111,20 @@ const pullMut = useMutation({
   onSuccess: async (res) => {
     invalidate(props.repoId)
     if (res.success) {
-      toast.success('Pull 완료')
+      toast.success(t('toolbar.pullSuccess'))
       if (general.value.autoUpdateSubmodules && props.repoId != null) {
         try {
           await updateSubmodules(props.repoId, false)
-          toast.success('Submodule update 완료', '')
+          toast.success(t('toolbar.submoduleUpdateSuccess'), '')
         } catch (e) {
-          toast.error('Submodule update 실패', describeError(e))
+          toast.error(t('toolbar.submoduleUpdateFailed'), describeError(e))
         }
       }
     } else {
-      toast.error(`Pull 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
+      toast.error(t('toolbar.pullFailedExit', { code: res.exitCode }), humanizeGitError(res.stderr))
     }
   },
-  onError: (e) => toast.error('Pull 호출 실패', describeError(e)),
+  onError: (e) => toast.error(t('toolbar.pullInvokeFailed'), describeError(e)),
 })
 
 // Pull dropdown 가시성 + 마지막 사용 strategy 기억 (localStorage).
@@ -137,12 +140,12 @@ const pushMut = useMutation({
   onSuccess: (res) => {
     invalidate(props.repoId)
     if (res.success) {
-      toast.success('Push 완료')
+      toast.success(t('toolbar.pushSuccess'))
     } else {
-      toast.error(`Push 실패 (exit ${res.exitCode})`, humanizeGitError(res.stderr))
+      toast.error(t('toolbar.pushFailedExit', { code: res.exitCode }), humanizeGitError(res.stderr))
     }
   },
-  onError: (e) => toast.error('Push 호출 실패', describeError(e)),
+  onError: (e) => toast.error(t('toolbar.pushInvokeFailed'), describeError(e)),
 })
 
 // === Sprint c36 god 17/N — undo/redo composable 위임 ===
@@ -159,7 +162,7 @@ const { stashMut, popMut, onStash, onPop } = useStashPopMutation({
 // === Handlers ===
 async function onUndo() {
   if (props.repoId == null) {
-    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    toast.warning(t('toolbar.noRepoTitle'), t('toolbar.noRepoMessage'))
     return
   }
   // Sprint c25-1.5 — confirm 후 reset --soft HEAD@{1}.
@@ -174,7 +177,7 @@ async function onUndo() {
 }
 async function onRedo() {
   if (props.repoId == null) {
-    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    toast.warning(t('toolbar.noRepoTitle'), t('toolbar.noRepoMessage'))
     return
   }
   const ok = await confirmDialog({
@@ -201,7 +204,7 @@ function onPush() {
 }
 function onBranch() {
   if (props.repoId == null) {
-    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    toast.warning(t('toolbar.noRepoTitle'), t('toolbar.noRepoMessage'))
     return
   }
   dispatchShortcut('newBranch')
@@ -237,11 +240,7 @@ onUnmounted(() => {
       <!-- [history] Undo / Redo -->
       <div class="flex items-center gap-0.5">
         <BaseTooltip
-          :text="
-            undoMut.isPending.value
-              ? 'Undo 진행 중...'
-              : '마지막 commit/amend 되돌리기 (--soft, working tree 보존)'
-          "
+          :text="undoMut.isPending.value ? t('toolbar.undoPending') : t('toolbar.undoTitle')"
           kbd="⌘Z"
           placement="bottom"
         >
@@ -258,11 +257,7 @@ onUnmounted(() => {
           </button>
         </BaseTooltip>
         <BaseTooltip
-          :text="
-            redoMut.isPending.value
-              ? 'Redo 진행 중...'
-              : '직전 undo 되돌리기 (reset/checkout 만, working tree 보존)'
-          "
+          :text="redoMut.isPending.value ? t('toolbar.redoPending') : t('toolbar.redoTitle')"
           kbd="⌘⇧Z"
           placement="bottom"
         >
@@ -289,8 +284,8 @@ onUnmounted(() => {
           <BaseTooltip
             :text="
               pullMut.isPending.value
-                ? 'Pull 진행 중...'
-                : `Pull — fetch + ${pullStrategyLabel(pullStrategy)}`
+                ? t('toolbar.pullPending')
+                : t('toolbar.pullTitle', { strategy: pullStrategyLabel(pullStrategy) })
             "
             kbd="⌘⇧L"
             placement="bottom"
@@ -307,10 +302,7 @@ onUnmounted(() => {
               }}</span>
             </button>
           </BaseTooltip>
-          <BaseTooltip
-            text="Pull 전략 선택 (merge / rebase / ff-only / no-rebase)"
-            placement="bottom"
-          >
+          <BaseTooltip :text="t('toolbar.pullStrategyTitle')" placement="bottom">
             <button
               type="button"
               class="flex h-full items-center rounded-r-md border-l border-border/40 px-1 py-0 text-[10px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
@@ -357,7 +349,7 @@ onUnmounted(() => {
           />
         </div>
         <BaseTooltip
-          :text="pushMut.isPending.value ? 'Push 진행 중...' : 'Push'"
+          :text="pushMut.isPending.value ? t('toolbar.pushPending') : 'Push'"
           kbd="⌘⇧K"
           placement="bottom"
         >
@@ -379,7 +371,7 @@ onUnmounted(() => {
 
       <!-- [branch] Branch / Stash / Pop -->
       <div class="flex items-center gap-0.5">
-        <BaseTooltip text="브랜치 패널 전환 + 새 브랜치 입력" kbd="⌘B" placement="bottom">
+        <BaseTooltip :text="t('toolbar.branchTitle')" kbd="⌘B" placement="bottom">
           <button
             type="button"
             class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
@@ -393,10 +385,10 @@ onUnmounted(() => {
         <BaseTooltip
           :text="
             !hasChanges
-              ? 'Stash 할 working tree 변경 없음'
+              ? t('toolbar.stashEmpty')
               : stashMut.isPending.value
-                ? 'Stash 진행 중...'
-                : '현재 변경사항 즉시 stash (메시지 없이)'
+                ? t('toolbar.stashPending')
+                : t('toolbar.stashTitle')
           "
           placement="bottom"
         >
@@ -415,10 +407,10 @@ onUnmounted(() => {
         <BaseTooltip
           :text="
             stashCount === 0
-              ? 'pop 할 stash 없음'
+              ? t('toolbar.popEmpty')
               : popMut.isPending.value
-                ? 'Pop 진행 중...'
-                : `가장 최근 stash@{0} apply + drop (총 ${stashCount}개)`
+                ? t('toolbar.popPending')
+                : t('toolbar.popTitle', { n: stashCount })
           "
           placement="bottom"
         >
@@ -440,7 +432,7 @@ onUnmounted(() => {
       <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
 
       <!-- [shell] Terminal -->
-      <BaseTooltip text="통합 터미널 토글" kbd="⌘`" placement="bottom">
+      <BaseTooltip :text="t('toolbar.terminalToggle')" kbd="⌘`" placement="bottom">
         <button
           type="button"
           class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
@@ -455,7 +447,7 @@ onUnmounted(() => {
 
       <!-- Fetch — secondary, label only (Pull 옆 ▾ 대체 — 단순화) -->
       <BaseTooltip
-        :text="fetchMut.isPending.value ? 'Fetch 진행 중...' : 'origin 만 가져오기 (merge 없음)'"
+        :text="fetchMut.isPending.value ? t('toolbar.fetchPending') : t('toolbar.fetchTitle')"
         kbd="⌘L"
         placement="bottom"
       >
@@ -478,7 +470,7 @@ onUnmounted(() => {
         class="flex items-center gap-1"
         :title="
           repoBreadcrumb.aliased
-            ? `별칭 (원본: ${repoBreadcrumb.original})`
+            ? t('toolbar.aliasTitle', { name: repoBreadcrumb.original })
             : repoBreadcrumb.original
         "
       >

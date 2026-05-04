@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37-10 — i18n 마이그 GitKrakenToolbar +32 키 (2026-04-30, 1 commit)** — checkpoint.md 1순위 E 마무리 (GitKrakenToolbar — 사용자 가장 자주 노출 영역). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 461 → 493 (+32, ko/en 대칭)**:
+  - **`toolbar.*` +32 신규 키** (ko/en 양쪽): noRepoTitle / noRepoMessage / fetchSuccess / fetchFailedExit (`{code}`) / fetchInvokeFailed / fetchPending / fetchTitle / pullSuccess / pullFailedExit / pullInvokeFailed / pullPending / pullTitle (`{strategy}`) / pullStrategyTitle / submoduleUpdateSuccess + Failed / pushSuccess / pushFailedExit / pushInvokeFailed / pushPending / undoPending + undoTitle / redoPending + redoTitle / branchTitle / stashEmpty + stashPending + stashTitle / popEmpty + popPending + popTitle (`{n}`) / terminalToggle / aliasTitle (`{name}`)
+  - **`GitKrakenToolbar.vue`** 마이그:
+    - 3 mutation (fetch / pull / push) 의 onSuccess 분기 + onError + exitCode interpolation 일괄 t() 교체
+    - autoUpdateSubmodules 분기의 success / fail toast 도 t()
+    - 3 위치 `toast.warning('레포 미선택', '먼저 레포를 선택하세요.')` (replace_all 처리)
+    - template: BaseTooltip 의 모든 :text (Undo/Redo/Pull/Pull strategy/Push/Branch/Stash/Pop/Terminal/Fetch — 10 위치) + repoBreadcrumb 의 alias title
+  - **잔존 grep 매치 (~20)**: 모두 주석 또는 emoji byte false positive (✕/⤓/⤒/⎇/▾/▸_/↶/↷ 등 [ㄱ-힝] 범위 밖이지만 grep multi-byte 처리로 일부 false hit)
+
 - **Sprint c37-9 — i18n 마이그 HunkStageModal +34 키 (2026-04-30, 1 commit)** — checkpoint.md 1순위 E 추가 진행 (HunkStageModal 단일 컴포넌트). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 427 → 461 (+34, ko/en 대칭)**:
   - **`hunkStage.*` +34 신규 키** (ko/en 양쪽): errRepoNotSelected / applySuccessTitle (`{what}` `{action}`) / actionStage·actionUnstage / stageFailed·unstageFailed / wholeHunk / noChange + noChangeMessage / linesSuffix (`{n}`) / ctxHunkUnstageAll·ctxHunkStageAll / ctxSelectedLinesUnstage·ctxSelectedLinesStage (`{n}`) / ctxCollapseHunk·ctxExpandHunk / hunksSelectedCount (`{hunks}` `{selected}`) / allHunksUnstage·allHunksStage / allUnstageButton·allStageButton / emptyDiff / collapse·expand / selectedSuffix (`{n}`) / lineUnstageTitle·lineStageTitle / lineUnstageButton·lineStageButton / hunkUnstageButton·hunkStageButton / lineRangeTitle (`{idx}`) / selectAllLines / clearSelection
   - **`HunkStageModal.vue`** 마이그:
