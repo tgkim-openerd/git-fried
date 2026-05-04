@@ -5,22 +5,34 @@
 // (Box<dyn Fn> 으로 감싸지 못하는 매크로 한계 우회)
 //
 // 분해 이력:
-//   - 2026-05-04 /analyze 후속 — v02_commands.rs 1077 LOC 의 LFS / Bisect / Rebase
-//     영역을 각각 lfs_commands / bisect_commands / rebase_commands 로 분리.
-//     v02_commands.rs 는 cherry-pick / merge / worktree / reflog / file_history / AI 보유.
+//   - 2026-05-04 c39 — v02_commands.rs 의 LFS / Bisect / Rebase 영역을
+//     lfs_commands / bisect_commands / rebase_commands 로 분리.
+//   - 2026-05-04 c40 Step 4 — Workspace 4 commands → workspace_commands 시범 분리.
+//   - 2026-05-04 c40 후속 — branch (8) + stash (10) + repo (5) 추가 분리.
+//   - 2026-05-04 c40 후속 (전체) — status (11) + commit (8) + graph (3) +
+//     sync (7) + submodule (4) + remote (9) + tag (5) + importer (3) 분리.
+//     commands.rs 는 get_app_info (1) 만 잔존.
 pub mod alias_commands;
 pub mod bisect_commands;
 pub mod branch_commands;
 pub mod commands;
+pub mod commit_commands;
 pub mod forge_commands;
+pub mod graph_commands;
 pub mod hide_commands;
+pub mod importer_commands;
 pub mod launchpad_commands;
 pub mod lfs_commands;
 pub mod profile_commands;
 pub mod pty_commands;
 pub mod rebase_commands;
+pub mod remote_commands;
 pub mod repo_commands;
 pub mod stash_commands;
+pub mod status_commands;
+pub mod submodule_commands;
+pub mod sync_commands;
+pub mod tag_commands;
 pub mod v02_commands;
 pub mod workspace_commands;
 
@@ -28,15 +40,23 @@ pub use alias_commands::*;
 pub use bisect_commands::*;
 pub use branch_commands::*;
 pub use commands::*;
+pub use commit_commands::*;
 pub use forge_commands::*;
+pub use graph_commands::*;
 pub use hide_commands::*;
+pub use importer_commands::*;
 pub use launchpad_commands::*;
 pub use lfs_commands::*;
 pub use profile_commands::*;
 pub use pty_commands::*;
 pub use rebase_commands::*;
+pub use remote_commands::*;
 pub use repo_commands::*;
 pub use stash_commands::*;
+pub use status_commands::*;
+pub use submodule_commands::*;
+pub use sync_commands::*;
+pub use tag_commands::*;
 pub use v02_commands::*;
 pub use workspace_commands::*;
 

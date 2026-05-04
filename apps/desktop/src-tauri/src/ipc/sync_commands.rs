@@ -1,0 +1,126 @@
+// Tauri commands — Sync (fetch / pull / push) + Bulk (multi-repo).
+//
+// /analyze HIGH 1 후속 — commands.rs 의 sync + bulk 영역 7 commands 분리.
+
+use super::repo_path;
+use crate::error::AppResult;
+use crate::git::{bulk as git_bulk, status as git_status, sync as git_sync};
+use crate::AppState;
+use serde::Deserialize;
+use std::sync::Arc;
+
+// ====== Sync (push / pull / fetch) ======
+
+#[tauri::command]
+pub async fn fetch_all(
+    repo_id: i64,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_sync::SyncResult> {
+    let path = repo_path(&state, repo_id).await?;
+    git_sync::fetch_all(&path).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PullArgs {
+    pub repo_id: i64,
+    pub remote: Option<String>,
+    pub branch: Option<String>,
+    /// Phase 12-3 — Pull dropdown 옵션 (rebase / ff_only / no_rebase). 모두 None → 기본 pull.
+    #[serde(default)]
+    pub rebase: bool,
+    #[serde(default)]
+    pub ff_only: bool,
+    #[serde(default)]
+    pub no_rebase: bool,
+}
+
+#[tauri::command]
+pub async fn pull(
+    args: PullArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_sync::SyncResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    let opts = git_sync::PullOpts {
+        rebase: args.rebase,
+        ff_only: args.ff_only,
+        no_rebase: args.no_rebase,
+    };
+    git_sync::pull(&path, args.remote.as_deref(), args.branch.as_deref(), opts).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushArgs {
+    pub repo_id: i64,
+    pub remote: Option<String>,
+    pub branch: Option<String>,
+    #[serde(default)]
+    pub force_with_lease: bool,
+    #[serde(default)]
+    pub set_upstream: bool,
+    #[serde(default)]
+    pub tags: bool,
+}
+
+#[tauri::command]
+pub async fn push(
+    args: PushArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<git_sync::SyncResult> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_sync::push(
+        &path,
+        args.remote.as_deref(),
+        args.branch.as_deref(),
+        git_sync::PushOpts {
+            force_with_lease: args.force_with_lease,
+            set_upstream: args.set_upstream,
+            tags: args.tags,
+        },
+    )
+    .await
+}
+
+// ====== Bulk (multi-repo) ======
+
+#[tauri::command]
+pub async fn bulk_fetch(
+    workspace_id: Option<i64>,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_bulk::BulkResult<git_sync::SyncResult>>> {
+    git_bulk::bulk_fetch(&state.db, workspace_id).await
+}
+
+#[tauri::command]
+pub async fn bulk_status(
+    workspace_id: Option<i64>,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_bulk::BulkResult<git_status::RepoStatus>>> {
+    git_bulk::bulk_status(&state.db, workspace_id).await
+}
+
+/// Sprint 22-11 F-P3 — Sidebar 50+ repo ahead/behind preview.
+/// quick status (branch + upstream + ahead/behind) 만 일괄 조회.
+#[tauri::command]
+pub async fn bulk_quick_status(
+    workspace_id: Option<i64>,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_bulk::BulkResult<git_status::QuickStatus>>> {
+    git_bulk::bulk_quick_status(&state.db, workspace_id).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkPrsArgs {
+    pub workspace_id: Option<i64>,
+    pub state_filter: Option<crate::forge::PrState>,
+}
+
+#[tauri::command]
+pub async fn bulk_list_prs(
+    args: BulkPrsArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<git_bulk::BulkResult<Vec<crate::forge::PullRequest>>>> {
+    git_bulk::bulk_list_prs(&state.db, args.workspace_id, args.state_filter).await
+}

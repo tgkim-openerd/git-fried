@@ -3,27 +3,35 @@
 > 자동 생성: `bun scripts/generate-tauri-commands-index.mjs`
 > 소스: `apps/desktop/src-tauri/src/ipc/*.rs`
 
-**총 168 commands**, 16 파일, 65 카테고리.
+**총 168 commands**, 24 파일, 65 카테고리.
 
 ## 파일별 분포
 
 | 파일 | commands |
 |---|---:|
-| `ipc/commands.rs` | 52 |
 | `ipc/v02_commands.rs` | 26 |
 | `ipc/forge_commands.rs` | 17 |
+| `ipc/status_commands.rs` | 12 |
 | `ipc/stash_commands.rs` | 10 |
 | `ipc/lfs_commands.rs` | 9 |
+| `ipc/remote_commands.rs` | 9 |
 | `ipc/branch_commands.rs` | 8 |
+| `ipc/commit_commands.rs` | 8 |
 | `ipc/launchpad_commands.rs` | 8 |
+| `ipc/sync_commands.rs` | 7 |
 | `ipc/hide_commands.rs` | 6 |
 | `ipc/rebase_commands.rs` | 6 |
 | `ipc/profile_commands.rs` | 5 |
 | `ipc/repo_commands.rs` | 5 |
+| `ipc/tag_commands.rs` | 5 |
 | `ipc/alias_commands.rs` | 4 |
 | `ipc/bisect_commands.rs` | 4 |
 | `ipc/pty_commands.rs` | 4 |
+| `ipc/submodule_commands.rs` | 4 |
 | `ipc/workspace_commands.rs` | 4 |
+| `ipc/graph_commands.rs` | 3 |
+| `ipc/importer_commands.rs` | 3 |
+| `ipc/commands.rs` | 1 |
 | `ipc/mod.rs` | 0 |
 
 ## 카테고리별 분포 (prefix snake_case 1번째 토큰)
@@ -38,49 +46,42 @@
 | `rebase_*` | 7 |
 | `create_*` | 5 |
 | `delete_*` | 5 |
-| `bulk_*` | 5 |
 | `add_*` | 5 |
+| `bulk_*` | 5 |
 | `bisect_*` | 4 |
-| `apply_*` | 4 |
-| `push_*` | 4 |
 | `forge_*` | 4 |
 | `pty_*` | 4 |
+| `apply_*` | 4 |
+| `push_*` | 4 |
 | `set_*` | 3 |
-| `read_*` | 3 |
+| `unhide_*` | 3 |
+| `import_*` | 3 |
 | `update_*` | 3 |
 | `remove_*` | 3 |
-| `import_*` | 3 |
-| `unhide_*` | 3 |
+| `read_*` | 3 |
 | `merge_*` | 2 |
 | `rename_*` | 2 |
+| `hide_*` | 2 |
+| `maintenance_*` | 2 |
 | `stage_*` | 2 |
 | `restore_*` | 2 |
-| `maintenance_*` | 2 |
-| `hide_*` | 2 |
 | `open_*` | 2 |
 | `resolve_*` | 1 |
 | `unset_*` | 1 |
 | `cherry_*` | 1 |
 | `switch_*` | 1 |
-| `unstage_*` | 1 |
-| `discard_*` | 1 |
-| `range_*` | 1 |
 | `commit_*` | 1 |
 | `last_*` | 1 |
-| `fetch_*` | 1 |
-| `pull_*` | 1 |
-| `search_*` | 1 |
 | `compare_*` | 1 |
 | `reset_*` | 1 |
 | `revert_*` | 1 |
 | `undo_*` | 1 |
 | `redo_*` | 1 |
 | `count_*` | 1 |
-| `init_*` | 1 |
-| `sync_*` | 1 |
 | `submit_*` | 1 |
 | `close_*` | 1 |
 | `reopen_*` | 1 |
+| `search_*` | 1 |
 | `activate_*` | 1 |
 | `clone_*` | 1 |
 | `stash_*` | 1 |
@@ -88,6 +89,13 @@
 | `drop_*` | 1 |
 | `show_*` | 1 |
 | `edit_*` | 1 |
+| `unstage_*` | 1 |
+| `discard_*` | 1 |
+| `range_*` | 1 |
+| `init_*` | 1 |
+| `sync_*` | 1 |
+| `fetch_*` | 1 |
+| `pull_*` | 1 |
 | `prune_*` | 1 |
 | `lock_*` | 1 |
 | `unlock_*` | 1 |
@@ -102,9 +110,6 @@
 
 - **`list_all_repo_aliases() -> AppResult<Vec<RepoAlias>>`** — `ipc/alias_commands.rs`
 - **`list_branches(repo_id: i64) -> AppResult<Vec<git_branch::BranchInfo>>`** — `ipc/branch_commands.rs`
-- **`list_submodules(repo_id: i64) -> AppResult<Vec<git_sub::SubmoduleEntry>>`** — `ipc/commands.rs`
-- **`list_remotes(repo_id: i64) -> AppResult<Vec<git_remote::RemoteInfo>>`** — `ipc/commands.rs`
-- **`list_tags(repo_id: i64) -> AppResult<Vec<git_tag::TagInfo>>`** — `ipc/commands.rs`
 - **`list_pull_requests(args: ListPrArgs) -> AppResult<Vec<PullRequest>>`** — `ipc/forge_commands.rs`
 - **`list_issues(repo_id: i64) -> AppResult<Vec<Issue>>`** — `ipc/forge_commands.rs`
 - **`list_releases(repo_id: i64) -> AppResult<Vec<Release>>`** — `ipc/forge_commands.rs`
@@ -112,8 +117,11 @@
 - **`list_pr_files(args: GetPrArgs) -> AppResult<Vec<PrFile>>`** — `ipc/forge_commands.rs`
 - **`list_hidden_refs(repo_id: i64) -> AppResult<Vec<hide::HiddenRef>>`** — `ipc/hide_commands.rs`
 - **`list_profiles() -> AppResult<Vec<Profile>>`** — `ipc/profile_commands.rs`
+- **`list_remotes(repo_id: i64) -> AppResult<Vec<git_remote::RemoteInfo>>`** — `ipc/remote_commands.rs`
 - **`list_repos(workspace_id: Option<i64>) -> AppResult<Vec<Repo>>`** — `ipc/repo_commands.rs`
 - **`list_stash(repo_id: i64) -> AppResult<Vec<git_stash::StashEntry>>`** — `ipc/stash_commands.rs`
+- **`list_submodules(repo_id: i64) -> AppResult<Vec<git_sub::SubmoduleEntry>>`** — `ipc/submodule_commands.rs`
+- **`list_tags(repo_id: i64) -> AppResult<Vec<git_tag::TagInfo>>`** — `ipc/tag_commands.rs`
 - **`list_worktrees(repo_id: i64) -> AppResult<Vec<git_wt::WorktreeEntry>>`** — `ipc/v02_commands.rs`
 - **`list_reflog(args: ReflogArgs) -> AppResult<Vec<git_reflog::ReflogEntry>>`** — `ipc/v02_commands.rs`
 - **`list_workspaces() -> AppResult<Vec<Workspace>>`** — `ipc/workspace_commands.rs`
@@ -121,12 +129,12 @@
 ### `get_*` (9)
 
 - **`get_app_info() -> AppInfo`** — `ipc/commands.rs`
-- **`get_log(args: GetLogArgs) -> AppResult<Vec<repo::CommitSummary>>`** — `ipc/commands.rs`
-- **`get_status(repo_id: i64) -> AppResult<git_status::RepoStatus>`** — `ipc/commands.rs`
-- **`get_diff(args: DiffCommandArgs) -> AppResult<String>`** — `ipc/commands.rs`
-- **`get_commit_diff(args: DiffCommitArgs) -> AppResult<String>`** — `ipc/commands.rs`
-- **`get_graph(args: GetGraphArgs) -> AppResult<git_graph::GraphResult>`** — `ipc/commands.rs`
 - **`get_pull_request(args: GetPrArgs) -> AppResult<PullRequest>`** — `ipc/forge_commands.rs`
+- **`get_log(args: GetLogArgs) -> AppResult<Vec<repo::CommitSummary>>`** — `ipc/graph_commands.rs`
+- **`get_graph(args: GetGraphArgs) -> AppResult<git_graph::GraphResult>`** — `ipc/graph_commands.rs`
+- **`get_status(repo_id: i64) -> AppResult<git_status::RepoStatus>`** — `ipc/status_commands.rs`
+- **`get_diff(args: DiffCommandArgs) -> AppResult<String>`** — `ipc/status_commands.rs`
+- **`get_commit_diff(args: DiffCommitArgs) -> AppResult<String>`** — `ipc/status_commands.rs`
 - **`get_file_history(args: FileHistoryArgs) -> AppResult<Vec<crate::git::repository::CommitSummary>>`** — `ipc/v02_commands.rs`
 - **`get_file_blame(args: FileBlameArgs) -> AppResult<Vec<git_fh::BlameLine>>`** — `ipc/v02_commands.rs`
 
@@ -178,34 +186,34 @@
 ### `create_*` (5)
 
 - **`create_branch(args: CreateBranchArgs) -> AppResult<()>`** — `ipc/branch_commands.rs`
-- **`create_tag(args: CreateTagArgs) -> AppResult<()>`** — `ipc/commands.rs`
 - **`create_pull_request(args: CreatePrArgs) -> AppResult<PullRequest>`** — `ipc/forge_commands.rs`
 - **`create_profile(input: ProfileInput) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
+- **`create_tag(args: CreateTagArgs) -> AppResult<()>`** — `ipc/tag_commands.rs`
 - **`create_workspace(name: String, color: Option<String>) -> AppResult<Workspace>`** — `ipc/workspace_commands.rs`
 
 ### `delete_*` (5)
 
 - **`delete_branch(args: DeleteBranchArgs) -> AppResult<()>`** — `ipc/branch_commands.rs`
-- **`delete_tag(args: TagNameArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`delete_remote_tag(args: PushTagArgs) -> AppResult<()>`** — `ipc/commands.rs`
 - **`delete_profile(id: i64) -> AppResult<()>`** — `ipc/profile_commands.rs`
+- **`delete_tag(args: TagNameArgs) -> AppResult<()>`** — `ipc/tag_commands.rs`
+- **`delete_remote_tag(args: PushTagArgs) -> AppResult<()>`** — `ipc/tag_commands.rs`
 - **`delete_workspace(id: i64) -> AppResult<()>`** — `ipc/workspace_commands.rs`
-
-### `bulk_*` (5)
-
-- **`bulk_fetch(workspace_id: Option<i64>) -> AppResult<Vec<git_bulk::BulkResult<git_sync::SyncResult>>>`** — `ipc/commands.rs`
-- **`bulk_status(workspace_id: Option<i64>) -> AppResult<Vec<git_bulk::BulkResult<git_status::RepoStatus>>>`** — `ipc/commands.rs`
-- **`bulk_quick_status(workspace_id: Option<i64>) -> AppResult<Vec<git_bulk::BulkResult<git_status::QuickStatus>>>`** — `ipc/commands.rs`
-- **`bulk_list_prs(args: BulkPrsArgs) -> AppResult<Vec<git_bulk::BulkResult<Vec<crate::forge::PullRequest>>>>`** — `ipc/commands.rs`
-- **`bulk_cherry_pick(args: BulkCherryPickArgs) -> AppResult<Vec<git_cp::CherryPickResult>>`** — `ipc/v02_commands.rs`
 
 ### `add_*` (5)
 
-- **`add_remote(args: AddRemoteArgs) -> AppResult<()>`** — `ipc/commands.rs`
 - **`add_pr_comment(args: AddPrCommentArgs) -> AppResult<PrComment>`** — `ipc/forge_commands.rs`
 - **`add_review_comment(args: AddReviewCommentArgs) -> AppResult<()>`** — `ipc/forge_commands.rs`
+- **`add_remote(args: AddRemoteArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
 - **`add_repo(args: AddRepoArgs) -> AppResult<Repo>`** — `ipc/repo_commands.rs`
 - **`add_worktree(args: AddWorktreeArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
+
+### `bulk_*` (5)
+
+- **`bulk_fetch(workspace_id: Option<i64>) -> AppResult<Vec<git_bulk::BulkResult<git_sync::SyncResult>>>`** — `ipc/sync_commands.rs`
+- **`bulk_status(workspace_id: Option<i64>) -> AppResult<Vec<git_bulk::BulkResult<git_status::RepoStatus>>>`** — `ipc/sync_commands.rs`
+- **`bulk_quick_status(workspace_id: Option<i64>) -> AppResult<Vec<git_bulk::BulkResult<git_status::QuickStatus>>>`** — `ipc/sync_commands.rs`
+- **`bulk_list_prs(args: BulkPrsArgs) -> AppResult<Vec<git_bulk::BulkResult<Vec<crate::forge::PullRequest>>>>`** — `ipc/sync_commands.rs`
+- **`bulk_cherry_pick(args: BulkCherryPickArgs) -> AppResult<Vec<git_cp::CherryPickResult>>`** — `ipc/v02_commands.rs`
 
 ### `bisect_*` (4)
 
@@ -213,20 +221,6 @@
 - **`bisect_start(repo_id: i64) -> AppResult<String>`** — `ipc/bisect_commands.rs`
 - **`bisect_mark(args: BisectMarkArgs) -> AppResult<String>`** — `ipc/bisect_commands.rs`
 - **`bisect_reset(repo_id: i64) -> AppResult<()>`** — `ipc/bisect_commands.rs`
-
-### `apply_*` (4)
-
-- **`apply_patch(args: PatchArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`apply_repo_config(args: ApplyRepoConfigArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`apply_stash(args: StashIndexArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
-- **`apply_stash_file(args: StashFileArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
-
-### `push_*` (4)
-
-- **`push(args: PushArgs) -> AppResult<git_sync::SyncResult>`** — `ipc/commands.rs`
-- **`push_tag(args: PushTagArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`push_stash(args: PushStashArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
-- **`push_stash_staged(args: PushStashStagedArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
 
 ### `forge_*` (4)
 
@@ -242,41 +236,55 @@
 - **`pty_resize(args: PtyResizeArgs) -> AppResult<()>`** — `ipc/pty_commands.rs`
 - **`pty_close(id: u64) -> AppResult<()>`** — `ipc/pty_commands.rs`
 
+### `apply_*` (4)
+
+- **`apply_repo_config(args: ApplyRepoConfigArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
+- **`apply_stash(args: StashIndexArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
+- **`apply_stash_file(args: StashFileArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
+- **`apply_patch(args: PatchArgs) -> AppResult<()>`** — `ipc/status_commands.rs`
+
+### `push_*` (4)
+
+- **`push_stash(args: PushStashArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
+- **`push_stash_staged(args: PushStashStagedArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
+- **`push(args: PushArgs) -> AppResult<git_sync::SyncResult>`** — `ipc/sync_commands.rs`
+- **`push_tag(args: PushTagArgs) -> AppResult<()>`** — `ipc/tag_commands.rs`
+
 ### `set_*` (3)
 
 - **`set_repo_alias(args: SetAliasArgs) -> AppResult<RepoAlias>`** — `ipc/alias_commands.rs`
-- **`set_remote_url(args: SetRemoteUrlArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`set_remote_url(args: SetRemoteUrlArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
 - **`set_repo_pinned(args: SetPinnedArgs) -> AppResult<Repo>`** — `ipc/repo_commands.rs`
-
-### `read_*` (3)
-
-- **`read_file(args: ReadFileArgs) -> AppResult<String>`** — `ipc/commands.rs`
-- **`read_repo_config(repo_id: i64) -> AppResult<git_cfg_local::RepoConfigSnapshot>`** — `ipc/commands.rs`
-- **`read_conflicted(args: ConflictedFileArgs) -> AppResult<git_merge::ConflictedFile>`** — `ipc/v02_commands.rs`
-
-### `update_*` (3)
-
-- **`update_submodules(args: UpdateSubmodulesArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`update_profile(args: UpdateProfileArgs) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
-- **`update_workspace(args: UpdateWorkspaceArgs) -> AppResult<Workspace>`** — `ipc/workspace_commands.rs`
-
-### `remove_*` (3)
-
-- **`remove_remote(args: RemoteNameArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`remove_repo(id: i64) -> AppResult<()>`** — `ipc/repo_commands.rs`
-- **`remove_worktree(args: RemoveWorktreeArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
-
-### `import_*` (3)
-
-- **`import_gitkraken_detect() -> AppResult<Option<gitkraken::DetectResult>>`** — `ipc/commands.rs`
-- **`import_gitkraken_dry_run(args: GitKrakenImportArgs) -> AppResult<gitkraken::ImportPlan>`** — `ipc/commands.rs`
-- **`import_gitkraken_apply(args: GitKrakenImportArgs) -> AppResult<gitkraken::ApplyResult>`** — `ipc/commands.rs`
 
 ### `unhide_*` (3)
 
 - **`unhide_ref(args: UnhideRefArgs) -> AppResult<()>`** — `ipc/hide_commands.rs`
 - **`unhide_refs_by_kind(args: UnhideKindArgs) -> AppResult<u64>`** — `ipc/hide_commands.rs`
 - **`unhide_all_refs(repo_id: i64) -> AppResult<u64>`** — `ipc/hide_commands.rs`
+
+### `import_*` (3)
+
+- **`import_gitkraken_detect() -> AppResult<Option<gitkraken::DetectResult>>`** — `ipc/importer_commands.rs`
+- **`import_gitkraken_dry_run(args: GitKrakenImportArgs) -> AppResult<gitkraken::ImportPlan>`** — `ipc/importer_commands.rs`
+- **`import_gitkraken_apply(args: GitKrakenImportArgs) -> AppResult<gitkraken::ApplyResult>`** — `ipc/importer_commands.rs`
+
+### `update_*` (3)
+
+- **`update_profile(args: UpdateProfileArgs) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
+- **`update_submodules(args: UpdateSubmodulesArgs) -> AppResult<()>`** — `ipc/submodule_commands.rs`
+- **`update_workspace(args: UpdateWorkspaceArgs) -> AppResult<Workspace>`** — `ipc/workspace_commands.rs`
+
+### `remove_*` (3)
+
+- **`remove_remote(args: RemoteNameArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
+- **`remove_repo(id: i64) -> AppResult<()>`** — `ipc/repo_commands.rs`
+- **`remove_worktree(args: RemoveWorktreeArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
+
+### `read_*` (3)
+
+- **`read_repo_config(repo_id: i64) -> AppResult<git_cfg_local::RepoConfigSnapshot>`** — `ipc/remote_commands.rs`
+- **`read_file(args: ReadFileArgs) -> AppResult<String>`** — `ipc/status_commands.rs`
+- **`read_conflicted(args: ConflictedFileArgs) -> AppResult<git_merge::ConflictedFile>`** — `ipc/v02_commands.rs`
 
 ### `merge_*` (2)
 
@@ -286,27 +294,27 @@
 ### `rename_*` (2)
 
 - **`rename_branch(args: RenameBranchArgs) -> AppResult<()>`** — `ipc/branch_commands.rs`
-- **`rename_remote(args: RenameRemoteArgs) -> AppResult<()>`** — `ipc/commands.rs`
-
-### `stage_*` (2)
-
-- **`stage_paths(args: PathsArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`stage_all(repo_id: i64) -> AppResult<()>`** — `ipc/commands.rs`
-
-### `restore_*` (2)
-
-- **`restore_worktree_patch(args: RestoreWorktreePatchArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`restore_paths(args: RestoreArgs) -> AppResult<()>`** — `ipc/commands.rs`
-
-### `maintenance_*` (2)
-
-- **`maintenance_gc(args: MaintenanceArgs) -> AppResult<git_maint::MaintenanceResult>`** — `ipc/commands.rs`
-- **`maintenance_fsck(repo_id: i64) -> AppResult<git_maint::MaintenanceResult>`** — `ipc/commands.rs`
+- **`rename_remote(args: RenameRemoteArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
 
 ### `hide_*` (2)
 
 - **`hide_ref(args: HideRefArgs) -> AppResult<()>`** — `ipc/hide_commands.rs`
 - **`hide_refs_bulk(args: HideRefsByKindArgs) -> AppResult<usize>`** — `ipc/hide_commands.rs`
+
+### `maintenance_*` (2)
+
+- **`maintenance_gc(args: MaintenanceArgs) -> AppResult<git_maint::MaintenanceResult>`** — `ipc/remote_commands.rs`
+- **`maintenance_fsck(repo_id: i64) -> AppResult<git_maint::MaintenanceResult>`** — `ipc/remote_commands.rs`
+
+### `stage_*` (2)
+
+- **`stage_paths(args: PathsArgs) -> AppResult<()>`** — `ipc/status_commands.rs`
+- **`stage_all(repo_id: i64) -> AppResult<()>`** — `ipc/status_commands.rs`
+
+### `restore_*` (2)
+
+- **`restore_worktree_patch(args: RestoreWorktreePatchArgs) -> AppResult<()>`** — `ipc/status_commands.rs`
+- **`restore_paths(args: RestoreArgs) -> AppResult<()>`** — `ipc/status_commands.rs`
 
 ### `open_*` (2)
 
@@ -329,69 +337,37 @@
 
 - **`switch_branch(args: SwitchBranchArgs) -> AppResult<()>`** — `ipc/branch_commands.rs`
 
-### `unstage_*` (1)
-
-- **`unstage_paths(args: PathsArgs) -> AppResult<()>`** — `ipc/commands.rs`
-
-### `discard_*` (1)
-
-- **`discard_paths(args: PathsArgs) -> AppResult<()>`** — `ipc/commands.rs`
-
-### `range_*` (1)
-
-- **`range_diff(args: RangeDiffArgs) -> AppResult<Vec<git_range_diff::RangeDiffEntry>>`** — `ipc/commands.rs`
-
 ### `commit_*` (1)
 
-- **`commit(args: CommitArgs) -> AppResult<git_commit::CommitResult>`** — `ipc/commands.rs`
+- **`commit(args: CommitArgs) -> AppResult<git_commit::CommitResult>`** — `ipc/commit_commands.rs`
 
 ### `last_*` (1)
 
-- **`last_commit_message(repo_id: i64) -> AppResult<String>`** — `ipc/commands.rs`
-
-### `fetch_*` (1)
-
-- **`fetch_all(repo_id: i64) -> AppResult<git_sync::SyncResult>`** — `ipc/commands.rs`
-
-### `pull_*` (1)
-
-- **`pull(args: PullArgs) -> AppResult<git_sync::SyncResult>`** — `ipc/commands.rs`
-
-### `search_*` (1)
-
-- **`search_commits_by_message(args: SearchCommitsByMessageArgs) -> AppResult<Vec<repo::CommitSummary>>`** — `ipc/commands.rs`
+- **`last_commit_message(repo_id: i64) -> AppResult<String>`** — `ipc/commit_commands.rs`
 
 ### `compare_*` (1)
 
-- **`compare_refs(args: CompareRefsArgs) -> AppResult<crate::git::compare::CompareResult>`** — `ipc/commands.rs`
+- **`compare_refs(args: CompareRefsArgs) -> AppResult<crate::git::compare::CompareResult>`** — `ipc/commit_commands.rs`
 
 ### `reset_*` (1)
 
-- **`reset(args: ResetArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`reset(args: ResetArgs) -> AppResult<()>`** — `ipc/commit_commands.rs`
 
 ### `revert_*` (1)
 
-- **`revert(args: RevertArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`revert(args: RevertArgs) -> AppResult<()>`** — `ipc/commit_commands.rs`
 
 ### `undo_*` (1)
 
-- **`undo_last_action(args: UndoLastActionArgs) -> AppResult<git_reflog::UndoResult>`** — `ipc/commands.rs`
+- **`undo_last_action(args: UndoLastActionArgs) -> AppResult<git_reflog::UndoResult>`** — `ipc/commit_commands.rs`
 
 ### `redo_*` (1)
 
-- **`redo_last_action(args: UndoLastActionArgs) -> AppResult<git_reflog::UndoResult>`** — `ipc/commands.rs`
+- **`redo_last_action(args: UndoLastActionArgs) -> AppResult<git_reflog::UndoResult>`** — `ipc/commit_commands.rs`
 
 ### `count_*` (1)
 
-- **`count_hangul_commits(args: CountHangulCommitsArgs) -> AppResult<git_identity::HangulCommitStats>`** — `ipc/commands.rs`
-
-### `init_*` (1)
-
-- **`init_submodules(repo_id: i64) -> AppResult<()>`** — `ipc/commands.rs`
-
-### `sync_*` (1)
-
-- **`sync_submodules(repo_id: i64) -> AppResult<()>`** — `ipc/commands.rs`
+- **`count_hangul_commits(args: CountHangulCommitsArgs) -> AppResult<git_identity::HangulCommitStats>`** — `ipc/commit_commands.rs`
 
 ### `submit_*` (1)
 
@@ -404,6 +380,10 @@
 ### `reopen_*` (1)
 
 - **`reopen_pr(args: GetPrArgs) -> AppResult<()>`** — `ipc/forge_commands.rs`
+
+### `search_*` (1)
+
+- **`search_commits_by_message(args: SearchCommitsByMessageArgs) -> AppResult<Vec<repo::CommitSummary>>`** — `ipc/graph_commands.rs`
 
 ### `activate_*` (1)
 
@@ -432,6 +412,34 @@
 ### `edit_*` (1)
 
 - **`edit_stash_message(args: EditStashMessageArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
+
+### `unstage_*` (1)
+
+- **`unstage_paths(args: PathsArgs) -> AppResult<()>`** — `ipc/status_commands.rs`
+
+### `discard_*` (1)
+
+- **`discard_paths(args: PathsArgs) -> AppResult<()>`** — `ipc/status_commands.rs`
+
+### `range_*` (1)
+
+- **`range_diff(args: RangeDiffArgs) -> AppResult<Vec<git_range_diff::RangeDiffEntry>>`** — `ipc/status_commands.rs`
+
+### `init_*` (1)
+
+- **`init_submodules(repo_id: i64) -> AppResult<()>`** — `ipc/submodule_commands.rs`
+
+### `sync_*` (1)
+
+- **`sync_submodules(repo_id: i64) -> AppResult<()>`** — `ipc/submodule_commands.rs`
+
+### `fetch_*` (1)
+
+- **`fetch_all(repo_id: i64) -> AppResult<git_sync::SyncResult>`** — `ipc/sync_commands.rs`
+
+### `pull_*` (1)
+
+- **`pull(args: PullArgs) -> AppResult<git_sync::SyncResult>`** — `ipc/sync_commands.rs`
 
 ### `prune_*` (1)
 
