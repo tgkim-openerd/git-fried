@@ -2,13 +2,15 @@
 //
 // /analyze HIGH 1 후속 — commands.rs 의 remote (5) + maintenance (2) +
 // repo_config (2) 영역 9 commands 분리.
+//
+// /code-review ARCH-002 후속 — `state.db.get_repo + Path::new(&r.local_path)`
+// 2-step 패턴 9 사이트를 `super::repo_path()` helper 로 통일 (mod.rs 의 의도).
 
+use super::repo_path;
 use crate::error::AppResult;
 use crate::git::{config_local as git_cfg_local, maintenance as git_maint, remote as git_remote};
-use crate::storage::DbExt;
 use crate::AppState;
 use serde::Deserialize;
-use std::path::Path;
 use std::sync::Arc;
 
 // ====== Remote 관리 (`docs/plan/14 §4` Sprint B14-1) ======
@@ -18,8 +20,8 @@ pub async fn list_remotes(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Vec<git_remote::RemoteInfo>> {
-    let r = state.db.get_repo(repo_id).await?;
-    git_remote::list_remotes(Path::new(&r.local_path)).await
+    let path = repo_path(&state, repo_id).await?;
+    git_remote::list_remotes(&path).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -35,8 +37,8 @@ pub async fn add_remote(
     args: AddRemoteArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_remote::add_remote(Path::new(&r.local_path), &args.name, &args.url).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_remote::add_remote(&path, &args.name, &args.url).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -51,8 +53,8 @@ pub async fn remove_remote(
     args: RemoteNameArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_remote::remove_remote(Path::new(&r.local_path), &args.name).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_remote::remove_remote(&path, &args.name).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -68,8 +70,8 @@ pub async fn rename_remote(
     args: RenameRemoteArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_remote::rename_remote(Path::new(&r.local_path), &args.old_name, &args.new_name).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_remote::rename_remote(&path, &args.old_name, &args.new_name).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -85,8 +87,8 @@ pub async fn set_remote_url(
     args: SetRemoteUrlArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_remote::set_remote_url(Path::new(&r.local_path), &args.name, &args.url).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_remote::set_remote_url(&path, &args.name, &args.url).await
 }
 
 // ====== Repo Maintenance (`docs/plan/14 §2 A2` Sprint B14-2) ======
@@ -104,8 +106,8 @@ pub async fn maintenance_gc(
     args: MaintenanceArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_maint::MaintenanceResult> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_maint::gc(Path::new(&r.local_path), args.aggressive).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_maint::gc(&path, args.aggressive).await
 }
 
 #[tauri::command]
@@ -113,8 +115,8 @@ pub async fn maintenance_fsck(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_maint::MaintenanceResult> {
-    let r = state.db.get_repo(repo_id).await?;
-    git_maint::fsck(Path::new(&r.local_path)).await
+    let path = repo_path(&state, repo_id).await?;
+    git_maint::fsck(&path).await
 }
 
 // ====== Repository-Specific Preferences (`docs/plan/14 §3` Sprint B14-3) ======
@@ -124,8 +126,8 @@ pub async fn read_repo_config(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_cfg_local::RepoConfigSnapshot> {
-    let r = state.db.get_repo(repo_id).await?;
-    git_cfg_local::read_snapshot(Path::new(&r.local_path)).await
+    let path = repo_path(&state, repo_id).await?;
+    git_cfg_local::read_snapshot(&path).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -140,6 +142,6 @@ pub async fn apply_repo_config(
     args: ApplyRepoConfigArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_cfg_local::apply_snapshot(Path::new(&r.local_path), &args.snapshot).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_cfg_local::apply_snapshot(&path, &args.snapshot).await
 }

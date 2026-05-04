@@ -1,13 +1,14 @@
 // Tauri commands — Tag panel (`docs/plan/14 §8 G1` Sprint C14).
 //
 // /analyze HIGH 1 후속 — commands.rs 의 tag 영역 5 commands 분리.
+// /code-review ARCH-002 후속 — `state.db.get_repo + Path::new` 2-step 패턴
+// 5 사이트를 `super::repo_path()` helper 로 통일.
 
+use super::repo_path;
 use crate::error::AppResult;
 use crate::git::tag as git_tag;
-use crate::storage::DbExt;
 use crate::AppState;
 use serde::Deserialize;
-use std::path::Path;
 use std::sync::Arc;
 
 #[tauri::command]
@@ -15,8 +16,8 @@ pub async fn list_tags(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Vec<git_tag::TagInfo>> {
-    let r = state.db.get_repo(repo_id).await?;
-    git_tag::list_tags(Path::new(&r.local_path)).await
+    let path = repo_path(&state, repo_id).await?;
+    git_tag::list_tags(&path).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,9 +38,9 @@ pub async fn create_tag(
     args: CreateTagArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
+    let path = repo_path(&state, args.repo_id).await?;
     git_tag::create_tag(
-        Path::new(&r.local_path),
+        &path,
         &args.name,
         args.target.as_deref(),
         args.message.as_deref(),
@@ -59,8 +60,8 @@ pub async fn delete_tag(
     args: TagNameArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_tag::delete_tag(Path::new(&r.local_path), &args.name).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_tag::delete_tag(&path, &args.name).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -73,8 +74,8 @@ pub struct PushTagArgs {
 
 #[tauri::command]
 pub async fn push_tag(args: PushTagArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_tag::push_tag(Path::new(&r.local_path), &args.remote, &args.name).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_tag::push_tag(&path, &args.remote, &args.name).await
 }
 
 #[tauri::command]
@@ -82,6 +83,6 @@ pub async fn delete_remote_tag(
     args: PushTagArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    let r = state.db.get_repo(args.repo_id).await?;
-    git_tag::delete_remote_tag(Path::new(&r.local_path), &args.remote, &args.name).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_tag::delete_remote_tag(&path, &args.remote, &args.name).await
 }
