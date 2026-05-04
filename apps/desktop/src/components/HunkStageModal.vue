@@ -24,6 +24,9 @@ import {
   type DiffFileWithHunks,
   type DiffHunk,
 } from '@/utils/parseDiff'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   repoId: number | null
@@ -116,23 +119,28 @@ const totalSelected = computed(() => {
 
 const applyMut = useMutation({
   mutationFn: (args: { patch: string; what: string }) => {
-    if (props.repoId == null) return Promise.reject(new Error('레포 미선택'))
+    if (props.repoId == null) return Promise.reject(new Error(t('hunkStage.errRepoNotSelected')))
     return applyPatch(props.repoId, args.patch, props.staged).then(() => args.what)
   },
   onSuccess: (what) => {
-    toast.success(`${what} ${props.staged ? 'unstage' : 'stage'} 완료`, '')
+    const action = props.staged ? t('hunkStage.actionUnstage') : t('hunkStage.actionStage')
+    toast.success(t('hunkStage.applySuccessTitle', { what, action }), '')
     invalidate(props.repoId)
     diffQuery.refetch()
     selected.value = new Map()
   },
-  onError: (e) => toast.error(props.staged ? 'Unstage 실패' : 'Stage 실패', describeError(e)),
+  onError: (e) =>
+    toast.error(
+      props.staged ? t('hunkStage.unstageFailed') : t('hunkStage.stageFailed'),
+      describeError(e),
+    ),
 })
 
 function applyHunk(idx: number) {
   const f = file.value
   const h = hunks.value[idx]
   if (!f || !h) return
-  applyMut.mutate({ patch: buildHunkPatch(f, h), what: '전체 hunk' })
+  applyMut.mutate({ patch: buildHunkPatch(f, h), what: t('hunkStage.wholeHunk') })
 }
 
 function applySelectedLines(hunkIdx: number) {
@@ -142,10 +150,10 @@ function applySelectedLines(hunkIdx: number) {
   if (!f || !h || !s || s.size === 0) return
   const patch = buildLinePatch(f, h, s)
   if (!patch) {
-    toast.warning('변경 없음', '선택한 라인에 stage 가능한 변경 없음')
+    toast.warning(t('hunkStage.noChange'), t('hunkStage.noChangeMessage'))
     return
   }
-  applyMut.mutate({ patch, what: `${s.size} 라인` })
+  applyMut.mutate({ patch, what: t('hunkStage.linesSuffix', { n: s.size }) })
 }
 
 // === Sprint 22-2 CM-4: hunk row 우클릭 메뉴 ===
@@ -155,22 +163,24 @@ function onHunkContextMenu(ev: MouseEvent, hIdx: number) {
   const sel = selected.value.get(hIdx)
   const items: ContextMenuItem[] = [
     {
-      label: props.staged ? 'Hunk unstage (전체)' : 'Hunk stage (전체)',
+      label: props.staged ? t('hunkStage.ctxHunkUnstageAll') : t('hunkStage.ctxHunkStageAll'),
       icon: '✂',
       action: () => applyHunk(hIdx),
       disabled: applyMut.isPending.value,
     },
     {
       label: props.staged
-        ? `선택 ${sel?.size ?? 0} 라인 unstage`
-        : `선택 ${sel?.size ?? 0} 라인 stage`,
+        ? t('hunkStage.ctxSelectedLinesUnstage', { n: sel?.size ?? 0 })
+        : t('hunkStage.ctxSelectedLinesStage', { n: sel?.size ?? 0 }),
       icon: '✓',
       action: () => applySelectedLines(hIdx),
       disabled: !sel?.size || applyMut.isPending.value,
     },
     { divider: true },
     {
-      label: expanded.value.has(hIdx) ? 'Hunk 접기' : 'Hunk 펼치기',
+      label: expanded.value.has(hIdx)
+        ? t('hunkStage.ctxCollapseHunk')
+        : t('hunkStage.ctxExpandHunk'),
       icon: expanded.value.has(hIdx) ? '▼' : '▶',
       action: () => toggleExpanded(hIdx),
     },
@@ -183,7 +193,7 @@ function applyAllHunks() {
   if (!f || hunks.value.length === 0) return
   const tail = hunks.value.map((h) => `${h.header}\n${h.bodyLines.join('\n')}`).join('\n')
   const patch = `${f.fileHeader}\n${tail}\n`
-  applyMut.mutate({ patch, what: '전체 hunk' })
+  applyMut.mutate({ patch, what: t('hunkStage.wholeHunk') })
 }
 
 function lineColor(prefix: string): string {
@@ -215,7 +225,9 @@ function toggleExpanded(idx: number) {
           {{ staged ? 'Hunk / Line Unstage' : 'Hunk / Line Stage' }}
           <span class="ml-2 text-muted-foreground">{{ path }}</span>
           <span v-if="hunks.length" class="ml-2 text-xs text-muted-foreground">
-            ({{ hunks.length }} hunks · 선택 {{ totalSelected }} 라인)
+            {{
+              t('hunkStage.hunksSelectedCount', { hunks: hunks.length, selected: totalSelected })
+            }}
           </span>
         </h2>
         <div class="flex items-center gap-2">
@@ -224,16 +236,16 @@ function toggleExpanded(idx: number) {
             type="button"
             class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40 disabled:opacity-50"
             :disabled="applyMut.isPending.value"
-            :title="staged ? '모든 hunk unstage' : '모든 hunk stage'"
-            :aria-label="staged ? '모든 hunk unstage' : '모든 hunk stage'"
+            :title="staged ? t('hunkStage.allHunksUnstage') : t('hunkStage.allHunksStage')"
+            :aria-label="staged ? t('hunkStage.allHunksUnstage') : t('hunkStage.allHunksStage')"
             @click="applyAllHunks"
           >
-            {{ staged ? '모두 ✕' : '모두 ✓' }}
+            {{ staged ? t('hunkStage.allUnstageButton') : t('hunkStage.allStageButton') }}
           </button>
           <button
             type="button"
             class="text-muted-foreground hover:text-foreground"
-            aria-label="닫기"
+            :aria-label="t('common.close')"
             @click="$emit('close')"
           >
             ✕
@@ -243,7 +255,7 @@ function toggleExpanded(idx: number) {
     </template>
     <div class="p-2 font-mono text-xs">
       <p v-if="diffQuery.isFetching.value && !file" class="p-6 text-center text-muted-foreground">
-        불러오는 중...
+        {{ t('common.loading') }}
       </p>
       <p
         v-else-if="diffQuery.error.value"
@@ -252,7 +264,7 @@ function toggleExpanded(idx: number) {
         {{ describeError(diffQuery.error.value) }}
       </p>
       <p v-else-if="!file" class="p-6 text-center text-muted-foreground">
-        변경 없음 또는 binary / 모드 변경.
+        {{ t('hunkStage.emptyDiff') }}
       </p>
       <div
         v-for="(h, hIdx) in hunks"
@@ -264,12 +276,12 @@ function toggleExpanded(idx: number) {
           <button
             type="button"
             class="flex-1 truncate text-left text-muted-foreground hover:text-foreground"
-            :title="expanded.has(hIdx) ? '접기' : '펼치기'"
+            :title="expanded.has(hIdx) ? t('hunkStage.collapse') : t('hunkStage.expand')"
             @click="toggleExpanded(hIdx)"
           >
             {{ expanded.has(hIdx) ? '▼' : '▶' }} {{ h.header }}
             <span v-if="selected.get(hIdx)?.size" class="ml-1 text-warning-amber">
-              ({{ selected.get(hIdx)?.size }} 선택)
+              {{ t('hunkStage.selectedSuffix', { n: selected.get(hIdx)?.size }) }}
             </span>
           </button>
           <button
@@ -277,10 +289,10 @@ function toggleExpanded(idx: number) {
             type="button"
             class="ml-1 rounded border border-amber-500/40 px-1.5 py-0.5 text-[10px] text-warning-amber hover:bg-amber-500/20 disabled:opacity-50"
             :disabled="applyMut.isPending.value"
-            :title="staged ? '선택 라인만 unstage' : '선택 라인만 stage'"
+            :title="staged ? t('hunkStage.lineUnstageTitle') : t('hunkStage.lineStageTitle')"
             @click="applySelectedLines(hIdx)"
           >
-            {{ staged ? '선택 ✕' : '선택 ✓' }}
+            {{ staged ? t('hunkStage.lineUnstageButton') : t('hunkStage.lineStageButton') }}
           </button>
           <button
             type="button"
@@ -288,7 +300,7 @@ function toggleExpanded(idx: number) {
             :disabled="applyMut.isPending.value"
             @click="applyHunk(hIdx)"
           >
-            {{ staged ? 'hunk ✕' : 'hunk ✓' }}
+            {{ staged ? t('hunkStage.hunkUnstageButton') : t('hunkStage.hunkStageButton') }}
           </button>
         </div>
         <div v-if="expanded.has(hIdx)" class="overflow-x-auto">
@@ -305,7 +317,7 @@ function toggleExpanded(idx: number) {
                 type="checkbox"
                 class="cursor-pointer align-middle"
                 :checked="isSelected(hIdx, lIdx)"
-                :title="`라인 ${lIdx} (shift-click = range)`"
+                :title="t('hunkStage.lineRangeTitle', { idx: lIdx })"
                 @click.stop="toggleLine(hIdx, lIdx, $event as MouseEvent)"
               />
             </span>
@@ -319,10 +331,10 @@ function toggleExpanded(idx: number) {
             class="flex items-center gap-2 border-t border-border bg-muted/20 px-2 py-0.5 text-[10px] text-muted-foreground"
           >
             <button type="button" class="hover:text-foreground" @click="selectAllLines(hIdx)">
-              ✓ 전체 라인 선택
+              {{ t('hunkStage.selectAllLines') }}
             </button>
             <button type="button" class="hover:text-foreground" @click="clearLines(hIdx)">
-              🚫 선택 해제
+              {{ t('hunkStage.clearSelection') }}
             </button>
             <span class="ml-auto">shift-click = range</span>
           </div>

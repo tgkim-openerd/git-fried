@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37-9 — i18n 마이그 HunkStageModal +34 키 (2026-04-30, 1 commit)** — checkpoint.md 1순위 E 추가 진행 (HunkStageModal 단일 컴포넌트). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 427 → 461 (+34, ko/en 대칭)**:
+  - **`hunkStage.*` +34 신규 키** (ko/en 양쪽): errRepoNotSelected / applySuccessTitle (`{what}` `{action}`) / actionStage·actionUnstage / stageFailed·unstageFailed / wholeHunk / noChange + noChangeMessage / linesSuffix (`{n}`) / ctxHunkUnstageAll·ctxHunkStageAll / ctxSelectedLinesUnstage·ctxSelectedLinesStage (`{n}`) / ctxCollapseHunk·ctxExpandHunk / hunksSelectedCount (`{hunks}` `{selected}`) / allHunksUnstage·allHunksStage / allUnstageButton·allStageButton / emptyDiff / collapse·expand / selectedSuffix (`{n}`) / lineUnstageTitle·lineStageTitle / lineUnstageButton·lineStageButton / hunkUnstageButton·hunkStageButton / lineRangeTitle (`{idx}`) / selectAllLines / clearSelection
+  - **`HunkStageModal.vue`** 마이그:
+    - useI18n 임포트 + `t()` 추가
+    - applyMut: throw Error / onSuccess (action 분기) / onError (Stage·Unstage 분기) — 4개 t() 교체
+    - applyHunk / applySelectedLines / applyAllHunks 의 `what` arg → `t('hunkStage.wholeHunk' / 'linesSuffix')`
+    - ContextMenu items 3 라벨 (전체 / 선택 라인 / 접기·펼치기) 모두 staged 분기 + interpolation
+    - template: header (hunks·선택 카운트) / 모든 hunk 버튼 (title·aria·label) / 닫기 (common.close) / loading (common.loading) / emptyDiff / 각 hunk row 의 toggle title·selected suffix·line stage·unstage button·hunk button / 라인 range title / 전체 선택·해제 라벨 모두 t() 교체
+
 - **Sprint c37-8 — i18n 마이그 StatusPanel +30 키 (2026-04-30, 1 commit)** — checkpoint.md 1순위 E "i18n 추가 마이그 ~80 키" 추가 진행 (StatusPanel 단일 컴포넌트). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 397 → 427 (+30, ko/en 대칭)**:
   - **`status.*` +30 신규 키** (ko/en 양쪽): changesHeader / refreshing / viewModePathTooltip + Aria / viewModeTreeTooltip + Aria / filterAria / bulkUnstageAria + bulkStageAria (`{n}` interpolation) / hunkUnstageTooltip + Aria + hunkStageTooltip + Aria (`{path}`) / mergetoolDoneTitle / mergetoolFailedTitle / mergetoolErrorTitle / ctxUnstage·ctxStage·ctxDiscard·ctxHunkUnstage·ctxHunkStage·ctxFileHistory·ctxCopyPath / dirToggleTitle (`{path}`) / discardAria (`{path}`) / fullscreenTitle / mergetoolTitle / mergetoolShort / resolve / stageAllTitle
   - **`StatusPanel.vue`** 마이그:
