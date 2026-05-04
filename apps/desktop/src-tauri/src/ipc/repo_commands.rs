@@ -40,13 +40,18 @@ pub async fn add_repo(
             args.local_path
         )));
     }
+    // SEC-006: `..` / symlink 정규화. DB 에 저장되는 경로는 항상 canonical.
+    let canonical = path.canonicalize().map_err(|e| {
+        AppError::validation(format!("경로 정규화 실패 ({}): {e}", args.local_path))
+    })?;
+    let canonical_str = canonical.to_string_lossy().to_string();
 
-    let meta = repo::detect_meta(path)?;
+    let meta = repo::detect_meta(&canonical)?;
 
     state
         .db
         .add_repo(
-            &args.local_path,
+            &canonical_str,
             args.workspace_id,
             args.name.as_deref(),
             meta.default_branch.as_deref(),
@@ -124,6 +129,13 @@ pub async fn clone_repo(
         });
     }
 
+    // SEC-006: clone 직후 target 디렉토리가 존재하므로 canonicalize 가능.
+    // 실패 시 원래 경로로 fallback (auto_register 는 best-effort).
+    let canonical_target = target
+        .canonicalize()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|_| args.target_path.clone());
+
     // auto_register: detect_meta + add_repo (importer 와 동일 graceful 패턴)
     let meta = repo::detect_meta(target);
     let (name, default_branch, default_remote, forge_kind, forge_owner, forge_repo) = match meta {
@@ -155,7 +167,7 @@ pub async fn clone_repo(
     match state
         .db
         .add_repo(
-            &args.target_path,
+            &canonical_target,
             args.workspace_id,
             Some(&name),
             default_branch.as_deref(),

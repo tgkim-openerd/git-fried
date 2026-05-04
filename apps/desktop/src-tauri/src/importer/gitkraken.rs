@@ -142,9 +142,47 @@ pub fn detect_profile_dir() -> AppResult<Option<PathBuf>> {
     Ok(best.map(|(p, _)| p))
 }
 
+/// `profile_dir` 가 신뢰 base (`%APPDATA%/.gitkraken/profiles/`) 의 직접 자손인지
+/// 검증. SEC-007 fix — IPC 가 frontend dialog 가 아닌 직접 호출 시 path traversal
+/// (예: `C:\Windows\System32\malicious-profile`) 을 차단.
+fn ensure_trusted_profile_dir(profile_dir: &Path) -> AppResult<()> {
+    let appdata = match std::env::var_os("APPDATA") {
+        Some(v) => PathBuf::from(v),
+        None => {
+            // %APPDATA% 미설정 환경 (Linux / WSL 등) — Windows-only importer 라
+            // 진입 자체를 거부.
+            return Err(AppError::validation(
+                "GitKraken 임포트는 Windows 환경 (%APPDATA% 필요) 에서만 지원됩니다.",
+            ));
+        }
+    };
+    let profiles_root = appdata.join(".gitkraken").join("profiles");
+    let canon_root = profiles_root.canonicalize().map_err(|e| {
+        AppError::validation(format!(
+            "신뢰 base ({}) 가 존재하지 않습니다: {e}",
+            profiles_root.to_string_lossy()
+        ))
+    })?;
+    let canon_dir = profile_dir.canonicalize().map_err(|e| {
+        AppError::validation(format!(
+            "프로필 경로 정규화 실패 ({}): {e}",
+            profile_dir.to_string_lossy()
+        ))
+    })?;
+    if !canon_dir.starts_with(&canon_root) {
+        return Err(AppError::validation(format!(
+            "허용되지 않은 프로필 경로 (`%APPDATA%/.gitkraken/profiles/` 외): {}",
+            canon_dir.to_string_lossy()
+        )));
+    }
+    Ok(())
+}
+
 // ====== Parse ======
 
 pub fn read_payload(profile_dir: &Path) -> AppResult<Payload> {
+    // SEC-007: traversal 방어 — profile_dir 가 신뢰 base 자손인지 검증.
+    ensure_trusted_profile_dir(profile_dir)?;
     let local_repo_path = profile_dir.join("localRepoCache");
     let profile_path = profile_dir.join("profile");
     let project_cache_path = profile_dir.join("projectCache");

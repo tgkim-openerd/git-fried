@@ -52,13 +52,49 @@ pub struct CloneResult {
     pub stderr: String,
 }
 
+/// 허용 URL prefix (SEC-008). `file://`, `ext::`, `lp:` 등 위험 protocol 거부.
+/// git 2.45+ 의 `protocol.allow=user` 가 기본 차단하나 명시 allowlist 로 정밀화.
+fn is_allowed_clone_url(url: &str) -> bool {
+    let trimmed = url.trim();
+    // 표준 원격 protocol.
+    if trimmed.starts_with("https://")
+        || trimmed.starts_with("http://")
+        || trimmed.starts_with("ssh://")
+        || trimmed.starts_with("git://")
+    {
+        return true;
+    }
+    // user@host:path SCP-like syntax (예: git@github.com:foo/bar.git).
+    // protocol prefix 없이 `<user>@<host>:<path>` 형태. `:` 가 path traversal 방지를 위해
+    // 첫 `/` 보다 앞에 있어야 함.
+    if let Some(at_idx) = trimmed.find('@') {
+        if let Some(colon_idx) = trimmed[at_idx..].find(':') {
+            // ssh-config 사용 가능한 단순 SCP-like.
+            let after_colon = &trimmed[at_idx + colon_idx + 1..];
+            // path 가 비어있지 않고 `-` 시작 아닌 (옵션 인젝션 방어).
+            if !after_colon.is_empty() && !after_colon.starts_with('-') {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// `git clone <url> <target>` + 옵션. 부모 디렉토리는 호출 측에서 보장.
 ///
-/// **보안**: url / target 모두 dash-prefix 거부 + `--end-of-options` 로 CWE-88
-/// 방어. CVE-2017-1000117 (`ssh://-oProxyCommand=...`) 차단.
+/// **보안**:
+///   - SEC-001: url / target 모두 dash-prefix 거부 + `--end-of-options` (CWE-88).
+///   - SEC-008: protocol allowlist (`https`/`http`/`ssh`/`git`/SCP-like). `file://`,
+///     `ext::sh -c ...` (CVE-2024-32004 류), `lp:` 등 위험 protocol 거부.
+///   - CVE-2017-1000117 (`ssh://-oProxyCommand=...`) 차단.
 pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<CloneResult> {
     if url.trim().is_empty() {
         return Err(AppError::validation("clone URL 이 비어있음"));
+    }
+    if !is_allowed_clone_url(url) {
+        return Err(AppError::validation(format!(
+            "지원하지 않는 clone URL protocol: {url} (https / http / ssh / git / user@host:path 만 허용)"
+        )));
     }
     let safe_url = crate::git::path::reject_dash_prefix(url, "clone URL")?;
     let target_str = target.to_string_lossy().to_string();
@@ -199,6 +235,53 @@ mod tests {
         assert!(res.is_err());
         let res2 = clone("   ", &target, &CloneOptions::default()).await;
         assert!(res2.is_err());
+    }
+
+    // SEC-008 protocol allowlist (`is_allowed_clone_url`) 단위 테스트.
+
+    #[test]
+    fn allowed_url_https() {
+        assert!(is_allowed_clone_url("https://github.com/foo/bar.git"));
+        assert!(is_allowed_clone_url("http://internal.example/repo"));
+    }
+
+    #[test]
+    fn allowed_url_ssh_protocol() {
+        assert!(is_allowed_clone_url("ssh://git@github.com/foo/bar"));
+        assert!(is_allowed_clone_url("git://github.com/foo/bar"));
+    }
+
+    #[test]
+    fn allowed_url_scp_like() {
+        assert!(is_allowed_clone_url("git@github.com:foo/bar.git"));
+        assert!(is_allowed_clone_url("user@gitea.example:org/repo"));
+    }
+
+    #[test]
+    fn rejected_url_file_protocol() {
+        // file:// 은 SECURITY 정책상 거부 (local clone 은 별도 IPC 경유).
+        assert!(!is_allowed_clone_url("file:///etc/passwd"));
+        assert!(!is_allowed_clone_url("file://C:/Windows/System32"));
+    }
+
+    #[test]
+    fn rejected_url_ext_protocol() {
+        // CVE-2024-32004 류 — ext:: 는 임의 명령 실행.
+        assert!(!is_allowed_clone_url("ext::sh -c whoami"));
+        assert!(!is_allowed_clone_url("lp:foo/bar"));
+    }
+
+    #[test]
+    fn rejected_url_scp_with_dash_path() {
+        // CVE-2017-1000117 패턴 — SCP path 가 `-` 로 시작하면 거부.
+        assert!(!is_allowed_clone_url("git@github.com:-oProxyCommand=evil"));
+    }
+
+    #[test]
+    fn rejected_url_empty_or_random() {
+        assert!(!is_allowed_clone_url(""));
+        assert!(!is_allowed_clone_url("not-a-url"));
+        assert!(!is_allowed_clone_url("just-text"));
     }
 
     /// CloneOptions deserialize — sparse_paths / depth 등 모두 optional.
