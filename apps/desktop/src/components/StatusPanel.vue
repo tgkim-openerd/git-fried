@@ -4,13 +4,9 @@
 // - 파일 클릭 시 stage / unstage 토글
 // - "+ 모두 stage" / "− 모두 unstage" 단축
 import { computed, useTemplateRef } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
-import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useStatus } from '@/composables/useStatus'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
-import { launchMergetool } from '@/api/git'
 import { useStageMutations } from '@/composables/useStageMutations'
-import { describeError } from '@/api/errors'
-import { useToast } from '@/composables/useToast'
 import FileHistoryModal from './FileHistoryModal.vue'
 import MergeEditorModal from './MergeEditorModal.vue'
 import HunkStageModal from './HunkStageModal.vue'
@@ -20,7 +16,9 @@ import StatusSectionHeader from './StatusSectionHeader.vue'
 import StatusInlineDiff from './StatusInlineDiff.vue'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import { useStatusFilter } from '@/composables/useStatusFilter'
-import { flattenTree, useStatusTreeView } from '@/composables/useStatusTreeView'
+import { useStatusTreeView } from '@/composables/useStatusTreeView'
+// Sprint c40 — 4 tree row computed + mergetool mutation 분리.
+import { useStatusTreeRows } from '@/composables/useStatusTreeRows'
 import { statusColor, statusLabel } from '@/utils/statusFormat'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
@@ -42,17 +40,11 @@ const collapsedStaged = useSectionCollapse('status.staged')
 const collapsedUnstaged = useSectionCollapse('status.unstaged')
 const collapsedUntracked = useSectionCollapse('status.untracked')
 const collapsedConflicted = useSectionCollapse('status.conflicted')
-import type { FileChange } from '@/types/git'
-
 // Sprint c25-2.1 — Path/Tree 토글. composables/useStatusTreeView.ts 로 추출 (StatusPanel 분리 2/N).
-import { buildPathTree } from '@/utils/pathTree'
-
 const { viewMode, setViewMode, collapsedDirs, toggleDir } = useStatusTreeView()
 
 const props = defineProps<{ repoId: number | null }>()
-const toast = useToast()
 const { data: status, isFetching } = useStatus(() => props.repoId)
-const invalidate = useInvalidateRepoQueries()
 
 // === Stage / unstage / discard mutations (Sprint c29-6 — composables/useStageMutations 로 추출) ===
 const sm = useStageMutations(
@@ -122,30 +114,6 @@ function onFileContextMenu(ev: MouseEvent, path: string, isStaged: boolean) {
   ctxMenu.value?.openAt(ev, ctxBuilder.buildItems(path, isStaged))
 }
 
-// Sprint C6 — 외부 merge tool launch
-const mergetoolMut = useMutation({
-  mutationFn: ({ p }: { p: string }) => {
-    if (props.repoId == null) return Promise.reject(new Error('no repo'))
-    return launchMergetool(props.repoId, p, null)
-  },
-  onSuccess: (res) => {
-    if (res.success) {
-      toast.success(t('status.mergetoolDoneTitle'), '')
-      invalidate(props.repoId)
-    } else {
-      toast.error(
-        t('status.mergetoolFailedTitle'),
-        res.stderr.slice(0, 200) || `exit ${res.exitCode}`,
-      )
-    }
-  },
-  onError: (e) => toast.error(t('status.mergetoolErrorTitle'), describeError(e)),
-})
-function onLaunchMergetool(p: string) {
-  if (props.repoId == null) return
-  mergetoolMut.mutate({ p })
-}
-
 // Sprint c37 god 20/N — vim S/U + ⌘⇧S/⌘⇧U + ⌘⇧H 단축키 + selectedPath 토글 + copyPath 는
 //   useStatusSelection composable 위임 (위에서 destructure).
 
@@ -169,39 +137,22 @@ function onFileClick(path: string, isStaged: boolean) {
 const { fileFilter, filteredStaged, filteredUnstaged, filteredUntracked, filteredConflicted } =
   useStatusFilter(status)
 
-// Sprint c25-2.1 / c27-2 (TYPE-005 fix) — generic 트리 평탄화 type.
-// flattenTree + FlatTreeRow 본체는 composables/useStatusTreeView.ts (분리 2/N).
-import type { FlatTreeRow } from '@/composables/useStatusTreeView'
-
-type FileChangeTreeRow = FlatTreeRow<FileChange>
-type StringTreeRow = FlatTreeRow<string>
-
-const unstagedTreeRows = computed<FileChangeTreeRow[]>(() => {
-  if (viewMode.value !== 'tree') return []
-  const items = filteredUnstaged.value.map((f) => ({ path: f.path, meta: f }))
-  const tree = buildPathTree(items, { collapseSingleChild: true })
-  return flattenTree(tree, collapsedDirs.value)
-})
-
-const stagedTreeRows = computed<FileChangeTreeRow[]>(() => {
-  if (viewMode.value !== 'tree') return []
-  const items = filteredStaged.value.map((f) => ({ path: f.path, meta: f }))
-  const tree = buildPathTree(items, { collapseSingleChild: true })
-  return flattenTree(tree, collapsedDirs.value)
-})
-
-const untrackedTreeRows = computed<StringTreeRow[]>(() => {
-  if (viewMode.value !== 'tree') return []
-  const items = filteredUntracked.value.map((p) => ({ path: p, meta: p }))
-  const tree = buildPathTree(items, { collapseSingleChild: true })
-  return flattenTree(tree, collapsedDirs.value)
-})
-
-const conflictedTreeRows = computed<StringTreeRow[]>(() => {
-  if (viewMode.value !== 'tree') return []
-  const items = filteredConflicted.value.map((p) => ({ path: p, meta: p }))
-  const tree = buildPathTree(items, { collapseSingleChild: true })
-  return flattenTree(tree, collapsedDirs.value)
+// Sprint c40 — 4 tree row computed + mergetool 통합.
+const {
+  stagedTreeRows,
+  unstagedTreeRows,
+  untrackedTreeRows,
+  conflictedTreeRows,
+  mergetoolMut,
+  onLaunchMergetool,
+} = useStatusTreeRows({
+  repoId: () => props.repoId,
+  viewMode,
+  collapsedDirs,
+  filteredStaged,
+  filteredUnstaged,
+  filteredUntracked,
+  filteredConflicted,
 })
 
 // 선택 파일이 staged 인지 — StatusInlineDiff 에 prop 으로 전달.
