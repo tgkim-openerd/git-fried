@@ -11,28 +11,23 @@
 // - Pop: stash@{0} pop — stash 0개면 disabled
 // - Terminal: terminal 토글 (dispatchShortcut('terminal'))
 
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
-// queryClient 는 stash/pop mutation 분리 후 GitKrakenToolbar 에서 직접 미사용.
-import { fetchAll, pull, push, updateSubmodules } from '@/api/git'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { listRepos } from '@/api/git'
 // Sprint c36 god 17/N — undo/redo mutation 영역 분리.
 import { useUndoRedo } from '@/composables/useUndoRedo'
 // Sprint c37 god 21/N — stash/pop mutation + handler 분리.
 import { useStashPopMutation } from '@/composables/useStashPopMutation'
-import { useQuery } from '@tanstack/vue-query'
-import { listRepos } from '@/api/git'
+// Sprint c40 — fetch/pull/push 3 mutation + pull strategy 분리.
+import { useToolbarSyncMutations } from '@/composables/useToolbarSyncMutations'
+import type { PullStrategy } from '@/composables/usePullStrategy'
 import { useStash } from '@/composables/useStash'
-import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useStatusCounts } from '@/composables/useStatusCounts'
-import { useGeneralSettings } from '@/composables/useUserSettings'
-import { describeError, humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useShortcut, dispatchShortcut } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { onMenuAction } from '@/composables/useMenuListener'
-// Sprint c31 — Pull strategy ref + helper 외부 분리.
-import { usePullStrategy, type PullStrategy } from '@/composables/usePullStrategy'
 // Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge 회피 + a11y).
 import BaseTooltip from './BaseTooltip.vue'
 import { useI18n } from 'vue-i18n'
@@ -49,8 +44,6 @@ const props = defineProps<{
 }>()
 
 const toast = useToast()
-const invalidate = useInvalidateRepoQueries()
-const general = useGeneralSettings()
 
 const repoIdRef = computed(() => props.repoId)
 const { data: stashList } = useStash(repoIdRef)
@@ -83,69 +76,18 @@ const repoBreadcrumb = computed(() => {
 
 const stashCount = computed(() => stashList.value?.length ?? 0)
 
-// === Mutations (SyncBar 동작 동등) ===
-const fetchMut = useMutation({
-  mutationFn: (id: number) => fetchAll(id),
-  onSuccess: (res) => {
-    invalidate(props.repoId)
-    if (res.success) {
-      toast.success(t('toolbar.fetchSuccess'))
-    } else {
-      toast.error(
-        t('toolbar.fetchFailedExit', { code: res.exitCode }),
-        humanizeGitError(res.stderr),
-      )
-    }
-  },
-  onError: (e) => toast.error(t('toolbar.fetchInvokeFailed'), describeError(e)),
-})
-// Phase 12-3 — Pull 옵션 매개 (dropdown 액션 수신). Sprint c31 — 타입은 usePullStrategy import.
-const pullMut = useMutation({
-  mutationFn: ({ id, strategy }: { id: number; strategy: PullStrategy }) =>
-    pull({
-      repoId: id,
-      rebase: strategy === 'rebase',
-      ffOnly: strategy === 'ff-only',
-      noRebase: strategy === 'no-rebase',
-    }),
-  onSuccess: async (res) => {
-    invalidate(props.repoId)
-    if (res.success) {
-      toast.success(t('toolbar.pullSuccess'))
-      if (general.value.autoUpdateSubmodules && props.repoId != null) {
-        try {
-          await updateSubmodules(props.repoId, false)
-          toast.success(t('toolbar.submoduleUpdateSuccess'), '')
-        } catch (e) {
-          toast.error(t('toolbar.submoduleUpdateFailed'), describeError(e))
-        }
-      }
-    } else {
-      toast.error(t('toolbar.pullFailedExit', { code: res.exitCode }), humanizeGitError(res.stderr))
-    }
-  },
-  onError: (e) => toast.error(t('toolbar.pullInvokeFailed'), describeError(e)),
-})
-
-// Pull dropdown 가시성 + 마지막 사용 strategy 기억 (localStorage).
-// Sprint c31 — usePullStrategy composable 로 추출 (localStorage 영속 + label 헬퍼).
-const { pullStrategy, setPullStrategy, pullStrategyLabel } = usePullStrategy()
-const pullDropdownOpen = ref(false)
-const pushMut = useMutation({
-  mutationFn: (id: number) =>
-    push({
-      repoId: id,
-      setUpstream: !props.upstream,
-    }),
-  onSuccess: (res) => {
-    invalidate(props.repoId)
-    if (res.success) {
-      toast.success(t('toolbar.pushSuccess'))
-    } else {
-      toast.error(t('toolbar.pushFailedExit', { code: res.exitCode }), humanizeGitError(res.stderr))
-    }
-  },
-  onError: (e) => toast.error(t('toolbar.pushInvokeFailed'), describeError(e)),
+// === Sprint c40 — fetch/pull/push 3 mutation + pullStrategy/dropdown composable 위임 ===
+const {
+  fetchMut,
+  pullMut,
+  pushMut,
+  pullStrategy,
+  setPullStrategy,
+  pullStrategyLabel,
+  pullDropdownOpen,
+} = useToolbarSyncMutations({
+  repoId: () => props.repoId,
+  upstream: () => props.upstream,
 })
 
 // === Sprint c36 god 17/N — undo/redo composable 위임 ===
