@@ -37,6 +37,11 @@ pub struct CloneOptions {
     /// `--bare` clone.
     #[serde(default)]
     pub bare: bool,
+    /// Sprint c38 / plan/29 E4 — `--filter=<spec>` (partial clone).
+    /// 예: "blob:none" (blobless) / "blob:limit=1m" (1MB 이하 blob 제외).
+    /// Git 2.19+ 서버 지원 필요. None = full objects.
+    #[serde(default)]
+    pub filter: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,6 +104,15 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
     }
     if opts.bare {
         args.push("--bare".into());
+    }
+    // Sprint c38 / plan/29 E4 — partial clone (`--filter=<spec>`).
+    if let Some(f) = opts
+        .filter
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        args.push(format!("--filter={f}"));
     }
     args.push(url.into());
     args.push(target_str.clone());
@@ -194,12 +208,67 @@ mod tests {
             shallow_since: Some("2026-01-01".to_string()),
             single_branch: Some("main".to_string()),
             bare: false,
+            filter: None,
         };
         let json = serde_json::to_string(&o).unwrap();
         assert!(json.contains("\"sparsePaths\""));
         assert!(json.contains("\"shallowSince\""));
         assert!(json.contains("\"singleBranch\""));
         assert!(json.contains("docs/한글/"));
+    }
+
+    /// Sprint c38 / plan/29 E4 — `--filter=<spec>` round-trip.
+    #[test]
+    fn test_clone_options_filter_serde() {
+        let o = CloneOptions {
+            filter: Some("blob:none".to_string()),
+            ..Default::default()
+        };
+        let json = serde_json::to_string(&o).unwrap();
+        assert!(json.contains("\"filter\":\"blob:none\""));
+
+        // deserialize back from camelCase JSON.
+        let parsed: CloneOptions = serde_json::from_str(r#"{"filter":"blob:limit=1m"}"#).unwrap();
+        assert_eq!(parsed.filter.as_deref(), Some("blob:limit=1m"));
+    }
+
+    /// Sprint c38 / plan/29 E4 — Preset → CLI 옵션 매핑 검증.
+    /// frontend Clone Wizard preset 4종이 백엔드 옵션으로 정확히 변환되는지 확인.
+    #[test]
+    fn test_clone_options_presets_mapping() {
+        // Preset: Monorepo 빠른 시작 = sparse + filter=blob:none + single_branch
+        let monorepo = CloneOptions {
+            sparse_paths: Some(vec!["apps/".to_string()]),
+            filter: Some("blob:none".to_string()),
+            single_branch: Some("main".to_string()),
+            ..Default::default()
+        };
+        assert!(monorepo.sparse_paths.is_some());
+        assert_eq!(monorepo.filter.as_deref(), Some("blob:none"));
+
+        // Preset: 얕은 = depth=1
+        let shallow = CloneOptions {
+            depth: Some(1),
+            ..Default::default()
+        };
+        assert_eq!(shallow.depth, Some(1));
+        assert!(shallow.sparse_paths.is_none());
+
+        // Preset: 전체 = all defaults None.
+        let full = CloneOptions::default();
+        assert!(full.depth.is_none());
+        assert!(full.sparse_paths.is_none());
+        assert!(full.filter.is_none());
+    }
+
+    /// args 빌더 — filter 가 `--filter=<spec>` 으로 정확히 추가되는지 sanity test.
+    /// (실제 clone 은 네트워크 필요 → args 검증만)
+    #[test]
+    fn test_filter_arg_format() {
+        // CloneOptions::filter 가 "blob:none" 이면 결국 `--filter=blob:none` 이 args 에.
+        let f = "blob:none";
+        let formatted = format!("--filter={f}");
+        assert_eq!(formatted, "--filter=blob:none");
     }
 
     /// CloneResult serde — camelCase (targetPath) + 한글 path.

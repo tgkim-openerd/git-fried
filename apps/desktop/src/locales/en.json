@@ -410,6 +410,30 @@
     "title": "Submodule",
     "empty": "No submodules"
   },
+  "clone": {
+    "successTitle": "Clone complete",
+    "successAutoRegistered": "{name} auto-registered",
+    "successPathOnly": "Cloned to path only",
+    "failedTitle": "Clone failed",
+    "targetPathLabel": "Target path:",
+    "advancedToggle": "Advanced options (sparse / shallow / branch / filter)",
+    "filterLabel": "Partial clone (--filter)",
+    "filterHint": "e.g., blob:none, blob:limit=1m. Requires Git 2.19+ + server support.",
+    "bareLabel": "Bare clone (--bare, no working tree)",
+    "presetLegend": "Preset",
+    "preset": {
+      "full": "Full",
+      "fullTitle": "No options — all commits/blobs, all branches",
+      "shallow": "Shallow",
+      "shallowTitle": "depth=1 — only the most recent commit",
+      "monorepo": "Monorepo quick-start",
+      "monorepoTitle": "--sparse + --filter=blob:none + --single-branch=main (optimized for large monorepos)",
+      "sparseDirs": "Selected dirs only",
+      "sparseDirsTitle": "sparse-checkout cone — only the entered directories",
+      "custom": "Custom",
+      "customTitle": "Combine advanced options manually"
+    }
+  },
   "compare": {
     "title": "Compare",
     "ref1Placeholder": "ref1 (e.g. main)",

@@ -1053,6 +1053,11 @@ export interface CloneOptions {
   shallowSince?: string | null
   singleBranch?: string | null
   bare?: boolean
+  /**
+   * Sprint c38 / plan/29 E4 — `--filter=<spec>` (partial clone).
+   * 예: "blob:none" (blobless), "blob:limit=1m". Git 2.19+ + 서버 지원 필요.
+   */
+  filter?: string | null
 }
 
 export interface CloneResult {

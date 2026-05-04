@@ -410,6 +410,30 @@
     "title": "Submodule",
     "empty": "서브모듈 없음"
   },
+  "clone": {
+    "successTitle": "Clone 완료",
+    "successAutoRegistered": "{name} 자동 등록됨",
+    "successPathOnly": "경로만 clone 완료",
+    "failedTitle": "Clone 실패",
+    "targetPathLabel": "대상 경로:",
+    "advancedToggle": "고급 옵션 (sparse / shallow / branch / filter)",
+    "filterLabel": "Partial clone (--filter)",
+    "filterHint": "예: blob:none, blob:limit=1m. Git 2.19+ 서버 지원 필요.",
+    "bareLabel": "Bare clone (--bare, 작업 트리 없음)",
+    "presetLegend": "프리셋",
+    "preset": {
+      "full": "전체",
+      "fullTitle": "옵션 없음 — 모든 commit/blob 포함, 모든 브랜치",
+      "shallow": "얕은",
+      "shallowTitle": "depth=1 — 최근 1 commit 만",
+      "monorepo": "Monorepo 빠른 시작",
+      "monorepoTitle": "--sparse + --filter=blob:none + --single-branch=main (대형 monorepo 최적)",
+      "sparseDirs": "필요한 디렉터리만",
+      "sparseDirsTitle": "sparse-checkout cone — 입력한 디렉터리만 체크아웃",
+      "custom": "사용자 정의",
+      "customTitle": "고급 옵션을 직접 조합"
+    }
+  },
   "compare": {
     "title": "Compare",
     "ref1Placeholder": "ref1 (예: main)",
