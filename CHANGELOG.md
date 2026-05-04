@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c40 후속 (전체 자율 진행) — commands.rs 완전 분해 + settings template 5 sub + e2e settings (2026-05-04, 3 commits)** — main 직접 3 commit / cargo check + cargo test 185/185 / typecheck 0 / vitest 60/660 / e2e 10 spec / +6 tests:
+  - **commands.rs 완전 분해 (`c2e01b2`)**: 잔여 50 commands → 9 도메인 모듈로 완전 분해. commands.rs 908 → 40 LOC (-868). `get_app_info` (1) + AppInfo struct 만 잔존. 신규 9 모듈 (1,021 LOC):
+    - status_commands.rs (223 LOC, 11 cmd: get_status / stage 5 / apply_patch / restore_paths / restore_worktree_patch / range_diff / get_diff / get_commit_diff / read_file)
+    - commit_commands.rs (156 LOC, 8 cmd: commit / last_commit_message / count_hangul_commits / compare_refs / reset / revert / undo / redo)
+    - graph_commands.rs (91 LOC, 3 cmd: get_log / get_graph / search_commits_by_message)
+    - sync_commands.rs (126 LOC, 7 cmd: fetch_all / pull / push + bulk 4)
+    - submodule_commands.rs (54 LOC, 4 cmd)
+    - remote_commands.rs (145 LOC, 9 cmd: remote 5 + maintenance 2 + repo_config 2)
+    - tag_commands.rs (87 LOC, 5 cmd)
+    - importer_commands.rs (39 LOC, 3 cmd: GitKraken)
+    - lib.rs invoke_handler 50 path 갱신 + ipc/mod.rs 9 모듈 등록 + 인덱스 16 → 24 파일 / 168 commands.
+  - **settings 5 sub-component 분해 (`8ed7080`)**: settings.vue 470 → 248 LOC (-222). c39 689 LOC 시작 → **누적 -441 LOC (-64%)**. 신규 3 sub-component:
+    - SettingsGeneral.vue (96 LOC): General 영역 (useGeneralSettings)
+    - SettingsUiCustomization.vue (127 LOC): UI + Custom theme JSON (useUiSettingsStore + useCustomTheme + useThemeIO)
+    - SettingsEditor.vue (28 LOC): Editor / Terminal placeholder (useUiState)
+    - settings.vue script: 4 composable import 제거 (sub-component 자체 관리). About 영역 (IdentityCard + buildInfo) 만 잔존 — 분해 미필요.
+  - **e2e settings.spec.ts (`4ebd729`)**: 6 tests — 5 sub-component 마운트 검증 + nav helper. e2e 9 → 10 spec / 신규 15 tests 누적.
+
 - **Sprint c40 후속 — cargo 복구 + commands.rs 추가 분해 + settings template + e2e 확장 (2026-05-04, 4 commits)** — `~/.cargo/bin` (rustup stable 1.95.0) PATH 우선 호출로 cargo 환경 복구. 후속작업 1-4 모두 완료:
   - **후속 1 cargo 복구 (`2c4fd62`)**: `cargo clean` + rustup stable PATH → `cargo check` 통과 (2:29) + `cargo test 185/185` 회귀 0. c40 Step 4 Workspace 시범 분해 사후 검증 완료.
   - **후속 2 commands.rs 3 도메인 분해 (`2c4fd62`)**: 단일 commit (cargo check + test 통과 후) — branch_commands.rs (8 cmd, 150 LOC) + stash_commands.rs (10 cmd, 154 LOC) + repo_commands.rs (5 cmd + clone, 180 LOC). commands.rs 1350 → 908 LOC (-442). lib.rs 23 path 갱신 + ipc/mod.rs `pub use`. 인덱스 13 → 16 파일 / 168 commands 유지. 잔여 commands.rs 56 commands 후속 sprint.
