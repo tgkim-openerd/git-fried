@@ -4,10 +4,12 @@
 // 활성 레포의 .git/config 키 read → reactive form → save 버튼으로 일괄 apply.
 // dirty 추적 + 빈 input 은 unset 으로 매핑.
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useReposStore } from '@/stores/repos'
 import { useRepoConfig, EMPTY_REPO_CONFIG } from '@/composables/useRepoConfig'
 import type { RepoConfigSnapshot } from '@/api/git'
 
+const { t } = useI18n()
 const reposStore = useReposStore()
 const repoIdRef = computed(() => reposStore.activeRepoId)
 
@@ -202,14 +204,16 @@ const gpgsignBool = computed({
       </fieldset>
 
       <div class="flex items-center justify-end gap-2 pt-2">
-        <span v-if="dirty" class="text-[11px] text-warning-amber">변경됨</span>
+        <span v-if="dirty" class="text-[11px] text-warning-amber">{{
+          t('repoConfig.dirtyLabel')
+        }}</span>
         <button
           type="button"
           class="rounded border border-border px-3 py-1 text-xs hover:bg-accent/40 disabled:opacity-50"
           :disabled="!dirty || applyMut.isPending.value"
           @click="reset"
         >
-          되돌리기
+          {{ t('repoConfig.resetButton') }}
         </button>
         <button
           type="button"
@@ -217,7 +221,7 @@ const gpgsignBool = computed({
           :disabled="!dirty || applyMut.isPending.value"
           @click="save"
         >
-          저장
+          {{ t('repoConfig.saveButton') }}
         </button>
       </div>
     </template>

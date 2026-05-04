@@ -286,15 +286,15 @@ const aiMut = useMutation({
             </button>
             <button
               class="hover:underline"
-              title="메시지 수정 (`docs/plan/14 §5 D2`)"
-              :aria-label="`stash@{${s.index}} 메시지 수정`"
+              :title="t('stash.editMessageButtonTitle')"
+              :aria-label="t('stash.editMessageTitle', { idx: s.index })"
               @click="onEditMessage(s.index, s.message)"
             >
               edit msg
             </button>
             <button
               class="hover:underline text-destructive"
-              :aria-label="`stash@{${s.index}} 삭제`"
+              :aria-label="t('stash.dropAria', { idx: s.index })"
               @click="onDrop(s.index)"
             >
               drop
@@ -306,7 +306,7 @@ const aiMut = useMutation({
           <SkeletonBlock :count="3" height="md" />
         </li>
         <li v-else-if="stashes && stashes.length === 0">
-          <EmptyState icon="📦" title="stash 없음" size="sm" />
+          <EmptyState icon="📦" :title="t('stash.empty')" size="sm" />
         </li>
       </ul>
     </div>
@@ -336,10 +336,10 @@ const aiMut = useMutation({
           <button
             type="button"
             class="rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-accent/60"
-            title="이 파일만 working tree 에 apply"
+            :title="t('stash.applyFileTitle')"
             @click="onApplyFile(f.fileName)"
           >
-            ✓ 이 파일만 apply
+            {{ t('stash.applyFileButton') }}
           </button>
         </li>
       </ul>

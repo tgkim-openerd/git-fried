@@ -423,7 +423,17 @@
     "editMessageMessage": "저장 시 새 entry 가 stash@{0} 으로 이동, 원본은 drop 됩니다.",
     "editMessageSuccess": "Stash 메시지 변경",
     "editMessageSuccessDetail": "새 entry 가 stash@{0} 입니다.",
-    "editMessageFailed": "메시지 변경 실패"
+    "editMessageFailed": "메시지 변경 실패",
+    "editMessageButtonTitle": "메시지 수정",
+    "dropAria": "stash@{idx} 삭제",
+    "empty": "stash 없음",
+    "applyFileTitle": "이 파일만 working tree 에 apply",
+    "applyFileButton": "✓ 이 파일만 apply"
+  },
+  "repoConfig": {
+    "dirtyLabel": "변경됨",
+    "resetButton": "되돌리기",
+    "saveButton": "저장"
   },
   "submodule": {
     "title": "Submodule",

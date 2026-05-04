@@ -423,7 +423,17 @@
     "editMessageMessage": "Saving moves the new entry to stash@{0}; the original is dropped.",
     "editMessageSuccess": "Stash message changed",
     "editMessageSuccessDetail": "New entry is at stash@{0}.",
-    "editMessageFailed": "Edit message failed"
+    "editMessageFailed": "Edit message failed",
+    "editMessageButtonTitle": "Edit message",
+    "dropAria": "Drop stash@{idx}",
+    "empty": "No stashes",
+    "applyFileTitle": "Apply only this file to the working tree",
+    "applyFileButton": "✓ Apply only this file"
+  },
+  "repoConfig": {
+    "dirtyLabel": "Modified",
+    "resetButton": "Revert",
+    "saveButton": "Save"
   },
   "submodule": {
     "title": "Submodule",
