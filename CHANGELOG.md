@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c37-7 — ContextMenu a11y 보강 (DOM focus 동기화) (2026-04-30, 1 commit)** — checkpoint.md 1순위 D "a11y 보강 (ContextMenu submenu / 모달 focus trap 점검)" 자율 진행. main 직접 1 commit / typecheck 0 / vitest 60/660 / **WCAG 2.1.1 (Keyboard) + ARIA menu 패턴 준수 강화**:
+  - **`ContextMenu.vue`** — keyboard nav (↑↓) 시 visual highlight 만 변경되고 실제 DOM focus 미동기화 갭 fix. screen reader 사용자가 menuitem 변경을 인지하도록 button.focus() 호출.
+    - `focusVisibleMenuItem(visIdx)` — main menu 의 visible index → DOM focus (nextTick 안전)
+    - `focusSubMenuItem(rawIdx)` — submenu 의 raw idx → divider 제외 visible idx 매핑 후 DOM focus
+    - `openAt()` 시 첫 menuitem 자동 focus
+    - `moveFocus()` / `moveSubFocus()` 시 focus 동기화
+    - `openSubmenu()` 시 첫 non-divider sub item 에 focus
+    - submenu button 에 `data-ctx-sub-item` attribute 추가 (querySelector 용)
+  - **`BaseModal.vue` 점검** — 이미 `useFocusTrap` composable 적용 (열릴 때 첫 focusable 자동 focus / Tab 순환 / 닫힐 때 직전 focus 복원) + `role="dialog"` + `aria-modal="true"` + `aria-labelledby` 충실. 추가 조치 불필요.
+  - **`useFocusTrap.ts` 점검** — disabled / aria-hidden / tabindex=-1 제외 셀렉터 + capture phase listener 로 견고. 추가 조치 불필요.
+
 - **Sprint c37-6 — i18n 마이그 RemoteManageModal toast (2026-04-30, 1 commit)** — checkpoint.md 1순위 E "i18n 추가 마이그 ~80 키" 일부 진행 (RemoteManageModal 단일 컴포넌트 13 메시지). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 383 → 397 (+14, ko/en 대칭 유지)**:
   - **`remote.*` 14 신규 키** (ko/en 양쪽): errRepoNotSelected / errTargetNotSelected / addedTitle / addFailed / removedTitle / removeFailed / renamedTitle / renamedMessage (`{from} → {to}`) / renameFailed / urlChangedTitle / urlChangeFailed / fetchAllSuccess / fetchAllSuccessMessage / fetchAllFailed
   - **`RemoteManageModal.vue`** — 5 mutation 의 onSuccess/onError toast + Error 4개 (`throw new Error('레포/대상 미선택')`) 모두 `t()` 호출로 교체. 영어 fallback 정상 동작 (locale='en' 시).

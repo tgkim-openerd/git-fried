@@ -68,7 +68,11 @@ function openAt(event: MouseEvent | { x: number; y: number }, next: ContextMenuI
   open.value = true
   focusedIndex.value = 0
   submenuOpen.value = false
-  void nextTick(() => clampToViewport())
+  void nextTick(() => {
+    clampToViewport()
+    // Sprint c37 a11y — open 시 첫 menuitem 에 실제 DOM focus (screen reader 알림).
+    focusVisibleMenuItem(0)
+  })
 }
 
 function close() {
@@ -111,9 +115,22 @@ function openSubmenu(idx: number) {
   submenuX.value = rect.right + 2
   submenuY.value = rect.top
   submenuParentIndex.value = idx
-  submenuFocusedIndex.value = 0
+  // submenuFocusedIndex 는 raw idx — 첫 non-divider 찾기.
+  const sub = item.submenu ?? []
+  let firstNonDivider = 0
+  for (let i = 0; i < sub.length; i++) {
+    if (!sub[i].divider) {
+      firstNonDivider = i
+      break
+    }
+  }
+  submenuFocusedIndex.value = firstNonDivider
   submenuOpen.value = true
-  void nextTick(() => clampSubmenuToViewport())
+  void nextTick(() => {
+    clampSubmenuToViewport()
+    // Sprint c37 a11y — submenu open 시 첫 menuitem 에 focus.
+    focusSubMenuItem(firstNonDivider)
+  })
 }
 
 function clampSubmenuToViewport() {
@@ -153,6 +170,16 @@ function moveFocus(delta: number) {
   if (total === 0) return
   const next = (focusedIndex.value + delta + total) % total
   focusedIndex.value = next
+  // Sprint c37 a11y — focus 변경 시 실제 DOM focus 동기화 (WCAG 2.1.1 + ARIA menu 패턴).
+  focusVisibleMenuItem(next)
+}
+
+// Sprint c37 a11y — visible index 의 menuitem 버튼 DOM focus.
+function focusVisibleMenuItem(visIdx: number) {
+  void nextTick(() => {
+    const buttons = rootRef.value?.querySelectorAll<HTMLButtonElement>('[data-ctx-item]')
+    buttons?.[visIdx]?.focus()
+  })
 }
 
 function moveSubFocus(delta: number) {
@@ -160,6 +187,21 @@ function moveSubFocus(delta: number) {
   const total = sub.filter((s) => !s.divider).length
   if (total === 0) return
   submenuFocusedIndex.value = (submenuFocusedIndex.value + delta + total) % total
+  // Sprint c37 a11y — submenu DOM focus 동기화.
+  focusSubMenuItem(submenuFocusedIndex.value)
+}
+
+function focusSubMenuItem(rawIdx: number) {
+  void nextTick(() => {
+    const buttons = submenuRef.value?.querySelectorAll<HTMLButtonElement>('[data-ctx-sub-item]')
+    // submenuFocusedIndex 는 raw idx (divider 포함). visible 만 querySelectorAll → idx 매핑 필요.
+    const sub = items.value[submenuParentIndex.value]?.submenu ?? []
+    let visIdx = 0
+    for (let i = 0; i < rawIdx; i++) {
+      if (!sub[i]?.divider) visIdx++
+    }
+    buttons?.[visIdx]?.focus()
+  })
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -297,6 +339,7 @@ defineExpose<ContextMenuExpose>({ openAt, close })
         <button
           v-else
           type="button"
+          data-ctx-sub-item
           role="menuitem"
           class="flex w-full items-center justify-between gap-3 px-3 py-1 text-left hover:bg-accent disabled:opacity-50"
           :class="[
