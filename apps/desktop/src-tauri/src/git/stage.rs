@@ -85,3 +85,21 @@ pub async fn unstage_patch(repo: &Path, patch: &str) -> AppResult<()> {
         .into_ok()?;
     Ok(())
 }
+
+/// Sprint c38 / plan/29 E1 후속 — hunk 단위 워킹트리 복원 (= discard hunk).
+///
+/// `git apply --reverse` (캐시 미사용) — 인덱스는 건드리지 않고 워킹트리만
+/// patch 되돌리기. `unstage_patch` 와의 차이: cached 플래그 없음 → 워킹트리에 적용.
+///
+/// 사용 시나리오: HunkStageModal staged=false 모드에서 특정 hunk 를 워킹트리에서
+/// 완전히 제거 (= 변경 폐기). 인덱스에 stage 된 다른 hunk 는 보존됨.
+pub async fn restore_worktree_patch(repo: &Path, patch: &str) -> AppResult<()> {
+    let opts = GitRunOpts {
+        stdin: Some(patch.to_string()),
+        ..Default::default()
+    };
+    git_run(repo, &["apply", "--reverse", "-"], &opts)
+        .await?
+        .into_ok()?;
+    Ok(())
+}

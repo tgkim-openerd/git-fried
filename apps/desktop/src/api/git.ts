@@ -82,6 +82,14 @@ export const discardPaths = (repoId: number, paths: string[]): Promise<void> =>
 export const applyPatch = (repoId: number, patch: string, reverse: boolean): Promise<void> =>
   invoke('apply_patch', { args: { repoId, patch, reverse } })
 
+/**
+ * Sprint c38 / plan/29 E1 후속 — hunk 단위 워킹트리 복원 (= discard hunk).
+ * `git apply --reverse` (cached 미사용) — 인덱스 보존 + 워킹트리만 patch 되돌림.
+ * HunkStageModal staged=false 모드의 hunk-level Restore Worktree 액션에서 호출.
+ */
+export const restoreWorktreePatch = (repoId: number, patch: string): Promise<void> =>
+  invoke('restore_worktree_patch', { args: { repoId, patch } })
+
 // --- Restore (Sprint c38 / plan/29 E1 — Restore Center) ---
 //
 // `git restore` 의미론 wrapper — --worktree / --staged / --source 분리 노출.

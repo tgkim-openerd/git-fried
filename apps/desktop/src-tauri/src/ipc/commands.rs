@@ -314,6 +314,23 @@ pub async fn apply_patch(args: PatchArgs, state: tauri::State<'_, Arc<AppState>>
     }
 }
 
+// Sprint c38 / plan/29 E1 후속 — hunk 단위 워킹트리 복원 (`git apply --reverse`).
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoreWorktreePatchArgs {
+    pub repo_id: i64,
+    pub patch: String,
+}
+
+#[tauri::command]
+pub async fn restore_worktree_patch(
+    args: RestoreWorktreePatchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    stage::restore_worktree_patch(&path, &args.patch).await
+}
+
 // ====== Range Diff (Sprint c38 / plan/29 E2 — Range Diff Panel) ======
 
 #[derive(Debug, Deserialize)]
