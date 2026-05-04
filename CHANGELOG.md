@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c40 — /analyze 6 Recommendations 자율 + god 5 후속 분해 (2026-05-04, 11 commits)** — main 직접 11 commit / typecheck 0 / vitest 60/660 / e2e 6/6 신규 통과 / **i18n 606 → 614 (ko/en 대칭, repoConfig 신규 namespace)**:
+  - **Step 1 (`5e3386e`)**: `bun scripts/generate-tauri-commands-index.mjs` 재생성. c39 split (bisect/lfs/rebase 19 commands) 미반영 stale 해소. ipc/ 9 → 12 파일 / 168 commands.
+  - **Step 2 (`aee4257`)**: StashPanel + RepoSpecificForm 한글 하드코딩 8건 i18n 마이그. `stash.*` +5 (editMessageButtonTitle / dropAria / empty / applyFileTitle / applyFileButton) + `repoConfig.*` +3 (dirtyLabel / resetButton / saveButton).
+  - **Step 3 (`dee590b`)**: vue-i18n ^9 → ^11.4.0 업그레이드. 이미 `legacy: false` + composition API + createI18n 사용 → API 변경 0.
+  - **Step 4 (`ea35ac4`)**: commands.rs 도메인 분해 시범 — Workspace 4 commands → `ipc/workspace_commands.rs` 분리. commands.rs 1387 → 1350 LOC (-37). lib.rs invoke_handler path 갱신 + ipc/mod.rs `pub use`. **cargo 1.60 환경 미복구로 cargo check 미수행** (사용자 cargo 복구 후 검증 필요).
+  - **Step 5 (`5807925`)**: GitKrakenToolbar 495 → 437 LOC (-58). useToolbarSyncMutations composable (118 LOC) — fetchMut/pullMut/pushMut + autoUpdateSubmodules + usePullStrategy 영속 + dropdown ref 통합.
+  - **Step 6 (`782c648`)**: e2e/stash.spec.ts + e2e/worktree.spec.ts (3+3 = 6 tests). devMock 3 STASHES + 4 WORKTREES 의 mini-section + panel 노출 검증. e2e 6 → 8 spec.
+  - **god 분해 후속 1 (`84074d7`)**: BranchPanel 518 → 419 LOC (-99). useBranchDragDrop composable (142 LOC) — branch↔branch (merge/rebase) + commit→branch (cherry-pick) drag-drop 영역 외부화.
+  - **god 분해 후속 2 (`3647586`)**: launchpad.vue 570 → 515 LOC (-55). useLaunchpadActions composable (128 LOC) — togglePin / SNOOZE_OPTIONS + snoozeMenu / saved views v1 + rowKey 통합.
+  - **god 분해 후속 3 (`4068a19`)**: PrDetailModal 589 → 466 LOC (-123). usePrMutations composable (216 LOC) — 6 mutation (addComment/review/merge/close/reopen/suggestion) + 2 confirm handler (onMerge/onClose) + suggestion form state 통합.
+  - **god 분해 후속 4 (`3d4cc48`)**: CommitGraph 737 → 623 LOC (-114). useGraphCanvasRenderer composable (164 LOC) — 8 stable palette + laneColor + isWipIdx + drawGraph (canvas DPI + virtualItems iter + lane crossings + parent edges + node circle + WIP dashed connector).
+  - **god 분해 후속 5 (`6e86c95`)**: StatusPanel 715 → 668 LOC (-47). useStatusTreeRows composable (112 LOC) — 4 tree row computed (staged/unstaged/untracked/conflicted) + mergetool mutation 통합.
+  - **god component 잔여 6 → 1**: settings 613 (script 147 / template 463 — script 영역 이미 작아 template 분해는 별도 sprint). 누적 god 분해 -2,122 LOC (-37%).
+
 - **Sprint c37-11 — i18n 마이그 PrDetailModal +41 키 (2026-04-30, 1 commit)** — checkpoint.md 1순위 E 마무리 (PrDetailModal — PR 작업 핵심 화면). main 직접 1 commit / typecheck 0 / vitest 60/660 / **i18n 키 493 → 534 (+41, ko/en 대칭)**:
   - **`pr.*` +41 신규 키** (ko/en 양쪽): errPathLineRequired / errNewCodeRequired / suggestionAdded·Failed / commentAddFailed / reviewSubmitFailed / mergeSuccess·Failed / closeFailed / reopenFailed / aiInvokeFailed / openExternal / bodyEmpty / commentsHeader (`{n}`) / commentsEmpty / newCommentPlaceholder / suggestionToggleTitle / suggestionClose / suggestionOpen / addCommentButton / suggestionTitle / suggestionNewCodePlaceholder / suggestionContextPlaceholder / suggestionFooterHint / suggestionCancel / suggestionSubmitting / suggestionSubmit / reviewSection / aiReviewTitle (`{cli}`) / aiReviewAnalyzing / aiReviewLabel / verdictApprove / verdictRequestChanges / reviewBodyPlaceholder / reviewSubmit / mergeMethodLabel / mergeMethodAria / reopen / close / merging / merge
   - **`PrDetailModal.vue`** 마이그:
