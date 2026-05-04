@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c40 후속 — cargo 복구 + commands.rs 추가 분해 + settings template + e2e 확장 (2026-05-04, 4 commits)** — `~/.cargo/bin` (rustup stable 1.95.0) PATH 우선 호출로 cargo 환경 복구. 후속작업 1-4 모두 완료:
+  - **후속 1 cargo 복구 (`2c4fd62`)**: `cargo clean` + rustup stable PATH → `cargo check` 통과 (2:29) + `cargo test 185/185` 회귀 0. c40 Step 4 Workspace 시범 분해 사후 검증 완료.
+  - **후속 2 commands.rs 3 도메인 분해 (`2c4fd62`)**: 단일 commit (cargo check + test 통과 후) — branch_commands.rs (8 cmd, 150 LOC) + stash_commands.rs (10 cmd, 154 LOC) + repo_commands.rs (5 cmd + clone, 180 LOC). commands.rs 1350 → 908 LOC (-442). lib.rs 23 path 갱신 + ipc/mod.rs `pub use`. 인덱스 13 → 16 파일 / 168 commands 유지. 잔여 commands.rs 56 commands 후속 sprint.
+  - **후속 3 settings template 분해 (`71165bc`)**: god 잔여 1개 (settings 613) → 470 LOC (-143). SettingsMaintenance.vue (102 LOC, 87 LOC template + composable destructure) + SettingsPluginIntegration.vue (67 LOC, 60 LOC template + props 0). settings.vue script 의 useReposStore / useMaintenanceActions / PlaceholderButton import 제거 (sub-component 자체 관리). **god component ≥400 LOC 잔여 0** — 모든 god 분해 완료.
+  - **후속 4 e2e 시나리오 확장 (`b7b8343`)**: e2e 8 → 9 spec / +3 tests. repositories.spec.ts: 헤더 / Browse·Clone 버튼 / Fetch All title / Clone 클릭 → BaseModal `[role=dialog][aria-modal=true]` 마운트. modal mount 검증을 a11y 속성 SoT 로 견고화.
+
 - **Sprint c40 — /analyze 6 Recommendations 자율 + god 5 후속 분해 (2026-05-04, 11 commits)** — main 직접 11 commit / typecheck 0 / vitest 60/660 / e2e 6/6 신규 통과 / **i18n 606 → 614 (ko/en 대칭, repoConfig 신규 namespace)**:
   - **Step 1 (`5e3386e`)**: `bun scripts/generate-tauri-commands-index.mjs` 재생성. c39 split (bisect/lfs/rebase 19 commands) 미반영 stale 해소. ipc/ 9 → 12 파일 / 168 commands.
   - **Step 2 (`aee4257`)**: StashPanel + RepoSpecificForm 한글 하드코딩 8건 i18n 마이그. `stash.*` +5 (editMessageButtonTitle / dropAria / empty / applyFileTitle / applyFileButton) + `repoConfig.*` +3 (dirtyLabel / resetButton / saveButton).
