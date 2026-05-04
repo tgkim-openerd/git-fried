@@ -15,8 +15,24 @@ import { useQuery } from '@tanstack/vue-query'
 import { rangeDiffAuto, type RangeDiffEntry } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
+// Sprint c38 / plan/29 E2 후속 — inter-diff body 를 DiffViewer (CodeMirror) 로 표시.
+import DiffViewer from './DiffViewer.vue'
 
 const { t } = useI18n()
+
+/**
+ * `git range-diff` inter-diff body 는 라인마다 4-space 들여쓰기 prefix 가 있음.
+ * DiffViewer (CodeMirror) 는 일반 unified diff 를 가정하므로 prefix 제거 후 전달.
+ *
+ * range-diff 의 `--`/`++` (양쪽 변경 시 좌/우 line) 마커는 단일 `-`/`+` 로 떨어지지만
+ * DiffViewer 의 색상 분류 (cm-diff-add / cm-diff-del) 는 첫 글자 기준이라 의미 보존.
+ */
+function stripIndent(body: string): string {
+  return body
+    .split('\n')
+    .map((l) => l.replace(/^ {4}/, ''))
+    .join('\n')
+}
 
 const props = defineProps<{
   repoId: number | null
@@ -130,10 +146,10 @@ function fmtSha(sha: string | null): string {
           <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
             {{ t('rangeDiff.interDiffSummary') }}
           </summary>
-          <pre
-            class="mt-1 max-h-72 overflow-auto rounded border border-border bg-muted/20 p-2 font-mono text-[11px]"
-            >{{ e.patchDiff }}</pre
-          >
+          <!-- Sprint c38 / plan/29 E2 후속 — DiffViewer 로 +/- 색상 강조. 4-space 들여쓰기 제거 후 전달. -->
+          <div class="mt-1 max-h-72 overflow-auto rounded border border-border">
+            <DiffViewer :patch="stripIndent(e.patchDiff)" />
+          </div>
         </details>
       </li>
     </ul>
