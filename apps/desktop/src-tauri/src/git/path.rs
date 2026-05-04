@@ -61,6 +61,27 @@ pub fn nfc_normalize_path(s: &str) -> String {
     nfc_normalize(s)
 }
 
+/// `-` prefix 입력을 거부하는 가드 — git CLI 인자 인젝션 (CWE-88) 방어용.
+///
+/// **목적**: 사용자가 제공하는 branch / remote / tag / ref / file path 를 git CLI 에
+/// 그대로 전달할 때, `-D`, `--quiet`, `--upload-pack=...` 같이 옵션처럼 해석되는
+/// 입력을 차단. defense-in-depth 로 호출처에서 `--end-of-options` 도 함께 사용.
+///
+/// 실사례 (`stash_to_branch`, `range_diff` Sprint c38) 표준화 — Sprint c40 후속
+/// review 에서 branch / remote / clone / config_local / importer 8 영역 일괄 적용.
+///
+/// CVE-2017-1000117 (`ssh://-oProxyCommand=...`) 같이 URL 자체가 옵션 인젝션 시
+/// 추가 prefix 검증은 protocol allowlist (`https`, `http`, `ssh`, `git@`) 가 책임.
+pub fn reject_dash_prefix<'a>(value: &'a str, label: &str) -> crate::error::AppResult<&'a str> {
+    let trimmed = value.trim();
+    if trimmed.starts_with('-') {
+        return Err(crate::error::AppError::validation(format!(
+            "{label} 은 '-' 로 시작할 수 없습니다: {trimmed}"
+        )));
+    }
+    Ok(trimmed)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,5 +175,34 @@ mod tests {
         let s = decode_korean_safe(&bytes, true);
         // 비어있지 않고 panic 안 함.
         assert!(!s.is_empty());
+    }
+
+    // ====== reject_dash_prefix (Sprint c40 후속 review SEC-001~005,007) ======
+
+    #[test]
+    fn reject_dash_prefix_normal_branch_name_ok() {
+        assert_eq!(
+            reject_dash_prefix("feature/foo", "branch").unwrap(),
+            "feature/foo"
+        );
+        assert_eq!(reject_dash_prefix("main", "branch").unwrap(), "main");
+        assert_eq!(
+            reject_dash_prefix("release-1.0", "branch").unwrap(),
+            "release-1.0"
+        );
+    }
+
+    #[test]
+    fn reject_dash_prefix_blocks_dash_start() {
+        assert!(reject_dash_prefix("-D", "branch").is_err());
+        assert!(reject_dash_prefix("--quiet", "remote").is_err());
+        assert!(reject_dash_prefix("--upload-pack=evil", "url").is_err());
+    }
+
+    #[test]
+    fn reject_dash_prefix_trims_whitespace() {
+        // 앞뒤 공백 포함도 거부 (trim 후 - 검사).
+        assert!(reject_dash_prefix("  -D  ", "branch").is_err());
+        assert_eq!(reject_dash_prefix("  main  ", "branch").unwrap(), "main");
     }
 }

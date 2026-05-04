@@ -3,6 +3,7 @@
 // list 는 git2-rs (빠름), 변경 작업은 git CLI (hooks / safety / 정확함).
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use git2::{BranchType, Repository};
 use serde::{Deserialize, Serialize};
@@ -105,12 +106,17 @@ pub fn list_branches(path: &Path) -> AppResult<Vec<BranchInfo>> {
 }
 
 /// `git switch <name>` (또는 `-c` 로 새 브랜치 생성 후 전환).
+///
+/// **보안**: branch 이름이 `-` 로 시작하면 거부 + `--end-of-options` 로 추가 방어
+/// (CWE-88 argument injection).
 pub async fn switch_branch(path: &Path, name: &str, create: bool) -> AppResult<()> {
+    let safe = reject_dash_prefix(name, "branch")?;
     let mut args: Vec<&str> = vec!["switch"];
     if create {
         args.push("-c");
     }
-    args.push(name);
+    args.push("--end-of-options");
+    args.push(safe);
     git_run(path, &args, &GitRunOpts::default())
         .await?
         .into_ok()?;
@@ -118,9 +124,15 @@ pub async fn switch_branch(path: &Path, name: &str, create: bool) -> AppResult<(
 }
 
 /// 새 브랜치 생성 (전환 없이). `git branch <name> [<start_point>]`.
+///
+/// **보안**: branch / start_point 모두 dash-prefix 거부 + `--end-of-options`.
 pub async fn create_branch(path: &Path, name: &str, start: Option<&str>) -> AppResult<()> {
-    let mut args: Vec<&str> = vec!["branch", name];
-    if let Some(s) = start {
+    let safe_name = reject_dash_prefix(name, "branch")?;
+    let safe_start = start
+        .map(|s| reject_dash_prefix(s, "start_point"))
+        .transpose()?;
+    let mut args: Vec<&str> = vec!["branch", "--end-of-options", safe_name];
+    if let Some(s) = safe_start {
         args.push(s);
     }
     git_run(path, &args, &GitRunOpts::default())
@@ -130,19 +142,34 @@ pub async fn create_branch(path: &Path, name: &str, start: Option<&str>) -> AppR
 }
 
 /// 브랜치 삭제. force=false 면 머지 안 됐을 시 거부.
+///
+/// **보안**: branch name dash-prefix 거부 + `--end-of-options`.
 pub async fn delete_branch(path: &Path, name: &str, force: bool) -> AppResult<()> {
+    let safe = reject_dash_prefix(name, "branch")?;
     let flag = if force { "-D" } else { "-d" };
-    git_run(path, &["branch", flag, name], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    git_run(
+        path,
+        &["branch", flag, "--end-of-options", safe],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
     Ok(())
 }
 
 /// 브랜치 이름 변경.
+///
+/// **보안**: 양쪽 이름 dash-prefix 거부 + `--end-of-options`.
 pub async fn rename_branch(path: &Path, old: &str, new: &str) -> AppResult<()> {
-    git_run(path, &["branch", "-m", old, new], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    let safe_old = reject_dash_prefix(old, "old branch")?;
+    let safe_new = reject_dash_prefix(new, "new branch")?;
+    git_run(
+        path,
+        &["branch", "-m", "--end-of-options", safe_old, safe_new],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
     Ok(())
 }
 
@@ -167,6 +194,8 @@ pub async fn merge_into_head(
     if source.trim().is_empty() {
         return Err(AppError::validation("source 비어있음"));
     }
+    // 보안: source 가 `-` 로 시작하면 거부 (CWE-88) + `--end-of-options`.
+    let safe_source = reject_dash_prefix(source, "source ref")?;
     let mut args: Vec<String> = vec!["merge".into()];
     if no_ff {
         args.push("--no-ff".into());
@@ -174,7 +203,8 @@ pub async fn merge_into_head(
     if no_commit {
         args.push("--no-commit".into());
     }
-    args.push(source.into());
+    args.push("--end-of-options".into());
+    args.push(safe_source.into());
     let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
 
     let out = git_run(
@@ -197,13 +227,16 @@ pub async fn merge_into_head(
 }
 
 /// `git rebase <upstream>` — onto 옵션 미사용, 단순 위에 rebase.
+///
+/// **보안**: upstream dash-prefix 거부 + `--end-of-options`.
 pub async fn rebase_onto(path: &Path, upstream: &str) -> AppResult<MergeResult> {
     if upstream.trim().is_empty() {
         return Err(AppError::validation("upstream 비어있음"));
     }
+    let safe_upstream = reject_dash_prefix(upstream, "upstream ref")?;
     let out = git_run(
         path,
-        &["rebase", upstream],
+        &["rebase", "--end-of-options", safe_upstream],
         &GitRunOpts {
             envs: vec![("GIT_EDITOR".into(), "true".into())],
             ..Default::default()
@@ -232,7 +265,12 @@ pub async fn cherry_pick_sha(
     if sha.trim().is_empty() {
         return Err(AppError::validation("sha 비어있음"));
     }
-    let restore: Option<String> = if let Some(tb) = target_branch {
+    // 보안: sha / target_branch 모두 dash-prefix 거부.
+    let safe_sha = reject_dash_prefix(sha, "sha")?;
+    let safe_target = target_branch
+        .map(|tb| reject_dash_prefix(tb, "target branch"))
+        .transpose()?;
+    let restore: Option<String> = if let Some(tb) = safe_target {
         // 현재 HEAD 저장 후 target 으로 switch.
         let head = git_run(
             path,
@@ -244,9 +282,13 @@ pub async fn cherry_pick_sha(
         .ok()
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty());
-        git_run(path, &["switch", tb], &GitRunOpts::default())
-            .await?
-            .into_ok()?;
+        git_run(
+            path,
+            &["switch", "--end-of-options", tb],
+            &GitRunOpts::default(),
+        )
+        .await?
+        .into_ok()?;
         head
     } else {
         None
@@ -254,7 +296,7 @@ pub async fn cherry_pick_sha(
 
     let out = git_run(
         path,
-        &["cherry-pick", sha],
+        &["cherry-pick", "--end-of-options", safe_sha],
         &GitRunOpts {
             envs: vec![("GIT_EDITOR".into(), "true".into())],
             ..Default::default()
@@ -274,7 +316,14 @@ pub async fn cherry_pick_sha(
     // conflict 발생 시에는 그대로 (사용자가 해결 또는 abort).
     if let Some(orig) = restore {
         if !result.conflicted {
-            let _ = git_run(path, &["switch", &orig], &GitRunOpts::default()).await;
+            // orig 는 git 자체에서 받은 HEAD short-ref 라 dash-prefix 가능성 거의 없으나
+            // defense-in-depth 로 `--end-of-options` 일관 적용.
+            let _ = git_run(
+                path,
+                &["switch", "--end-of-options", &orig],
+                &GitRunOpts::default(),
+            )
+            .await;
         }
     }
     Ok(result)

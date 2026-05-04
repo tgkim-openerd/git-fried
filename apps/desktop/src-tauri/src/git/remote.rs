@@ -4,6 +4,7 @@
 // 동일 정책 (인증 / credential helper / 한글 안전 spawn 통합).
 
 use crate::error::AppResult;
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -67,20 +68,37 @@ fn parse_remote_v(s: &str) -> Vec<RemoteInfo> {
         .collect()
 }
 
+/// **보안**: name / url dash-prefix 거부 + `--end-of-options`.
+/// CVE-2017-1000117 패턴 (`ssh://-oProxyCommand=...` URL) 차단.
 pub async fn add_remote(repo: &Path, name: &str, url: &str) -> AppResult<()> {
-    git_run(repo, &["remote", "add", name, url], &GitRunOpts::default()).await?;
+    let safe_name = reject_dash_prefix(name, "remote name")?;
+    let safe_url = reject_dash_prefix(url, "remote url")?;
+    git_run(
+        repo,
+        &["remote", "add", "--end-of-options", safe_name, safe_url],
+        &GitRunOpts::default(),
+    )
+    .await?;
     Ok(())
 }
 
 pub async fn remove_remote(repo: &Path, name: &str) -> AppResult<()> {
-    git_run(repo, &["remote", "remove", name], &GitRunOpts::default()).await?;
+    let safe = reject_dash_prefix(name, "remote name")?;
+    git_run(
+        repo,
+        &["remote", "remove", "--end-of-options", safe],
+        &GitRunOpts::default(),
+    )
+    .await?;
     Ok(())
 }
 
 pub async fn rename_remote(repo: &Path, old_name: &str, new_name: &str) -> AppResult<()> {
+    let safe_old = reject_dash_prefix(old_name, "old remote name")?;
+    let safe_new = reject_dash_prefix(new_name, "new remote name")?;
     git_run(
         repo,
-        &["remote", "rename", old_name, new_name],
+        &["remote", "rename", "--end-of-options", safe_old, safe_new],
         &GitRunOpts::default(),
     )
     .await?;
@@ -88,9 +106,11 @@ pub async fn rename_remote(repo: &Path, old_name: &str, new_name: &str) -> AppRe
 }
 
 pub async fn set_remote_url(repo: &Path, name: &str, url: &str) -> AppResult<()> {
+    let safe_name = reject_dash_prefix(name, "remote name")?;
+    let safe_url = reject_dash_prefix(url, "remote url")?;
     git_run(
         repo,
-        &["remote", "set-url", name, url],
+        &["remote", "set-url", "--end-of-options", safe_name, safe_url],
         &GitRunOpts::default(),
     )
     .await?;

@@ -104,17 +104,25 @@ fn assign_field(snap: &mut RepoConfigSnapshot, key: &str, v: Option<String>) {
 /// 단일 키 set/unset.
 /// - `Some("non-empty")` → `git config --local <key> <value>`
 /// - `None` 또는 `Some("")` → `git config --local --unset <key>` (이미 unset 이면 skip)
+///
+/// **보안**: key 는 KEYS allowlist 통과 (apply_snapshot 호출 측), value 는 사용자
+/// 입력이라 dash-prefix 거부 + `--end-of-options` 일관 적용 (CWE-88).
 pub async fn set_one(repo: &Path, key: &str, value: Option<&str>) -> AppResult<()> {
     let trimmed = value.map(|s| s.trim()).filter(|s| !s.is_empty());
     if let Some(v) = trimmed {
-        git_run(repo, &["config", "--local", key, v], &GitRunOpts::default())
-            .await?
-            .into_ok()?;
+        let safe_v = crate::git::path::reject_dash_prefix(v, "config value")?;
+        git_run(
+            repo,
+            &["config", "--local", "--end-of-options", key, safe_v],
+            &GitRunOpts::default(),
+        )
+        .await?
+        .into_ok()?;
     } else {
         // unset — 미존재 시 exit 5. into_ok 호출 안 하면 무시됨.
         let _ = git_run(
             repo,
-            &["config", "--local", "--unset", key],
+            &["config", "--local", "--unset", "--end-of-options", key],
             &GitRunOpts::default(),
         )
         .await?;

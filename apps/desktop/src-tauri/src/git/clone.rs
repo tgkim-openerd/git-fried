@@ -53,11 +53,17 @@ pub struct CloneResult {
 }
 
 /// `git clone <url> <target>` + 옵션. 부모 디렉토리는 호출 측에서 보장.
+///
+/// **보안**: url / target 모두 dash-prefix 거부 + `--end-of-options` 로 CWE-88
+/// 방어. CVE-2017-1000117 (`ssh://-oProxyCommand=...`) 차단.
 pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<CloneResult> {
     if url.trim().is_empty() {
         return Err(AppError::validation("clone URL 이 비어있음"));
     }
+    let safe_url = crate::git::path::reject_dash_prefix(url, "clone URL")?;
     let target_str = target.to_string_lossy().to_string();
+    let safe_target =
+        crate::git::path::reject_dash_prefix(&target_str, "clone target path")?.to_string();
 
     let parent = target.parent().ok_or_else(|| {
         AppError::validation(format!("대상 경로의 부모 디렉토리 추출 실패: {target_str}"))
@@ -114,8 +120,9 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
     {
         args.push(format!("--filter={f}"));
     }
-    args.push(url.into());
-    args.push(target_str.clone());
+    args.push("--end-of-options".into());
+    args.push(safe_url.into());
+    args.push(safe_target);
 
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
 
@@ -142,8 +149,13 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
         )
         .await?;
 
-        let mut set_args: Vec<&str> = vec!["sparse-checkout", "set"];
-        for p in paths {
+        // 보안: sparse path 가 `-` 로 시작하면 거부 + `--end-of-options`.
+        let safe_paths: Vec<&str> = paths
+            .iter()
+            .map(|p| crate::git::path::reject_dash_prefix(p, "sparse path"))
+            .collect::<AppResult<_>>()?;
+        let mut set_args: Vec<&str> = vec!["sparse-checkout", "set", "--end-of-options"];
+        for p in safe_paths {
             set_args.push(p);
         }
         let set_out = git_run(target, &set_args, &GitRunOpts::default()).await?;
