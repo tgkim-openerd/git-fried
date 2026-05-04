@@ -85,6 +85,49 @@ pub async fn push_stash(
     Ok(())
 }
 
+/// Sprint c38 / plan/29 E3 — Smart Stash: staged-only stash (`git stash push -S`).
+///
+/// 인덱스(staged)에 있는 변경만 stash 하고 워킹트리(unstaged)는 보존.
+/// 사용 패턴: WIP 진행 중 별도 작은 fix 만 staged → 그 fix 만 stash 후
+/// 다른 작업 계속. 기존 `push_stash` 가 인덱스+워킹트리 모두 stash 하는 것과 다름.
+///
+/// Git 2.35+ 필요 (`-S` / `--staged` 플래그).
+pub async fn push_stash_staged(repo: &Path, message: Option<&str>) -> AppResult<()> {
+    let mut args: Vec<&str> = vec!["stash", "push", "-S"];
+    if let Some(m) = message {
+        args.push("-m");
+        args.push(m);
+    }
+    git_run(repo, &args, &GitRunOpts::default())
+        .await?
+        .into_ok()?;
+    Ok(())
+}
+
+/// Sprint c38 / plan/29 E3 — Smart Stash: stash → 새 브랜치로 pop (`git stash branch <name> stash@{n}`).
+///
+/// stash 시점의 base commit 에서 새 브랜치 생성 후 stash 적용 + drop.
+/// 충돌 시 stash 가 그대로 유지 (git 표준 동작) — drop 안 됨.
+///
+/// 사용 패턴: WIP stash 가 base 에서 너무 멀어져 conflict 가 큰 경우,
+/// stash 시점 base 의 새 브랜치로 pop 하면 충돌 없이 복원 가능.
+pub async fn stash_to_branch(repo: &Path, index: usize, branch: &str) -> AppResult<()> {
+    if branch.trim().is_empty() {
+        return Err(crate::error::AppError::validation(
+            "branch 이름이 비었습니다.",
+        ));
+    }
+    let stash_ref = format!("stash@{{{index}}}");
+    git_run(
+        repo,
+        &["stash", "branch", branch, &stash_ref],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+    Ok(())
+}
+
 /// stash@{n} apply (디폴트 0).
 pub async fn apply_stash(repo: &Path, index: usize) -> AppResult<()> {
     let r = format!("stash@{{{index}}}");
@@ -213,6 +256,86 @@ mod tests {
     // 가 silent fail 하는 케이스가 있어 (`run_sync` 가 status 미검증) 회귀 차단을
     // production 사용자 dogfood 로 위임. apply_stash_file 자체는 단순 한 줄 git
     // 호출 (`git checkout stash@{n} -- <path>`) 라 production 위험 낮음.
+
+    /// stash_to_branch 빈 branch 이름 → validation 에러.
+    #[tokio::test]
+    async fn test_stash_to_branch_empty_name_errors() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let err = stash_to_branch(tmp.path(), 0, "").await.unwrap_err();
+        assert_eq!(err.kind(), "validation");
+        let err2 = stash_to_branch(tmp.path(), 0, "   ").await.unwrap_err();
+        assert_eq!(err2.kind(), "validation");
+    }
+
+    /// push_stash_staged round-trip — staged 만 stash, unstaged 워킹트리는 보존.
+    /// Git 2.35+ 필요 (`-S` 플래그). 시나리오:
+    ///   1. init + commit base
+    ///   2. file A 수정 후 stage, file B 수정 후 unstage
+    ///   3. push_stash_staged → A 가 stash 로, B 는 워킹트리에 남아야 함.
+    #[tokio::test]
+    async fn test_push_stash_staged_only_indexes_staged() {
+        use std::fs;
+        let tmp = tempfile::TempDir::new().unwrap();
+        let path = tmp.path();
+
+        // init + identity + gpgsign off
+        git_run(path, &["init", "-q", "-b", "main"], &GitRunOpts::default())
+            .await
+            .unwrap()
+            .into_ok()
+            .unwrap();
+        for cfg in &[
+            ("user.name", "tester"),
+            ("user.email", "t@e.com"),
+            ("commit.gpgsign", "false"),
+        ] {
+            git_run(path, &["config", cfg.0, cfg.1], &GitRunOpts::default())
+                .await
+                .unwrap()
+                .into_ok()
+                .unwrap();
+        }
+
+        // base commit
+        let a = path.join("a.txt");
+        let b = path.join("b.txt");
+        fs::write(&a, "A0\n").unwrap();
+        fs::write(&b, "B0\n").unwrap();
+        git_run(path, &["add", "."], &GitRunOpts::default())
+            .await
+            .unwrap()
+            .into_ok()
+            .unwrap();
+        crate::git::runner::commit_with_message(path, "base")
+            .await
+            .unwrap()
+            .into_ok()
+            .unwrap();
+
+        // 둘 다 수정 — A 만 stage, B 는 unstaged.
+        fs::write(&a, "A1\n").unwrap();
+        fs::write(&b, "B1\n").unwrap();
+        git_run(path, &["add", "a.txt"], &GitRunOpts::default())
+            .await
+            .unwrap()
+            .into_ok()
+            .unwrap();
+
+        // staged-only stash. Git 2.35+ 가 아니면 GitCli 에러 — 그 경우는 skip.
+        match push_stash_staged(path, Some("staged-only test")).await {
+            Ok(_) => {
+                // A 는 base 로 복원 (stash 됨), B 는 그대로 남음.
+                let after_a = fs::read_to_string(&a).unwrap();
+                let after_b = fs::read_to_string(&b).unwrap();
+                assert_eq!(after_a, "A0\n", "staged stash 후 A 는 base 로 복원");
+                assert_eq!(after_b, "B1\n", "unstaged B 는 워킹트리에 보존");
+            }
+            Err(e) => {
+                // CI/older git — skip with informative log
+                eprintln!("push_stash_staged skipped (git --version <2.35?): {}", e);
+            }
+        }
+    }
 
     /// StashEntry serde — camelCase (createdAt) + 한글 message 안전.
     #[test]

@@ -243,6 +243,24 @@ export const applyStashFile = (repoId: number, index: number, path: string): Pro
 export const editStashMessage = (repoId: number, index: number, message: string): Promise<void> =>
   invoke('edit_stash_message', { args: { repoId, index, message: toNFC(message) } })
 
+// --- Smart Stash (Sprint c38 / plan/29 E3) ---
+
+/**
+ * `git stash push -S` — 인덱스(staged)만 stash. 워킹트리(unstaged)는 보존.
+ * Git 2.35+ 필요 (`-S` 플래그).
+ */
+export const pushStashStaged = (repoId: number, message?: string | null): Promise<void> =>
+  invoke('push_stash_staged', {
+    args: { repoId, message: message != null ? toNFC(message) : message },
+  })
+
+/**
+ * `git stash branch <name> stash@{n}` — stash 시점 base 의 새 브랜치로 pop.
+ * 충돌 시 stash 가 그대로 유지 (drop 안 됨).
+ */
+export const stashToBranch = (repoId: number, index: number, branch: string): Promise<void> =>
+  invoke('stash_to_branch', { args: { repoId, index, branch: toNFC(branch) } })
+
 // --- Compare (`docs/plan/14 §2 A1`) ---
 export interface CompareCommit {
   sha: string

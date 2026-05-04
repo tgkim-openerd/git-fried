@@ -396,7 +396,15 @@
     "messagePlaceholder": "Message (optional, use ✨ for auto-generate)",
     "aiButtonTitle": "✨ {cli} — generate stash message",
     "includeUntracked": "Include untracked (-u)",
-    "pushButton": "stash push"
+    "pushButton": "stash push",
+    "stagedOnly": "Staged only (-S)",
+    "stagedOnlyTitle": "Stash index (staged) only. Worktree (unstaged) preserved. Requires Git 2.35+.",
+    "pushFailed": "Stash push failed",
+    "toBranchTitle": "Recover this stash to a new branch (from stash base)",
+    "toBranchAria": "Pop stash@{idx} to a new branch",
+    "branchPromptMessage": "New branch name (created from stash base)",
+    "branchSuccess": "Recovered to new branch",
+    "branchFailed": "Stash → branch failed"
   },
   "submodule": {
     "title": "Submodule",

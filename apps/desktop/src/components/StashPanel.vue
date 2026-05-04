@@ -18,7 +18,9 @@ import {
   editStashMessage,
   popStash,
   pushStash,
+  pushStashStaged,
   showStash,
+  stashToBranch,
 } from '@/api/git'
 import { parseDiffWithHunks } from '@/utils/parseDiff'
 import { computed } from 'vue'
@@ -39,6 +41,9 @@ const invalidate = useInvalidateRepoQueries()
 
 const newMessage = ref('')
 const includeUntracked = ref(false)
+// Sprint c38 / plan/29 E3 — Smart Stash: stage-only stash 모드 (Git 2.35+ `-S`).
+// false = 기존 동작 (인덱스+워킹트리 모두 stash), true = staged-only (`push -S`).
+const stagedOnly = ref(false)
 const previewText = ref<string | null>(null)
 const previewIndex = ref<number | null>(null)
 
@@ -56,6 +61,10 @@ watch(
 const pushMut = useMutation({
   mutationFn: () => {
     if (props.repoId == null) return Promise.reject(new Error('no repo'))
+    // Sprint c38 / plan/29 E3 — staged-only 모드는 -u 와 양립 불가 (인덱스만 대상).
+    if (stagedOnly.value) {
+      return pushStashStaged(props.repoId, newMessage.value || null)
+    }
     return pushStash(props.repoId, newMessage.value || null, includeUntracked.value)
   },
   onSuccess: () => {
@@ -64,8 +73,23 @@ const pushMut = useMutation({
     if (props.repoId != null) clearWipNote(props.repoId)
     invalidate(props.repoId)
   },
-  onError: (e) => toast.error('Stash push 실패', describeError(e)),
+  onError: (e) => toast.error(t('stash.pushFailed'), describeError(e)),
 })
+
+// Sprint c38 / plan/29 E3 — stash → 새 브랜치 (`git stash branch <name> stash@{n}`).
+async function onStashToBranch(idx: number) {
+  if (props.repoId == null) return
+  const name = window.prompt(t('stash.branchPromptMessage'), `stash-${idx}-recover`)
+  if (name == null) return
+  const trimmed = name.trim()
+  if (!trimmed) return
+  await stashToBranch(props.repoId, idx, trimmed)
+    .then(() => {
+      toast.success(t('stash.branchSuccess'), trimmed)
+      invalidate(props.repoId)
+    })
+    .catch((e) => toast.error(t('stash.branchFailed'), describeError(e)))
+}
 
 async function onApply(idx: number) {
   if (props.repoId == null) return
@@ -189,10 +213,17 @@ const aiMut = useMutation({
         </button>
       </div>
       <div class="flex items-center justify-between text-xs">
-        <label class="flex items-center gap-1">
-          <input v-model="includeUntracked" type="checkbox" />
-          {{ t('stash.includeUntracked') }}
-        </label>
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-1">
+            <input v-model="includeUntracked" type="checkbox" :disabled="stagedOnly" />
+            {{ t('stash.includeUntracked') }}
+          </label>
+          <!-- Sprint c38 / plan/29 E3 — staged-only stash (Git 2.35+ `-S`). -->
+          <label class="flex items-center gap-1" :title="t('stash.stagedOnlyTitle')">
+            <input v-model="stagedOnly" type="checkbox" />
+            {{ t('stash.stagedOnly') }}
+          </label>
+        </div>
         <button
           type="button"
           class="rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground disabled:opacity-50"
@@ -235,6 +266,15 @@ const aiMut = useMutation({
               @click="onPop(s.index)"
             >
               pop
+            </button>
+            <!-- Sprint c38 / plan/29 E3 — stash → 새 브랜치로 복원. -->
+            <button
+              class="hover:underline"
+              :title="t('stash.toBranchTitle')"
+              :aria-label="t('stash.toBranchAria', { idx: s.index })"
+              @click="onStashToBranch(s.index)"
+            >
+              → branch
             </button>
             <button
               class="hover:underline"

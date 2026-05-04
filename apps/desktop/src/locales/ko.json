@@ -396,7 +396,15 @@
     "messagePlaceholder": "메시지 (선택, ✨ 로 자동 생성)",
     "aiButtonTitle": "✨ {cli} 로 stash 메시지 생성",
     "includeUntracked": "untracked 포함 (-u)",
-    "pushButton": "stash push"
+    "pushButton": "stash push",
+    "stagedOnly": "staged 만 (-S)",
+    "stagedOnlyTitle": "인덱스(staged)만 stash. 워킹트리(unstaged)는 보존. Git 2.35+ 필요.",
+    "pushFailed": "Stash push 실패",
+    "toBranchTitle": "이 stash 를 새 브랜치로 복원 (stash 시점 base 에서)",
+    "toBranchAria": "stash@{idx} 를 새 브랜치로 pop",
+    "branchPromptMessage": "새 브랜치 이름 (stash 시점 base 에서 생성)",
+    "branchSuccess": "새 브랜치로 복원",
+    "branchFailed": "Stash → 브랜치 실패"
   },
   "submodule": {
     "title": "Submodule",

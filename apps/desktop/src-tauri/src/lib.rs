@@ -112,6 +112,8 @@ pub fn run() {
             ipc::commands::rename_branch,
             ipc::commands::list_stash,
             ipc::commands::push_stash,
+            ipc::commands::push_stash_staged,
+            ipc::commands::stash_to_branch,
             ipc::commands::apply_stash,
             ipc::commands::pop_stash,
             ipc::commands::drop_stash,

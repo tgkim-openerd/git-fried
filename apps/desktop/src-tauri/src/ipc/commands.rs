@@ -690,6 +690,44 @@ pub async fn push_stash(
     git_stash::push_stash(&path, args.message.as_deref(), args.include_untracked).await
 }
 
+// ====== Smart Stash (Sprint c38 / plan/29 E3) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PushStashStagedArgs {
+    pub repo_id: i64,
+    #[serde(default)]
+    pub message: Option<String>,
+}
+
+/// `git stash push -S` — 인덱스(staged)만 stash. Git 2.35+ 필요.
+#[tauri::command]
+pub async fn push_stash_staged(
+    args: PushStashStagedArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::push_stash_staged(&path, args.message.as_deref()).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StashToBranchArgs {
+    pub repo_id: i64,
+    pub index: usize,
+    pub branch: String,
+}
+
+/// `git stash branch <name> stash@{n}` — stash 시점 base 의 새 브랜치로 pop.
+#[tauri::command]
+pub async fn stash_to_branch(
+    args: StashToBranchArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_stash::stash_to_branch(&path, args.index, &args.branch).await
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StashIndexArgs {
