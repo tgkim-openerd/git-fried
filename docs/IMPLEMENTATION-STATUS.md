@@ -1,6 +1,6 @@
 # 구현 현황 인벤토리 (Implementation Status)
 
-작성: 2026-04-30 / 갱신: 2026-04-30 Sprint c31 22 + c32 3 + c33 14 + c34 5 + c35 6 + c36 4 + **c37 11** = 65 commit 누적 후 / 트리거: c37 자율 진행 (plan/28 옵션 C 3·4차 + god comp 분리 3개 + composable test +48 + a11y ContextMenu DOM focus + i18n 5 컴포넌트 +151 키)
+작성: 2026-04-30 / 갱신: 2026-05-04 Sprint c31 22 + c32 3 + c33 14 + c34 5 + c35 6 + c36 4 + c37 11 + **c38 5** = 70 commit 누적 후 / 트리거: c38 자율 진행 (plan/29 5 에픽 — Restore Center / Smart Stash / Clone Wizard Presets / Range Diff Panel / Worktree Polish + promptDialog)
 
 > **목적**: 26개 plan 문서 + CHANGELOG Unreleased + lib.rs invoke_handler + 5 SQLite migrations + 161 IPC + 191 frontend 파일 / 66 Rust 파일을 한 문서에 매핑. 신규 개발자 / 다음 세션 entry / dogfood 시점에 "어디까지 됐고 어디 남았나" 단일 진실원천.
 >
@@ -16,17 +16,19 @@
 | ---- | ---- | ---- |
 | **GitKraken 11 catalog** | ✅ **95% + 14 잔여 100%** | plan/13 §1 / plan/14 §12 |
 | **GitKraken 12 layout (Sprint c25)** | ✅ **PR #1 머지 완료** (`ae0cafe`) | plan/25 §7, CHANGELOG |
-| **Tauri IPC** | ✅ **164 등록** (lib.rs invoke_handler 직접 카운트) | `apps/desktop/src-tauri/src/lib.rs` |
+| **Tauri IPC** | ✅ **170 등록** (lib.rs invoke_handler 직접 카운트) | c38 +6: `restore_paths` / `push_stash_staged` / `stash_to_branch` / `range_diff` / `open_path_in_explorer` + `clone_repo` filter 옵션 확장 |
 | **Frontend 코어** | ✅ Vue 3 + Pinia + TanStack Query + Tailwind + CodeMirror + xterm | `apps/desktop/package.json` |
-| **Rust 백엔드** | ✅ 15,765 LOC / 13 top-level mod / git/ 34 sub (7,382 LOC) | `find apps/desktop/src-tauri/src -name "*.rs" \| xargs wc -l` |
-| **테스트** | ✅ **vitest 60 / 660 tests** / E2E 6 / cargo test + bench compile 통과 | Sprint c37 +3 files (+48 tests): useGraphWidth (18) / useGraphSelection (13) / useStatusSelection (17) — vi.mock(useShortcuts) Map capture + vi.stubGlobal(navigator) clipboard mock |
+| **Rust 백엔드** | ✅ ~16,800 LOC / 13 top-level mod / git/ **36 sub** (+restore +range_diff) | c38 신규 2 모듈: `git/restore.rs` 196 / `git/range_diff.rs` 318 |
+| **테스트** | ✅ **vitest 60 / 660 tests** / cargo test **178** / E2E 6 / bench compile | c38 cargo +16 (E1 +6 / E3 +2 / E4 +3 / E2 +5). Sprint c37 +3 files (+48 tests): useGraphWidth (18) / useGraphSelection (13) / useStatusSelection (17) |
 | **CI/Release 인프라** | 🟡 **95%** (workflow 완비, EV/updater secret 미등록) | `.github/workflows/{ci,release}.yml` |
 | **GitHub repo public** | 🟡 **97%** — version 0.3.0 통합 완료. `git tag v0.3.0` push 만 잔여 | tauri.conf.json + Cargo.toml + 3 package.json 모두 0.3.0 (Sprint c31 PR-B) |
-| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + **534 키 / 23 컴포넌트 활용 / ko·en 대칭**) | Sprint c37-6~c37-11 추가 5 컴포넌트 +151 키: RemoteManageModal +14 / StatusPanel +30 / HunkStageModal +34 / GitKrakenToolbar +32 / PrDetailModal +41 |
+| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + **598 키 / 25 컴포넌트 활용 / ko·en 대칭**) | c38 +64 키: restore 14 / stash 10 (smart) / clone 24 (preset+filter) / rangeDiff·compare 10 / worktree 6 (dirty+lock prompt). Sprint c37-6~c37-11 추가 5 컴포넌트 +151 키 |
 | **BaseTooltip primitive** | ✅ **26 위치 활용** | StatusInlineDiff 7 + GitKrakenToolbar 11 + SyncBar 3 + RepoTabBar 2 + ProfileSwitcher 1 + StatusPanel 토글 2 = 26 (kbd hint 노출 / hover delay / a11y) |
 | **God component 분리** | ✅ **21 컴포넌트 / -1,652 LOC (-30%)** | Sprint c37 +4 신규: useGraphWidth (CommitGraph 833→737) + useGraphSelection + useStatusSelection (StatusPanel 789→729) + useStashPopMutation (GitKrakenToolbar 549→503). AI composable 5 표준 (c35 완성) |
 | **a11y 보강 (c31, c37)** | ✅ **6 + DOM focus 동기화** | c31: PrFilesTab 3 + ContextMenu 3 (role + aria-orientation + aria-haspopup). c37-7: ContextMenu **keyboard nav DOM focus 동기화** — focusVisibleMenuItem/focusSubMenuItem (visual highlight ≠ DOM focus 갭 해소, WCAG 2.1.1 + ARIA menu 패턴) |
 | **UX 7원칙 검토 (Sprint c33)** | ✅ **P0 갭 1건 완전 해소** | window.confirm() 44곳 → ConfirmDialog (Von Restorff + i18n + Jakob's Law 동시 위반 해소). 6 원칙 ✓ |
+| **plan/29 deep-research 5 에픽 (c38)** | ✅ **5/5 완료** | E1 Restore Center (4축 git restore 의미론) / E3 Smart Stash (`-S` + `stash branch`) / E4 Clone Wizard Presets (4 + custom + `--filter`) / E2 Range Diff Panel (CompareModal 모드 토글) / E5 Worktree Polish (is_dirty + open_path_in_explorer + PromptDialog) |
+| **window.prompt 잔여 (c38 E5)** | 🟡 **1곳 cleanup 완료** | WorktreePanel lock reason → promptDialog (a11y + 한글 IME). 다른 잔여 (StashPanel edit msg / StatusPanel restoreFromCommit 등) 후속 sprint 후보 |
 | **Light theme 가독성 (c33~c35)** | ✅ **인프라 완성** | c34 시범 5곳 + **c35 옵션 C 인프라** (tailwind.config.ts + main.css 6 semantic colors: diff-add/diff-delete/diff-rename/ai-violet/warning-amber/danger-rose) + PrFilesTab/ConventionalCommitBuilder 적용 |
 | **차별점 패널 (c35+c36)** | ✅ **IdentityCard.vue dogfood 통계 활성화** | c35: 3 카드 (한글 🇰🇷 / Gitea 🦊 / AI ✨) 노출. c36: AI 호출 카운터 wiring (notifyAiDone 통합) + 한글 commit IPC (count_hangul_commits 실측 비율). plan/26 Phase 2 완료 |
 | **Light theme 누적 (c33~c37)** | ✅ **44 컴포넌트 / 순수 hardcoded 0** | c34 시범 5 + c35 인프라 + 2 컴포넌트 + c36 5 컴포넌트 29 위치 + **c37-1 11 + c37-2 28 컴포넌트 + tailwind alpha modifier 호환** (`hsl(var(--X) / <alpha-value>)` 형식). 잔존 25 grep 매치는 모두 c36/c37 dark variant 패턴 (`text-X-700 dark:text-X-500`, light/dark 가독성 OK) |
