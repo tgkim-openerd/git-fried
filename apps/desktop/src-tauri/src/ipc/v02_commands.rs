@@ -1,21 +1,24 @@
-// v0.2 stretch IPC — Worktree / Cherry-pick / AI subprocess.
+// v0.2 stretch IPC — Worktree / Cherry-pick / 3-way merge / Reflog / File history / AI subprocess.
+//
+// 2026-05-04 /analyze 후속 — LFS / Bisect / Rebase 는 각각 lfs_commands /
+// bisect_commands / rebase_commands 모듈로 분리. lib.rs 의 generate_handler! 에
+// 등록된 path `ipc::v02_commands::lfs_install` 등을 보존하기 위해 아래에서
+// `pub use` 로 re-export 한다.
+pub use crate::ipc::bisect_commands::*;
+pub use crate::ipc::lfs_commands::*;
+pub use crate::ipc::rebase_commands::*;
 
 use crate::ai;
 use crate::error::{AppError, AppResult};
 use crate::git::{
-    bisect as git_bisect, cherry_pick as git_cp, conflict_prediction as git_cp_pred,
-    file_history as git_fh, lfs as git_lfs, merge as git_merge, rebase as git_rebase,
-    reflog as git_reflog, worktree as git_wt,
+    cherry_pick as git_cp, conflict_prediction as git_cp_pred, file_history as git_fh,
+    merge as git_merge, reflog as git_reflog, worktree as git_wt,
 };
+use crate::ipc::repo_path;
 use crate::AppState;
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::Arc;
-
-async fn repo_path(state: &Arc<AppState>, repo_id: i64) -> AppResult<PathBuf> {
-    use crate::storage::DbExt;
-    Ok(PathBuf::from(state.db.get_repo(repo_id).await?.local_path))
-}
 
 // ====== Open repo path in OS file manager (Sprint F4) ======
 
@@ -340,48 +343,7 @@ pub async fn launch_mergetool(
     })
 }
 
-// ====== Bisect ======
-
-#[tauri::command]
-pub async fn bisect_status(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<git_bisect::BisectStatus> {
-    let path = repo_path(&state, repo_id).await?;
-    git_bisect::status(&path).await
-}
-
-#[tauri::command]
-pub async fn bisect_start(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<String> {
-    let path = repo_path(&state, repo_id).await?;
-    git_bisect::start(&path).await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BisectMarkArgs {
-    pub repo_id: i64,
-    pub mark: git_bisect::BisectMark,
-    pub sha: Option<String>,
-}
-
-#[tauri::command]
-pub async fn bisect_mark(
-    args: BisectMarkArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<String> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_bisect::mark(&path, args.mark, args.sha.as_deref()).await
-}
-
-#[tauri::command]
-pub async fn bisect_reset(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
-    let path = repo_path(&state, repo_id).await?;
-    git_bisect::reset(&path).await
-}
+// ====== Bisect — 분리 (ipc/bisect_commands.rs) ======
 
 // ====== Reflog ======
 
@@ -404,83 +366,7 @@ pub async fn list_reflog(
     git_reflog::list_reflog(&path, ref_name, limit).await
 }
 
-// ====== LFS ======
-
-#[tauri::command]
-pub async fn lfs_status(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<git_lfs::LfsStatus> {
-    let path = repo_path(&state, repo_id).await?;
-    git_lfs::status(&path).await
-}
-
-#[tauri::command]
-pub async fn lfs_list_files(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<Vec<git_lfs::LfsFile>> {
-    let path = repo_path(&state, repo_id).await?;
-    git_lfs::list_files(&path).await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LfsPatternArgs {
-    pub repo_id: i64,
-    pub pattern: String,
-}
-
-#[tauri::command]
-pub async fn lfs_track(
-    args: LfsPatternArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_lfs::track(&path, &args.pattern).await
-}
-
-#[tauri::command]
-pub async fn lfs_untrack(
-    args: LfsPatternArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_lfs::untrack(&path, &args.pattern).await
-}
-
-#[tauri::command]
-pub async fn lfs_install(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
-    let path = repo_path(&state, repo_id).await?;
-    git_lfs::install(&path).await
-}
-
-#[tauri::command]
-pub async fn lfs_fetch(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
-    let path = repo_path(&state, repo_id).await?;
-    git_lfs::fetch(&path).await
-}
-
-#[tauri::command]
-pub async fn lfs_pull(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
-    let path = repo_path(&state, repo_id).await?;
-    git_lfs::pull(&path).await
-}
-
-#[tauri::command]
-pub async fn lfs_prune(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
-    let path = repo_path(&state, repo_id).await?;
-    git_lfs::prune(&path).await
-}
-
-#[tauri::command]
-pub async fn lfs_push_size(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<git_lfs::LfsPushSize> {
-    let path = repo_path(&state, repo_id).await?;
-    git_lfs::push_size(&path).await
-}
+// ====== LFS — 분리 (ipc/lfs_commands.rs) ======
 
 // ====== File history / Blame ======
 
@@ -974,104 +860,4 @@ pub async fn ai_composer_plan(
     ai::ai_run(args.cli, &prompt).await
 }
 
-// ====== Interactive rebase (`docs/plan/09 옵션 A`) ======
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RebasePrepareArgs {
-    pub repo_id: i64,
-    pub count: usize,
-}
-
-#[tauri::command]
-pub async fn rebase_prepare_todo(
-    args: RebasePrepareArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<Vec<git_rebase::RebaseTodoEntry>> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_rebase::prepare_todo(&path, args.count).await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RebaseRunArgs {
-    pub repo_id: i64,
-    pub base: String,
-    pub todo: Vec<git_rebase::RebaseTodoEntry>,
-}
-
-#[derive(Debug, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RebaseRunResult {
-    pub success: bool,
-    pub exit_code: Option<i32>,
-    pub stdout: String,
-    pub stderr: String,
-    pub status: git_rebase::RebaseStatus,
-}
-
-#[tauri::command]
-pub async fn rebase_run(
-    args: RebaseRunArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<RebaseRunResult> {
-    let path = repo_path(&state, args.repo_id).await?;
-    let out = git_rebase::run_interactive(&path, &args.base, &args.todo).await?;
-    let status = git_rebase::status(&path)?;
-    Ok(RebaseRunResult {
-        success: out.exit_code == Some(0) && !status.in_progress,
-        exit_code: out.exit_code,
-        stdout: out.stdout,
-        stderr: out.stderr,
-        status,
-    })
-}
-
-#[tauri::command]
-pub async fn rebase_status(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<git_rebase::RebaseStatus> {
-    let path = repo_path(&state, repo_id).await?;
-    git_rebase::status(&path)
-}
-
-#[tauri::command]
-pub async fn rebase_continue(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<RebaseRunResult> {
-    let path = repo_path(&state, repo_id).await?;
-    let out = git_rebase::rebase_continue(&path).await?;
-    let status = git_rebase::status(&path)?;
-    Ok(RebaseRunResult {
-        success: out.exit_code == Some(0) && !status.in_progress,
-        exit_code: out.exit_code,
-        stdout: out.stdout,
-        stderr: out.stderr,
-        status,
-    })
-}
-
-#[tauri::command]
-pub async fn rebase_abort(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
-    let path = repo_path(&state, repo_id).await?;
-    git_rebase::rebase_abort(&path).await
-}
-
-#[tauri::command]
-pub async fn rebase_skip(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<RebaseRunResult> {
-    let path = repo_path(&state, repo_id).await?;
-    let out = git_rebase::rebase_skip(&path).await?;
-    let status = git_rebase::status(&path)?;
-    Ok(RebaseRunResult {
-        success: out.exit_code == Some(0) && !status.in_progress,
-        exit_code: out.exit_code,
-        stdout: out.stdout,
-        stderr: out.stderr,
-        status,
-    })
-}
+// ====== Interactive rebase — 분리 (ipc/rebase_commands.rs) ======

@@ -143,3 +143,59 @@ pub struct Release {
     pub created_at: i64,
     pub html_url: String,
 }
+
+// 2026-05-04 /analyze 후속 — forge/model serde round-trip 가드.
+// (이전 sub-agent grep 에서 forge 모듈 #[test] 0개로 검출 — 직렬화/역직렬화
+//  계약은 Gitea/GitHub API 응답 파싱의 핵심이므로 enum lowercase / camelCase
+//  rename_all 이 변하지 않도록 최소 가드.)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn forge_kind_serde_lowercase() {
+        let s = serde_json::to_string(&ForgeKind::Github).unwrap();
+        assert_eq!(s, "\"github\"");
+        let back: ForgeKind = serde_json::from_str("\"gitea\"").unwrap();
+        assert_eq!(back, ForgeKind::Gitea);
+    }
+
+    #[test]
+    fn pr_state_serde_lowercase_includes_draft() {
+        for (kind, expected) in [
+            (PrState::Open, "\"open\""),
+            (PrState::Closed, "\"closed\""),
+            (PrState::Merged, "\"merged\""),
+            (PrState::Draft, "\"draft\""),
+        ] {
+            assert_eq!(serde_json::to_string(&kind).unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn issue_state_serde_lowercase_open_closed_only() {
+        assert_eq!(
+            serde_json::to_string(&IssueState::Open).unwrap(),
+            "\"open\""
+        );
+        assert_eq!(
+            serde_json::to_string(&IssueState::Closed).unwrap(),
+            "\"closed\""
+        );
+    }
+
+    #[test]
+    fn author_serde_camel_case_optional_fields() {
+        // displayName / avatarUrl 미존재 케이스 (Gitea 일부 응답에서 누락됨).
+        let json = r#"{"username":"tgkim"}"#;
+        let a: Author = serde_json::from_str(json).unwrap();
+        assert_eq!(a.username, "tgkim");
+        assert!(a.display_name.is_none());
+        assert!(a.avatar_url.is_none());
+
+        // 채워진 케이스.
+        let json2 = r#"{"username":"tgkim","displayName":"태기","avatarUrl":"https://x"}"#;
+        let a2: Author = serde_json::from_str(json2).unwrap();
+        assert_eq!(a2.display_name.as_deref(), Some("태기"));
+    }
+}

@@ -33,10 +33,10 @@ export const i18n = createI18n({
   locale: detectInitialLocale(),
   fallbackLocale: 'ko',
   messages: { ko, en },
-  // 2026-04-30 missing key warning OFF (점진 마이그레이션 중 noise 차단).
-  // 마이그레이션 90% 후 ON 권장.
-  missingWarn: false,
-  fallbackWarn: false,
+  // 2026-05-04 ko/en 606 keys 완전 대칭 검증 (drift 0, 미번역 0) → DEV 모드만 경고 ON.
+  // 프로덕션은 console noise 방지 위해 OFF 유지.
+  missingWarn: import.meta.env.DEV,
+  fallbackWarn: import.meta.env.DEV,
 })
 
 export function setLocale(locale: SupportedLocale): void {

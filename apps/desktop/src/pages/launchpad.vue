@@ -5,19 +5,18 @@
 // 핵심 가치 (`docs/plan/02 §3 W1`): 회사 50+ 레포 PR 전체 조망 + bot/사람 분리.
 //
 // Sprint A4 추가: Pin / Snooze / Saved Views (`docs/plan/11 §14`).
-import { computed, ref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
-import { bulkListPrs } from '@/api/git'
-import type { BulkResult, PrState, PullRequest } from '@/api/git'
+import { ref } from 'vue'
+import type { PrState, PullRequest } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { describeError } from '@/api/errors'
-import { STALE_TIME } from '@/api/queryClient'
 import {
   useLaunchpadMeta,
   useSavedViews,
   LAUNCHPAD_VIEW_KIND,
 } from '@/composables/useLaunchpadMeta'
 import { useLaunchpadFilter } from '@/composables/useLaunchpadFilter'
+// /analyze 후속 (2026-05-04) — launchpad.vue (620 LOC) row derivation 분리.
+import { useLaunchpadRows, type FlatRow } from '@/composables/useLaunchpadRows'
 import { useToast } from '@/composables/useToast'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -32,6 +31,9 @@ const tab = ref<Tab>('active')
 // === Sprint C14-2 F2 (`docs/plan/14 §7 F2`): PR Filter syntax ===
 // Sprint c30 / HIGH 2 — composables/useLaunchpadFilter.ts 로 추출 (검색 파서 + 매처).
 // FILTER_HELPERS / appendFilter 는 그대로 유지 (UI 보존).
+const meta = useLaunchpadMeta()
+const savedViews = useSavedViews(LAUNCHPAD_VIEW_KIND)
+
 const {
   searchQuery,
   matches: matchesQuery,
@@ -43,78 +45,26 @@ const {
   isBot,
 }))
 
-const { data, isFetching, error, refetch } = useQuery({
-  queryKey: computed(() => ['launchpad-prs', store.activeWorkspaceId, stateFilter.value]),
-  queryFn: () => bulkListPrs(store.activeWorkspaceId, stateFilter.value),
-  staleTime: STALE_TIME.NORMAL,
+// /analyze 후속 — query + 9 derived computed + isBot 휴리스틱 캡슐화.
+// (data / flatRows / humanPrs 는 template 미참조이지만 composable 캐시 용도로 보관)
+const {
+  isFetching,
+  error,
+  refetch,
+  botPrs,
+  pinnedRows,
+  snoozedRows,
+  activeNotSnoozedRows,
+  failedRepos,
+  stats,
+  isBot,
+} = useLaunchpadRows({
+  workspaceId: () => store.activeWorkspaceId,
+  stateFilter: () => stateFilter.value,
+  matches: matchesQuery,
+  isPinned: (pr) => meta.isPinned(pr),
+  snoozeRemaining: (pr) => meta.snoozeRemaining(pr),
 })
-
-const meta = useLaunchpadMeta()
-const savedViews = useSavedViews(LAUNCHPAD_VIEW_KIND)
-
-interface FlatRow {
-  repoName: string
-  pr: PullRequest
-}
-
-function isBot(pr: PullRequest): boolean {
-  const u = pr.author.username.toLowerCase()
-  return (
-    u.endsWith('-bot') ||
-    u.endsWith('[bot]') ||
-    u === 'release-please' ||
-    u === 'dependabot' ||
-    u === 'renovate' ||
-    u === 'github-actions' ||
-    u.includes('bot')
-  )
-}
-
-const flatRows = computed<FlatRow[]>(() => {
-  if (!data.value) return []
-  const out: FlatRow[] = []
-  for (const r of data.value) {
-    if (!r.success || !r.data) continue
-    for (const pr of r.data) {
-      out.push({ repoName: r.repoName, pr })
-    }
-  }
-  return out
-})
-
-// === 검색 필터 적용 (F2) — humanPrs 단계 후 통과 ===
-const searchedRows = computed(() => flatRows.value.filter(matchesQuery))
-
-const humanPrs = computed(() => searchedRows.value.filter((r) => !isBot(r.pr)))
-const botPrs = computed(() => searchedRows.value.filter((r) => isBot(r.pr)))
-
-const pinnedRows = computed(() => humanPrs.value.filter((r) => meta.isPinned(r.pr)))
-const snoozedRows = computed(() => humanPrs.value.filter((r) => meta.snoozeRemaining(r.pr) != null))
-const activeNotSnoozedRows = computed(() => {
-  // tab='active' 의 메인 리스트: pinned 우선, 그 다음 일반 (snoozed 제외).
-  const list = humanPrs.value.filter((r) => meta.snoozeRemaining(r.pr) == null)
-  return list.slice().sort((a, b) => {
-    const ap = meta.isPinned(a.pr) ? 1 : 0
-    const bp = meta.isPinned(b.pr) ? 1 : 0
-    if (ap !== bp) return bp - ap // pinned 먼저
-    return b.pr.updatedAt - a.pr.updatedAt // 최신 갱신 먼저
-  })
-})
-
-const failedRepos = computed<BulkResult<PullRequest[]>[]>(() =>
-  (data.value ?? []).filter((r) => !r.success),
-)
-
-const stats = computed(() => ({
-  total: flatRows.value.length,
-  human: humanPrs.value.length,
-  bot: botPrs.value.length,
-  pinned: pinnedRows.value.length,
-  snoozed: snoozedRows.value.length,
-  reposWithPrs: new Set(flatRows.value.map((r) => r.repoName)).size,
-  reposScanned: data.value?.length ?? 0,
-  failed: failedRepos.value.length,
-}))
 
 function fmtDate(unix: number): string {
   return formatDateLocalized(unix, {

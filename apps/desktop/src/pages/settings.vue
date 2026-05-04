@@ -12,7 +12,6 @@
 // 영속화: localStorage (DB 통합은 v1.x). Cloud / Org / Marketing 항목은 거부.
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useMutation } from '@tanstack/vue-query'
 import ForgeSetup from '@/components/ForgeSetup.vue'
 import GitKrakenImportModal from '@/components/GitKrakenImportModal.vue'
 // Sprint c35 — plan/26 Phase 2: 차별점 패널.
@@ -20,14 +19,13 @@ import IdentityCard from '@/components/IdentityCard.vue'
 import PlaceholderButton from '@/components/PlaceholderButton.vue'
 import ProfilesSection from '@/components/ProfilesSection.vue'
 import RepoSpecificForm from '@/components/RepoSpecificForm.vue'
+import { useReposStore } from '@/stores/repos'
 import { useUiState } from '@/composables/useUiState'
 import { useCustomTheme } from '@/composables/useCustomTheme'
-import { useToast } from '@/composables/useToast'
-import { useReposStore } from '@/stores/repos'
-import { confirmDialog } from '@/composables/useConfirm'
-import { lfsInstall, maintenanceFsck, maintenanceGc, type MaintenanceResult } from '@/api/git'
-import { describeError } from '@/api/errors'
 import { useGeneralSettings, useUiSettingsStore } from '@/composables/useUserSettings'
+// /analyze 후속 (2026-05-04) — settings.vue god component (689 LOC) composable 추출.
+import { useMaintenanceActions } from '@/composables/useMaintenanceActions'
+import { useThemeIO } from '@/composables/useThemeIO'
 
 type Category =
   | 'profiles'
@@ -116,101 +114,27 @@ const active = ref<Category>('profiles')
 const importGkOpen = ref(false)
 
 // ===== 유지보수 (gc / fsck / lfs install) — Sprint B14-2 =====
+//   composable 추출 (2026-05-04 /analyze 후속).
 const reposStore = useReposStore()
-const maintResult = ref<MaintenanceResult | null>(null)
-const maintLabel = ref<string>('')
-
-function onMaintenanceDone(label: string, r: MaintenanceResult) {
-  maintLabel.value = label
-  maintResult.value = r
-  if (r.success) {
-    toast.success(`${label} 완료`, '')
-  } else {
-    toast.warning(`${label} 비정상 종료`, `exit=${r.exitCode ?? '?'}`)
-  }
-}
-
-const gcMut = useMutation({
-  mutationFn: (aggressive: boolean) => {
-    if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
-    return maintenanceGc(reposStore.activeRepoId, aggressive)
-  },
-  onSuccess: (r, aggressive) =>
-    onMaintenanceDone(aggressive ? 'git gc --aggressive --prune=now' : 'git gc', r),
-  onError: (e) => toast.error('git gc 실패', describeError(e)),
-})
-
-const fsckMut = useMutation({
-  mutationFn: () => {
-    if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
-    return maintenanceFsck(reposStore.activeRepoId)
-  },
-  onSuccess: (r) => onMaintenanceDone('git fsck --full', r),
-  onError: (e) => toast.error('git fsck 실패', describeError(e)),
-})
-
-async function confirmAggressiveGc() {
-  const ok = await confirmDialog({
-    title: t('confirm.aggressiveGcTitle'),
-    message: t('confirm.aggressiveGcMessage'),
-  })
-  if (ok) {
-    gcMut.mutate(true)
-  }
-}
-
-const lfsInstallMut = useMutation({
-  mutationFn: () => {
-    if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
-    return lfsInstall(reposStore.activeRepoId)
-  },
-  onSuccess: () => {
-    maintLabel.value = 'git lfs install'
-    maintResult.value = {
-      success: true,
-      stdout: 'LFS hooks 등록 완료',
-      stderr: '',
-      exitCode: 0,
-    }
-    toast.success('LFS 초기화', 'pre-push hook 등록')
-  },
-  onError: (e) => toast.error('LFS 초기화 실패', describeError(e)),
-})
+const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiveGc } =
+  useMaintenanceActions()
 
 // ===== General + UI settings — Sprint D1 공용 store 로 추출 =====
 const general = useGeneralSettings()
 const ui = useUiSettingsStore()
 
-// ===== Custom theme JSON (Sprint C4) =====
+// ===== Custom theme JSON (Sprint C4) — composable 추출 (2026-05-04) =====
+//   ctheme: customTheme reactive 직접 노출 (template 표시용).
+//   themeIO: export / import / reset / 클립보드 복사.
 const ctheme = useCustomTheme()
-const toast = useToast()
-const themeImportText = ref('')
-const themeExportText = ref('')
-
-function onExportTheme() {
-  themeExportText.value = ctheme.exportJson()
-}
-function onImportTheme() {
-  const r = ctheme.importJson(themeImportText.value)
-  if (r.ok) {
-    toast.success('테마 적용', '커스텀 CSS 변수 활성화')
-    themeImportText.value = ''
-  } else {
-    toast.error('테마 import 실패', r.error || '?')
-  }
-}
-function onResetTheme() {
-  ctheme.reset()
-  toast.success('테마 초기화', '기본 dark/light 로 복원')
-}
-async function copyThemeExport() {
-  try {
-    await navigator.clipboard.writeText(themeExportText.value)
-    toast.success('클립보드 복사', '')
-  } catch {
-    toast.error('복사 실패', '')
-  }
-}
+const {
+  exportText: themeExportText,
+  importText: themeImportText,
+  onExport: onExportTheme,
+  onImport: onImportTheme,
+  onReset: onResetTheme,
+  onCopy: copyThemeExport,
+} = useThemeIO()
 
 // ===== About =====
 const uiState = useUiState()
