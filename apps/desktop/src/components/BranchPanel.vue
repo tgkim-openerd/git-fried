@@ -12,7 +12,8 @@ import { useHiddenRefs, useHiddenRefMutations, useSoloRef } from '@/composables/
 import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
 // Sprint c32 god comp 분리 9/N — Explain branch (modal state + IPC) composable.
 import { useExplainBranch } from '@/composables/useExplainBranch'
-import { cherryPickSha, mergeBranch, rebaseBranch } from '@/api/git'
+// Sprint c40 god comp 분리 — drag-drop 영역 (107 LOC) 외부화.
+import { useBranchDragDrop } from '@/composables/useBranchDragDrop'
 import AiResultModal from './AiResultModal.vue'
 import RemoteManageModal from './RemoteManageModal.vue'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
@@ -170,113 +171,13 @@ const {
   close: closeExplainBranch,
 } = useExplainBranch()
 
-// === Sprint B8 — drag-drop ===
-const dragOverIdx = ref<number | null>(null)
-const DT_BRANCH = 'application/x-git-fried-branch'
-const DT_COMMIT = 'application/x-git-fried-commit'
-
-function onDragStartBranch(b: BranchInfo, ev: DragEvent) {
-  if (!ev.dataTransfer) return
-  ev.dataTransfer.setData(DT_BRANCH, b.name)
-  ev.dataTransfer.effectAllowed = 'move'
-}
-
-function onDragOverRow(idx: number, ev: DragEvent) {
-  if (!ev.dataTransfer) return
-  const types = ev.dataTransfer.types
-  if (types.includes(DT_BRANCH) || types.includes(DT_COMMIT)) {
-    ev.preventDefault()
-    dragOverIdx.value = idx
-  }
-}
-
-function onDragLeaveRow(idx: number) {
-  if (dragOverIdx.value === idx) dragOverIdx.value = null
-}
-
-async function onDropOnBranch(target: BranchInfo, ev: DragEvent) {
-  ev.preventDefault()
-  dragOverIdx.value = null
-  if (!ev.dataTransfer || props.repoId == null) return
-  const branchName = ev.dataTransfer.getData(DT_BRANCH)
-  const commitSha = ev.dataTransfer.getData(DT_COMMIT)
-
-  if (commitSha) {
-    // commit → branch (cherry-pick onto branch).
-    const ok = await confirmDialog({
-      title: t('confirm.cherryPickTitle'),
-      message: t('confirm.cherryPickMessage', {
-        sha: commitSha.slice(0, 7),
-        branch: target.name,
-      }),
-    })
-    if (!ok) return
-    try {
-      const r = await cherryPickSha(props.repoId, commitSha, localName(target.name))
-      if (r.success) {
-        toast.success('Cherry-pick 완료', target.name)
-        invalidate(props.repoId)
-      } else if (r.conflicted) {
-        toast.error('충돌 발생', '변경 패널에서 해결')
-        invalidate(props.repoId)
-      } else {
-        toast.error('Cherry-pick 실패', r.stderr.slice(0, 200))
-      }
-    } catch (e) {
-      toast.error('Cherry-pick 호출 실패', describeError(e))
-    }
-    return
-  }
-
-  if (branchName && branchName !== target.name) {
-    // branch (source) → branch (target). HEAD 가 어느 쪽인지 확인 → 의미 결정.
-    // GitKraken UX: "drop A onto B" = A 가 B 위로 (A 가 source, B 가 target/HEAD).
-    // 즉 우리는 target 으로 switch 후 source 머지 또는 target 위로 source rebase.
-    const action = window.prompt(
-      `${branchName} → ${target.name} : 어떤 작업?\n  m = merge (target 으로 switch + source 머지)\n  r = rebase (source 를 target 위로 rebase)\n  cancel = 취소`,
-      'm',
-    )
-    if (!action) return
-    const a = action.trim().toLowerCase()
-    try {
-      if (a === 'm' || a === 'merge') {
-        // 1. target 으로 switch.
-        await switchMut.mutateAsync({
-          id: props.repoId,
-          name: localName(target.name),
-        })
-        // 2. source 를 머지.
-        const r = await mergeBranch(props.repoId, localName(branchName), true, false)
-        if (r.success) {
-          toast.success('Merge 완료', `${branchName} → ${target.name}`)
-        } else if (r.conflicted) {
-          toast.error('Merge 충돌', '변경 패널에서 해결')
-        } else {
-          toast.error('Merge 실패', r.stderr.slice(0, 200))
-        }
-        invalidate(props.repoId)
-      } else if (a === 'r' || a === 'rebase') {
-        // 1. source 로 switch.
-        await switchMut.mutateAsync({
-          id: props.repoId,
-          name: localName(branchName),
-        })
-        // 2. target 위로 rebase.
-        const r = await rebaseBranch(props.repoId, localName(target.name))
-        if (r.success) {
-          toast.success('Rebase 완료', `${branchName} onto ${target.name}`)
-        } else if (r.conflicted) {
-          toast.error('Rebase 충돌', '변경 패널에서 해결 후 --continue')
-        } else {
-          toast.error('Rebase 실패', r.stderr.slice(0, 200))
-        }
-        invalidate(props.repoId)
-      }
-    } catch (e) {
-      toast.error('호출 실패', describeError(e))
-    }
-  }
-}
+// === Sprint B8 → c40 — drag-drop composable 위임 ===
+const { dragOverIdx, onDragStartBranch, onDragOverRow, onDragLeaveRow, onDropOnBranch } =
+  useBranchDragDrop({
+    repoId: () => props.repoId,
+    localName,
+    switchAsync: (id, name) => switchMut.mutateAsync({ id, name }),
+  })
 
 // === Sprint 22-3 — CM-5 우클릭 ContextMenu (11 액션) ===
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
