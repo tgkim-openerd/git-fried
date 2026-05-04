@@ -78,10 +78,10 @@ pub fn run() {
         .manage(runtime)
         .invoke_handler(tauri::generate_handler![
             ipc::commands::get_app_info,
-            ipc::commands::list_workspaces,
-            ipc::commands::create_workspace,
-            ipc::commands::update_workspace,
-            ipc::commands::delete_workspace,
+            ipc::workspace_commands::list_workspaces,
+            ipc::workspace_commands::create_workspace,
+            ipc::workspace_commands::update_workspace,
+            ipc::workspace_commands::delete_workspace,
             ipc::commands::merge_branch,
             ipc::commands::rebase_branch,
             ipc::commands::cherry_pick_sha,

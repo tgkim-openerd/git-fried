@@ -19,6 +19,7 @@ pub mod profile_commands;
 pub mod pty_commands;
 pub mod rebase_commands;
 pub mod v02_commands;
+pub mod workspace_commands;
 
 pub use alias_commands::*;
 pub use bisect_commands::*;
@@ -31,6 +32,7 @@ pub use profile_commands::*;
 pub use pty_commands::*;
 pub use rebase_commands::*;
 pub use v02_commands::*;
+pub use workspace_commands::*;
 
 // repo_id → 로컬 경로. 분해된 IPC 모듈들이 공유하는 헬퍼.
 // `pub(crate)` 로 외부 노출 차단 + ipc/* 자유 사용.

@@ -17,7 +17,7 @@ use crate::git::{
     status as git_status, submodule as git_sub, sync as git_sync, tag as git_tag,
 };
 use crate::importer::gitkraken;
-use crate::storage::{DbExt, Repo, Workspace};
+use crate::storage::{DbExt, Repo};
 use crate::AppState;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -43,48 +43,11 @@ pub async fn get_app_info() -> AppInfo {
     }
 }
 
-// ====== Workspaces ======
-
-#[tauri::command]
-pub async fn list_workspaces(state: tauri::State<'_, Arc<AppState>>) -> AppResult<Vec<Workspace>> {
-    state.db.list_workspaces().await
-}
-
-#[tauri::command]
-pub async fn create_workspace(
-    name: String,
-    color: Option<String>,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<Workspace> {
-    if name.trim().is_empty() {
-        return Err(AppError::validation("워크스페이스 이름이 비었습니다."));
-    }
-    state.db.create_workspace(&name, color.as_deref()).await
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateWorkspaceArgs {
-    pub id: i64,
-    pub name: Option<String>,
-    pub color: Option<String>,
-}
-
-#[tauri::command]
-pub async fn update_workspace(
-    args: UpdateWorkspaceArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<Workspace> {
-    state
-        .db
-        .update_workspace(args.id, args.name.as_deref(), args.color.as_deref())
-        .await
-}
-
-#[tauri::command]
-pub async fn delete_workspace(id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
-    state.db.delete_workspace(id).await
-}
+// ====== Workspaces — workspace_commands.rs 로 분리 (/analyze HIGH 1) ======
+// list_workspaces / create_workspace / update_workspace / delete_workspace +
+// UpdateWorkspaceArgs 는 ipc/workspace_commands.rs 에 있다. mod.rs 의
+// `pub use workspace_commands::*` 로 동일 path (`ipc::workspace_commands::*`)
+// 노출, lib.rs invoke_handler 의 등록 경로도 업데이트됨.
 
 // ====== Sprint B8 — Branch / Commit drag-drop ops ======
 

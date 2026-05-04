@@ -3,13 +3,13 @@
 > 자동 생성: `bun scripts/generate-tauri-commands-index.mjs`
 > 소스: `apps/desktop/src-tauri/src/ipc/*.rs`
 
-**총 168 commands**, 12 파일, 65 카테고리.
+**총 168 commands**, 13 파일, 65 카테고리.
 
 ## 파일별 분포
 
 | 파일 | commands |
 |---|---:|
-| `ipc/commands.rs` | 79 |
+| `ipc/commands.rs` | 75 |
 | `ipc/v02_commands.rs` | 26 |
 | `ipc/forge_commands.rs` | 17 |
 | `ipc/lfs_commands.rs` | 9 |
@@ -20,6 +20,7 @@
 | `ipc/alias_commands.rs` | 4 |
 | `ipc/bisect_commands.rs` | 4 |
 | `ipc/pty_commands.rs` | 4 |
+| `ipc/workspace_commands.rs` | 4 |
 | `ipc/mod.rs` | 0 |
 
 ## 카테고리별 분포 (prefix snake_case 1번째 토큰)
@@ -32,9 +33,9 @@
 | `ai_*` | 9 |
 | `launchpad_*` | 8 |
 | `rebase_*` | 7 |
+| `add_*` | 5 |
 | `create_*` | 5 |
 | `delete_*` | 5 |
-| `add_*` | 5 |
 | `bulk_*` | 5 |
 | `bisect_*` | 4 |
 | `apply_*` | 4 |
@@ -42,9 +43,9 @@
 | `forge_*` | 4 |
 | `pty_*` | 4 |
 | `set_*` | 3 |
-| `update_*` | 3 |
 | `remove_*` | 3 |
 | `read_*` | 3 |
+| `update_*` | 3 |
 | `import_*` | 3 |
 | `unhide_*` | 3 |
 | `merge_*` | 2 |
@@ -97,7 +98,6 @@
 ### `list_*` (17)
 
 - **`list_all_repo_aliases() -> AppResult<Vec<RepoAlias>>`** — `ipc/alias_commands.rs`
-- **`list_workspaces() -> AppResult<Vec<Workspace>>`** — `ipc/commands.rs`
 - **`list_repos(workspace_id: Option<i64>) -> AppResult<Vec<Repo>>`** — `ipc/commands.rs`
 - **`list_branches(repo_id: i64) -> AppResult<Vec<git_branch::BranchInfo>>`** — `ipc/commands.rs`
 - **`list_stash(repo_id: i64) -> AppResult<Vec<git_stash::StashEntry>>`** — `ipc/commands.rs`
@@ -113,6 +113,7 @@
 - **`list_profiles() -> AppResult<Vec<Profile>>`** — `ipc/profile_commands.rs`
 - **`list_worktrees(repo_id: i64) -> AppResult<Vec<git_wt::WorktreeEntry>>`** — `ipc/v02_commands.rs`
 - **`list_reflog(args: ReflogArgs) -> AppResult<Vec<git_reflog::ReflogEntry>>`** — `ipc/v02_commands.rs`
+- **`list_workspaces() -> AppResult<Vec<Workspace>>`** — `ipc/workspace_commands.rs`
 
 ### `get_*` (9)
 
@@ -171,22 +172,6 @@
 - **`rebase_abort(repo_id: i64) -> AppResult<()>`** — `ipc/rebase_commands.rs`
 - **`rebase_skip(repo_id: i64) -> AppResult<RebaseRunResult>`** — `ipc/rebase_commands.rs`
 
-### `create_*` (5)
-
-- **`create_workspace(name: String, color: Option<String>) -> AppResult<Workspace>`** — `ipc/commands.rs`
-- **`create_branch(args: CreateBranchArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`create_tag(args: CreateTagArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`create_pull_request(args: CreatePrArgs) -> AppResult<PullRequest>`** — `ipc/forge_commands.rs`
-- **`create_profile(input: ProfileInput) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
-
-### `delete_*` (5)
-
-- **`delete_workspace(id: i64) -> AppResult<()>`** — `ipc/commands.rs`
-- **`delete_branch(args: DeleteBranchArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`delete_tag(args: TagNameArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`delete_remote_tag(args: PushTagArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`delete_profile(id: i64) -> AppResult<()>`** — `ipc/profile_commands.rs`
-
 ### `add_*` (5)
 
 - **`add_repo(args: AddRepoArgs) -> AppResult<Repo>`** — `ipc/commands.rs`
@@ -194,6 +179,22 @@
 - **`add_pr_comment(args: AddPrCommentArgs) -> AppResult<PrComment>`** — `ipc/forge_commands.rs`
 - **`add_review_comment(args: AddReviewCommentArgs) -> AppResult<()>`** — `ipc/forge_commands.rs`
 - **`add_worktree(args: AddWorktreeArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
+
+### `create_*` (5)
+
+- **`create_branch(args: CreateBranchArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`create_tag(args: CreateTagArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`create_pull_request(args: CreatePrArgs) -> AppResult<PullRequest>`** — `ipc/forge_commands.rs`
+- **`create_profile(input: ProfileInput) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
+- **`create_workspace(name: String, color: Option<String>) -> AppResult<Workspace>`** — `ipc/workspace_commands.rs`
+
+### `delete_*` (5)
+
+- **`delete_branch(args: DeleteBranchArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`delete_tag(args: TagNameArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`delete_remote_tag(args: PushTagArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`delete_profile(id: i64) -> AppResult<()>`** — `ipc/profile_commands.rs`
+- **`delete_workspace(id: i64) -> AppResult<()>`** — `ipc/workspace_commands.rs`
 
 ### `bulk_*` (5)
 
@@ -244,12 +245,6 @@
 - **`set_repo_pinned(args: SetPinnedArgs) -> AppResult<Repo>`** — `ipc/commands.rs`
 - **`set_remote_url(args: SetRemoteUrlArgs) -> AppResult<()>`** — `ipc/commands.rs`
 
-### `update_*` (3)
-
-- **`update_workspace(args: UpdateWorkspaceArgs) -> AppResult<Workspace>`** — `ipc/commands.rs`
-- **`update_submodules(args: UpdateSubmodulesArgs) -> AppResult<()>`** — `ipc/commands.rs`
-- **`update_profile(args: UpdateProfileArgs) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
-
 ### `remove_*` (3)
 
 - **`remove_repo(id: i64) -> AppResult<()>`** — `ipc/commands.rs`
@@ -261,6 +256,12 @@
 - **`read_file(args: ReadFileArgs) -> AppResult<String>`** — `ipc/commands.rs`
 - **`read_repo_config(repo_id: i64) -> AppResult<git_cfg_local::RepoConfigSnapshot>`** — `ipc/commands.rs`
 - **`read_conflicted(args: ConflictedFileArgs) -> AppResult<git_merge::ConflictedFile>`** — `ipc/v02_commands.rs`
+
+### `update_*` (3)
+
+- **`update_submodules(args: UpdateSubmodulesArgs) -> AppResult<()>`** — `ipc/commands.rs`
+- **`update_profile(args: UpdateProfileArgs) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
+- **`update_workspace(args: UpdateWorkspaceArgs) -> AppResult<Workspace>`** — `ipc/workspace_commands.rs`
 
 ### `import_*` (3)
 
