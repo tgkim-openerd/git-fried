@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c40 review-fix (전체 잔여 자율) — 보안/아키/타입 잔여 7항목 모두 해소 (2026-05-04, 6 commits)** — `/code-review` 4 reviewer 발견 20 이슈 중 자율 수정 16 + 잔여 7 모두 해소. main 직접 6 commit / cargo check 0 / cargo test **195/195** (188 → +7 protocol allowlist 테스트) / typecheck 0 / vitest 60/660 / e2e 10 spec:
+  - **Sprint 1-2 SEC-006/007/008 (`c49ac20`)**: importer/gitkraken.rs `ensure_trusted_profile_dir` (`%APPDATA%/.gitkraken/profiles/` canonical 자손 검증) + repo_commands.rs add_repo / clone_repo `Path::canonicalize` 적용 + git/clone.rs `is_allowed_clone_url` (https/http/ssh/git/SCP-like allowlist, `file://` / `ext::` / SCP dash-path 거부) +7 #[test].
+  - **Sprint 3 ARCH-002 (`33d0864`)**: remote_commands (9) + tag_commands (5) = **14 사이트** `state.db.get_repo + Path::new` boilerplate → `super::repo_path()` helper 통일.
+  - **Sprint 4 SEC-010 (`002ead6` 부분)**: tauri capabilities/default.json `fs:default` 권한 제거 (frontend 가 plugin-fs 미사용, 모든 IO 는 IPC 경유).
+  - **Sprint 5 TYPE-002/SEC-011 (`002ead6` 부분)**: useBranchDragDrop.ts `window.prompt` → c38 promptDialog (a11y/IME). `branchDragDrop.*` namespace +2 키 (ko/en 618 → 620).
+  - **Sprint 6 ARCH-004 (`42cfe53`)**: god script-LOC 임계 (200) 재정의 후 잔여 2 컴포넌트 추가 추출. 신규 3 composable:
+    - useCommitGraphHeader.ts (87 LOC): useCommitColumns + header menu (open / outside-click / mousedown listener) + VueDraggable 재정렬
+    - useGraphRefVisibility.ts (53 LOC): useRefVisibility / useHiddenRefMutations / useSoloRef 통합 + toggleSolo / hideRef / refKindOf
+    - useHunkLineSelection.ts (86 LOC): shift-click range anchor + per-hunk Map<lineIdx, Set> + selectAll / clearLines / totalSelected
+    - CommitGraph.vue 623 → **564 LOC** / HunkStageModal 418 → **370 LOC** = 합계 **-155 LOC**.
+
 - **Sprint c40 후속 (전체 자율 진행) — commands.rs 완전 분해 + settings template 5 sub + e2e settings (2026-05-04, 3 commits)** — main 직접 3 commit / cargo check + cargo test 185/185 / typecheck 0 / vitest 60/660 / e2e 10 spec / +6 tests:
   - **commands.rs 완전 분해 (`c2e01b2`)**: 잔여 50 commands → 9 도메인 모듈로 완전 분해. commands.rs 908 → 40 LOC (-868). `get_app_info` (1) + AppInfo struct 만 잔존. 신규 9 모듈 (1,021 LOC):
     - status_commands.rs (223 LOC, 11 cmd: get_status / stage 5 / apply_patch / restore_paths / restore_worktree_patch / range_diff / get_diff / get_commit_diff / read_file)
