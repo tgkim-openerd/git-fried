@@ -1,0 +1,164 @@
+// Sprint c40 god comp 분리 — CommitGraph.vue (737 LOC) 의 canvas 렌더링
+// (drawGraph + palette + laneColor + WIP pseudo-row) 외부화.
+//
+// 책임:
+//   - 8 stable color palette + laneColor(lane)
+//   - drawGraph: virtualizer 의 visible row 만 canvas 에 그리기
+//     (lane crossings / parent edges / node circle / WIP dashed circle + connector)
+//   - DPI 스케일 + setTransform + clearRect
+//
+// 사용:
+//   const { drawGraph, laneColor } = useGraphCanvasRenderer({
+//     canvasRef, containerRef, virtualItems, rows, laneW, graphWidth, wipActive,
+//     rowHeight: ROW_H,
+//   })
+//
+// LOC 절감: CommitGraph 138-273 (~135 LOC) → ~10 LOC destructure.
+import type { ComputedRef, Ref } from 'vue'
+import type { VirtualItem } from '@tanstack/vue-virtual'
+import type { GraphRow } from '@/api/git'
+
+const PALETTE = [
+  '#22c55e', // green
+  '#0ea5e9', // sky
+  '#f59e0b', // amber
+  '#a78bfa', // violet
+  '#f43f5e', // rose
+  '#10b981', // emerald
+  '#eab308', // yellow
+  '#06b6d4', // cyan
+]
+
+export interface UseGraphCanvasRendererOptions {
+  canvasRef: Ref<HTMLCanvasElement | null>
+  containerRef: Ref<HTMLDivElement | null>
+  virtualItems: ComputedRef<VirtualItem[]>
+  rows: Ref<GraphRow[]> | ComputedRef<GraphRow[]>
+  laneW: Ref<number> | ComputedRef<number>
+  graphWidth: Ref<number> | ComputedRef<number>
+  wipActive: Ref<boolean> | ComputedRef<boolean>
+  rowHeight: number
+}
+
+export function useGraphCanvasRenderer(opts: UseGraphCanvasRendererOptions) {
+  function laneColor(lane: number): string {
+    return PALETTE[lane % PALETTE.length]
+  }
+
+  function isWipIdx(idx: number): boolean {
+    return opts.wipActive.value && idx === 0
+  }
+
+  function drawGraph() {
+    const c = opts.canvasRef.value
+    const container = opts.containerRef.value
+    if (!c || !container) return
+
+    const dpi = window.devicePixelRatio || 1
+    const w = opts.graphWidth.value
+    const h = container.clientHeight
+    c.width = w * dpi
+    c.height = h * dpi
+    c.style.width = `${w}px`
+    c.style.height = `${h}px`
+    const ctx = c.getContext('2d')!
+    ctx.setTransform(dpi, 0, 0, dpi, 0, 0)
+    ctx.clearRect(0, 0, w, h)
+
+    const scrollTop = container.scrollTop
+    const ROW_H = opts.rowHeight
+
+    for (const v of opts.virtualItems.value) {
+      const idx = v.index
+      const y = v.start - scrollTop + ROW_H / 2
+      const lw = opts.laneW.value
+
+      // WIP pseudo-row (idx=0 + wipActive). lane 0 (HEAD) dashed circle.
+      if (isWipIdx(idx)) {
+        const cxWip = lw / 2
+        ctx.strokeStyle = laneColor(0)
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([3, 2])
+        ctx.beginPath()
+        ctx.arc(cxWip, y, 3.5, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.setLineDash([])
+
+        const firstCommit = opts.rows.value[0]
+        if (firstCommit) {
+          const nextY = v.start - scrollTop + ROW_H + ROW_H / 2
+          const toX = firstCommit.lane * lw + lw / 2
+          ctx.strokeStyle = laneColor(firstCommit.lane)
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([3, 2])
+          ctx.beginPath()
+          if (firstCommit.lane === 0) {
+            ctx.moveTo(cxWip, y)
+            ctx.lineTo(toX, nextY)
+          } else {
+            ctx.moveTo(cxWip, y)
+            ctx.bezierCurveTo(cxWip, y + ROW_H / 2, toX, nextY - ROW_H / 2, toX, nextY)
+          }
+          ctx.stroke()
+          ctx.setLineDash([])
+        }
+        continue
+      }
+
+      // 일반 commit row — wipActive 시 idx-1 이 rows index.
+      const rowIdx = opts.wipActive.value ? idx - 1 : idx
+      const row = opts.rows.value[rowIdx]
+      if (!row) continue
+
+      // 1. crossing lanes — vertical line
+      for (const lane of row.crossingLanes) {
+        const x = lane * lw + lw / 2
+        ctx.strokeStyle = laneColor(lane)
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(x, v.start - scrollTop)
+        ctx.lineTo(x, v.start - scrollTop + ROW_H)
+        ctx.stroke()
+      }
+
+      // 2. parent edges (curve to next row's parent_lane)
+      const nextRow = opts.rows.value[rowIdx + 1]
+      if (nextRow) {
+        const nextY = v.start - scrollTop + ROW_H + ROW_H / 2
+        const fromX = row.lane * lw + lw / 2
+        for (const pl of row.parentLanes) {
+          const toX = pl * lw + lw / 2
+          ctx.strokeStyle = laneColor(pl)
+          ctx.lineWidth = 1.5
+          ctx.beginPath()
+          if (pl === row.lane) {
+            ctx.moveTo(fromX, y)
+            ctx.lineTo(toX, nextY)
+          } else {
+            ctx.moveTo(fromX, y)
+            ctx.bezierCurveTo(fromX, y + ROW_H / 2, toX, nextY - ROW_H / 2, toX, nextY)
+          }
+          ctx.stroke()
+        }
+      }
+
+      // 3. node circle (이 commit 의 lane)
+      const cx = row.lane * lw + lw / 2
+      ctx.fillStyle = laneColor(row.lane)
+      ctx.beginPath()
+      ctx.arc(cx, y, row.isMerge ? 4 : 3.5, 0, Math.PI * 2)
+      ctx.fill()
+      if (row.isMerge) {
+        ctx.strokeStyle = '#0a0a0a'
+        ctx.lineWidth = 1
+        ctx.stroke()
+      }
+    }
+  }
+
+  return {
+    drawGraph,
+    laneColor,
+    isWipIdx,
+  }
+}

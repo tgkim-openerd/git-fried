@@ -23,6 +23,8 @@ import { useGraphSearch } from '@/composables/useGraphSearch'
 import { useGraphWidth, ROW_H } from '@/composables/useGraphWidth'
 // Sprint c37 god 19/N — selectedSha + vim nav 분리.
 import { useGraphSelection } from '@/composables/useGraphSelection'
+// Sprint c40 god comp 분리 — canvas 렌더링 (palette + laneColor + drawGraph) 분리.
+import { useGraphCanvasRenderer } from '@/composables/useGraphCanvasRenderer'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import type { GraphRow } from '@/api/git'
@@ -46,10 +48,8 @@ const wipChangeCount = computed(() => {
  * virtualizer index → row 매핑.
  * wipActive 시 idx=0 는 WIP, idx=1+ 는 rows[idx-1].
  * 그 외 (clean) idx 그대로 rows[idx].
+ * isWipIdx 는 useGraphCanvasRenderer composable 에서 destructure (아래).
  */
-function isWipIdx(idx: number): boolean {
-  return wipActive.value && idx === 0
-}
 function commitRowAt(idx: number): GraphRow | null {
   if (isWipIdx(idx)) return null
   const offset = wipActive.value ? idx - 1 : idx
@@ -135,131 +135,17 @@ const virtualizer = useVirtualizer(
 const virtualItems = computed(() => virtualizer.value.getVirtualItems())
 const totalHeight = computed(() => virtualizer.value.getTotalSize())
 
-// stable color (브랜치 lane hash)
-const palette = [
-  '#22c55e', // green
-  '#0ea5e9', // sky
-  '#f59e0b', // amber
-  '#a78bfa', // violet
-  '#f43f5e', // rose
-  '#10b981', // emerald
-  '#eab308', // yellow
-  '#06b6d4', // cyan
-]
-function laneColor(lane: number): string {
-  return palette[lane % palette.length]
-}
-
-function drawGraph() {
-  const c = canvasRef.value
-  const container = containerRef.value
-  if (!c || !container) return
-
-  const dpi = window.devicePixelRatio || 1
-  const w = graphWidth.value
-  const h = container.clientHeight
-  c.width = w * dpi
-  c.height = h * dpi
-  c.style.width = `${w}px`
-  c.style.height = `${h}px`
-  const ctx = c.getContext('2d')!
-  ctx.setTransform(dpi, 0, 0, dpi, 0, 0)
-  ctx.clearRect(0, 0, w, h)
-
-  const scrollTop = container.scrollTop
-
-  // 보이는 row 들에 대해서만 그리기
-  for (const v of virtualItems.value) {
-    const idx = v.index
-    const y = v.start - scrollTop + ROW_H / 2
-    const lw = laneW.value
-
-    // Sprint c30 / GitKraken UX (Phase 8a) — WIP pseudo-row (idx=0 + wipActive).
-    if (isWipIdx(idx)) {
-      // WIP 는 lane 0 (HEAD lane). dashed circle.
-      const cxWip = lw / 2
-      ctx.strokeStyle = laneColor(0) // graph 첫 commit lane 색 매칭 (palette[0]=#22c55e)
-      ctx.lineWidth = 1.5
-      ctx.setLineDash([3, 2])
-      ctx.beginPath()
-      ctx.arc(cxWip, y, 3.5, 0, Math.PI * 2)
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      // WIP → 다음 commit (idx=1 in display = rows[0]) 까지 dashed connector.
-      const firstCommit = rows.value[0]
-      if (firstCommit) {
-        const nextY = v.start - scrollTop + ROW_H + ROW_H / 2
-        const toX = firstCommit.lane * lw + lw / 2
-        ctx.strokeStyle = laneColor(firstCommit.lane)
-        ctx.lineWidth = 1.5
-        ctx.setLineDash([3, 2])
-        ctx.beginPath()
-        if (firstCommit.lane === 0) {
-          ctx.moveTo(cxWip, y)
-          ctx.lineTo(toX, nextY)
-        } else {
-          ctx.moveTo(cxWip, y)
-          ctx.bezierCurveTo(cxWip, y + ROW_H / 2, toX, nextY - ROW_H / 2, toX, nextY)
-        }
-        ctx.stroke()
-        ctx.setLineDash([])
-      }
-      continue
-    }
-
-    // 일반 commit row — wipActive 시 idx-1 이 rows index.
-    const rowIdx = wipActive.value ? idx - 1 : idx
-    const row = rows.value[rowIdx]
-    if (!row) continue
-
-    // 1. crossing lanes — vertical line
-    for (const lane of row.crossingLanes) {
-      const x = lane * lw + lw / 2
-      ctx.strokeStyle = laneColor(lane)
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.moveTo(x, v.start - scrollTop)
-      ctx.lineTo(x, v.start - scrollTop + ROW_H)
-      ctx.stroke()
-    }
-
-    // 2. parent edges (curve to next row's parent_lane)
-    const nextRow = rows.value[rowIdx + 1]
-    if (nextRow) {
-      const nextY = v.start - scrollTop + ROW_H + ROW_H / 2
-      const fromX = row.lane * lw + lw / 2
-      for (const pl of row.parentLanes) {
-        const toX = pl * lw + lw / 2
-        ctx.strokeStyle = laneColor(pl)
-        ctx.lineWidth = 1.5
-        ctx.beginPath()
-        if (pl === row.lane) {
-          // 직진
-          ctx.moveTo(fromX, y)
-          ctx.lineTo(toX, nextY)
-        } else {
-          // 곡선 (베지어)
-          ctx.moveTo(fromX, y)
-          ctx.bezierCurveTo(fromX, y + ROW_H / 2, toX, nextY - ROW_H / 2, toX, nextY)
-        }
-        ctx.stroke()
-      }
-    }
-
-    // 3. node circle (이 commit 의 lane)
-    const cx = row.lane * lw + lw / 2
-    ctx.fillStyle = laneColor(row.lane)
-    ctx.beginPath()
-    ctx.arc(cx, y, row.isMerge ? 4 : 3.5, 0, Math.PI * 2)
-    ctx.fill()
-    if (row.isMerge) {
-      ctx.strokeStyle = '#0a0a0a'
-      ctx.lineWidth = 1
-      ctx.stroke()
-    }
-  }
-}
+// Sprint c40 — canvas 렌더링 + WIP idx 판정 composable 위임.
+const { drawGraph, isWipIdx } = useGraphCanvasRenderer({
+  canvasRef,
+  containerRef,
+  virtualItems,
+  rows,
+  laneW,
+  graphWidth,
+  wipActive,
+  rowHeight: ROW_H,
+})
 
 onMounted(() => {
   nextTick(() => drawGraph())
