@@ -28,6 +28,7 @@ pub mod reflog;
 pub mod remote;
 pub mod repository;
 pub mod reset;
+pub mod restore;
 pub mod runner;
 pub mod stage;
 pub mod stash;

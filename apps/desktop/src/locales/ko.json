@@ -71,7 +71,22 @@
     "mergetoolTitle": "외부 mergetool (git config merge.tool)",
     "mergetoolShort": "외부 mergetool",
     "resolve": "해결",
-    "stageAllTitle": "모두 stage (⌘⇧S)"
+    "stageAllTitle": "모두 stage (⌘⇧S)",
+    "ctxRestoreWorktree": "워킹트리 복원 (인덱스 보존)",
+    "ctxRestoreStaged": "인덱스 복원 (= unstage)",
+    "ctxRestoreFromHead": "HEAD 기준 복원 (둘 다)",
+    "ctxRestoreFromCommit": "특정 커밋 기준 복원…"
+  },
+  "restore": {
+    "failedTitle": "Restore 실패",
+    "worktreeTitle": "워킹트리 복원",
+    "worktreeMessage": "워킹트리만 인덱스 기준으로 되돌립니다.\n• 인덱스(staged)는 보존\n• {n}개 파일: '{sample}' 외\n• 되돌릴 수 없습니다",
+    "fromHeadTitle": "HEAD 기준 복원",
+    "fromHeadMessage": "워킹트리 + 인덱스 둘 다 HEAD 로 되돌립니다.\n• stage 된 변경도 함께 사라짐\n• {n}개 파일: '{sample}' 외\n• 되돌릴 수 없습니다",
+    "fromCommitTitle": "특정 커밋 기준 복원",
+    "fromCommitMessage": "워킹트리 + 인덱스 둘 다 '{source}' 로 되돌립니다.\n• 현재 변경(staged 포함) 모두 사라짐\n• {n}개 파일: '{sample}' 외\n• 되돌릴 수 없습니다",
+    "promptCommitTitle": "복원 source 커밋",
+    "promptCommitMessage": "복원할 source 커밋 (SHA / branch / tag) — 비워두면 취소"
   },
   "hunkStage": {
     "errRepoNotSelected": "레포 미선택",

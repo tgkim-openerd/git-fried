@@ -28,6 +28,8 @@ import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 import { useStatusSelection } from '@/composables/useStatusSelection'
 // Sprint c31 god comp 분리 6/N — 3 modal state (history / merge / hunk) composable.
 import { useStatusModals } from '@/composables/useStatusModals'
+// Sprint c38 / plan/29 E1 — Restore Center (4축 git restore 의미론).
+import { useRestore } from '@/composables/useRestore'
 // Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge + a11y).
 import BaseTooltip from './BaseTooltip.vue'
 import { useI18n } from 'vue-i18n'
@@ -66,6 +68,18 @@ const onDiscardOne = sm.discardOne
 const onStageAll = sm.stageAll
 const onUnstageAll = sm.unstageAll
 
+// === Sprint c38 / plan/29 E1 — Restore Center (4축 git restore) ===
+const restore = useRestore(() => props.repoId)
+
+/** 4. 특정 커밋 기준 복원 — source 입력 받기 (신규 promptDialog 도입 전 임시 prompt). */
+async function onRestoreFromCommit(path: string): Promise<void> {
+  const source = window.prompt(t('restore.promptCommitMessage'), 'HEAD~1')
+  if (source == null) return
+  const trimmed = source.trim()
+  if (!trimmed) return
+  await restore.restoreFromCommit([path], trimmed)
+}
+
 // statusLabel / statusColor → utils/statusFormat.ts 로 이동 (test 가능 + DiffViewer 공용)
 
 // Sprint c31 god comp 분리 6/N — File history / 3-way merge / Hunk-level modal state
@@ -102,6 +116,9 @@ const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
 function onFileContextMenu(ev: MouseEvent, path: string, isStaged: boolean) {
   ev.preventDefault()
   selectPath(path)
+  // Sprint c38 / plan/29 E1 — staged 에는 "인덱스 복원 (= unstage)" / "HEAD 기준 복원" / "특정 커밋 기준 복원".
+  // unstaged 에는 "워킹트리 복원 (인덱스 보존)" / "HEAD 기준 복원" / "특정 커밋 기준 복원".
+  // 기존 ctxDiscard/ctxUnstage 는 호환 유지 — restore 메뉴는 그 아래 별도 그룹.
   const items: ContextMenuItem[] = isStaged
     ? [
         { label: t('status.ctxUnstage'), icon: '−', action: () => onUnstageOne(path) },
@@ -110,6 +127,24 @@ function onFileContextMenu(ev: MouseEvent, path: string, isStaged: boolean) {
           label: t('status.ctxHunkUnstage'),
           icon: '✂',
           action: () => openHunk(path, true),
+        },
+        { divider: true },
+        {
+          label: t('status.ctxRestoreStaged'),
+          icon: '↩',
+          action: () => restore.restoreStaged([path]),
+        },
+        {
+          label: t('status.ctxRestoreFromHead'),
+          icon: '⏮',
+          destructive: true,
+          action: () => void restore.restoreFromHead([path]),
+        },
+        {
+          label: t('status.ctxRestoreFromCommit'),
+          icon: '⏪',
+          destructive: true,
+          action: () => void onRestoreFromCommit(path),
         },
         { divider: true },
         {
@@ -132,6 +167,25 @@ function onFileContextMenu(ev: MouseEvent, path: string, isStaged: boolean) {
           label: t('status.ctxHunkStage'),
           icon: '✂',
           action: () => openHunk(path, false),
+        },
+        { divider: true },
+        {
+          label: t('status.ctxRestoreWorktree'),
+          icon: '↩',
+          destructive: true,
+          action: () => void restore.restoreWorktree([path]),
+        },
+        {
+          label: t('status.ctxRestoreFromHead'),
+          icon: '⏮',
+          destructive: true,
+          action: () => void restore.restoreFromHead([path]),
+        },
+        {
+          label: t('status.ctxRestoreFromCommit'),
+          icon: '⏪',
+          destructive: true,
+          action: () => void onRestoreFromCommit(path),
         },
         { divider: true },
         {

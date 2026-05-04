@@ -12,9 +12,9 @@ use crate::git::{
     branch as git_branch, bulk as git_bulk, clone as git_clone, commit as git_commit,
     config_local as git_cfg_local, diff as git_diff, graph as git_graph,
     identity_stats as git_identity, maintenance as git_maint, read_file as git_read_file,
-    reflog as git_reflog, remote as git_remote, repository as repo, reset as git_reset, runner,
-    stage, stash as git_stash, status as git_status, submodule as git_sub, sync as git_sync,
-    tag as git_tag,
+    reflog as git_reflog, remote as git_remote, repository as repo, reset as git_reset,
+    restore as git_restore, runner, stage, stash as git_stash, status as git_status,
+    submodule as git_sub, sync as git_sync, tag as git_tag,
 };
 use crate::importer::gitkraken;
 use crate::storage::{DbExt, Repo, Workspace};
@@ -312,6 +312,25 @@ pub async fn apply_patch(args: PatchArgs, state: tauri::State<'_, Arc<AppState>>
     } else {
         stage::stage_patch(&path, &args.patch).await
     }
+}
+
+// ====== Restore (Sprint c38 / plan/29 E1 — Restore Center) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoreArgs {
+    pub repo_id: i64,
+    pub paths: Vec<String>,
+    pub opts: git_restore::RestoreOpts,
+}
+
+#[tauri::command]
+pub async fn restore_paths(
+    args: RestoreArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_restore::restore_paths(&path, &args.paths, &args.opts).await
 }
 
 // ====== Diff ======

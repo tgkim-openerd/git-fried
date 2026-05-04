@@ -71,7 +71,22 @@
     "mergetoolTitle": "External mergetool (git config merge.tool)",
     "mergetoolShort": "External mergetool",
     "resolve": "Resolve",
-    "stageAllTitle": "Stage all (⌘⇧S)"
+    "stageAllTitle": "Stage all (⌘⇧S)",
+    "ctxRestoreWorktree": "Restore worktree (keep index)",
+    "ctxRestoreStaged": "Restore index (= unstage)",
+    "ctxRestoreFromHead": "Restore from HEAD (both)",
+    "ctxRestoreFromCommit": "Restore from commit…"
+  },
+  "restore": {
+    "failedTitle": "Restore failed",
+    "worktreeTitle": "Restore worktree",
+    "worktreeMessage": "Restore worktree only from index.\n• Index (staged) preserved\n• {n} file(s): '{sample}' and others\n• Cannot be undone",
+    "fromHeadTitle": "Restore from HEAD",
+    "fromHeadMessage": "Restore both worktree + index from HEAD.\n• Staged changes are also discarded\n• {n} file(s): '{sample}' and others\n• Cannot be undone",
+    "fromCommitTitle": "Restore from commit",
+    "fromCommitMessage": "Restore both worktree + index from '{source}'.\n• All current changes (incl. staged) discarded\n• {n} file(s): '{sample}' and others\n• Cannot be undone",
+    "promptCommitTitle": "Restore source commit",
+    "promptCommitMessage": "Source commit (SHA / branch / tag) — empty to cancel"
   },
   "hunkStage": {
     "errRepoNotSelected": "No repository selected",

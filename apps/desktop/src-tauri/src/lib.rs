@@ -96,6 +96,7 @@ pub fn run() {
             ipc::commands::unstage_paths,
             ipc::commands::discard_paths,
             ipc::commands::apply_patch,
+            ipc::commands::restore_paths,
             ipc::commands::get_diff,
             ipc::commands::get_commit_diff,
             ipc::commands::read_file,

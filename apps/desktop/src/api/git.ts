@@ -75,6 +75,22 @@ export const discardPaths = (repoId: number, paths: string[]): Promise<void> =>
 export const applyPatch = (repoId: number, patch: string, reverse: boolean): Promise<void> =>
   invoke('apply_patch', { args: { repoId, patch, reverse } })
 
+// --- Restore (Sprint c38 / plan/29 E1 — Restore Center) ---
+//
+// `git restore` 의미론 wrapper — --worktree / --staged / --source 분리 노출.
+// useRestore composable 에서 4개 액션 (worktree / staged / both-from-head / from-commit) 로 호출.
+export interface RestoreOpts {
+  /** `--worktree` — working tree 만 복원. */
+  worktree: boolean
+  /** `--staged` — index 만 복원 (= unstage). */
+  staged: boolean
+  /** `--source=<rev>` — 원본. null 이면 git 기본값. */
+  source: string | null
+}
+
+export const restorePaths = (repoId: number, paths: string[], opts: RestoreOpts): Promise<void> =>
+  invoke('restore_paths', { args: { repoId, paths, opts } })
+
 // --- Diff ---
 export const getDiff = (args: DiffArgs): Promise<string> => invoke('get_diff', { args })
 
