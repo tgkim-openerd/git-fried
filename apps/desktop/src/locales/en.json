@@ -574,6 +574,10 @@
     "occupiedTitle": "{name} is occupied by another worktree — cannot checkout\nPath: {path}",
     "occupiedBadgeTitle": "Occupied by other worktree: {path}"
   },
+  "branchDragDrop": {
+    "actionTitle": "Branch drag-drop action",
+    "actionMessage": "{source} → {target}\n\n  m = merge (switch to target + merge source)\n  r = rebase (rebase source onto target)\n  cancel = cancel"
+  },
   "branch": {
     "title": "Branches",
     "soloIndicator": "[Solo: {name}]",

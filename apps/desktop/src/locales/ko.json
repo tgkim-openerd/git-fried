@@ -574,6 +574,10 @@
     "occupiedTitle": "{name} 은 다른 worktree 가 점유 중 — 체크아웃 불가\n경로: {path}",
     "occupiedBadgeTitle": "다른 worktree 점유: {path}"
   },
+  "branchDragDrop": {
+    "actionTitle": "브랜치 드래그 작업 선택",
+    "actionMessage": "{source} → {target}\n\n  m = merge (target 으로 switch + source 머지)\n  r = rebase (source 를 target 위로 rebase)\n  cancel = 취소"
+  },
   "branch": {
     "title": "브랜치",
     "soloIndicator": "[Solo: {name}]",

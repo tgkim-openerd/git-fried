@@ -22,7 +22,7 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 
 const DT_BRANCH = 'application/x-git-fried-branch'
 const DT_COMMIT = 'application/x-git-fried-commit'
@@ -96,10 +96,17 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
 
     if (branchName && branchName !== target.name) {
       // branch (source) → branch (target). GitKraken UX: drop A onto B = target B 위로.
-      const action = window.prompt(
-        `${branchName} → ${target.name} : 어떤 작업?\n  m = merge (target 으로 switch + source 머지)\n  r = rebase (source 를 target 위로 rebase)\n  cancel = 취소`,
-        'm',
-      )
+      // Sprint c40 후속 review SEC-011/TYPE-002: window.prompt → promptDialog
+      // (a11y / 한글 IME / 일관된 dialog UI).
+      const action = await promptDialog({
+        title: t('branchDragDrop.actionTitle'),
+        message: t('branchDragDrop.actionMessage', {
+          source: branchName,
+          target: target.name,
+        }),
+        defaultValue: 'm',
+        placeholder: 'm | r | cancel',
+      })
       if (!action) return
       const a = action.trim().toLowerCase()
       try {
