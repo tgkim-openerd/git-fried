@@ -55,6 +55,13 @@ export const setRepoPinned = (id: number, pinned: boolean): Promise<Repo> =>
 export const openInExplorer = (repoId: number): Promise<void> =>
   invoke('open_in_explorer', { repoId })
 
+/**
+ * Sprint c38 / plan/29 E5 — 임의 경로를 OS 파일 매니저로 (worktree 의 path 등).
+ * `openInExplorer` 가 repo_id 단위라 main repo 만 열림 → worktree 경로 직접 받기.
+ */
+export const openPathInExplorer = (path: string): Promise<void> =>
+  invoke('open_path_in_explorer', { path })
+
 // --- Git read ---
 export const getLog = (args: GetLogArgs): Promise<CommitSummary[]> => invoke('get_log', { args })
 
@@ -520,6 +527,8 @@ export interface WorktreeEntry {
   isLocked: boolean
   isPrunable: boolean
   sizeBytes: number | null
+  /** Sprint c38 / plan/29 E5 — `git status --porcelain` 결과. null = 측정 실패. */
+  isDirty: boolean | null
 }
 export const listWorktrees = (repoId: number): Promise<WorktreeEntry[]> =>
   invoke('list_worktrees', { repoId })

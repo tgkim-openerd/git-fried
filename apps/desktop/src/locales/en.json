@@ -321,7 +321,12 @@
     "lockAria": "Lock worktree '{path}'",
     "unlockAria": "Unlock worktree '{path}'",
     "removeAria": "Remove worktree '{path}'",
-    "removeBlockedTitle": "Unlock before removing"
+    "removeBlockedTitle": "Unlock before removing",
+    "dirtyTitle": "Has changes (dirty)",
+    "dirtyUnknownTitle": "Unknown (path missing / disconnected disk)",
+    "lockPromptTitle": "Lock Worktree",
+    "lockPromptMessage": "Lock reason for '{path}' (optional, e.g. external disk / inactive)",
+    "lockPromptPlaceholder": "e.g. external SSD detached"
   },
   "tag": {
     "loading": "Loading...",

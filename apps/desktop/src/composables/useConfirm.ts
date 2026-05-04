@@ -80,3 +80,82 @@ export function __resetConfirmDialogForTest() {
   isOpen.value = false
   options.value = { message: '' }
 }
+
+// ============================================================
+// Sprint c38 / plan/29 E5 — promptDialog (window.prompt 대체)
+// ============================================================
+//
+// `window.prompt()` 가 OS 다이얼로그를 띄우고 a11y / 키보드 / 한글 IME 처리가
+// 일관되지 않음. 본 promptDialog 는 confirmDialog 와 동일 패턴 (App.vue 에
+// 한 번 마운트되는 PromptDialog.vue + composable singleton state).
+//
+// API:
+//   const v = await promptDialog({ title, message, defaultValue: 'foo' })
+//   if (v == null) return  // 취소
+//   if (!v.trim()) return  // 빈 입력
+//
+// 동시 호출 방어: 이전 요청 null resolve.
+
+export interface PromptOptions {
+  /** 제목 (생략 시 i18n 'confirm.title'). */
+  title?: string
+  /** 본문 (필수, \n 줄바꿈 허용). */
+  message: string
+  /** 기본값. */
+  defaultValue?: string
+  /** placeholder. */
+  placeholder?: string
+  /** 확인 버튼 텍스트 (생략 시 i18n 'confirm.confirm'). */
+  confirmText?: string
+  /** 취소 버튼 텍스트 (생략 시 i18n 'common.cancel'). */
+  cancelText?: string
+}
+
+const isPromptOpen = ref(false)
+const promptOptions = ref<PromptOptions>({ message: '' })
+let promptResolver: ((value: string | null) => void) | null = null
+
+/**
+ * Prompt dialog 트리거. Promise<string | null> resolve.
+ *  - string: 사용자 입력 (trim 미적용 — 호출 측에서 처리).
+ *  - null: 취소 / Esc / backdrop click.
+ *
+ * 동시 호출 시 이전 요청은 null 로 resolve.
+ */
+export function promptDialog(opts: PromptOptions): Promise<string | null> {
+  if (promptResolver) {
+    promptResolver(null)
+    promptResolver = null
+  }
+  return new Promise<string | null>((resolve) => {
+    promptOptions.value = opts
+    isPromptOpen.value = true
+    promptResolver = resolve
+  })
+}
+
+/**
+ * PromptDialog 컴포넌트 전용 state 접근.
+ */
+export function usePromptDialogState() {
+  return {
+    isOpen: readonly(isPromptOpen),
+    options: readonly(promptOptions),
+    /** 입력값 또는 null (cancel). */
+    resolve(result: string | null) {
+      isPromptOpen.value = false
+      promptResolver?.(result)
+      promptResolver = null
+    },
+  }
+}
+
+/** 테스트 전용 — prompt state reset. */
+export function __resetPromptDialogForTest() {
+  if (promptResolver) {
+    promptResolver(null)
+    promptResolver = null
+  }
+  isPromptOpen.value = false
+  promptOptions.value = { message: '' }
+}

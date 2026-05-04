@@ -21,6 +21,9 @@ pub struct WorktreeEntry {
     pub is_prunable: bool,
     /// 디스크 사용량 (바이트). 측정 실패 시 None.
     pub size_bytes: Option<u64>,
+    /// Sprint c38 / plan/29 E5 — `git status --porcelain` 비어있지 않으면 dirty.
+    /// 측정 실패 (경로 없음 / lock 등) 시 None — UI 는 "?" 처리.
+    pub is_dirty: Option<bool>,
 }
 
 /// `git worktree list --porcelain` 파싱.
@@ -42,6 +45,7 @@ pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
         is_locked: false,
         is_prunable: false,
         size_bytes: None,
+        is_dirty: None,
     };
     let mut first = true;
 
@@ -51,6 +55,7 @@ pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
                 current.is_main = first;
                 first = false;
                 current.size_bytes = measure_dir(Path::new(&current.path));
+                current.is_dirty = check_dirty(Path::new(&current.path)).await;
                 entries.push(current.clone());
             }
             current = WorktreeEntry {
@@ -61,6 +66,7 @@ pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
                 is_locked: false,
                 is_prunable: false,
                 size_bytes: None,
+                is_dirty: None,
             };
         } else if let Some(s) = line.strip_prefix("HEAD ") {
             current.head_sha = Some(s.to_string());
@@ -77,9 +83,32 @@ pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
     if !current.path.is_empty() {
         current.is_main = first;
         current.size_bytes = measure_dir(Path::new(&current.path));
+        current.is_dirty = check_dirty(Path::new(&current.path)).await;
         entries.push(current);
     }
     Ok(entries)
+}
+
+/// Sprint c38 / plan/29 E5 — `git -C <wt> status --porcelain` 결과로 dirty 판정.
+///
+/// 반환:
+///   - Some(false): 깨끗 (porcelain output 빈 줄).
+///   - Some(true): 변경 있음.
+///   - None: 측정 실패 (경로 없음 / 분리된 disk / status 명령 자체 실패).
+///
+/// 비용: worktree 당 1 spawn. 8 worktree 환경에서 약 80~200ms 추정.
+/// 캐시는 frontend vue-query 가 처리 (queryKey 'worktrees').
+async fn check_dirty(wt_path: &Path) -> Option<bool> {
+    if !wt_path.exists() {
+        return None;
+    }
+    let out = git_run(wt_path, &["status", "--porcelain"], &GitRunOpts::default())
+        .await
+        .ok()?;
+    if out.exit_code != Some(0) {
+        return None;
+    }
+    Some(!out.stdout.trim().is_empty())
 }
 
 /// 디렉토리 디스크 사용량 (바이트) — 얕은 walk (top-level dir/file 만).

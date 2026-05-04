@@ -28,6 +28,26 @@ pub async fn open_in_explorer(
     open_path_in_os(&path)
 }
 
+/// Sprint c38 / plan/29 E5 — 임의 경로 (worktree 의 path 등) 를 OS 파일 매니저로.
+///
+/// `open_in_explorer` 는 repo_id 단위라 main repo 만 열림. worktree 의 실제
+/// 경로를 직접 받는 변형. 보안상 빈 경로 / .. 통과만 거부 (`safe.directory=*`
+/// git 환경과 별개로 OS-level path open 은 사용자 의도 그대로 따름).
+#[tauri::command]
+pub async fn open_path_in_explorer(path: String) -> AppResult<()> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::validation("경로가 비었습니다."));
+    }
+    let p = std::path::Path::new(trimmed);
+    if !p.exists() {
+        return Err(AppError::validation(format!(
+            "경로가 존재하지 않습니다: {trimmed}"
+        )));
+    }
+    open_path_in_os(p)
+}
+
 #[cfg(target_os = "windows")]
 fn open_path_in_os(path: &std::path::Path) -> AppResult<()> {
     std::process::Command::new("explorer.exe")

@@ -16,6 +16,8 @@ import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
 import CompareModal from './components/CompareModal.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
+// Sprint c38 / plan/29 E5 — window.prompt 대체 (a11y + 한글 IME 안전).
+import PromptDialog from './components/PromptDialog.vue'
 import StatusBar from './components/StatusBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useShortcut } from '@/composables/useShortcuts'
@@ -300,5 +302,6 @@ useMenuListener()
     <LongRunningBanner />
     <CommitSearchModal :open="commitSearchOpen" @close="commitSearchOpen = false" />
     <ConfirmDialog />
+    <PromptDialog />
   </div>
 </template>

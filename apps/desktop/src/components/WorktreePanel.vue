@@ -9,7 +9,7 @@ import { useWorktrees } from '@/composables/useWorktrees'
 import {
   addWorktree,
   lockWorktree,
-  openInExplorer,
+  openPathInExplorer,
   pruneWorktrees,
   removeWorktree,
   unlockWorktree,
@@ -18,7 +18,8 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
-import { confirmDialog } from '@/composables/useConfirm'
+// Sprint c38 / plan/29 E5 — window.prompt → promptDialog (a11y + 한글 IME).
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 
 const reposStore = useReposStore()
 const { t } = useI18n()
@@ -114,10 +115,15 @@ const unlockMut = useMutation({
   onError: (e) => toast.error('Unlock 실패', describeError(e)),
 })
 
-function onLock(path: string) {
+async function onLock(path: string) {
   if (props.repoId == null) return
-  const reason = window.prompt(`'${path}' 잠금 사유 (선택, 외장 디스크 / 비활성 등)`, '')
-  // reason 이 null = cancel.
+  // Sprint c38 / plan/29 E5 — window.prompt → promptDialog.
+  const reason = await promptDialog({
+    title: t('worktree.lockPromptTitle'),
+    message: t('worktree.lockPromptMessage', { path }),
+    placeholder: t('worktree.lockPromptPlaceholder'),
+    defaultValue: '',
+  })
   if (reason === null) return
   lockMut.mutate({ p: path, reason: reason.trim() || null })
 }
@@ -136,13 +142,13 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
   ev.stopPropagation()
   const items: ContextMenuItem[] = [
     {
-      label: 'Open in Explorer',
+      // Sprint c38 / plan/29 E5 — worktree 경로 직접 열기 (open_path_in_explorer).
+      label: t.path
+        ? `Open in Explorer (${t.isMain ? 'main repo' : 'worktree'})`
+        : 'Open in Explorer',
       icon: '📂',
       action: () => {
-        // openInExplorer 는 repoId 단위 — worktree 의 경로는 직접 열 수 없으므로
-        // 일단 main repo 위치를 열고, 사용자에게 안내.
-        if (props.repoId != null) void openInExplorer(props.repoId)
-        toast.success('Explorer 열림 (main repo)', t.path)
+        void openPathInExplorer(t.path).catch((e) => toast.error('Open 실패', describeError(e)))
       },
     },
     {
@@ -250,6 +256,19 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
                 class="text-danger-rose"
                 :title="$t('worktree.prunableTitle')"
                 >⚠</span
+              >
+              <!-- Sprint c38 / plan/29 E5 — dirty 점. null = 측정 실패 (?) -->
+              <span
+                v-if="wt.isDirty === true"
+                class="text-warning-amber"
+                :title="$t('worktree.dirtyTitle')"
+                >●</span
+              >
+              <span
+                v-else-if="wt.isDirty === null"
+                class="text-muted-foreground"
+                :title="$t('worktree.dirtyUnknownTitle')"
+                >?</span
               >
               <span class="ml-1 font-mono">{{ wt.branch || $t('worktree.detached') }}</span>
             </span>

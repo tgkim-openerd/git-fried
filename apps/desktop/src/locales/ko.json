@@ -321,7 +321,12 @@
     "lockAria": "worktree '{path}' 잠금",
     "unlockAria": "worktree '{path}' 잠금 해제",
     "removeAria": "worktree '{path}' 제거",
-    "removeBlockedTitle": "unlock 후 제거"
+    "removeBlockedTitle": "unlock 후 제거",
+    "dirtyTitle": "변경 있음 (dirty)",
+    "dirtyUnknownTitle": "측정 실패 (경로 없음 / 분리된 disk)",
+    "lockPromptTitle": "Worktree 잠금",
+    "lockPromptMessage": "'{path}' 잠금 사유 (선택, 외장 디스크 / 비활성 등)",
+    "lockPromptPlaceholder": "예: 외장 SSD 분리"
   },
   "tag": {
     "loading": "불러오는 중...",
