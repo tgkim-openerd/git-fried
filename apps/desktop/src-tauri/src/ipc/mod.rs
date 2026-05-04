@@ -10,6 +10,7 @@
 //     v02_commands.rs 는 cherry-pick / merge / worktree / reflog / file_history / AI 보유.
 pub mod alias_commands;
 pub mod bisect_commands;
+pub mod branch_commands;
 pub mod commands;
 pub mod forge_commands;
 pub mod hide_commands;
@@ -18,11 +19,14 @@ pub mod lfs_commands;
 pub mod profile_commands;
 pub mod pty_commands;
 pub mod rebase_commands;
+pub mod repo_commands;
+pub mod stash_commands;
 pub mod v02_commands;
 pub mod workspace_commands;
 
 pub use alias_commands::*;
 pub use bisect_commands::*;
+pub use branch_commands::*;
 pub use commands::*;
 pub use forge_commands::*;
 pub use hide_commands::*;
@@ -31,6 +35,8 @@ pub use lfs_commands::*;
 pub use profile_commands::*;
 pub use pty_commands::*;
 pub use rebase_commands::*;
+pub use repo_commands::*;
+pub use stash_commands::*;
 pub use v02_commands::*;
 pub use workspace_commands::*;
 

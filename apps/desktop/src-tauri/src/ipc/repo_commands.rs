@@ -1,0 +1,180 @@
+// Tauri commands — Repo CRUD + clone with options.
+//
+// /analyze HIGH 1 후속 — commands.rs 의 repo + clone 영역 5 commands 분리.
+
+use crate::error::{AppError, AppResult};
+use crate::git::{clone as git_clone, repository as repo};
+use crate::storage::{DbExt, Repo};
+use crate::AppState;
+use serde::{Deserialize, Serialize};
+use std::path::Path;
+use std::sync::Arc;
+
+// ====== Repos ======
+
+#[tauri::command]
+pub async fn list_repos(
+    workspace_id: Option<i64>,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Vec<Repo>> {
+    state.db.list_repos(workspace_id).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddRepoArgs {
+    pub local_path: String,
+    pub workspace_id: Option<i64>,
+    pub name: Option<String>,
+}
+
+#[tauri::command]
+pub async fn add_repo(
+    args: AddRepoArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Repo> {
+    let path = Path::new(&args.local_path);
+    if !path.exists() {
+        return Err(AppError::validation(format!(
+            "경로가 존재하지 않습니다: {}",
+            args.local_path
+        )));
+    }
+
+    let meta = repo::detect_meta(path)?;
+
+    state
+        .db
+        .add_repo(
+            &args.local_path,
+            args.workspace_id,
+            args.name.as_deref(),
+            meta.default_branch.as_deref(),
+            meta.default_remote.as_deref(),
+            meta.forge_kind,
+            meta.forge_owner.as_deref(),
+            meta.forge_repo.as_deref(),
+        )
+        .await
+}
+
+#[tauri::command]
+pub async fn remove_repo(id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    state.db.remove_repo(id).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetPinnedArgs {
+    pub id: i64,
+    pub pinned: bool,
+}
+
+#[tauri::command]
+pub async fn set_repo_pinned(
+    args: SetPinnedArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<Repo> {
+    state.db.set_repo_pinned(args.id, args.pinned).await
+}
+
+// ====== Repo Clone with options (`docs/plan/14 §6 E1+E2` Sprint C14-2) ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloneRepoArgs {
+    pub url: String,
+    pub target_path: String,
+    #[serde(default)]
+    pub options: git_clone::CloneOptions,
+    /// 클론 후 git-fried 워크스페이스에 자동 등록할지.
+    #[serde(default = "default_auto_register")]
+    pub auto_register: bool,
+    /// 자동 등록 시 소속 워크스페이스. None = unassigned.
+    #[serde(default)]
+    pub workspace_id: Option<i64>,
+}
+
+fn default_auto_register() -> bool {
+    true
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloneRepoResult {
+    pub clone: git_clone::CloneResult,
+    /// auto_register=true 이고 add_repo 성공 시 등록된 Repo. 실패 시 None + warning.
+    pub registered_repo: Option<Repo>,
+    pub warning: Option<String>,
+}
+
+#[tauri::command]
+pub async fn clone_repo(
+    args: CloneRepoArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<CloneRepoResult> {
+    let target = Path::new(&args.target_path);
+    let clone_res = git_clone::clone(&args.url, target, &args.options).await?;
+
+    if !args.auto_register {
+        return Ok(CloneRepoResult {
+            clone: clone_res,
+            registered_repo: None,
+            warning: None,
+        });
+    }
+
+    // auto_register: detect_meta + add_repo (importer 와 동일 graceful 패턴)
+    let meta = repo::detect_meta(target);
+    let (name, default_branch, default_remote, forge_kind, forge_owner, forge_repo) = match meta {
+        Ok(m) => (
+            m.name,
+            m.default_branch,
+            m.default_remote,
+            m.forge_kind,
+            m.forge_owner,
+            m.forge_repo,
+        ),
+        Err(_) => {
+            let fallback = target
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("repo")
+                .to_string();
+            (
+                fallback,
+                None,
+                None,
+                repo::ForgeKindLite::Unknown,
+                None,
+                None,
+            )
+        }
+    };
+
+    match state
+        .db
+        .add_repo(
+            &args.target_path,
+            args.workspace_id,
+            Some(&name),
+            default_branch.as_deref(),
+            default_remote.as_deref(),
+            forge_kind,
+            forge_owner.as_deref(),
+            forge_repo.as_deref(),
+        )
+        .await
+    {
+        Ok(r) => Ok(CloneRepoResult {
+            clone: clone_res,
+            registered_repo: Some(r),
+            warning: None,
+        }),
+        Err(e) => Ok(CloneRepoResult {
+            clone: clone_res,
+            registered_repo: None,
+            warning: Some(format!("자동 등록 실패: {e}")),
+        }),
+    }
+}
