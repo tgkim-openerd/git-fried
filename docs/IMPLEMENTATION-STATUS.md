@@ -1,6 +1,6 @@
 # 구현 현황 인벤토리 (Implementation Status)
 
-작성: 2026-04-30 / 갱신: 2026-05-04 Sprint c31 22 + c32 3 + c33 14 + c34 5 + c35 6 + c36 4 + c37 11 + **c38 5** = 70 commit 누적 후 / 트리거: c38 자율 진행 (plan/29 5 에픽 — Restore Center / Smart Stash / Clone Wizard Presets / Range Diff Panel / Worktree Polish + promptDialog)
+작성: 2026-04-30 / 갱신: 2026-05-04 Sprint c31 22 + c32 3 + c33 14 + c34 5 + c35 6 + c36 4 + c37 11 + c38 5 + **c39 1** = 71 commit 누적 후 / 트리거: c39 `/analyze` Recommendations 자율 수정 (god module 분해 + Tauri index 자동화 + i18n missingWarn ON + unit test 강화)
 
 > **목적**: 26개 plan 문서 + CHANGELOG Unreleased + lib.rs invoke_handler + 5 SQLite migrations + 161 IPC + 191 frontend 파일 / 66 Rust 파일을 한 문서에 매핑. 신규 개발자 / 다음 세션 entry / dogfood 시점에 "어디까지 됐고 어디 남았나" 단일 진실원천.
 >
@@ -16,15 +16,15 @@
 | ---- | ---- | ---- |
 | **GitKraken 11 catalog** | ✅ **95% + 14 잔여 100%** | plan/13 §1 / plan/14 §12 |
 | **GitKraken 12 layout (Sprint c25)** | ✅ **PR #1 머지 완료** (`ae0cafe`) | plan/25 §7, CHANGELOG |
-| **Tauri IPC** | ✅ **170 등록** (lib.rs invoke_handler 직접 카운트) | c38 +6: `restore_paths` / `push_stash_staged` / `stash_to_branch` / `range_diff` / `open_path_in_explorer` + `clone_repo` filter 옵션 확장 |
+| **Tauri IPC** | ✅ **170 등록** (lib.rs invoke_handler 직접 카운트) | c38 +6: `restore_paths` / `push_stash_staged` / `stash_to_branch` / `range_diff` / `open_path_in_explorer` + `clone_repo` filter 옵션 확장. **c39: ipc/ 9→12 파일** (v02_commands.rs 분해 — bisect/lfs/rebase 모듈 분리, lib.rs path 보존을 위해 `pub use` re-export). 자동 카탈로그 `docs/api/tauri-commands.md` (`bun scripts/generate-tauri-commands-index.mjs`) |
 | **Frontend 코어** | ✅ Vue 3 + Pinia + TanStack Query + Tailwind + CodeMirror + xterm | `apps/desktop/package.json` |
 | **Rust 백엔드** | ✅ ~16,800 LOC / 13 top-level mod / git/ **36 sub** (+restore +range_diff) | c38 신규 2 모듈: `git/restore.rs` 196 / `git/range_diff.rs` 318 |
-| **테스트** | ✅ **vitest 60 / 660 tests** / cargo test **178** / E2E 6 / bench compile | c38 cargo +16 (E1 +6 / E3 +2 / E4 +3 / E2 +5). Sprint c37 +3 files (+48 tests): useGraphWidth (18) / useGraphSelection (13) / useStatusSelection (17) |
+| **테스트** | ✅ **vitest 60 / 660 tests** / cargo test **186** (`#[test]` 105 + `#[tokio::test]` 74 + c39 +7) / E2E 7 / bench compile | c38 cargo +16 (E1 +6 / E3 +2 / E4 +3 / E2 +5). c39 cargo +7: forge/model.rs +4 (serde camelCase 가드) / ipc/bisect_commands.rs +3 (`repoId` accept / `repo_id` reject). Sprint c37 +3 files (+48 tests) |
 | **CI/Release 인프라** | 🟡 **95%** (workflow 완비, EV/updater secret 미등록) | `.github/workflows/{ci,release}.yml` |
 | **GitHub repo public** | 🟡 **97%** — version 0.3.0 통합 완료. `git tag v0.3.0` push 만 잔여 | tauri.conf.json + Cargo.toml + 3 package.json 모두 0.3.0 (Sprint c31 PR-B) |
-| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + **598 키 / 25 컴포넌트 활용 / ko·en 대칭**) | c38 +64 키: restore 14 / stash 10 (smart) / clone 24 (preset+filter) / rangeDiff·compare 10 / worktree 6 (dirty+lock prompt). Sprint c37-6~c37-11 추가 5 컴포넌트 +151 키 |
+| **i18n 기초 인프라** | ✅ **활성화** (vue-i18n 9.14.5 + **606 키 / 25 컴포넌트 활용 / ko·en 완전 대칭 검증**) | c38 +64 키: restore 14 / stash 10 (smart) / clone 24 (preset+filter) / rangeDiff·compare 10 / worktree 6 (dirty+lock prompt). c39: drift 0 / 미번역 0 (locale.ko 제외) 검증 → **`missingWarn`/`fallbackWarn` DEV 모드 ON** (마이그 100% 도달 표면화) |
 | **BaseTooltip primitive** | ✅ **26 위치 활용** | StatusInlineDiff 7 + GitKrakenToolbar 11 + SyncBar 3 + RepoTabBar 2 + ProfileSwitcher 1 + StatusPanel 토글 2 = 26 (kbd hint 노출 / hover delay / a11y) |
-| **God component 분리** | ✅ **21 컴포넌트 / -1,652 LOC (-30%)** | Sprint c37 +4 신규: useGraphWidth (CommitGraph 833→737) + useGraphSelection + useStatusSelection (StatusPanel 789→729) + useStashPopMutation (GitKrakenToolbar 549→503). AI composable 5 표준 (c35 완성) |
+| **God component 분리** | ✅ **21 컴포넌트 / -1,652 LOC (-30%) + c39 +3 composable (-124 LOC)** | Sprint c37 +4: useGraphWidth (CommitGraph 833→737) + useGraphSelection + useStatusSelection (StatusPanel 789→729) + useStashPopMutation (GitKrakenToolbar 549→503). c39 +3: useMaintenanceActions / useThemeIO (settings.vue 689→613) / useLaunchpadRows (launchpad.vue 620→572). AI composable 5 표준 (c35). 500+ LOC 잔여 6개: CommitGraph 737 / StatusPanel 715 / settings 613 / launchpad 572 / PrDetailModal 589 / BranchPanel 518 |
 | **a11y 보강 (c31, c37)** | ✅ **6 + DOM focus 동기화** | c31: PrFilesTab 3 + ContextMenu 3 (role + aria-orientation + aria-haspopup). c37-7: ContextMenu **keyboard nav DOM focus 동기화** — focusVisibleMenuItem/focusSubMenuItem (visual highlight ≠ DOM focus 갭 해소, WCAG 2.1.1 + ARIA menu 패턴) |
 | **UX 7원칙 검토 (Sprint c33)** | ✅ **P0 갭 1건 완전 해소** | window.confirm() 44곳 → ConfirmDialog (Von Restorff + i18n + Jakob's Law 동시 위반 해소). 6 원칙 ✓ |
 | **plan/29 deep-research 5 에픽 (c38)** | ✅ **5/5 완료** | E1 Restore Center (4축 git restore 의미론) / E3 Smart Stash (`-S` + `stash branch`) / E4 Clone Wizard Presets (4 + custom + `--filter`) / E2 Range Diff Panel (CompareModal 모드 토글) / E5 Worktree Polish (is_dirty + open_path_in_explorer + PromptDialog) |
@@ -57,7 +57,9 @@
 
 ---
 
-## 3. 164 IPC 분포 (lib.rs 직접 카운트)
+## 3. 170 IPC 분포 (lib.rs 직접 카운트, c38 +6)
+
+> **c39 분해 후**: ipc/ 9 → 12 파일. 함수 수 자체는 170 보존 (re-export). 카탈로그 자동 생성: [docs/api/tauri-commands.md](api/tauri-commands.md)
 
 | 모듈 | 개수 | 대표 명령 |
 | ---- | ----: | ---- |
@@ -79,8 +81,8 @@
 | 영역 | 개수 | 비고 |
 | ---- | ----: | ---- |
 | Pages | 4 | index / launchpad / repositories / settings (unplugin-vue-router 자동) |
-| Components | 87 | (test 제외) — God comp 분리 누적 (Sprint c31 + c32): **StatusPanel 943→782** (-17%) / **CommandPalette 802→198** (-75%) ★ / **PrDetailModal 762→607** (-20%) / **GitKrakenToolbar 606→581** (-4%) / **CommitMessageInput 545→439** (-19%) / **CommitGraph 859→833** (-3%) / **BranchPanel 545→504** (-8%, AI explain 분리). 신규 추출 4 컴포넌트: StatusInlineDiff (191) / PrFilesTab (172) / ConventionalCommitBuilder (117) / BaseTooltip (71) + 추출 composable 6개 (useCommandCatalog 632 / usePullStrategy 52 / useStatusModals 85 / useGraphSearch 91 / **useAiCommitMessage 119 / useExplainBranch 63**) |
-| Composables | 77 | (test 포함) — useToast 48회 import / describeError 47회 / stores/repos 31회 / queryClient 26회 / useInvalidateRepoQueries 17회 |
+| Components | 84 | (test 제외, c39 시점 직접 카운트) — God comp 분리 누적: **StatusPanel 943→715** / **CommandPalette 802→198** ★ / **PrDetailModal 762→589** / **GitKrakenToolbar 606→503** / **CommitMessageInput 545→439** / **CommitGraph 859→737** / **BranchPanel 545→518**. 신규 추출 컴포넌트 4: StatusInlineDiff / PrFilesTab / ConventionalCommitBuilder / BaseTooltip |
+| Composables | 70 (non-test) + 44 test = **114** | c39 신규 3: useMaintenanceActions / useThemeIO / useLaunchpadRows. useToast 48회 import / describeError 47회 / stores/repos 31회 / queryClient 26회 / useInvalidateRepoQueries 17회 |
 | Pinia stores | 2 | repos.ts 단 1개 store + repos.test.ts |
 | API wrapper | `api/git.ts` 161 invoke / `api/forge.ts` 등 | invokeWithTimeout (devMock 지원, 30s/5min 분기) |
 | AI 통합 | `ai/` | useAiCli (probe 1회 캐시) + Claude/Codex CLI subprocess |
