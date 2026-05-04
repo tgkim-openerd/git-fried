@@ -2,9 +2,9 @@
 // / pull / prune / push_size` 9 커맨드.
 // 2026-05-04 /analyze 후속 — v02_commands.rs 에서 분리.
 
+use super::repo_path;
 use crate::error::AppResult;
 use crate::git::lfs as git_lfs;
-use crate::ipc::repo_path;
 use crate::AppState;
 use serde::Deserialize;
 use std::sync::Arc;

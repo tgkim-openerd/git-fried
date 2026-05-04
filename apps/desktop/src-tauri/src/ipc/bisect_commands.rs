@@ -1,9 +1,9 @@
 // Bisect IPC commands — `git bisect start/mark/reset/status` 4 커맨드.
 // 2026-05-04 /analyze 후속 — v02_commands.rs 에서 분리.
 
+use super::repo_path;
 use crate::error::AppResult;
 use crate::git::bisect as git_bisect;
-use crate::ipc::repo_path;
 use crate::AppState;
 use serde::Deserialize;
 use std::sync::Arc;

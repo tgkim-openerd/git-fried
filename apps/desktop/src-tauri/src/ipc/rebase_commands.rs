@@ -1,9 +1,9 @@
 // Interactive rebase IPC commands — 6 커맨드 (`docs/plan/09 옵션 A`).
 // 2026-05-04 /analyze 후속 — v02_commands.rs 에서 분리.
 
+use super::repo_path;
 use crate::error::AppResult;
 use crate::git::rebase as git_rebase;
-use crate::ipc::repo_path;
 use crate::AppState;
 use serde::Deserialize;
 use std::sync::Arc;

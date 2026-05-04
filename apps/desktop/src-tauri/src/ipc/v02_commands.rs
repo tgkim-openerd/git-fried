@@ -8,16 +8,15 @@ pub use crate::ipc::bisect_commands::*;
 pub use crate::ipc::lfs_commands::*;
 pub use crate::ipc::rebase_commands::*;
 
+use super::repo_path;
 use crate::ai;
 use crate::error::{AppError, AppResult};
 use crate::git::{
     cherry_pick as git_cp, conflict_prediction as git_cp_pred, file_history as git_fh,
     merge as git_merge, reflog as git_reflog, worktree as git_wt,
 };
-use crate::ipc::repo_path;
 use crate::AppState;
 use serde::Deserialize;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 // ====== Open repo path in OS file manager (Sprint F4) ======
