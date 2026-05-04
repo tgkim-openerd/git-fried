@@ -26,6 +26,8 @@ import {
   type DiffFileWithHunks,
   type DiffHunk,
 } from '@/utils/parseDiff'
+// Sprint c40 후속 review ARCH-004 — line 선택 state 분리.
+import { useHunkLineSelection } from '@/composables/useHunkLineSelection'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -66,58 +68,9 @@ const file = computed<DiffFileWithHunks | null>(() => {
 
 const hunks = computed<DiffHunk[]>(() => file.value?.hunks ?? [])
 
-// Sprint N — 라인 선택 상태. Map<hunkIdx, Set<lineIdx>>.
-const selected = ref<Map<number, Set<number>>>(new Map())
-// shift-click range 의 anchor (hunkIdx, lineIdx).
-const anchor = ref<{ hunk: number; line: number } | null>(null)
-
-function isSelected(hunkIdx: number, lineIdx: number): boolean {
-  return selected.value.get(hunkIdx)?.has(lineIdx) ?? false
-}
-
-function toggleLine(hunkIdx: number, lineIdx: number, e?: MouseEvent) {
-  const m = new Map(selected.value)
-  let s = m.get(hunkIdx) ? new Set(m.get(hunkIdx)) : new Set<number>()
-  if (e?.shiftKey && anchor.value && anchor.value.hunk === hunkIdx) {
-    // range — anchor 부터 lineIdx 까지 stageable 라인 모두 선택.
-    const [a, b] = [anchor.value.line, lineIdx].sort((x, y) => x - y)
-    const body = hunks.value[hunkIdx].bodyLines
-    for (let i = a; i <= b; i++) {
-      if (body[i] && isStageableLine(body[i])) s.add(i)
-    }
-  } else {
-    if (s.has(lineIdx)) s.delete(lineIdx)
-    else s.add(lineIdx)
-    anchor.value = { hunk: hunkIdx, line: lineIdx }
-  }
-  if (s.size === 0) m.delete(hunkIdx)
-  else m.set(hunkIdx, s)
-  selected.value = m
-}
-
-function selectAllLines(hunkIdx: number) {
-  const body = hunks.value[hunkIdx].bodyLines
-  const s = new Set<number>()
-  body.forEach((l, i) => {
-    if (isStageableLine(l)) s.add(i)
-  })
-  const m = new Map(selected.value)
-  if (s.size === 0) m.delete(hunkIdx)
-  else m.set(hunkIdx, s)
-  selected.value = m
-}
-
-function clearLines(hunkIdx: number) {
-  const m = new Map(selected.value)
-  m.delete(hunkIdx)
-  selected.value = m
-}
-
-const totalSelected = computed(() => {
-  let n = 0
-  for (const s of selected.value.values()) n += s.size
-  return n
-})
+// Sprint N → c40 후속 — 라인 선택 state composable 위임.
+const { selected, isSelected, toggleLine, selectAllLines, clearLines, totalSelected, resetAll } =
+  useHunkLineSelection(hunks)
 
 const applyMut = useMutation({
   mutationFn: (args: { patch: string; what: string }) => {
@@ -129,7 +82,7 @@ const applyMut = useMutation({
     toast.success(t('hunkStage.applySuccessTitle', { what, action }), '')
     invalidate(props.repoId)
     diffQuery.refetch()
-    selected.value = new Map()
+    resetAll()
   },
   onError: (e) =>
     toast.error(
@@ -172,7 +125,7 @@ const restoreWtMut = useMutation({
     toast.success(t('hunkStage.restoreSuccessTitle', { what }), '')
     invalidate(props.repoId)
     diffQuery.refetch()
-    selected.value = new Map()
+    resetAll()
   },
   onError: (e) => toast.error(t('hunkStage.restoreFailed'), describeError(e)),
 })

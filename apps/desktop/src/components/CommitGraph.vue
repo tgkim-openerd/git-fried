@@ -13,9 +13,10 @@ import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
 // Sprint c30 / GitKraken UX (Phase 8a) — graph 첫 row 에 WIP pseudo-row 직접 통합.
 import { useStatus } from '@/composables/useStatus'
-import { useHiddenRefMutations, useRefVisibility, useSoloRef } from '@/composables/useHiddenRefs'
-import type { HiddenRefKind } from '@/api/git'
-import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
+// Sprint c40 후속 review ARCH-004 — ref visibility (hide/solo) 분리.
+import { useGraphRefVisibility } from '@/composables/useGraphRefVisibility'
+// Sprint c40 후속 review ARCH-004 — column 토글/재정렬 + header menu 분리.
+import { useCommitGraphHeader } from '@/composables/useCommitGraphHeader'
 import { useCommitActions } from '@/composables/useCommitActions'
 // Sprint c31 god comp 분리 7/N — 검색 state + isMatch + ⌘F/Esc 통합 composable.
 import { useGraphSearch } from '@/composables/useGraphSearch'
@@ -61,31 +62,10 @@ function commitTooltip(row: GraphRow | null | undefined): string {
   const body = (row.commit.body ?? '').trim()
   return body ? `${subject}\n\n${body}` : subject
 }
-const { visibleFn: visibleRef, soloRef } = useRefVisibility(() => props.repoId)
-const { hide: hideMut } = useHiddenRefMutations(() => props.repoId)
-const { setSolo } = useSoloRef(() => props.repoId)
-
-// Sprint 22-9 V-9 — ref-pill body click = solo toggle (이 ref 만 그래프에 표시 / 다시 클릭=해제).
-// 🙈 버튼은 hide (기존 동작 유지). HEAD 표시 prefix 가 있을 수 있어 trim.
-function toggleSoloRef(name: string) {
-  const trimmed = name.replace(/^HEAD ->\s*/, '').trim()
-  setSolo(soloRef.value === trimmed ? null : trimmed)
-}
-
-// Sprint K — branch ref hover → 🙈 클릭 시 즉시 숨김.
-function refKindOf(name: string): HiddenRefKind {
-  if (name.startsWith('refs/tags/') || name.startsWith('tag: ')) return 'tag'
-  if (name.startsWith('stash@') || name === 'stash') return 'stash'
-  // origin/main, upstream/feature 등 = remote
-  if (name.includes('/') && !name.startsWith('refs/heads/')) return 'remote'
-  return 'branch'
-}
-
-function hideRefByName(name: string) {
-  // "HEAD -> main" 같이 표시 prefix 가 있을 수 있음 → tail 만 추출.
-  const trimmed = name.replace(/^HEAD ->\s*/, '').trim()
-  hideMut.mutate({ refName: trimmed, refKind: refKindOf(trimmed) })
-}
+// Sprint c40 후속 review ARCH-004 — ref hide/solo composable 위임.
+const { visibleRef, soloRef, toggleSoloRef, hideRefByName } = useGraphRefVisibility(
+  () => props.repoId,
+)
 
 // === 검색 — Sprint c31 분리 7/N. composable 호출은 rows 정의 이후 (TDZ 회피) — line ~137 부근. ===
 
@@ -217,57 +197,18 @@ function onRowContextMenu(ev: MouseEvent, row: GraphRow | undefined) {
 // moveSelection 은 useGraphSelection 에서 노출 — 사용 안 한 변수 lint 회피용.
 void moveSelection
 
-// === 컬럼 토글 / 재정렬 (Sprint A3) ===
-const cols = useCommitColumns()
-// Phase 13-4 — branchTag 컬럼 visible 시 message 안의 ref pill 생략 (중복 회피).
-const branchTagColumnVisible = computed(() =>
-  cols.visibleColumns.value.some((c) => c.id === 'branchTag'),
-)
-const headerMenuOpen = ref(false)
-const headerMenuRef = ref<HTMLDivElement | null>(null)
-
-function openHeaderMenu(ev: MouseEvent) {
-  ev.preventDefault()
-  headerMenuOpen.value = true
-}
-
-function onHeaderMenuOutside(ev: MouseEvent) {
-  if (!headerMenuRef.value) return
-  if (!headerMenuRef.value.contains(ev.target as Node)) {
-    headerMenuOpen.value = false
-  }
-}
-
-watch(headerMenuOpen, (open) => {
-  if (open) {
-    nextTick(() => {
-      window.addEventListener('mousedown', onHeaderMenuOutside)
-    })
-  } else {
-    window.removeEventListener('mousedown', onHeaderMenuOutside)
-  }
-})
-
-// drag-drop 의 v-model 은 visibleColumns 의 mutated 배열.
-// VueDraggable 이 array 를 in-place 변경하므로 setOrder 호출.
-const headerOrder = ref<CommitColumnId[]>(cols.visibleIds.value.slice())
-watch(cols.visibleIds, (ids) => {
-  headerOrder.value = ids.slice()
-})
-function onReorder() {
-  cols.setOrder(headerOrder.value)
-}
-
-// header 메뉴 "기본값 복원" — prettier 가 vue template 의 multi-statement 를
-// 깨뜨려 (semicolon → newline) parse 에러 일으키는 회귀 방지용 함수 추출.
-function resetColsAndCloseMenu() {
-  cols.reset()
-  headerMenuOpen.value = false
-}
-
-function colDef(id: CommitColumnId) {
-  return cols.allColumns.find((c) => c.id === id)
-}
+// === 컬럼 토글 / 재정렬 (Sprint A3) — useCommitGraphHeader 위임 (c40 review ARCH-004) ===
+const {
+  cols,
+  headerMenuOpen,
+  headerMenuRef,
+  headerOrder,
+  branchTagColumnVisible,
+  openHeaderMenu,
+  onReorder,
+  resetColsAndCloseMenu,
+  colDef,
+} = useCommitGraphHeader()
 
 // Sprint c37 god 18/N — drag-resize 로직은 useGraphWidth composable 위임.
 //   onDragHandleStart 는 위에서 destructure, cleanup 은 unmount 시.
