@@ -49,9 +49,17 @@ pub async fn range_diff(repo: &Path, range1: &str, range2: &str) -> AppResult<Ve
     if range1.trim().is_empty() || range2.trim().is_empty() {
         return Err(AppError::validation("range-diff: range 가 비어있습니다."));
     }
+    // Sprint c38 fix LOW-2 — `--end-of-options` 로 range1/range2 가 git 옵션으로 해석 차단.
+    // git 2.24+ 표준 (사용자 환경 git 2.35+ 필요 — E3 stash --staged 와 동일 baseline).
     let out = git_run(
         repo,
-        &["range-diff", "--no-color", range1, range2],
+        &[
+            "range-diff",
+            "--no-color",
+            "--end-of-options",
+            range1,
+            range2,
+        ],
         &GitRunOpts::default(),
     )
     .await?
@@ -69,9 +77,10 @@ pub async fn range_diff_auto(
         return Err(AppError::validation("range-diff: rev 가 비어있습니다."));
     }
     let three_dot = format!("{}...{}", rev1.trim(), rev2.trim());
+    // Sprint c38 fix LOW-2 — `--end-of-options` 로 three_dot 옵션 해석 차단.
     let out = git_run(
         repo,
-        &["range-diff", "--no-color", &three_dot],
+        &["range-diff", "--no-color", "--end-of-options", &three_dot],
         &GitRunOpts::default(),
     )
     .await?

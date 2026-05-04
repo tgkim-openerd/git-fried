@@ -112,15 +112,23 @@ pub async fn push_stash_staged(repo: &Path, message: Option<&str>) -> AppResult<
 /// 사용 패턴: WIP stash 가 base 에서 너무 멀어져 conflict 가 큰 경우,
 /// stash 시점 base 의 새 브랜치로 pop 하면 충돌 없이 복원 가능.
 pub async fn stash_to_branch(repo: &Path, index: usize, branch: &str) -> AppResult<()> {
-    if branch.trim().is_empty() {
+    let trimmed = branch.trim();
+    if trimmed.is_empty() {
         return Err(crate::error::AppError::validation(
             "branch 이름이 비었습니다.",
         ));
     }
+    // Sprint c38 fix LOW-3 — branch 이름이 `-` 로 시작하면 거부 (git option 처럼 해석되는 것 차단).
+    // `--end-of-options` 도 함께 사용해 defense-in-depth.
+    if trimmed.starts_with('-') {
+        return Err(crate::error::AppError::validation(format!(
+            "branch 이름은 '-' 로 시작할 수 없습니다: {trimmed}"
+        )));
+    }
     let stash_ref = format!("stash@{{{index}}}");
     git_run(
         repo,
-        &["stash", "branch", branch, &stash_ref],
+        &["stash", "branch", "--end-of-options", trimmed, &stash_ref],
         &GitRunOpts::default(),
     )
     .await?

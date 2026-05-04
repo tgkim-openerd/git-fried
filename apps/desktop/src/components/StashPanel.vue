@@ -27,7 +27,8 @@ import { computed } from 'vue'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
-import { confirmDialog } from '@/composables/useConfirm'
+// Sprint c38 fix MED-1 — promptDialog 추가 import (window.prompt 2곳 마이그).
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import DiffViewer from './DiffViewer.vue'
 import EmptyState from './EmptyState.vue'
@@ -77,10 +78,15 @@ const pushMut = useMutation({
 })
 
 // Sprint c38 / plan/29 E3 — stash → 새 브랜치 (`git stash branch <name> stash@{n}`).
+// Sprint c38 fix MED-1 — promptDialog (a11y + 한글 IME).
 async function onStashToBranch(idx: number) {
   if (props.repoId == null) return
-  const name = window.prompt(t('stash.branchPromptMessage'), `stash-${idx}-recover`)
-  if (name == null) return
+  const name = await promptDialog({
+    title: t('stash.branchPromptTitle'),
+    message: t('stash.branchPromptMessage'),
+    defaultValue: `stash-${idx}-recover`,
+  })
+  if (name === null) return
   const trimmed = name.trim()
   if (!trimmed) return
   await stashToBranch(props.repoId, idx, trimmed)
@@ -119,21 +125,23 @@ async function onShow(idx: number) {
 }
 
 // === Sprint C14 D2 (`docs/plan/14 §5 D2`) — stash 메시지 수정 ===
+// Sprint c38 fix MED-1 — window.prompt → promptDialog + i18n.
 async function onEditMessage(idx: number, current: string) {
   if (props.repoId == null) return
-  const next = window.prompt(
-    `stash@{${idx}} 새 메시지\n(저장 시 새 entry 가 stash@{0} 으로 이동, 원본은 drop)`,
-    current,
-  )
-  if (next == null) return
+  const next = await promptDialog({
+    title: t('stash.editMessageTitle', { idx }),
+    message: t('stash.editMessageMessage'),
+    defaultValue: current,
+  })
+  if (next === null) return
   const trimmed = next.trim()
   if (!trimmed || trimmed === current) return
   await editStashMessage(props.repoId, idx, trimmed)
     .then(() => {
-      toast.success('Stash 메시지 변경', '새 entry 가 stash@{0} 입니다.')
+      toast.success(t('stash.editMessageSuccess'), t('stash.editMessageSuccessDetail'))
       invalidate(props.repoId)
     })
-    .catch((e) => toast.error('메시지 변경 실패', describeError(e)))
+    .catch((e) => toast.error(t('stash.editMessageFailed'), describeError(e)))
 }
 
 // === Sprint C2 (`docs/plan/14 §5 D1`) — stash 안 단일 파일만 apply ===

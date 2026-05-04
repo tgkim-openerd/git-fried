@@ -86,7 +86,9 @@
     "fromCommitTitle": "특정 커밋 기준 복원",
     "fromCommitMessage": "워킹트리 + 인덱스 둘 다 '{source}' 로 되돌립니다.\n• 현재 변경(staged 포함) 모두 사라짐\n• {n}개 파일: '{sample}' 외\n• 되돌릴 수 없습니다",
     "promptCommitTitle": "복원 source 커밋",
-    "promptCommitMessage": "복원할 source 커밋 (SHA / branch / tag) — 비워두면 취소"
+    "promptCommitMessage": "복원할 source 커밋 (SHA / branch / tag) — 비워두면 취소",
+    "promptCommitPlaceholder": "예: HEAD~1, abc1234, main",
+    "promptCommitDefault": "HEAD~1"
   },
   "hunkStage": {
     "errRepoNotSelected": "레포 미선택",
@@ -413,9 +415,15 @@
     "pushFailed": "Stash push 실패",
     "toBranchTitle": "이 stash 를 새 브랜치로 복원 (stash 시점 base 에서)",
     "toBranchAria": "stash@{idx} 를 새 브랜치로 pop",
+    "branchPromptTitle": "Stash → 새 브랜치",
     "branchPromptMessage": "새 브랜치 이름 (stash 시점 base 에서 생성)",
     "branchSuccess": "새 브랜치로 복원",
-    "branchFailed": "Stash → 브랜치 실패"
+    "branchFailed": "Stash → 브랜치 실패",
+    "editMessageTitle": "stash@{idx} 메시지 수정",
+    "editMessageMessage": "저장 시 새 entry 가 stash@{0} 으로 이동, 원본은 drop 됩니다.",
+    "editMessageSuccess": "Stash 메시지 변경",
+    "editMessageSuccessDetail": "새 entry 가 stash@{0} 입니다.",
+    "editMessageFailed": "메시지 변경 실패"
   },
   "submodule": {
     "title": "Submodule",
@@ -545,6 +553,12 @@
     "copyTag": "Tag 복사",
     "preReleaseBadge": "pre-release",
     "draftBadge": "draft"
+  },
+  "branchList": {
+    "headTitle": "현재 HEAD (체크아웃 됨)",
+    "checkoutTitle": "{name} 으로 체크아웃 (clean working tree 권장)",
+    "occupiedTitle": "{name} 은 다른 worktree 가 점유 중 — 체크아웃 불가\n경로: {path}",
+    "occupiedBadgeTitle": "다른 worktree 점유: {path}"
   },
   "branch": {
     "title": "브랜치",

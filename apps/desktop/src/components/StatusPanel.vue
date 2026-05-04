@@ -6,7 +6,7 @@
 import { computed, useTemplateRef } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useStatus, useInvalidateRepoQueries } from '@/composables/useStatus'
-import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { launchMergetool } from '@/api/git'
 import { useStageMutations } from '@/composables/useStageMutations'
 import { describeError } from '@/api/errors'
@@ -30,6 +30,8 @@ import { useStatusSelection } from '@/composables/useStatusSelection'
 import { useStatusModals } from '@/composables/useStatusModals'
 // Sprint c38 / plan/29 E1 — Restore Center (4축 git restore 의미론).
 import { useRestore } from '@/composables/useRestore'
+// Sprint c38 fix MED-2 — context menu builder 추출 (StatusPanel god comp 다이어트).
+import { useStatusContextMenu } from '@/composables/useStatusContextMenu'
 // Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge + a11y).
 import BaseTooltip from './BaseTooltip.vue'
 import { useI18n } from 'vue-i18n'
@@ -71,15 +73,6 @@ const onUnstageAll = sm.unstageAll
 // === Sprint c38 / plan/29 E1 — Restore Center (4축 git restore) ===
 const restore = useRestore(() => props.repoId)
 
-/** 4. 특정 커밋 기준 복원 — source 입력 받기 (신규 promptDialog 도입 전 임시 prompt). */
-async function onRestoreFromCommit(path: string): Promise<void> {
-  const source = window.prompt(t('restore.promptCommitMessage'), 'HEAD~1')
-  if (source == null) return
-  const trimmed = source.trim()
-  if (!trimmed) return
-  await restore.restoreFromCommit([path], trimmed)
-}
-
 // statusLabel / statusColor → utils/statusFormat.ts 로 이동 (test 가능 + DiffViewer 공용)
 
 // Sprint c31 god comp 분리 6/N — File history / 3-way merge / Hunk-level modal state
@@ -110,92 +103,23 @@ const { selectedPath, selectPath, copyPath } = useStatusSelection({
   openHistory,
 })
 
-// === Sprint 22-2 CM-3: file row 우클릭 메뉴 ===
+// === Sprint 22-2 CM-3: file row 우클릭 메뉴 (Sprint c38 fix MED-2 — composable 추출) ===
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+
+const ctxBuilder = useStatusContextMenu({
+  selectPath,
+  onStageOne,
+  onUnstageOne,
+  onDiscardOne,
+  restore,
+  openHunk,
+  openHistory,
+  copyPath,
+})
 
 function onFileContextMenu(ev: MouseEvent, path: string, isStaged: boolean) {
   ev.preventDefault()
-  selectPath(path)
-  // Sprint c38 / plan/29 E1 — staged 에는 "인덱스 복원 (= unstage)" / "HEAD 기준 복원" / "특정 커밋 기준 복원".
-  // unstaged 에는 "워킹트리 복원 (인덱스 보존)" / "HEAD 기준 복원" / "특정 커밋 기준 복원".
-  // 기존 ctxDiscard/ctxUnstage 는 호환 유지 — restore 메뉴는 그 아래 별도 그룹.
-  const items: ContextMenuItem[] = isStaged
-    ? [
-        { label: t('status.ctxUnstage'), icon: '−', action: () => onUnstageOne(path) },
-        { divider: true },
-        {
-          label: t('status.ctxHunkUnstage'),
-          icon: '✂',
-          action: () => openHunk(path, true),
-        },
-        { divider: true },
-        {
-          label: t('status.ctxRestoreStaged'),
-          icon: '↩',
-          action: () => restore.restoreStaged([path]),
-        },
-        {
-          label: t('status.ctxRestoreFromHead'),
-          icon: '⏮',
-          destructive: true,
-          action: () => void restore.restoreFromHead([path]),
-        },
-        {
-          label: t('status.ctxRestoreFromCommit'),
-          icon: '⏪',
-          destructive: true,
-          action: () => void onRestoreFromCommit(path),
-        },
-        { divider: true },
-        {
-          label: t('status.ctxFileHistory'),
-          icon: '📜',
-          action: () => openHistory(path),
-        },
-        { label: t('status.ctxCopyPath'), icon: '📋', action: () => void copyPath(path) },
-      ]
-    : [
-        { label: t('status.ctxStage'), icon: '+', action: () => onStageOne(path) },
-        {
-          label: t('status.ctxDiscard'),
-          icon: '⤺',
-          destructive: true,
-          action: () => onDiscardOne(path),
-        },
-        { divider: true },
-        {
-          label: t('status.ctxHunkStage'),
-          icon: '✂',
-          action: () => openHunk(path, false),
-        },
-        { divider: true },
-        {
-          label: t('status.ctxRestoreWorktree'),
-          icon: '↩',
-          destructive: true,
-          action: () => void restore.restoreWorktree([path]),
-        },
-        {
-          label: t('status.ctxRestoreFromHead'),
-          icon: '⏮',
-          destructive: true,
-          action: () => void restore.restoreFromHead([path]),
-        },
-        {
-          label: t('status.ctxRestoreFromCommit'),
-          icon: '⏪',
-          destructive: true,
-          action: () => void onRestoreFromCommit(path),
-        },
-        { divider: true },
-        {
-          label: t('status.ctxFileHistory'),
-          icon: '📜',
-          action: () => openHistory(path),
-        },
-        { label: t('status.ctxCopyPath'), icon: '📋', action: () => void copyPath(path) },
-      ]
-  ctxMenu.value?.openAt(ev, items)
+  ctxMenu.value?.openAt(ev, ctxBuilder.buildItems(path, isStaged))
 }
 
 // Sprint C6 — 외부 merge tool launch

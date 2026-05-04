@@ -86,7 +86,9 @@
     "fromCommitTitle": "Restore from commit",
     "fromCommitMessage": "Restore both worktree + index from '{source}'.\n• All current changes (incl. staged) discarded\n• {n} file(s): '{sample}' and others\n• Cannot be undone",
     "promptCommitTitle": "Restore source commit",
-    "promptCommitMessage": "Source commit (SHA / branch / tag) — empty to cancel"
+    "promptCommitMessage": "Source commit (SHA / branch / tag) — empty to cancel",
+    "promptCommitPlaceholder": "e.g. HEAD~1, abc1234, main",
+    "promptCommitDefault": "HEAD~1"
   },
   "hunkStage": {
     "errRepoNotSelected": "No repository selected",
@@ -413,9 +415,15 @@
     "pushFailed": "Stash push failed",
     "toBranchTitle": "Recover this stash to a new branch (from stash base)",
     "toBranchAria": "Pop stash@{idx} to a new branch",
+    "branchPromptTitle": "Stash → new branch",
     "branchPromptMessage": "New branch name (created from stash base)",
     "branchSuccess": "Recovered to new branch",
-    "branchFailed": "Stash → branch failed"
+    "branchFailed": "Stash → branch failed",
+    "editMessageTitle": "Edit stash@{idx} message",
+    "editMessageMessage": "Saving moves the new entry to stash@{0}; the original is dropped.",
+    "editMessageSuccess": "Stash message changed",
+    "editMessageSuccessDetail": "New entry is at stash@{0}.",
+    "editMessageFailed": "Edit message failed"
   },
   "submodule": {
     "title": "Submodule",
@@ -545,6 +553,12 @@
     "copyTag": "Copy tag",
     "preReleaseBadge": "pre-release",
     "draftBadge": "draft"
+  },
+  "branchList": {
+    "headTitle": "Current HEAD (checked out)",
+    "checkoutTitle": "Checkout {name} (clean working tree recommended)",
+    "occupiedTitle": "{name} is occupied by another worktree — cannot checkout\nPath: {path}",
+    "occupiedBadgeTitle": "Occupied by other worktree: {path}"
   },
   "branch": {
     "title": "Branches",

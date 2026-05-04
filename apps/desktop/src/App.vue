@@ -58,13 +58,19 @@ const createPrOpen = ref(false)
 const helpOpen = ref(false)
 // Sprint F-P5 — Commit message 검색 modal (`git log --grep` 동등). ⌘⇧F 단축키.
 const commitSearchOpen = ref(false)
-// Sprint C3 — Compare modal
+// Sprint C3 — Compare modal + Sprint c38 fix MED-3 — initial mode (diff / range).
 const compareOpen = ref(false)
 const compareInitialRef1 = ref<string | null>(null)
 const compareInitialRef2 = ref<string | null>(null)
-function openCompare(ref1?: string | null, ref2?: string | null) {
+const compareInitialMode = ref<'diff' | 'range'>('diff')
+function openCompare(
+  ref1?: string | null,
+  ref2?: string | null,
+  mode: 'diff' | 'range' = 'diff',
+) {
   compareInitialRef1.value = ref1 ?? null
   compareInitialRef2.value = ref2 ?? null
+  compareInitialMode.value = mode
   compareOpen.value = true
 }
 
@@ -285,6 +291,7 @@ useMenuListener()
       :repo-id="reposStore.activeRepoId"
       :initial-ref1="compareInitialRef1"
       :initial-ref2="compareInitialRef2"
+      :initial-mode="compareInitialMode"
       @close="compareOpen = false"
     />
     <RepoSwitcherModal

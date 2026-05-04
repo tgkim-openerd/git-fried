@@ -31,10 +31,21 @@ pub async fn open_in_explorer(
 /// Sprint c38 / plan/29 E5 — 임의 경로 (worktree 의 path 등) 를 OS 파일 매니저로.
 ///
 /// `open_in_explorer` 는 repo_id 단위라 main repo 만 열림. worktree 의 실제
-/// 경로를 직접 받는 변형. 보안상 빈 경로 / .. 통과만 거부 (`safe.directory=*`
-/// git 환경과 별개로 OS-level path open 은 사용자 의도 그대로 따름).
+/// 경로를 직접 받는 변형. **Sprint c38 fix MED-4** — defense-in-depth 강화:
+///
+///   1. canonicalize 로 `..` / symlink 정규화
+///   2. 등록된 repo path 또는 그 worktree path 의 ancestor 안에 있을 때만 허용
+///   3. 외부 임의 경로 (시스템 폴더 / `~/.ssh` 등) 은 거부
+///
+/// 이는 렌더러 (Vue) 에 임의 코드 실행 (XSS 등) 발생 시 host filesystem 정찰을
+/// 차단하기 위함. 사용자 의도 사용 케이스 (WorktreePanel `Open in Explorer`) 는
+/// 모두 등록 repo / worktree path 안.
 #[tauri::command]
-pub async fn open_path_in_explorer(path: String) -> AppResult<()> {
+pub async fn open_path_in_explorer(
+    path: String,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    use crate::storage::DbExt;
     let trimmed = path.trim();
     if trimmed.is_empty() {
         return Err(AppError::validation("경로가 비었습니다."));
@@ -45,7 +56,45 @@ pub async fn open_path_in_explorer(path: String) -> AppResult<()> {
             "경로가 존재하지 않습니다: {trimmed}"
         )));
     }
-    open_path_in_os(p)
+    let canon = p
+        .canonicalize()
+        .map_err(|e| AppError::Internal(format!("경로 정규화 실패: {e}")))?;
+
+    // 등록된 모든 repo + 각 repo 의 worktree path 와 cross-check.
+    let repos = state.db.list_repos(None).await?;
+    let mut allowed = false;
+    for r in &repos {
+        let repo_path = std::path::PathBuf::from(&r.local_path);
+        let Ok(repo_canon) = repo_path.canonicalize() else {
+            continue;
+        };
+        if canon.starts_with(&repo_canon) {
+            allowed = true;
+            break;
+        }
+        // worktree path 도 검사 (별도 path 일 수 있음).
+        let Ok(worktrees) = crate::git::worktree::list_worktrees(&repo_canon).await else {
+            continue;
+        };
+        for wt in &worktrees {
+            let wt_path = std::path::PathBuf::from(&wt.path);
+            if let Ok(wt_canon) = wt_path.canonicalize() {
+                if canon.starts_with(&wt_canon) {
+                    allowed = true;
+                    break;
+                }
+            }
+        }
+        if allowed {
+            break;
+        }
+    }
+    if !allowed {
+        return Err(AppError::validation(format!(
+            "허용되지 않은 경로 (등록 repo / worktree 외): {trimmed}"
+        )));
+    }
+    open_path_in_os(&canon)
 }
 
 #[cfg(target_os = "windows")]

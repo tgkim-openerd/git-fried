@@ -32,6 +32,13 @@ export function useRestore(repoId: () => number | null) {
     onError: (e) => toast.error(t('restore.failedTitle'), describeError(e)),
   })
 
+  /**
+   * Sprint c38 fix LOW-1 — `mutate` → `mutateAsync` 전환.
+   * 기존: 호출자가 `await` 해도 IPC 완료 대기 안 함 (mutate 는 void 반환).
+   * 변경: mutateAsync 가 Promise 반환 → 호출자가 await 시 완료 / 에러 정확 추적.
+   * onError 토스트는 그대로 동작 (mutation option 유지).
+   */
+
   /** 1. 워킹트리 복원 — 인덱스 보존, 워킹트리만 폐기. */
   async function restoreWorktree(paths: string[]): Promise<void> {
     const id = repoId()
@@ -42,22 +49,28 @@ export function useRestore(repoId: () => number | null) {
       danger: true,
     })
     if (!ok) return
-    restoreMut.mutate({
-      id,
-      paths,
-      opts: { worktree: true, staged: false, source: null },
-    })
+    await restoreMut
+      .mutateAsync({
+        id,
+        paths,
+        opts: { worktree: true, staged: false, source: null },
+      })
+      .catch(() => {
+        /* onError 토스트가 이미 처리. await 쪽은 에러 swallow (UI 에서 throw 처리하면 토스트 중복). */
+      })
   }
 
   /** 2. 인덱스 복원 (= unstage) — 워킹트리 보존. confirm 생략 (비파괴). */
-  function restoreStaged(paths: string[]): void {
+  async function restoreStaged(paths: string[]): Promise<void> {
     const id = repoId()
     if (id == null || paths.length === 0) return
-    restoreMut.mutate({
-      id,
-      paths,
-      opts: { worktree: false, staged: true, source: null },
-    })
+    await restoreMut
+      .mutateAsync({
+        id,
+        paths,
+        opts: { worktree: false, staged: true, source: null },
+      })
+      .catch(() => {})
   }
 
   /** 3. HEAD 기준 둘 다 복원 — 워킹트리 + 인덱스 모두 HEAD 로. */
@@ -70,11 +83,13 @@ export function useRestore(repoId: () => number | null) {
       danger: true,
     })
     if (!ok) return
-    restoreMut.mutate({
-      id,
-      paths,
-      opts: { worktree: true, staged: true, source: 'HEAD' },
-    })
+    await restoreMut
+      .mutateAsync({
+        id,
+        paths,
+        opts: { worktree: true, staged: true, source: 'HEAD' },
+      })
+      .catch(() => {})
   }
 
   /** 4. 특정 커밋 기준 복원 — 워킹트리 + 인덱스 둘 다 source 로. */
@@ -91,11 +106,13 @@ export function useRestore(repoId: () => number | null) {
       danger: true,
     })
     if (!ok) return
-    restoreMut.mutate({
-      id,
-      paths,
-      opts: { worktree: true, staged: true, source: source.trim() },
-    })
+    await restoreMut
+      .mutateAsync({
+        id,
+        paths,
+        opts: { worktree: true, staged: true, source: source.trim() },
+      })
+      .catch(() => {})
   }
 
   return {

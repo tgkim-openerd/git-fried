@@ -17,12 +17,16 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
+type CompareMode = 'diff' | 'range'
+
 const props = defineProps<{
   repoId: number | null
   open: boolean
   /** 사전 선택값 (BranchPanel 등에서 진입 시). */
   initialRef1?: string | null
   initialRef2?: string | null
+  /** Sprint c38 fix MED-3 — 초기 모드 (CommitGraph "Range diff with…" 진입). */
+  initialMode?: CompareMode
 }>()
 defineEmits<{ close: [] }>()
 
@@ -30,8 +34,7 @@ const ref1 = ref<string>(props.initialRef1 ?? '')
 const ref2 = ref<string>(props.initialRef2 ?? '')
 
 // Sprint c38 / plan/29 E2 — 모드 토글: 'diff' (기존) / 'range' (range-diff).
-type CompareMode = 'diff' | 'range'
-const mode = ref<CompareMode>('diff')
+const mode = ref<CompareMode>(props.initialMode ?? 'diff')
 
 watch(
   () => props.open,
@@ -39,6 +42,8 @@ watch(
     if (o) {
       ref1.value = props.initialRef1 ?? ref1.value
       ref2.value = props.initialRef2 ?? ref2.value
+      // Sprint c38 fix MED-3 — open 마다 initialMode 재적용 (CommitGraph "Range diff with…" 진입).
+      if (props.initialMode) mode.value = props.initialMode
     }
   },
 )

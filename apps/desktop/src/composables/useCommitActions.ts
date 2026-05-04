@@ -196,6 +196,15 @@ export function useCommitActions(getRepoId: () => number | null) {
         action: () => callbacks.onCompare?.(sha),
         disabled: !callbacks.onCompare,
       },
+      // Sprint c38 fix MED-3 — plan/29 E2 acceptance "그래프에 빠른 진입" 충족.
+      // window.gitFriedOpenCompare 직접 호출 (mode='range') — emit chain 회피.
+      {
+        label: 'Range diff with...',
+        icon: '≠',
+        action: () => {
+          window.gitFriedOpenCompare?.(null, sha, 'range')
+        },
+      },
       { divider: true },
       {
         label: 'Explain (AI)',

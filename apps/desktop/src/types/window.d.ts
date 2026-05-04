@@ -14,8 +14,12 @@ declare global {
     gitFriedOpenBisect?: () => void
     /** App.vue → ReflogModal trigger. */
     gitFriedOpenReflog?: () => void
-    /** App.vue → CompareModal trigger (Sprint C3). */
-    gitFriedOpenCompare?: (ref1?: string | null, ref2?: string | null) => void
+    /** App.vue → CompareModal trigger (Sprint C3 + c38 fix MED-3 mode). */
+    gitFriedOpenCompare?: (
+      ref1?: string | null,
+      ref2?: string | null,
+      mode?: 'diff' | 'range',
+    ) => void
     /** InteractiveRebaseModal self-register trigger. */
     gitFriedOpenRebase?: () => void
     /** pages/index.vue → TerminalPanel toggle. */

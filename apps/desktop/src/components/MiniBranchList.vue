@@ -8,6 +8,8 @@
 import { computed } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useBranches } from '@/composables/useBranches'
+// Sprint c38 fix HIGH-2 — plan/29 E5 acceptance "다른 worktree 점유 브랜치 cross-ref 배지".
+import { useWorktrees } from '@/composables/useWorktrees'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useStatusCounts } from '@/composables/useStatusCounts'
 import { useReposStore } from '@/stores/repos'
@@ -33,6 +35,19 @@ const search = useSidebarSearch()
 
 const { data: branches } = useBranches(repoIdRef)
 const { counts } = useStatusCounts(repoIdRef)
+// Sprint c38 fix HIGH-2 — worktree 점유 branch map (other-worktree 만, main 제외).
+// branch name → 점유 worktree path (다른 worktree).
+const { data: worktrees } = useWorktrees(repoIdRef)
+const occupiedMap = computed<Map<string, string>>(() => {
+  const m = new Map<string, string>()
+  const list = worktrees.value ?? []
+  for (const wt of list) {
+    if (wt.isMain) continue
+    if (!wt.branch) continue
+    m.set(wt.branch, wt.path)
+  }
+  return m
+})
 
 const localBranches = computed(() => {
   const all = branches.value ?? []
@@ -98,12 +113,20 @@ async function onSwitchBranch(name: string, isHead: boolean) {
           :class="
             data.isHead
               ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-500 rounded'
-              : 'text-foreground hover:bg-accent/40 cursor-pointer rounded'
+              : occupiedMap.has(data.name)
+                ? 'text-muted-foreground cursor-not-allowed rounded'
+                : 'text-foreground hover:bg-accent/40 cursor-pointer rounded'
           "
+          :disabled="occupiedMap.has(data.name) && !data.isHead"
           :title="
             data.isHead
-              ? '현재 HEAD (체크아웃 됨)'
-              : `${data.name} 으로 체크아웃 (clean working tree 권장)`
+              ? t('branchList.headTitle')
+              : occupiedMap.has(data.name)
+                ? t('branchList.occupiedTitle', {
+                    name: data.name,
+                    path: occupiedMap.get(data.name) ?? '',
+                  })
+                : t('branchList.checkoutTitle', { name: data.name })
           "
           @click="onSwitchBranch(data.name, data.isHead)"
         >
@@ -111,6 +134,13 @@ async function onSwitchBranch(name: string, isHead: boolean) {
           <span class="flex-1 truncate font-mono text-left">
             {{ data.name.split('/').pop() }}
           </span>
+          <!-- Sprint c38 fix HIGH-2 — 다른 worktree 점유 표시 (branch 옆 🔗) -->
+          <span
+            v-if="occupiedMap.has(data.name) && !data.isHead"
+            class="text-[10px] text-warning-amber"
+            :title="t('branchList.occupiedBadgeTitle', { path: occupiedMap.get(data.name) ?? '' })"
+            >🔗</span
+          >
           <span v-if="data.ahead || data.behind" class="text-[9px]">
             <span v-if="data.ahead" class="text-diff-add">↑{{ data.ahead }}</span>
             <span v-if="data.behind" class="ml-0.5 text-danger-rose">↓{{ data.behind }}</span>
