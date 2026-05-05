@@ -593,3 +593,50 @@ impl RawRelease {
         }
     }
 }
+
+// 2026-05-05 c41 — sync helper 가드 (mock HTTP 없이 검증 가능한 영역).
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_iso_rfc3339_to_unix() {
+        // GitHub API 응답 포맷 — non-zero epoch 반환.
+        let utc = parse_iso("2026-04-01T12:34:56Z");
+        assert!(utc > 0, "유효 RFC3339 는 non-zero epoch 으로 파싱");
+        // 동일 절대시각의 KST (+09:00) 표현과 epoch 동일 (tz 정규화).
+        let kst_same = parse_iso("2026-04-01T21:34:56+09:00");
+        assert_eq!(utc, kst_same, "tz 변환 후 동일 epoch");
+        // 잘못된 포맷은 0 fallback (UI 에서 epoch 감지 가능).
+        assert_eq!(parse_iso("not-a-date"), 0);
+        assert_eq!(parse_iso(""), 0);
+    }
+
+    #[test]
+    fn url_concatenates_base_with_path_segment() {
+        // .com/api/v3 같은 trailing 없이 base + path 가 정확히 결합.
+        let c = GithubClient::new(Some("https://api.github.com"), "ghp_xxx").unwrap();
+        assert_eq!(
+            c.url("/repos/tgkim/git-fried/pulls"),
+            "https://api.github.com/repos/tgkim/git-fried/pulls"
+        );
+        // base 의 trailing slash 는 제거됨 (new() 의 trim_end_matches).
+        let c2 = GithubClient::new(Some("https://ghe.example.com/api/v3/"), "ghp_xxx").unwrap();
+        assert_eq!(c2.url("/user"), "https://ghe.example.com/api/v3/user");
+    }
+
+    #[test]
+    fn new_rejects_token_with_invalid_header_chars() {
+        // PAT 에 newline / 제어문자 포함 시 HeaderValue::from_str 가 거부.
+        let bad = GithubClient::new(None, "ghp_with\nnewline");
+        assert!(bad.is_err(), "newline 포함 PAT 은 reject 되어야 함");
+        let bad2 = GithubClient::new(None, "ghp_with\rcr");
+        assert!(
+            bad2.is_err(),
+            "carriage return 포함 PAT 은 reject 되어야 함"
+        );
+        // 정상 PAT 은 통과 (실제 호출은 안 함).
+        let ok = GithubClient::new(None, "ghp_validToken1234567890");
+        assert!(ok.is_ok());
+    }
+}

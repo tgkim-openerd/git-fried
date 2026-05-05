@@ -400,4 +400,139 @@ mod tests {
         assert_eq!(r2.name, "새 이름");
         assert_eq!(r2.default_branch.as_deref(), Some("dev"));
     }
+
+    // 2026-05-05 c41 — storage migration smoke + DbExt CRUD round-trip 강화.
+    // /analyze 후속 권장 작업 #3 (forge/storage 단위 test).
+
+    #[tokio::test]
+    async fn test_workspace_update_delete_round_trip() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = Db::open(tmp.path()).await.unwrap();
+
+        let w = db.create_workspace("회사", Some("#0ea5e9")).await.unwrap();
+        let id = w.id;
+
+        // name 만 update.
+        let updated = db.update_workspace(id, Some("팀A"), None).await.unwrap();
+        assert_eq!(updated.name, "팀A");
+        assert_eq!(updated.color.as_deref(), Some("#0ea5e9"));
+
+        // color 만 update.
+        let updated2 = db
+            .update_workspace(id, None, Some("#10b981"))
+            .await
+            .unwrap();
+        assert_eq!(updated2.name, "팀A");
+        assert_eq!(updated2.color.as_deref(), Some("#10b981"));
+
+        // 둘 다 None — no-op fetch.
+        let updated3 = db.update_workspace(id, None, None).await.unwrap();
+        assert_eq!(updated3.id, id);
+
+        // delete + 재조회 시 not found.
+        db.delete_workspace(id).await.unwrap();
+        let after = db.list_workspaces().await.unwrap();
+        assert!(after.iter().all(|w| w.id != id));
+
+        // 없는 id update → WorkspaceNotFound.
+        let err = db.update_workspace(99999, Some("x"), None).await;
+        assert!(err.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_list_repos_workspace_filter_and_pin_toggle() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = Db::open(tmp.path()).await.unwrap();
+
+        let w_personal = db.create_workspace("개인", None).await.unwrap();
+        let w_work = db.create_workspace("회사", None).await.unwrap();
+
+        // 3 repos: 2 in personal, 1 in work.
+        let r1 = db
+            .add_repo(
+                "/tmp/p-1",
+                Some(w_personal.id),
+                Some("p1"),
+                None,
+                None,
+                ForgeKindLite::Github,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        let _r2 = db
+            .add_repo(
+                "/tmp/p-2",
+                Some(w_personal.id),
+                Some("p2"),
+                None,
+                None,
+                ForgeKindLite::Github,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        let _r3 = db
+            .add_repo(
+                "/tmp/w-1",
+                Some(w_work.id),
+                Some("w1"),
+                None,
+                None,
+                ForgeKindLite::Gitea,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+        // workspace 필터.
+        let p_all = db.list_repos(Some(w_personal.id)).await.unwrap();
+        assert_eq!(p_all.len(), 2);
+        let w_all = db.list_repos(Some(w_work.id)).await.unwrap();
+        assert_eq!(w_all.len(), 1);
+        // None = 전체.
+        let all = db.list_repos(None).await.unwrap();
+        assert_eq!(all.len(), 3);
+
+        // pin toggle round-trip.
+        assert!(!r1.is_pinned);
+        let pinned = db.set_repo_pinned(r1.id, true).await.unwrap();
+        assert!(pinned.is_pinned);
+        let unpinned = db.set_repo_pinned(r1.id, false).await.unwrap();
+        assert!(!unpinned.is_pinned);
+    }
+
+    #[tokio::test]
+    async fn test_workspace_delete_cascade_sets_repo_workspace_id_null() {
+        // FK ON DELETE SET NULL 확인 (workspaces -> repos.workspace_id).
+        // workspace 삭제 시 그 안의 repo 는 살아있고 workspace_id 만 NULL.
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = Db::open(tmp.path()).await.unwrap();
+
+        let w = db.create_workspace("temp", None).await.unwrap();
+        let r = db
+            .add_repo(
+                "/tmp/cascade",
+                Some(w.id),
+                Some("repo"),
+                None,
+                None,
+                ForgeKindLite::Unknown,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        assert_eq!(r.workspace_id, Some(w.id));
+
+        db.delete_workspace(w.id).await.unwrap();
+
+        // repo 는 살아있고 workspace_id 가 NULL.
+        let still = db.get_repo(r.id).await.unwrap();
+        assert_eq!(still.workspace_id, None);
+        assert_eq!(still.local_path, "/tmp/cascade");
+    }
 }

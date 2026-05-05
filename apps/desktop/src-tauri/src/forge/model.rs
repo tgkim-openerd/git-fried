@@ -198,4 +198,87 @@ mod tests {
         let a2: Author = serde_json::from_str(json2).unwrap();
         assert_eq!(a2.display_name.as_deref(), Some("태기"));
     }
+
+    // 2026-05-05 c41 — forge/model 추가 가드 (`auth_expired/rate_limit` mock 대신
+    // serde 계약 정합성 강화). GitHub API 응답 변경 시 silent break 방지.
+
+    #[test]
+    fn review_verdict_serde_snake_case_request_changes() {
+        // GitHub PR review state: APPROVED/COMMENTED/CHANGES_REQUESTED 와 별개로
+        // 우리 ReviewVerdict 는 snake_case 통일 (`request_changes`).
+        for (kind, expected) in [
+            (ReviewVerdict::Comment, "\"comment\""),
+            (ReviewVerdict::Approve, "\"approve\""),
+            (ReviewVerdict::RequestChanges, "\"request_changes\""),
+        ] {
+            assert_eq!(serde_json::to_string(&kind).unwrap(), expected);
+        }
+        // round-trip
+        let back: ReviewVerdict = serde_json::from_str("\"request_changes\"").unwrap();
+        assert_eq!(back, ReviewVerdict::RequestChanges);
+    }
+
+    #[test]
+    fn merge_method_serde_lowercase_three_methods() {
+        for (kind, expected) in [
+            (MergeMethod::Merge, "\"merge\""),
+            (MergeMethod::Squash, "\"squash\""),
+            (MergeMethod::Rebase, "\"rebase\""),
+        ] {
+            assert_eq!(serde_json::to_string(&kind).unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn pr_file_serde_camel_case_with_optional_previous_path() {
+        // GitHub PR files 응답 (rename 시 previousPath 존재).
+        let json = r#"{
+            "path":"src/foo.rs",
+            "previousPath":"src/old.rs",
+            "status":"renamed",
+            "additions":3,
+            "deletions":1,
+            "changes":4,
+            "patch":"@@ ..."
+        }"#;
+        let f: PrFile = serde_json::from_str(json).unwrap();
+        assert_eq!(f.path, "src/foo.rs");
+        assert_eq!(f.previous_path.as_deref(), Some("src/old.rs"));
+        assert_eq!(f.status, "renamed");
+        assert_eq!(f.additions, 3);
+        assert_eq!(f.deletions, 1);
+
+        // patch 가 누락된 케이스 (forge 가 큰 파일 시 None 반환).
+        let json2 = r#"{
+            "path":"big.bin",
+            "status":"modified",
+            "additions":0,
+            "deletions":0,
+            "changes":0
+        }"#;
+        let f2: PrFile = serde_json::from_str(json2).unwrap();
+        assert!(f2.previous_path.is_none());
+        assert!(f2.patch.is_none());
+    }
+
+    #[test]
+    fn release_serde_camel_case_draft_prerelease() {
+        let json = r#"{
+            "forgeKind":"github",
+            "owner":"tgkim",
+            "repo":"git-fried",
+            "tag":"v0.3.0",
+            "name":"0.3.0",
+            "bodyMd":"changelog body",
+            "draft":false,
+            "prerelease":true,
+            "createdAt":1714521600,
+            "htmlUrl":"https://github.com/tgkim/git-fried/releases/tag/v0.3.0"
+        }"#;
+        let r: Release = serde_json::from_str(json).unwrap();
+        assert_eq!(r.tag, "v0.3.0");
+        assert!(!r.draft);
+        assert!(r.prerelease);
+        assert_eq!(r.body_md, "changelog body");
+    }
 }

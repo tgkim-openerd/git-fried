@@ -585,3 +585,51 @@ impl RawRelease {
         }
     }
 }
+
+// 2026-05-05 c41 — sync helper 가드 (mock HTTP 없이 검증 가능한 영역).
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_iso_rfc3339_to_unix() {
+        // Gitea API 응답 포맷 — non-zero epoch 반환.
+        let utc = parse_iso("2026-04-01T03:34:56Z");
+        assert!(utc > 0, "유효 RFC3339 는 non-zero epoch");
+        // KST (+09:00) 와 동일 epoch 으로 정규화 (12:34 KST = 03:34 UTC).
+        assert_eq!(parse_iso("2026-04-01T12:34:56+09:00"), utc, "tz 정규화");
+        // 잘못된 포맷은 0 (silent fallback).
+        assert_eq!(parse_iso("invalid"), 0);
+    }
+
+    #[test]
+    fn normalize_base_strips_trailing_slash() {
+        assert_eq!(
+            normalize_base("https://gitea.example.com/"),
+            "https://gitea.example.com"
+        );
+        // 다중 trailing slash 도 모두 제거.
+        assert_eq!(
+            normalize_base("https://gitea.example.com///"),
+            "https://gitea.example.com"
+        );
+        // trailing 없으면 그대로.
+        assert_eq!(
+            normalize_base("https://gitea.example.com"),
+            "https://gitea.example.com"
+        );
+    }
+
+    #[test]
+    fn new_rejects_token_with_invalid_header_chars() {
+        // PAT 에 newline / 제어문자 포함 시 HeaderValue::from_str 가 거부.
+        let bad = GiteaClient::new("https://gitea.example.com", "tok\nwithlf");
+        assert!(bad.is_err(), "newline 포함 PAT 은 reject 되어야 함");
+        // 정상 PAT 은 통과.
+        let ok = GiteaClient::new("https://gitea.example.com", "valid_token_xyz");
+        assert!(ok.is_ok());
+        // base_url 정규화 검증 (trailing slash 제거).
+        let c = GiteaClient::new("https://gitea.example.com/", "tok").unwrap();
+        assert_eq!(c.base_url(), "https://gitea.example.com");
+    }
+}
