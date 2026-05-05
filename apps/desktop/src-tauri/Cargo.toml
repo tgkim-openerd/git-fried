@@ -45,7 +45,10 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio",
 # HTTP (Forge API 용 — v0.1 Sprint 5)
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
-# 파일 watching (v0.1 Sprint 4 에서 활용)
+# 파일 watching — `docs/plan/04 §file-system-watch` (v0.x 후속).
+# TODO(plan/04): notify::Watcher 통합 후 제거 가능 여부 재평가.
+# 2026-05-05 /analyze: 코드 0 import 확인 (5-Check certain). plan/04 의 외부 변경 감지
+# (.git refs / index / FETCH_HEAD watch) 로드맵 보존 차원에서 잔존.
 notify = "6.1"
 
 # 로그

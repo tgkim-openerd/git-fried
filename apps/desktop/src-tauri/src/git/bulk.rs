@@ -1,7 +1,9 @@
 // 멀티 레포 일괄 작업 — fetch / pull / status (parallel via tokio).
 //
 // 사용자가 워크스페이스의 모든 레포를 한 번에 fetch 하고 싶을 때 사용.
-// 각 작업은 tokio::spawn 으로 병렬, Result<T, String> per repo 수집.
+// 각 작업은 tokio::spawn 으로 병렬 실행, 결과는 `BulkResult<T>` (success/data/error)
+// 로 wrapping 하여 부분 실패를 허용. 함수 시그니처는 모두 `Result<_, AppError>` 로
+// 통일 (legacy Result<_, String> 잔재 없음, 2026-05-05 /analyze 후속 정리).
 
 use crate::auth;
 use crate::error::AppError;

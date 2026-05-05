@@ -3,16 +3,17 @@
 > 자동 생성: `bun scripts/generate-tauri-commands-index.mjs`
 > 소스: `apps/desktop/src-tauri/src/ipc/*.rs`
 
-**총 168 commands**, 24 파일, 65 카테고리.
+**총 168 commands**, 25 파일, 65 카테고리.
 
 ## 파일별 분포
 
 | 파일 | commands |
 |---|---:|
-| `ipc/v02_commands.rs` | 26 |
 | `ipc/forge_commands.rs` | 17 |
+| `ipc/v02_commands.rs` | 17 |
 | `ipc/status_commands.rs` | 12 |
 | `ipc/stash_commands.rs` | 10 |
+| `ipc/ai_commands.rs` | 9 |
 | `ipc/lfs_commands.rs` | 9 |
 | `ipc/remote_commands.rs` | 9 |
 | `ipc/branch_commands.rs` | 8 |
@@ -39,9 +40,9 @@
 | 카테고리 | commands |
 |---|---:|
 | `list_*` | 17 |
+| `ai_*` | 9 |
 | `get_*` | 9 |
 | `lfs_*` | 9 |
-| `ai_*` | 9 |
 | `launchpad_*` | 8 |
 | `rebase_*` | 7 |
 | `create_*` | 5 |
@@ -126,6 +127,18 @@
 - **`list_reflog(args: ReflogArgs) -> AppResult<Vec<git_reflog::ReflogEntry>>`** — `ipc/v02_commands.rs`
 - **`list_workspaces() -> AppResult<Vec<Workspace>>`** — `ipc/workspace_commands.rs`
 
+### `ai_*` (9)
+
+- **`ai_detect_clis() -> Vec<ai::AiProbe>`** — `ipc/ai_commands.rs`
+- **`ai_commit_message(args: AiCommitMessageArgs) -> AppResult<ai::AiOutput>`** — `ipc/ai_commands.rs`
+- **`ai_resolve_conflict(args: AiResolveConflictArgs) -> AppResult<ai::AiOutput>`** — `ipc/ai_commands.rs`
+- **`ai_code_review(args: AiCodeReviewArgs) -> AppResult<ai::AiOutput>`** — `ipc/ai_commands.rs`
+- **`ai_pr_body(args: AiPrBodyArgs) -> AppResult<ai::AiOutput>`** — `ipc/ai_commands.rs`
+- **`ai_explain_commit(args: AiExplainCommitArgs) -> AppResult<ai::AiOutput>`** — `ipc/ai_commands.rs`
+- **`ai_explain_branch(args: AiExplainBranchArgs) -> AppResult<ai::AiOutput>`** — `ipc/ai_commands.rs`
+- **`ai_stash_message(args: AiStashMessageArgs) -> AppResult<ai::AiOutput>`** — `ipc/ai_commands.rs`
+- **`ai_composer_plan(args: AiComposerArgs) -> AppResult<ai::AiOutput>`** — `ipc/ai_commands.rs`
+
 ### `get_*` (9)
 
 - **`get_app_info() -> AppInfo`** — `ipc/commands.rs`
@@ -149,18 +162,6 @@
 - **`lfs_pull(repo_id: i64) -> AppResult<()>`** — `ipc/lfs_commands.rs`
 - **`lfs_prune(repo_id: i64) -> AppResult<()>`** — `ipc/lfs_commands.rs`
 - **`lfs_push_size(repo_id: i64) -> AppResult<git_lfs::LfsPushSize>`** — `ipc/lfs_commands.rs`
-
-### `ai_*` (9)
-
-- **`ai_detect_clis() -> Vec<ai::AiProbe>`** — `ipc/v02_commands.rs`
-- **`ai_commit_message(args: AiCommitMessageArgs) -> AppResult<ai::AiOutput>`** — `ipc/v02_commands.rs`
-- **`ai_resolve_conflict(args: AiResolveConflictArgs) -> AppResult<ai::AiOutput>`** — `ipc/v02_commands.rs`
-- **`ai_code_review(args: AiCodeReviewArgs) -> AppResult<ai::AiOutput>`** — `ipc/v02_commands.rs`
-- **`ai_pr_body(args: AiPrBodyArgs) -> AppResult<ai::AiOutput>`** — `ipc/v02_commands.rs`
-- **`ai_explain_commit(args: AiExplainCommitArgs) -> AppResult<ai::AiOutput>`** — `ipc/v02_commands.rs`
-- **`ai_explain_branch(args: AiExplainBranchArgs) -> AppResult<ai::AiOutput>`** — `ipc/v02_commands.rs`
-- **`ai_stash_message(args: AiStashMessageArgs) -> AppResult<ai::AiOutput>`** — `ipc/v02_commands.rs`
-- **`ai_composer_plan(args: AiComposerArgs) -> AppResult<ai::AiOutput>`** — `ipc/v02_commands.rs`
 
 ### `launchpad_*` (8)
 
