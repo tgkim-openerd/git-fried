@@ -681,6 +681,24 @@
     "errCommitInvalidBody": "Empty message or repo not selected",
     "errStageAllFailed": "Stage all failed"
   },
+  "commitDiff": {
+    "loading": "Loading...",
+    "hunkNavSingle": "Single hunk — nav not needed",
+    "hunkNavMulti": "{n} hunks — use ↑↓ to navigate",
+    "prevHunk": "Previous hunk",
+    "nextHunk": "Next hunk",
+    "modeCompact": "Changed lines only (-U0)",
+    "modeDefault": "Default 3-line context (-U3)",
+    "modeContext": "Extended 25-line context (-U25)",
+    "modeSplit": "Split — side-by-side (multi-file picker)",
+    "btnCherryPick": "Cherry-pick onto HEAD",
+    "btnRevert": "Revert this commit (creates new commit)",
+    "resetModeTitle": "Select reset mode",
+    "btnClose": "Close",
+    "selectFirst": "Select a commit from the graph first. (J/K or click)",
+    "explainTitle": "Commit explanation",
+    "btnExplain": "Explain"
+  },
   "shortcuts": {
     "title": "⌨ Keyboard shortcuts",
     "groups": {
