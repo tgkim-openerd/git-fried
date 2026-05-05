@@ -17,7 +17,7 @@ import {
 } from '@/api/git'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
-import { confirmDialog } from '@/composables/useConfirm'
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 import { i18n } from '@/i18n'
 
 const t = i18n.global.t
@@ -69,10 +69,11 @@ export function useBranchActions(getRepoId: () => number | null) {
   async function createFrom(branch: BranchInfo) {
     const id = repoIdOrToast()
     if (id == null) return
-    const name = window.prompt(
-      `새 브랜치 이름 (from ${branch.name}):`,
-      `${localBranchName(branch.name)}-copy`,
-    )
+    const name = await promptDialog({
+      title: t('branchActions.createFromTitle'),
+      message: t('branchActions.createFromMessage', { from: branch.name }),
+      defaultValue: `${localBranchName(branch.name)}-copy`,
+    })
     if (!name?.trim()) return
     try {
       // start = remote 면 remote ref, local 이면 그대로 (git CLI 가 알아서 처리)
@@ -91,7 +92,11 @@ export function useBranchActions(getRepoId: () => number | null) {
       toast.warning('Rename 불가', 'remote 브랜치는 rename 미지원')
       return
     }
-    const next = window.prompt(`'${branch.name}' 새 이름:`, branch.name)
+    const next = await promptDialog({
+      title: t('branchActions.renameTitle'),
+      message: t('branchActions.renameMessage', { name: branch.name }),
+      defaultValue: branch.name,
+    })
     if (!next?.trim() || next.trim() === branch.name) return
     try {
       await renameBranch(id, branch.name, next.trim())

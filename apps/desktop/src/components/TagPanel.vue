@@ -25,7 +25,7 @@ import { formatDateLocalized } from '@/composables/useUserSettings'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
-import { confirmDialog } from '@/composables/useConfirm'
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 
 const props = defineProps<{ repoId: number | null }>()
 
@@ -154,16 +154,17 @@ async function checkoutTag(tag: TagInfo) {
   }
 }
 
-async function createBranchFromTag(t: TagInfo) {
+async function createBranchFromTag(tag: TagInfo) {
   if (props.repoId == null) return
-  const name = window.prompt(
-    `tag '${t.name}' 에서 브랜치 생성 — 새 브랜치 이름:`,
-    t.name + '-branch',
-  )
+  const name = await promptDialog({
+    title: t('tagActions.createBranchTitle'),
+    message: t('tagActions.createBranchMessage', { name: tag.name }),
+    defaultValue: tag.name + '-branch',
+  })
   if (!name?.trim()) return
   try {
-    await createBranch(props.repoId, name.trim(), t.name)
-    toast.success('브랜치 생성', `${name.trim()} from ${t.name}`)
+    await createBranch(props.repoId, name.trim(), tag.name)
+    toast.success('브랜치 생성', `${name.trim()} from ${tag.name}`)
     invalidateAll(props.repoId)
   } catch (e) {
     toast.error('브랜치 생성 실패', describeError(e))

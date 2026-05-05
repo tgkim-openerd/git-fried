@@ -600,7 +600,33 @@
     "hideOff": "숨김 해제",
     "hideOn": "그래프에서 숨김",
     "soloOnTitle": "이 브랜치만 표시",
-    "deleteTitle": "삭제"
+    "deleteTitle": "삭제",
+    "explainBaseTitle": "브랜치 비교 — base 입력",
+    "explainBaseMessage": "브랜치 {head} 을(를) 어떤 base 와 비교할까요?"
+  },
+  "branchActions": {
+    "createFromTitle": "브랜치 생성",
+    "createFromMessage": "{from} 에서 새 브랜치 — 이름을 입력하세요.",
+    "renameTitle": "브랜치 이름 변경",
+    "renameMessage": "'{name}' 의 새 이름을 입력하세요."
+  },
+  "commitActions": {
+    "resetHardTitle": "⚠ HARD reset 확인",
+    "resetHardMessage": "working tree + index 가 영구 손실됩니다.\n\n진행하려면 정확히 입력하세요:\n\n{expected}",
+    "createBranchTitle": "브랜치 생성",
+    "createBranchMessage": "{sha} 에서 새 브랜치 — 이름을 입력하세요.",
+    "createTagTitle": "Tag 생성",
+    "createTagMessage": "{sha} 에서 새 tag — 이름을 입력하세요.",
+    "createTagAnnotatedTitle": "Annotated 메시지",
+    "createTagAnnotatedMessage": "annotated 메시지 (비우면 lightweight tag)"
+  },
+  "tagActions": {
+    "createBranchTitle": "Tag 에서 브랜치 생성",
+    "createBranchMessage": "tag '{name}' 에서 새 브랜치 — 이름을 입력하세요."
+  },
+  "reflog": {
+    "recoverBranchTitle": "Reflog 복구 브랜치",
+    "recoverBranchMessage": "{sha} 에서 복구 브랜치 — 이름을 입력하세요."
   },
   "shortcuts": {
     "title": "⌨ 키보드 단축키",

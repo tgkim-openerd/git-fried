@@ -12,7 +12,7 @@ import { formatDateLocalized } from '@/composables/useUserSettings'
 import BaseModal from './BaseModal.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 
 const { t } = useI18n()
 
@@ -108,10 +108,11 @@ async function restoreHeadTo(sha: string) {
 
 async function createBranchHere(sha: string) {
   if (repoId.value == null) return
-  const name = window.prompt(
-    `복구 브랜치 이름 (from ${sha.slice(0, 8)}):`,
-    'recover/' + sha.slice(0, 8),
-  )
+  const name = await promptDialog({
+    title: t('reflog.recoverBranchTitle'),
+    message: t('reflog.recoverBranchMessage', { sha: sha.slice(0, 8) }),
+    defaultValue: 'recover/' + sha.slice(0, 8),
+  })
   if (!name?.trim()) return
   try {
     await createBranch(repoId.value, name.trim(), sha)

@@ -600,7 +600,33 @@
     "hideOff": "Unhide",
     "hideOn": "Hide from graph",
     "soloOnTitle": "Show only this branch",
-    "deleteTitle": "Delete"
+    "deleteTitle": "Delete",
+    "explainBaseTitle": "Compare branch — enter base",
+    "explainBaseMessage": "Which base do you want to compare branch {head} against?"
+  },
+  "branchActions": {
+    "createFromTitle": "Create branch",
+    "createFromMessage": "Enter a name for the new branch from {from}.",
+    "renameTitle": "Rename branch",
+    "renameMessage": "Enter a new name for '{name}'."
+  },
+  "commitActions": {
+    "resetHardTitle": "⚠ Confirm HARD reset",
+    "resetHardMessage": "The working tree + index will be permanently lost.\n\nType the following exactly to proceed:\n\n{expected}",
+    "createBranchTitle": "Create branch",
+    "createBranchMessage": "Enter a name for the new branch from {sha}.",
+    "createTagTitle": "Create tag",
+    "createTagMessage": "Enter a name for the new tag from {sha}.",
+    "createTagAnnotatedTitle": "Annotated message",
+    "createTagAnnotatedMessage": "Annotated message (leave empty for lightweight tag)"
+  },
+  "tagActions": {
+    "createBranchTitle": "Create branch from tag",
+    "createBranchMessage": "Enter a new branch name from tag '{name}'."
+  },
+  "reflog": {
+    "recoverBranchTitle": "Reflog recovery branch",
+    "recoverBranchMessage": "Enter a name for the recovery branch from {sha}."
   },
   "shortcuts": {
     "title": "⌨ Keyboard shortcuts",

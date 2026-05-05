@@ -18,7 +18,7 @@ import AiResultModal from './AiResultModal.vue'
 import RemoteManageModal from './RemoteManageModal.vue'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 import { useBranchActions, localBranchName } from '@/composables/useBranchActions'
 import SkeletonBlock from './SkeletonBlock.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
@@ -207,7 +207,11 @@ async function onExplainBranch(b: BranchInfo) {
   // base 는 사용자 입력 — 디폴트 main / master 추정.
   const head = localName(b.name)
   const guessBase = b.kind === 'local' ? 'main' : 'main'
-  const base = window.prompt(`브랜치 ${head} 을(를) 어떤 base 와 비교?`, guessBase)
+  const base = await promptDialog({
+    title: t('branch.explainBaseTitle'),
+    message: t('branch.explainBaseMessage', { head }),
+    defaultValue: guessBase,
+  })
   if (!base?.trim()) return
   if (!(await confirmAiSend())) return
   // Sprint c32 — composable 위임 (modal open + IPC + 결과 ref 갱신).

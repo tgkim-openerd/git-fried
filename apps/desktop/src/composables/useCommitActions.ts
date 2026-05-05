@@ -15,7 +15,7 @@ import {
 } from '@/api/git'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
-import { confirmDialog } from '@/composables/useConfirm'
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 import { i18n } from '@/i18n'
 
 const t = i18n.global.t
@@ -82,10 +82,11 @@ export function useCommitActions(getRepoId: () => number | null) {
     // SEC-003 fix — hard 모드는 type-to-confirm (working tree 영구 손실 방지).
     if (mode === 'hard') {
       const expected = `reset --hard ${sha.slice(0, 8)}`
-      const input = window.prompt(
-        `⚠ HARD reset — working tree + index 영구 손실\n\n` +
-          `진행하려면 다음 정확히 입력:\n\n${expected}`,
-      )
+      const input = await promptDialog({
+        title: t('commitActions.resetHardTitle'),
+        message: t('commitActions.resetHardMessage', { expected }),
+        placeholder: expected,
+      })
       if (input?.trim() !== expected) {
         toast.info('Reset 취소', '입력이 일치하지 않아 취소됨')
         return
@@ -111,7 +112,10 @@ export function useCommitActions(getRepoId: () => number | null) {
   async function createBranchFrom(sha: string) {
     const id = repoIdOrToast()
     if (id == null) return
-    const name = window.prompt(`새 브랜치 이름 (from ${sha.slice(0, 8)}):`)
+    const name = await promptDialog({
+      title: t('commitActions.createBranchTitle'),
+      message: t('commitActions.createBranchMessage', { sha: sha.slice(0, 8) }),
+    })
     if (!name?.trim()) return
     try {
       await createBranch(id, name.trim(), sha)
@@ -125,9 +129,16 @@ export function useCommitActions(getRepoId: () => number | null) {
   async function createTagFrom(sha: string) {
     const id = repoIdOrToast()
     if (id == null) return
-    const name = window.prompt(`새 tag 이름 (from ${sha.slice(0, 8)}):`)
+    const name = await promptDialog({
+      title: t('commitActions.createTagTitle'),
+      message: t('commitActions.createTagMessage', { sha: sha.slice(0, 8) }),
+    })
     if (!name?.trim()) return
-    const message = window.prompt('annotated 메시지 (비우면 lightweight):') ?? ''
+    const message =
+      (await promptDialog({
+        title: t('commitActions.createTagAnnotatedTitle'),
+        message: t('commitActions.createTagAnnotatedMessage'),
+      })) ?? ''
     try {
       await createTag(id, name.trim(), sha, message.trim() || null)
       toast.success('Tag 생성', `${name.trim()} from ${sha.slice(0, 8)}`)
