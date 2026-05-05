@@ -20,6 +20,7 @@
 //   - 2026-05-04 c40 후속 (review fix) — ARCH-001 dead `pub use *::*` 23 wildcard 제거.
 use crate::storage::DbExt;
 
+pub mod ai_commands;
 pub mod alias_commands;
 pub mod bisect_commands;
 pub mod branch_commands;
