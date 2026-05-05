@@ -648,6 +648,39 @@
     "recoverBranchTitle": "Reflog recovery branch",
     "recoverBranchMessage": "Enter a name for the recovery branch from {sha}."
   },
+  "interactiveRebase": {
+    "errNoRepo": "Repo not selected",
+    "errNoRepoBody": "Select a repo in the sidebar first.",
+    "toastTodoFailed": "todo prepare failed",
+    "toastSuccess": "Rebase done",
+    "toastSuccessBody": "{n} commits processed",
+    "toastConflict": "Conflict",
+    "toastConflictBody": "step {current}/{total}",
+    "toastFailed": "Rebase failed",
+    "toastRunFailed": "Rebase run failed",
+    "toastContinueSuccess": "Rebase --continue done",
+    "toastContinueFailed": "--continue failed",
+    "toastSkipFailed": "--skip failed",
+    "toastAbortSuccess": "Rebase aborted",
+    "toastAbortFailed": "--abort failed"
+  },
+  "commitDetail": {
+    "errNoRepoCommit": "Repo/commit not selected",
+    "errNoCli": "Claude/Codex CLI not installed",
+    "errEmptyResponse": "Empty response",
+    "toastSha": "SHA copied",
+    "toastShaFailed": "Copy failed",
+    "toastAiCli": "AI commit explain",
+    "toastAiUnavailable": "AI CLI unavailable",
+    "toastAiUnavailableBody": "Install Claude or Codex CLI and retry"
+  },
+  "commitInput": {
+    "errFetchLastFailed": "Failed to fetch last commit message",
+    "errAiFailed": "AI call failed",
+    "errCommitInvalid": "Commit invalid",
+    "errCommitInvalidBody": "Empty message or repo not selected",
+    "errStageAllFailed": "Stage all failed"
+  },
   "shortcuts": {
     "title": "⌨ Keyboard shortcuts",
     "groups": {

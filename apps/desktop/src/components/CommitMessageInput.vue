@@ -89,7 +89,7 @@ watch(
         freeMessage.value = last
       }
     } catch (e) {
-      toast.error('마지막 커밋 메시지 조회 실패', describeError(e))
+      toast.error(t('commitInput.errFetchLastFailed'), describeError(e))
     }
   },
   { immediate: false },
@@ -156,7 +156,7 @@ const aiCm = useAiCommitMessage(() => props.repoId, {
     }
   },
   onError: (e) => {
-    toast.error('AI 호출 실패', describeError(e))
+    toast.error(t('commitInput.errAiFailed'), describeError(e))
   },
 })
 const availableCli = aiCm.availableCli
@@ -178,7 +178,7 @@ useShortcut('focusMessage', () => {
 async function dispatchStageAndCommit() {
   if (props.repoId == null) return
   if (!canCommit()) {
-    toast.error('커밋 불가', '메시지가 비어있거나 레포 미선택')
+    toast.error(t('commitInput.errCommitInvalid'), t('commitInput.errCommitInvalidBody'))
     return
   }
   try {
@@ -186,7 +186,7 @@ async function dispatchStageAndCommit() {
     invalidate(props.repoId)
     commitMut.mutate({ noVerify: noVerify.value })
   } catch (e) {
-    toast.error('Stage all 실패', describeError(e))
+    toast.error(t('commitInput.errStageAllFailed'), describeError(e))
   }
 }
 useShortcut('stageAndCommit', dispatchStageAndCommit)

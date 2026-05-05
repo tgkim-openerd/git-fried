@@ -29,6 +29,9 @@ import { useInvalidateRepoQueries } from '@/composables/useStatus'
 // Sprint c34 god comp 14/N — AI Commit Composer 영역 분리.
 import { useAiComposer } from '@/composables/useAiComposer'
 import BaseModal from './BaseModal.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 type Step = 'setup' | 'edit' | 'running' | 'result'
 
@@ -64,19 +67,19 @@ async function refreshStatus() {
 
 const prepareMut = useMutation({
   mutationFn: () => {
-    if (repoId.value == null) throw new Error('레포 미선택')
+    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
     return rebasePrepareTodo(repoId.value, count.value)
   },
   onSuccess: (entries) => {
     todo.value = entries
     step.value = 'edit'
   },
-  onError: (e) => toast.error('todo 준비 실패', describeError(e)),
+  onError: (e) => toast.error(t('interactiveRebase.toastTodoFailed'), describeError(e)),
 })
 
 const runMut = useMutation({
   mutationFn: () => {
-    if (repoId.value == null) throw new Error('레포 미선택')
+    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
     const base = `HEAD~${todo.value.length}`
     return rebaseRun(repoId.value, base, todo.value)
   },
@@ -86,36 +89,45 @@ const runMut = useMutation({
     step.value = 'result'
     invalidate(repoId.value)
     if (res.success) {
-      toast.success('Rebase 완료', `${todo.value.length} 개 commit 처리`)
+      toast.success(
+        t('interactiveRebase.toastSuccess'),
+        t('interactiveRebase.toastSuccessBody', { n: todo.value.length }),
+      )
     } else if (res.status.conflict) {
-      toast.error('충돌 발생', `step ${res.status.currentStep}/${res.status.totalSteps}`)
+      toast.error(
+        t('interactiveRebase.toastConflict'),
+        t('interactiveRebase.toastConflictBody', {
+          current: res.status.currentStep,
+          total: res.status.totalSteps,
+        }),
+      )
     } else {
-      toast.error('Rebase 실패', res.stderr.slice(0, 200))
+      toast.error(t('interactiveRebase.toastFailed'), res.stderr.slice(0, 200))
     }
   },
   onError: (e) => {
-    toast.error('Rebase 실행 실패', describeError(e))
+    toast.error(t('interactiveRebase.toastRunFailed'), describeError(e))
     step.value = 'edit'
   },
 })
 
 const continueMut = useMutation({
   mutationFn: () => {
-    if (repoId.value == null) throw new Error('레포 미선택')
+    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
     return rebaseContinue(repoId.value)
   },
   onSuccess: (res) => {
     lastResult.value = res
     status.value = res.status
     invalidate(repoId.value)
-    if (res.success) toast.success('Rebase --continue 완료')
+    if (res.success) toast.success(t('interactiveRebase.toastContinueSuccess'))
   },
-  onError: (e) => toast.error('--continue 실패', describeError(e)),
+  onError: (e) => toast.error(t('interactiveRebase.toastContinueFailed'), describeError(e)),
 })
 
 const skipMut = useMutation({
   mutationFn: () => {
-    if (repoId.value == null) throw new Error('레포 미선택')
+    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
     return rebaseSkip(repoId.value)
   },
   onSuccess: (res) => {
@@ -123,20 +135,20 @@ const skipMut = useMutation({
     status.value = res.status
     invalidate(repoId.value)
   },
-  onError: (e) => toast.error('--skip 실패', describeError(e)),
+  onError: (e) => toast.error(t('interactiveRebase.toastSkipFailed'), describeError(e)),
 })
 
 const abortMut = useMutation({
   mutationFn: () => {
-    if (repoId.value == null) throw new Error('레포 미선택')
+    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
     return rebaseAbort(repoId.value)
   },
   onSuccess: () => {
     invalidate(repoId.value)
-    toast.success('Rebase 중단됨')
+    toast.success(t('interactiveRebase.toastAbortSuccess'))
     close()
   },
-  onError: (e) => toast.error('--abort 실패', describeError(e)),
+  onError: (e) => toast.error(t('interactiveRebase.toastAbortFailed'), describeError(e)),
 })
 
 function setAction(idx: number, action: RebaseAction) {
@@ -169,7 +181,7 @@ const canRun = computed(() => {
 // 외부 트리거 (CommandPalette).
 function externalOpen() {
   if (repoId.value == null) {
-    toast.error('레포 미선택', '먼저 사이드바에서 레포를 선택하세요.')
+    toast.error(t('interactiveRebase.errNoRepo'), t('interactiveRebase.errNoRepoBody'))
     return
   }
   open.value = true

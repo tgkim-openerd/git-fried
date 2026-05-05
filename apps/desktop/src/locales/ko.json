@@ -648,6 +648,39 @@
     "recoverBranchTitle": "Reflog 복구 브랜치",
     "recoverBranchMessage": "{sha} 에서 복구 브랜치 — 이름을 입력하세요."
   },
+  "interactiveRebase": {
+    "errNoRepo": "레포 미선택",
+    "errNoRepoBody": "먼저 사이드바에서 레포를 선택하세요.",
+    "toastTodoFailed": "todo 준비 실패",
+    "toastSuccess": "Rebase 완료",
+    "toastSuccessBody": "{n} 개 commit 처리",
+    "toastConflict": "충돌 발생",
+    "toastConflictBody": "step {current}/{total}",
+    "toastFailed": "Rebase 실패",
+    "toastRunFailed": "Rebase 실행 실패",
+    "toastContinueSuccess": "Rebase --continue 완료",
+    "toastContinueFailed": "--continue 실패",
+    "toastSkipFailed": "--skip 실패",
+    "toastAbortSuccess": "Rebase 중단됨",
+    "toastAbortFailed": "--abort 실패"
+  },
+  "commitDetail": {
+    "errNoRepoCommit": "레포/commit 미확정",
+    "errNoCli": "Claude/Codex CLI 미설치",
+    "errEmptyResponse": "응답 실패",
+    "toastSha": "SHA 복사",
+    "toastShaFailed": "복사 실패",
+    "toastAiCli": "AI commit 설명",
+    "toastAiUnavailable": "AI CLI 미설치",
+    "toastAiUnavailableBody": "Claude 또는 Codex CLI 설치 후 재시도"
+  },
+  "commitInput": {
+    "errFetchLastFailed": "마지막 커밋 메시지 조회 실패",
+    "errAiFailed": "AI 호출 실패",
+    "errCommitInvalid": "커밋 불가",
+    "errCommitInvalidBody": "메시지가 비어있거나 레포 미선택",
+    "errStageAllFailed": "Stage all 실패"
+  },
   "shortcuts": {
     "title": "⌨ 키보드 단축키",
     "groups": {

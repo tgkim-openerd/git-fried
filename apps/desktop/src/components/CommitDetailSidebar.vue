@@ -24,6 +24,9 @@ import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import AiResultModal from './AiResultModal.vue'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   repoId: number | null
@@ -65,9 +68,9 @@ async function copySha() {
   if (!props.sha) return
   try {
     await navigator.clipboard.writeText(props.sha)
-    toast.success('SHA 복사', props.sha.slice(0, 8))
+    toast.success(t('commitDetail.toastSha'), props.sha.slice(0, 8))
   } catch (e) {
-    toast.error('복사 실패', describeError(e))
+    toast.error(t('commitDetail.toastShaFailed'), describeError(e))
   }
 }
 
@@ -150,10 +153,10 @@ const explainError = ref<string | null>(null)
 const explainMut = useMutation({
   mutationFn: async () => {
     if (props.repoId == null || !props.sha) {
-      throw new Error('레포/commit 미확정')
+      throw new Error(t('commitDetail.errNoRepoCommit'))
     }
     if (ai.available.value == null) {
-      throw new Error('Claude/Codex CLI 미설치')
+      throw new Error(t('commitDetail.errNoCli'))
     }
     if (!(await confirmAiSend())) throw new Error('cancelled')
     return aiExplainCommit(props.repoId, ai.available.value, props.sha, true)
@@ -162,10 +165,10 @@ const explainMut = useMutation({
     if (out.success) {
       explainContent.value = out.text
       explainError.value = null
-      notifyAiDone('AI commit 설명', props.sha?.slice(0, 7) ?? '')
+      notifyAiDone(t('commitDetail.toastAiCli'), props.sha?.slice(0, 7) ?? '')
     } else {
       explainContent.value = ''
-      explainError.value = out.stderr || out.text || '응답 실패'
+      explainError.value = out.stderr || out.text || t('commitDetail.errEmptyResponse')
     }
   },
   onError: (e) => {
@@ -181,7 +184,7 @@ const explainMut = useMutation({
 function onExplainCommit() {
   if (!props.sha) return
   if (ai.available.value == null) {
-    toast.warning('AI CLI 미설치', 'Claude 또는 Codex CLI 설치 후 재시도')
+    toast.warning(t('commitDetail.toastAiUnavailable'), t('commitDetail.toastAiUnavailableBody'))
     return
   }
   explainOpen.value = true
