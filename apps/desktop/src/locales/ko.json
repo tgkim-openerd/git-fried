@@ -353,7 +353,18 @@
     "ctxHint": "⌥ 우클릭 메뉴: Push / Checkout / Create branch / Copy SHA / Delete",
     "pushAria": "tag '{name}' origin 에 push",
     "delLocalAria": "로컬 tag '{name}' 삭제",
-    "delRemoteAria": "원격 tag 'origin/{name}' 삭제"
+    "delRemoteAria": "원격 tag 'origin/{name}' 삭제",
+    "errNoRepo": "레포 미선택",
+    "toastCreated": "Tag 생성",
+    "toastCreateFailed": "Tag 생성 실패",
+    "toastDeleted": "Tag 삭제",
+    "toastDeleteFailed": "Tag 삭제 실패",
+    "toastPushed": "Tag push",
+    "toastPushFailed": "Tag push 실패",
+    "toastRemoteDeleted": "원격 tag 삭제",
+    "toastRemoteDeleteFailed": "원격 tag 삭제 실패",
+    "toastCheckout": "Checkout",
+    "toastCheckoutFailed": "Checkout 실패"
   },
   "pr": {
     "title": "Pull Requests",
@@ -602,7 +613,16 @@
     "soloOnTitle": "이 브랜치만 표시",
     "deleteTitle": "삭제",
     "explainBaseTitle": "브랜치 비교 — base 입력",
-    "explainBaseMessage": "브랜치 {head} 을(를) 어떤 base 와 비교할까요?"
+    "explainBaseMessage": "브랜치 {head} 을(를) 어떤 base 와 비교할까요?",
+    "toastBulkHideAlready": "이미 모두 hidden",
+    "toastBulkHideFailed": "일괄 hide 실패",
+    "toastSwitchFailed": "Switch 실패",
+    "toastCreateFailed": "Create 실패",
+    "toastDeleteFailed": "Delete 실패",
+    "tooltipHead": "(현재 HEAD)",
+    "tooltipDblclick": "— dblclick=switch, 우클릭=메뉴",
+    "toastAiUnavailable": "AI 사용 불가",
+    "toastAiUnavailableBody": "Claude/Codex CLI 미설치"
   },
   "branchActions": {
     "createFromTitle": "브랜치 생성",

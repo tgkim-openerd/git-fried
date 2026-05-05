@@ -78,19 +78,19 @@ function bulkHideKind(kind: HiddenRefKind) {
     .filter((b) => refKindOf(b) === kind && !isHidden(b.name))
     .map((b) => ({ refName: b.name, refKind: kind }))
   if (targets.length === 0) {
-    toast.success('이미 모두 hidden', '')
+    toast.success(t('branch.toastBulkHideAlready'), '')
     return
   }
   hiddenMut.bulkHide.mutate(targets, {
     onSuccess: (n) => toast.success(`${n}개 hidden`, kind),
-    onError: (e) => toast.error('일괄 hide 실패', describeError(e)),
+    onError: (e) => toast.error(t('branch.toastBulkHideFailed'), describeError(e)),
   })
 }
 
 const switchMut = useMutation({
   mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name, false),
   onSuccess: () => invalidate(props.repoId),
-  onError: (e) => toast.error('Switch 실패', describeError(e)),
+  onError: (e) => toast.error(t('branch.toastSwitchFailed'), describeError(e)),
 })
 
 const createMut = useMutation({
@@ -99,14 +99,14 @@ const createMut = useMutation({
     newBranchName.value = ''
     invalidate(props.repoId)
   },
-  onError: (e) => toast.error('Create 실패', describeError(e)),
+  onError: (e) => toast.error(t('branch.toastCreateFailed'), describeError(e)),
 })
 
 const deleteMut = useMutation({
   mutationFn: ({ id, name, force }: { id: number; name: string; force: boolean }) =>
     deleteBranch(id, name, force),
   onSuccess: () => invalidate(props.repoId),
-  onError: (e) => toast.error('Delete 실패', describeError(e)),
+  onError: (e) => toast.error(t('branch.toastDeleteFailed'), describeError(e)),
 })
 
 function onSwitch(b: BranchInfo) {
@@ -154,8 +154,8 @@ function branchHoverTitle(b: BranchInfo): string {
   if (b.upstream) lines.push(`upstream: ${b.upstream}`)
   if (b.ahead) lines.push(`↑ ${b.ahead} (push 가능)`)
   if (b.behind) lines.push(`↓ ${b.behind} (pull 필요)`)
-  if (b.isHead) lines.push('(현재 HEAD)')
-  lines.push('— dblclick=switch, 우클릭=메뉴')
+  if (b.isHead) lines.push(t('branch.tooltipHead'))
+  lines.push(t('branch.tooltipDblclick'))
   return lines.join('\n')
 }
 
@@ -201,7 +201,7 @@ function onBranchContextMenu(ev: MouseEvent, b: BranchInfo) {
 
 async function onExplainBranch(b: BranchInfo) {
   if (props.repoId == null || ai.available.value == null) {
-    toast.error('AI 사용 불가', 'Claude/Codex CLI 미설치')
+    toast.error(t('branch.toastAiUnavailable'), t('branch.toastAiUnavailableBody'))
     return
   }
   // base 는 사용자 입력 — 디폴트 main / master 추정.

@@ -53,29 +53,29 @@ const newName = ref('')
 const newMessage = ref('') // 빈 = lightweight, 채워지면 annotated
 const createMut = useMutation({
   mutationFn: () => {
-    if (props.repoId == null) throw new Error('레포 미선택')
+    if (props.repoId == null) throw new Error(t('tag.errNoRepo'))
     return createTag(props.repoId, newName.value.trim(), null, newMessage.value.trim() || null)
   },
   onSuccess: () => {
-    toast.success('Tag 생성', newName.value)
+    toast.success(t('tag.toastCreated'), newName.value)
     newName.value = ''
     newMessage.value = ''
     invalidate()
   },
-  onError: (e) => toast.error('Tag 생성 실패', describeError(e)),
+  onError: (e) => toast.error(t('tag.toastCreateFailed'), describeError(e)),
 })
 
 // === delete (local) ===
 const deleteMut = useMutation({
   mutationFn: (name: string) => {
-    if (props.repoId == null) throw new Error('레포 미선택')
+    if (props.repoId == null) throw new Error(t('tag.errNoRepo'))
     return deleteTag(props.repoId, name)
   },
   onSuccess: (_v, name) => {
-    toast.success('Tag 삭제', name)
+    toast.success(t('tag.toastDeleted'), name)
     invalidate()
   },
-  onError: (e) => toast.error('Tag 삭제 실패', describeError(e)),
+  onError: (e) => toast.error(t('tag.toastDeleteFailed'), describeError(e)),
 })
 
 async function onDelete(name: string) {
@@ -91,22 +91,22 @@ async function onDelete(name: string) {
 // === push (remote=origin 기본) ===
 const pushMut = useMutation({
   mutationFn: (name: string) => {
-    if (props.repoId == null) throw new Error('레포 미선택')
+    if (props.repoId == null) throw new Error(t('tag.errNoRepo'))
     return pushTag(props.repoId, 'origin', name)
   },
   onSuccess: (_v, name) => {
-    toast.success('Tag push', `origin ${name}`)
+    toast.success(t('tag.toastPushed'), `origin ${name}`)
   },
-  onError: (e) => toast.error('Tag push 실패', describeError(e)),
+  onError: (e) => toast.error(t('tag.toastPushFailed'), describeError(e)),
 })
 
 const deleteRemoteMut = useMutation({
   mutationFn: (name: string) => {
-    if (props.repoId == null) throw new Error('레포 미선택')
+    if (props.repoId == null) throw new Error(t('tag.errNoRepo'))
     return deleteRemoteTag(props.repoId, 'origin', name)
   },
-  onSuccess: (_v, name) => toast.success('원격 tag 삭제', `origin ${name}`),
-  onError: (e) => toast.error('원격 tag 삭제 실패', describeError(e)),
+  onSuccess: (_v, name) => toast.success(t('tag.toastRemoteDeleted'), `origin ${name}`),
+  onError: (e) => toast.error(t('tag.toastRemoteDeleteFailed'), describeError(e)),
 })
 
 async function onDeleteRemote(name: string) {
@@ -147,10 +147,10 @@ async function checkoutTag(tag: TagInfo) {
   if (!ok) return
   try {
     await switchBranch(props.repoId, tag.name, false)
-    toast.success('Checkout', tag.name)
+    toast.success(t('tag.toastCheckout'), tag.name)
     invalidateAll(props.repoId)
   } catch (e) {
-    toast.error('Checkout 실패', describeError(e))
+    toast.error(t('tag.toastCheckoutFailed'), describeError(e))
   }
 }
 

@@ -353,7 +353,18 @@
     "ctxHint": "⌥ Right-click: Push / Checkout / Create branch / Copy SHA / Delete",
     "pushAria": "Push tag '{name}' to origin",
     "delLocalAria": "Delete local tag '{name}'",
-    "delRemoteAria": "Delete remote tag 'origin/{name}'"
+    "delRemoteAria": "Delete remote tag 'origin/{name}'",
+    "errNoRepo": "Repo not selected",
+    "toastCreated": "Tag created",
+    "toastCreateFailed": "Tag create failed",
+    "toastDeleted": "Tag deleted",
+    "toastDeleteFailed": "Tag delete failed",
+    "toastPushed": "Tag pushed",
+    "toastPushFailed": "Tag push failed",
+    "toastRemoteDeleted": "Remote tag deleted",
+    "toastRemoteDeleteFailed": "Remote tag delete failed",
+    "toastCheckout": "Checkout",
+    "toastCheckoutFailed": "Checkout failed"
   },
   "pr": {
     "title": "Pull Requests",
@@ -602,7 +613,16 @@
     "soloOnTitle": "Show only this branch",
     "deleteTitle": "Delete",
     "explainBaseTitle": "Compare branch — enter base",
-    "explainBaseMessage": "Which base do you want to compare branch {head} against?"
+    "explainBaseMessage": "Which base do you want to compare branch {head} against?",
+    "toastBulkHideAlready": "All already hidden",
+    "toastBulkHideFailed": "Bulk hide failed",
+    "toastSwitchFailed": "Switch failed",
+    "toastCreateFailed": "Create failed",
+    "toastDeleteFailed": "Delete failed",
+    "tooltipHead": "(current HEAD)",
+    "tooltipDblclick": "— dblclick=switch, right-click=menu",
+    "toastAiUnavailable": "AI unavailable",
+    "toastAiUnavailableBody": "Claude/Codex CLI not installed"
   },
   "branchActions": {
     "createFromTitle": "Create branch",
