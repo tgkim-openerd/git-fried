@@ -4,6 +4,9 @@
 // Sprint 22-5 Q-1/Q-2: BaseModal 마이그레이션.
 import { useToast } from '@/composables/useToast'
 import BaseModal from './BaseModal.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   open: boolean
@@ -20,9 +23,9 @@ async function copyAll() {
   if (!props.content) return
   try {
     await navigator.clipboard.writeText(props.content)
-    toast.success('클립보드에 복사', '')
+    toast.success(t('themeIO.clipboardCopy'), '')
   } catch {
-    toast.error('복사 실패', '')
+    toast.error(t('errors.copyFailed'), '')
   }
 }
 </script>
@@ -50,19 +53,15 @@ async function copyAll() {
       >
         {{ error }}
       </p>
-      <p
-        v-else-if="loading"
-        class="p-6 text-center text-sm text-muted-foreground"
-      >
+      <p v-else-if="loading" class="p-6 text-center text-sm text-muted-foreground">
         AI 응답 대기 중...
       </p>
       <pre
         v-else-if="content"
         class="m-0 whitespace-pre-wrap break-words rounded bg-muted/30 p-3 text-[13px]"
-      >{{ content }}</pre>
-      <p v-else class="p-6 text-center text-sm text-muted-foreground">
-        응답 없음.
-      </p>
+        >{{ content }}</pre
+      >
+      <p v-else class="p-6 text-center text-sm text-muted-foreground">응답 없음.</p>
     </div>
   </BaseModal>
 </template>

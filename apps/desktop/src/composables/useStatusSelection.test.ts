@@ -130,7 +130,10 @@ describe('useStatusSelection — copyPath', () => {
     })
     await sel.copyPath('foo/bar.ts')
     expect(writeText).toHaveBeenCalledWith('foo/bar.ts')
-    expect(toastCalls).toEqual([{ kind: 'success', title: '경로 복사', msg: 'foo/bar.ts' }])
+    // c43 i18n 마이그 — t('statusSelection.pathCopied') / 'Path copied' (en) 반환.
+    expect(toastCalls.length).toBe(1)
+    expect(toastCalls[0].kind).toBe('success')
+    expect(toastCalls[0].msg).toBe('foo/bar.ts')
     vi.unstubAllGlobals()
   })
 
@@ -148,7 +151,8 @@ describe('useStatusSelection — copyPath', () => {
     await sel.copyPath('x')
     expect(toastCalls.length).toBe(1)
     expect(toastCalls[0].kind).toBe('error')
-    expect(toastCalls[0].title).toBe('복사 실패')
+    // c43 i18n 마이그 — title 은 t('errors.copyFailed') 결과 (locale 의존).
+    expect(toastCalls[0].title.length).toBeGreaterThan(0)
     vi.unstubAllGlobals()
   })
 })

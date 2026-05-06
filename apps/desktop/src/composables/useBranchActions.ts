@@ -44,7 +44,7 @@ export function useBranchActions(getRepoId: () => number | null) {
   function repoIdOrToast(): number | null {
     const id = getRepoId()
     if (id == null) {
-      toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+      toast.warning(t('errors.noRepo'), t('errors.noRepoBody'))
       return null
     }
     return id
@@ -54,7 +54,7 @@ export function useBranchActions(getRepoId: () => number | null) {
     const id = repoIdOrToast()
     if (id == null) return
     if (branch.isHead) {
-      toast.success('이미 HEAD', branch.name)
+      toast.success(t('branchActions.alreadyHead'), branch.name)
       return
     }
     try {
@@ -78,10 +78,10 @@ export function useBranchActions(getRepoId: () => number | null) {
     try {
       // start = remote 면 remote ref, local 이면 그대로 (git CLI 가 알아서 처리)
       await createBranch(id, name.trim(), branch.name)
-      toast.success('브랜치 생성', `${name.trim()} from ${branch.name}`)
+      toast.success(t('toast.branchCreated'), `${name.trim()} from ${branch.name}`)
       invalidate(id)
     } catch (e) {
-      toast.error('브랜치 생성 실패', describeError(e))
+      toast.error(t('errors.branchCreateFailed'), describeError(e))
     }
   }
 

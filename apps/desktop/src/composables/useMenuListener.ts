@@ -33,6 +33,9 @@ import { open as openShell } from '@tauri-apps/plugin-shell'
 import { useRouter } from 'vue-router'
 import { dispatchShortcut } from './useShortcuts'
 import { useToast } from './useToast'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 const GITHUB_URL = 'https://github.com/tgkim-openerd/git-fried'
 
@@ -125,7 +128,7 @@ export function useMenuListener(): MenuPump {
       case 'reload-repos': {
         const fn = (window as unknown as { gitFriedReloadRepos?: () => void }).gitFriedReloadRepos
         if (fn) fn()
-        else toast.info('레포 reload', '활성 워크스페이스에서 자동 갱신')
+        else toast.info(t('toast.repoReload'), '활성 워크스페이스에서 자동 갱신')
         return
       }
       case 'filter-repos':
@@ -157,7 +160,7 @@ export function useMenuListener(): MenuPump {
         return
       case 'open-github':
         void openShell(GITHUB_URL).catch(() => {
-          toast.error('브라우저 열기 실패', GITHUB_URL)
+          toast.error(t('errors.browserOpenFailed'), GITHUB_URL)
         })
         return
       // Repository (toolbar 의 mutation 과 동일 — useShortcut('fetch'/'pull'/'push'))

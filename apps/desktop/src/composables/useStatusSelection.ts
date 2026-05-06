@@ -24,6 +24,9 @@ import { useShortcut } from '@/composables/useShortcuts'
 import { useToast } from '@/composables/useToast'
 import { describeError } from '@/api/errors'
 import type { RepoStatus } from '@/types/git'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 type StagePathsMut = UseMutationReturnType<
   unknown,
@@ -61,9 +64,9 @@ export function useStatusSelection(options: UseStatusSelectionOptions): UseStatu
   async function copyPath(path: string) {
     try {
       await navigator.clipboard.writeText(path)
-      toast.success('경로 복사', path)
+      toast.success(t('statusSelection.pathCopied'), path)
     } catch (e) {
-      toast.error('복사 실패', describeError(e))
+      toast.error(t('errors.copyFailed'), describeError(e))
     }
   }
 

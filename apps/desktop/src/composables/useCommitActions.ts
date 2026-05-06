@@ -27,7 +27,7 @@ export function useCommitActions(getRepoId: () => number | null) {
   function repoIdOrToast(): number | null {
     const id = getRepoId()
     if (id == null) {
-      toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+      toast.warning(t('errors.noRepo'), t('errors.noRepoBody'))
       return null
     }
     return id
@@ -38,7 +38,7 @@ export function useCommitActions(getRepoId: () => number | null) {
       await navigator.clipboard.writeText(sha)
       toast.success('SHA 복사', sha.slice(0, 8))
     } catch (e) {
-      toast.error('복사 실패', describeError(e))
+      toast.error(t('errors.copyFailed'), describeError(e))
     }
   }
 
@@ -119,10 +119,10 @@ export function useCommitActions(getRepoId: () => number | null) {
     if (!name?.trim()) return
     try {
       await createBranch(id, name.trim(), sha)
-      toast.success('브랜치 생성', `${name.trim()} from ${sha.slice(0, 8)}`)
+      toast.success(t('toast.branchCreated'), `${name.trim()} from ${sha.slice(0, 8)}`)
       invalidate(id)
     } catch (e) {
-      toast.error('브랜치 생성 실패', describeError(e))
+      toast.error(t('errors.branchCreateFailed'), describeError(e))
     }
   }
 

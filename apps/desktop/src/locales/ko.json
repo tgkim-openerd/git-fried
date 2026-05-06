@@ -659,12 +659,6 @@
     "toastAiUnavailable": "AI 사용 불가",
     "toastAiUnavailableBody": "Claude/Codex CLI 미설치"
   },
-  "branchActions": {
-    "createFromTitle": "브랜치 생성",
-    "createFromMessage": "{from} 에서 새 브랜치 — 이름을 입력하세요.",
-    "renameTitle": "브랜치 이름 변경",
-    "renameMessage": "'{name}' 의 새 이름을 입력하세요."
-  },
   "commitActions": {
     "resetHardTitle": "⚠ HARD reset 확인",
     "resetHardMessage": "working tree + index 가 영구 손실됩니다.\n\n진행하려면 정확히 입력하세요:\n\n{expected}",
@@ -715,6 +709,21 @@
     "errCommitInvalid": "커밋 불가",
     "errCommitInvalidBody": "메시지가 비어있거나 레포 미선택",
     "errStageAllFailed": "Stage all 실패"
+  },
+  "themeIO": {
+    "appliedBody": "커스텀 CSS 변수 활성화",
+    "resetBody": "기본 dark/light 로 복원",
+    "clipboardCopy": "클립보드 복사"
+  },
+  "statusSelection": {
+    "pathCopied": "경로 복사"
+  },
+  "branchActions": {
+    "createFromTitle": "브랜치 생성",
+    "createFromMessage": "{from} 에서 새 브랜치 — 이름을 입력하세요.",
+    "renameTitle": "브랜치 이름 변경",
+    "renameMessage": "'{name}' 의 새 이름을 입력하세요.",
+    "alreadyHead": "이미 HEAD"
   },
   "commitDiff": {
     "loading": "불러오는 중...",

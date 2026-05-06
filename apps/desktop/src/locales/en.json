@@ -659,12 +659,6 @@
     "toastAiUnavailable": "AI unavailable",
     "toastAiUnavailableBody": "Claude/Codex CLI not installed"
   },
-  "branchActions": {
-    "createFromTitle": "Create branch",
-    "createFromMessage": "Enter a name for the new branch from {from}.",
-    "renameTitle": "Rename branch",
-    "renameMessage": "Enter a new name for '{name}'."
-  },
   "commitActions": {
     "resetHardTitle": "⚠ Confirm HARD reset",
     "resetHardMessage": "The working tree + index will be permanently lost.\n\nType the following exactly to proceed:\n\n{expected}",
@@ -715,6 +709,21 @@
     "errCommitInvalid": "Commit invalid",
     "errCommitInvalidBody": "Empty message or repo not selected",
     "errStageAllFailed": "Stage all failed"
+  },
+  "themeIO": {
+    "appliedBody": "Custom CSS variables activated",
+    "resetBody": "Restored to default dark/light",
+    "clipboardCopy": "Copied to clipboard"
+  },
+  "statusSelection": {
+    "pathCopied": "Path copied"
+  },
+  "branchActions": {
+    "createFromTitle": "Create branch",
+    "createFromMessage": "Enter a name for the new branch from {from}.",
+    "renameTitle": "Rename branch",
+    "renameMessage": "Enter a new name for '{name}'.",
+    "alreadyHead": "Already HEAD"
   },
   "commitDiff": {
     "loading": "Loading...",

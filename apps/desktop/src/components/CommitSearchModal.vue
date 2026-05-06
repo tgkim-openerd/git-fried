@@ -11,6 +11,9 @@ import { searchCommitsByMessage } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import type { CommitSummary } from '@/types/git'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -84,7 +87,7 @@ async function copySha(sha: string) {
     await navigator.clipboard.writeText(sha)
     toast.success('SHA 복사', sha.slice(0, 12))
   } catch (e) {
-    toast.error('복사 실패', describeError(e))
+    toast.error(t('errors.copyFailed'), describeError(e))
   }
 }
 

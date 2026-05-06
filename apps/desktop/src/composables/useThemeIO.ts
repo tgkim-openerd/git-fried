@@ -14,6 +14,9 @@
 import { ref } from 'vue'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export function useThemeIO() {
   const ctheme = useCustomTheme()
@@ -28,24 +31,24 @@ export function useThemeIO() {
   function onImport() {
     const r = ctheme.importJson(importText.value)
     if (r.ok) {
-      toast.success('테마 적용', '커스텀 CSS 변수 활성화')
+      toast.success(t('toast.themeApplied'), t('themeIO.appliedBody'))
       importText.value = ''
     } else {
-      toast.error('테마 import 실패', r.error || '?')
+      toast.error(t('errors.themeImportFailed'), r.error || '?')
     }
   }
 
   function onReset() {
     ctheme.reset()
-    toast.success('테마 초기화', '기본 dark/light 로 복원')
+    toast.success(t('toast.themeReset'), t('themeIO.resetBody'))
   }
 
   async function onCopy() {
     try {
       await navigator.clipboard.writeText(exportText.value)
-      toast.success('클립보드 복사', '')
+      toast.success(t('themeIO.clipboardCopy'), '')
     } catch {
-      toast.error('복사 실패', '')
+      toast.error(t('errors.copyFailed'), '')
     }
   }
 

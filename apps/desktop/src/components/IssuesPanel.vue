@@ -13,6 +13,9 @@ import IssueDetailModal from './IssueDetailModal.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import type { ForgeIssue } from '@/api/git'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -34,9 +37,9 @@ const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
 async function copyText(text: string, label: string) {
   try {
     await navigator.clipboard.writeText(text)
-    toast.success('복사', label)
+    toast.success(t('toast.copied'), label)
   } catch (e) {
-    toast.error('복사 실패', describeError(e))
+    toast.error(t('errors.copyFailed'), describeError(e))
   }
 }
 
@@ -128,11 +131,7 @@ function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
       />
     </div>
 
-    <IssueDetailModal
-      :issue="selected"
-      :open="selected != null"
-      @close="selected = null"
-    />
+    <IssueDetailModal :issue="selected" :open="selected != null" @close="selected = null" />
     <ContextMenu ref="ctxMenu" />
   </div>
 </template>
