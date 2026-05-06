@@ -106,12 +106,16 @@ impl Serialize for AppError {
         use serde::ser::SerializeMap;
         let mut map = ser.serialize_map(Some(2))?;
         map.serialize_entry("kind", self.kind())?;
-        map.serialize_entry("message", &self.to_string())?;
+        // Sprint c45 SEC-1 — to_string() 의 stderr 누출 방어 (GitCli 의 message 는 stderr 미포함이라 안전, 다른 variant 도 secret 패턴 마스킹).
+        let masked_msg = crate::secret_mask::mask_secrets(&self.to_string());
+        map.serialize_entry("message", &masked_msg)?;
         match self {
             Self::GitCli {
                 stderr, exit_code, ..
             } => {
-                map.serialize_entry("stderr", stderr)?;
+                // Sprint c45 SEC-1 — git stderr 의 PAT/SSH key path/JWT 등 마스킹.
+                let masked = crate::secret_mask::mask_secrets(stderr);
+                map.serialize_entry("stderr", &masked)?;
                 map.serialize_entry("exitCode", exit_code)?;
             }
             // Sprint c30 / MED 2 — Forge 분기 처리용 메타.

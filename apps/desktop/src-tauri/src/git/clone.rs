@@ -69,6 +69,12 @@ fn is_allowed_clone_url(url: &str) -> bool {
     // 첫 `/` 보다 앞에 있어야 함.
     if let Some(at_idx) = trimmed.find('@') {
         if let Some(colon_idx) = trimmed[at_idx..].find(':') {
+            // Sprint c45 SEC-4 — host 부분 (@ ~ :) 도 옵션 인젝션 방어.
+            // CVE-2017-1000117 변종: user@-oProxyCommand=...:path 형태 차단.
+            let host_part = &trimmed[at_idx + 1..at_idx + colon_idx];
+            if host_part.is_empty() || host_part.starts_with('-') {
+                return false;
+            }
             // ssh-config 사용 가능한 단순 SCP-like.
             let after_colon = &trimmed[at_idx + colon_idx + 1..];
             // path 가 비어있지 않고 `-` 시작 아닌 (옵션 인젝션 방어).

@@ -3,35 +3,8 @@
 // 회사 워크스페이스에서는 prompt 송출 전 사용자 승인 필수
 // (Vue 측 ForgeSetup / AI panel 에서 처리, Rust 는 마스킹만).
 
-use once_cell::sync::Lazy;
-use regex::Regex;
-
-/// secret 패턴 — 송출 전 마스킹.
-static SECRET_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
-    vec![
-        // GitHub PAT (classic + fine-grained)
-        Regex::new(r"\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}\b").unwrap(),
-        // GitLab PAT
-        Regex::new(r"\bglpat-[A-Za-z0-9_-]{20,}\b").unwrap(),
-        // AWS keys
-        Regex::new(r"\bAKIA[0-9A-Z]{16}\b").unwrap(),
-        // private key 헤더
-        Regex::new(r"-----BEGIN [A-Z ]+PRIVATE KEY-----[\s\S]+?-----END [A-Z ]+PRIVATE KEY-----")
-            .unwrap(),
-        // .env 흔한 패턴
-        Regex::new(r"(?i)(api[_-]?key|secret|password|token)\s*[=:]\s*[^\s]+").unwrap(),
-        // 한국 주민등록번호 (대략)
-        Regex::new(r"\b\d{6}-?[1-4]\d{6}\b").unwrap(),
-    ]
-});
-
-pub fn mask_secrets(input: &str) -> String {
-    let mut out = input.to_string();
-    for re in SECRET_PATTERNS.iter() {
-        out = re.replace_all(&out, "[MASKED]").into_owned();
-    }
-    out
-}
+// Sprint c45 SEC-2 — secret 패턴은 crate::secret_mask 로 통합. error.rs 도 동일 마스킹 사용.
+pub use crate::secret_mask::mask_secrets;
 
 /// AI commit message 생성 prompt.
 ///

@@ -13,6 +13,13 @@ use crate::storage::{Db, DbExt};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::Semaphore;
+
+/// Sprint c45 BE-1 — 네트워크 의존 bulk 작업 동시성 제한.
+/// 시스템 리소스 / git CLI 동시 실행 / forge API rate-limit 안정화.
+/// 50+ repo 워크스페이스에서도 안전하게 동작.
+const BULK_NETWORK_CONCURRENCY: usize = 8;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,18 +32,22 @@ pub struct BulkResult<T> {
 }
 
 /// 워크스페이스(또는 전체) 의 모든 레포 fetch.
+/// Sprint c45 BE-1 — Semaphore 로 동시 fetch 8개 제한 (50+ repo 안정성).
 pub async fn bulk_fetch(
     db: &Db,
     workspace_id: Option<i64>,
 ) -> Result<Vec<BulkResult<git_sync::SyncResult>>, AppError> {
     let repos = db.list_repos(workspace_id).await?;
+    let sem = Arc::new(Semaphore::new(BULK_NETWORK_CONCURRENCY));
     let mut handles = Vec::with_capacity(repos.len());
 
     for r in repos {
         let path = PathBuf::from(r.local_path);
         let id = r.id;
         let name = r.name;
+        let sem = sem.clone();
         handles.push(tokio::spawn(async move {
+            let _permit = sem.acquire_owned().await.expect("semaphore");
             let res = git_sync::fetch_all(&path).await;
             BulkResult {
                 repo_id: id,
@@ -95,6 +106,8 @@ pub async fn bulk_list_prs(
         }
     }
 
+    // Sprint c45 BE-1 — forge API rate-limit 안정성 위해 동시 PR 조회 8개 제한.
+    let sem = Arc::new(Semaphore::new(BULK_NETWORK_CONCURRENCY));
     let mut handles = Vec::with_capacity(repos.len());
     for r in repos {
         if r.forge_kind == "unknown" {
@@ -116,7 +129,9 @@ pub async fn bulk_list_prs(
         let id = r.id;
         let name = r.name;
         let kind = r.forge_kind;
+        let sem = sem.clone();
         handles.push(tokio::spawn(async move {
+            let _permit = sem.acquire_owned().await.expect("semaphore");
             let client_res: Result<Box<dyn ForgeClient>, AppError> = match kind.as_str() {
                 "gitea" => GiteaClient::new(&account.0, &account.1).map(|c| Box::new(c) as _),
                 "github" => {

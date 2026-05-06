@@ -21,6 +21,7 @@ pub mod launchpad;
 pub mod menu;
 pub mod profiles;
 pub mod pty;
+pub mod secret_mask;
 pub mod storage;
 
 use std::sync::Arc;
