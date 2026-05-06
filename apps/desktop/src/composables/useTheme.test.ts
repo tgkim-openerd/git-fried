@@ -1,7 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useTheme } from './useTheme'
+
+// Sprint c45 DS-1 — useTheme 가 OS prefers-color-scheme 감지 추가됨.
+// happy-dom 의 matchMedia 가 light 매치할 가능성 → 명시 mock 으로 dark fallback.
+const matchMediaMock = vi.fn().mockReturnValue({
+  matches: false,
+  media: '',
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+})
 
 // useTheme 의 onMounted / watch 가 발화하려면 Vue component lifecycle 안에서 실행 필요.
 // test wrapper component 로 mount.
@@ -22,6 +31,12 @@ describe('useTheme', () => {
   beforeEach(() => {
     localStorage.clear()
     document.documentElement.classList.remove('dark')
+    // Sprint c45 DS-1 — matchMedia 항상 not-matching (dark fallback).
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: matchMediaMock,
+    })
   })
   afterEach(() => {
     localStorage.clear()

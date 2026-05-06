@@ -157,6 +157,13 @@ onMounted(async () => {
           'Settings → 시작·마이그레이션 → GitKraken 가져오기 에서 진행',
         12_000,
       )
+    } else {
+      // Sprint c46 UX-1 — repo 0개 시 명시 toast (사용자 인지: detect 동작했으나 데이터 없음)
+      toast.info(
+        '환영합니다',
+        'Sidebar 의 ➕ 버튼 또는 ⌘⇧P (Repo Switcher) 로 첫 레포를 추가하세요.\nGitKraken 사용 중이라면 Settings → 시작·마이그레이션 에서 가져올 수 있습니다.',
+        10_000,
+      )
     }
     localStorage.setItem(ONBOARDED_KEY, String(Date.now()))
   } catch {

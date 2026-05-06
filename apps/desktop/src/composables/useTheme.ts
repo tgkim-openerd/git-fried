@@ -34,9 +34,15 @@ export function useTheme() {
   //   1) localStorage 우선 (사용자 명시 선택 보존)
   //   2) localStorage 비어있을 때만 OS 설정 적용
   //   3) localStorage 없을 때 OS 변경 watch (사용자가 OS 토글 시 즉시 반영)
+  // OS 가 light 명시일 때만 light, 그 외 (dark / not-supported / happy-dom) 는 dark.
   function detectOsPrefers(): 'dark' | 'light' {
     if (typeof window === 'undefined' || !window.matchMedia) return 'dark'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    try {
+      if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light'
+    } catch {
+      // matchMedia 불완전 환경 — dark fallback.
+    }
+    return 'dark'
   }
 
   onMounted(() => {

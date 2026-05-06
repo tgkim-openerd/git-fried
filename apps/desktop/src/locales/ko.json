@@ -320,9 +320,9 @@
     "deleteProfileMessage": "프로필 '{name}' 을 삭제할까요?",
     "switchProfileTitle": "프로필 전환",
     "switchProfileMessage": "프로필을 '{name}' 으로 전환할까요?",
-    "activateProfileTitle": "프로파일 활성화",
-    "activateProfileMessage": "'{name}' 활성화 시 글로벌 git config (user.name / user.email / signingKey) 가 덮여씌워집니다. 계속할까요?",
-    "activateProfileGenericMessage": "이 프로파일을 활성화하면 글로벌 git config (user.name / user.email / signingKey) 가 덮여씌워집니다. 계속할까요?",
+    "activateProfileTitle": "⚠ 프로파일 활성화 — 글로벌 git config 덮어쓰기",
+    "activateProfileMessage": "'{name}' 활성화 시 ~/.gitconfig 의 user.name / user.email / user.signingKey / core.sshCommand 가 즉시 덮여씌워집니다.\n\n다른 git GUI / CLI / IDE 가 영향을 받습니다 (terminal git commit, VSCode, IntelliJ, 회사 워크플로우 모두).\n\n계속할까요?",
+    "activateProfileGenericMessage": "이 프로파일 활성화 시 ~/.gitconfig 의 user.name / user.email / user.signingKey / core.sshCommand 가 즉시 덮여씌워집니다.\n\n다른 git GUI / CLI / IDE 가 영향을 받습니다.\n\n계속할까요?",
     "amendPushedTitle": "Amend 경고 (이미 push 된 commit)",
     "amendPushedMessage": "이미 push 된 commit 일 수 있습니다.\n• ahead = 0 (모든 local commit 이 원격에 push 됨)\n• Amend 시 마지막 commit hash 변경 → 동료의 fetch 충돌\n• 해결: push 후 force-push (--force-with-lease) 필요",
     "mergeIntoHeadTitle": "Merge",
@@ -810,10 +810,10 @@
       "vim": "Vim navigation (입력창 외에서, 단일 키)"
     },
     "global": {
-      "commandPalette": "Command Palette",
-      "repoSwitch": "빠른 레포 전환",
-      "graphSearch": "커밋 그래프 검색",
-      "help": "이 도움말",
+      "commandPalette": "Command Palette (모든 명령 fuzzy 검색)",
+      "repoSwitch": "Repo Switcher 모달 (워크스페이스 내 빠른 전환 전용)",
+      "graphSearch": "커밋 그래프 inline 검색 (subject/author/sha/refs)",
+      "help": "이 도움말 (입력창 focus 외에서만 동작)",
       "escape": "모달 / 검색 닫기"
     },
     "sync": {
@@ -840,7 +840,7 @@
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "zoomReset": "Zoom reset",
-      "closeModal": "활성 모달 닫기",
+      "closeModal": "활성 모달 닫기 (모달 우선, 없으면 무동작 — 탭 닫기는 ⌘⇧W)",
       "newTab": "Repo 빠른 전환 (⌘⇧P alias)",
       "openInExplorer": "레포 폴더 열기 (OS 파일 매니저)",
       "fullscreen": "전체화면 토글",
@@ -849,7 +849,7 @@
     "tabs": {
       "nextTab": "다음 탭",
       "prevTab": "이전 탭",
-      "closeTab": "활성 탭 닫기",
+      "closeTab": "활성 레포 탭 닫기 (⌘W 의 탭 버전)",
       "middleClick": "탭 닫기"
     },
     "rightPanel": {

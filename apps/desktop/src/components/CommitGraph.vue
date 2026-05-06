@@ -424,8 +424,11 @@ onUnmounted(() => cleanupGraphWidth())
               selectedSha === commitRowAt(v.index)?.commit.sha
                 ? 'bg-accent text-accent-foreground'
                 : '',
+              searchQuery && commitRowAt(v.index) && isMatch(commitRowAt(v.index)!, searchQuery)
+                ? 'bg-yellow-100 dark:bg-yellow-700/25 ring-1 ring-yellow-500/40'
+                : '',
               searchQuery && commitRowAt(v.index) && !isMatch(commitRowAt(v.index)!, searchQuery)
-                ? 'opacity-25'
+                ? 'opacity-30 grayscale'
                 : '',
             ]"
             :data-testid="`commit-row-${commitRowAt(v.index)?.commit.sha?.slice(0, 7) ?? `idx-${v.index}`}`"

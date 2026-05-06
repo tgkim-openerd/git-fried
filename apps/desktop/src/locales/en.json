@@ -320,9 +320,9 @@
     "deleteProfileMessage": "Delete profile '{name}'?",
     "switchProfileTitle": "Switch profile",
     "switchProfileMessage": "Switch to profile '{name}'?",
-    "activateProfileTitle": "Activate profile",
-    "activateProfileMessage": "Activating '{name}' will overwrite global git config (user.name / user.email / signingKey). Continue?",
-    "activateProfileGenericMessage": "Activating this profile will overwrite global git config (user.name / user.email / signingKey). Continue?",
+    "activateProfileTitle": "⚠ Activate profile — overwrites global git config",
+    "activateProfileMessage": "Activating '{name}' will immediately overwrite ~/.gitconfig user.name / user.email / user.signingKey / core.sshCommand.\n\nOther git GUIs / CLI / IDEs are affected (terminal git commit, VSCode, IntelliJ, company workflow).\n\nContinue?",
+    "activateProfileGenericMessage": "Activating this profile will immediately overwrite ~/.gitconfig user.name / user.email / user.signingKey / core.sshCommand.\n\nOther git GUIs / CLI / IDEs are affected.\n\nContinue?",
     "amendPushedTitle": "Amend warning (commit may be pushed)",
     "amendPushedMessage": "This commit may already be pushed.\n• ahead = 0 (all local commits are on remote)\n• Amending changes the last commit hash → teammates' fetch may conflict\n• Resolution: push then force-push (--force-with-lease) required",
     "mergeIntoHeadTitle": "Merge",
@@ -810,10 +810,10 @@
       "vim": "Vim navigation (outside inputs, single key)"
     },
     "global": {
-      "commandPalette": "Command Palette",
-      "repoSwitch": "Quick repo switch",
-      "graphSearch": "Commit graph search",
-      "help": "This help",
+      "commandPalette": "Command Palette (fuzzy search all commands)",
+      "repoSwitch": "Repo Switcher modal (workspace quick switch only)",
+      "graphSearch": "Commit graph inline search (subject/author/sha/refs)",
+      "help": "This help (only works outside input focus)",
       "escape": "Close modal / search"
     },
     "sync": {
@@ -840,7 +840,7 @@
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "zoomReset": "Zoom reset",
-      "closeModal": "Close active modal",
+      "closeModal": "Close active modal (priority over tab — use ⌘⇧W to close tab)",
       "newTab": "Quick repo switch (⌘⇧P alias)",
       "openInExplorer": "Open repo folder (OS file manager)",
       "fullscreen": "Toggle fullscreen",
@@ -849,7 +849,7 @@
     "tabs": {
       "nextTab": "Next tab",
       "prevTab": "Previous tab",
-      "closeTab": "Close active tab",
+      "closeTab": "Close active repo tab (tab variant of ⌘W)",
       "middleClick": "Close tab"
     },
     "rightPanel": {
