@@ -51,6 +51,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 # TODO(plan/04): notify::Watcher 통합 후 제거 가능 여부 재평가.
 # 2026-05-05 /analyze: 코드 0 import 확인 (5-Check certain). plan/04 의 외부 변경 감지
 # (.git refs / index / FETCH_HEAD watch) 로드맵 보존 차원에서 잔존.
+# 2026-05-06 /analyze 재확인: 사용량 0 동일, 의도 보존 결정 유지 (User Decision A).
 notify = "6.1"
 
 # 로그

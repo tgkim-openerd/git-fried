@@ -240,6 +240,7 @@
     "webhookBody": "bulk fetch / push / PR 머지 결과 webhook.\n진행 상황: docs/plan/05"
   },
   "errors": {
+    "unexpected": "예기치 못한 오류",
     "noRepo": "레포 미선택",
     "noRepoBody": "먼저 레포를 선택하세요.",
     "branchCreateFailed": "브랜치 생성 실패",

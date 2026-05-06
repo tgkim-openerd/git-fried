@@ -79,6 +79,7 @@ pub fn run() {
         .manage(runtime)
         .invoke_handler(tauri::generate_handler![
             ipc::commands::get_app_info,
+            ipc::diagnostic_commands::report_frontend_error,
             ipc::workspace_commands::list_workspaces,
             ipc::workspace_commands::create_workspace,
             ipc::workspace_commands::update_workspace,

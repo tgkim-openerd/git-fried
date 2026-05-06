@@ -26,6 +26,7 @@ pub mod bisect_commands;
 pub mod branch_commands;
 pub mod commands;
 pub mod commit_commands;
+pub mod diagnostic_commands;
 pub mod forge_commands;
 pub mod graph_commands;
 pub mod hide_commands;

@@ -11,6 +11,7 @@ import App from './App.vue'
 import { queryClient } from './api/queryClient'
 // Sprint c31 / plan/03 §6 — i18n (한국어 1순위 / 영어 2순위).
 import { i18n } from './i18n'
+import { registerGlobalErrorHandler } from './composables/registerGlobalErrorHandler'
 import './styles/main.css'
 
 // Tauri 데스크탑 앱은 SPA 모드로만 동작 (SSR / hydration 없음).
@@ -21,6 +22,12 @@ const router = createRouter({
 })
 
 const app = createApp(App)
+
+// 전역 uncaught 에러 funnel — toast + Rust tracing sink.
+// `app.use(...)` 체인 이전에 등록 — plugin install 단계 에러도 캐치.
+// (useToast / i18n.global.t 는 핸들러 호출 시점 lazy resolve 라 안전.)
+registerGlobalErrorHandler(app)
+
 app.use(createPinia())
 app.use(router)
 app.use(VueQueryPlugin, { queryClient })

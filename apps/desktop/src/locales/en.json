@@ -240,6 +240,7 @@
     "webhookBody": "Webhook for bulk fetch / push / PR merge results.\nProgress: docs/plan/05"
   },
   "errors": {
+    "unexpected": "Unexpected error",
     "noRepo": "Repo not selected",
     "noRepoBody": "Select a repo first.",
     "branchCreateFailed": "Branch create failed",
