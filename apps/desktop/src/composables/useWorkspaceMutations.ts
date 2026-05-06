@@ -50,7 +50,7 @@ export function useWorkspaceMutations(workspaces: () => Workspace[] | undefined)
       newName.value = ''
       qc.invalidateQueries({ queryKey: ['workspaces'] })
     },
-    onError: (e) => toast.error('워크스페이스 생성 실패', describeError(e)),
+    onError: (e) => toast.error(t('errors.workspaceCreateFailed'), describeError(e)),
   })
 
   const updateMut = useMutation({
@@ -67,7 +67,7 @@ export function useWorkspaceMutations(workspaces: () => Workspace[] | undefined)
       editingId.value = null
       qc.invalidateQueries({ queryKey: ['workspaces'] })
     },
-    onError: (e) => toast.error('워크스페이스 수정 실패', describeError(e)),
+    onError: (e) => toast.error(t('errors.workspaceUpdateFailed'), describeError(e)),
   })
 
   const deleteMut = useMutation({
@@ -77,7 +77,7 @@ export function useWorkspaceMutations(workspaces: () => Workspace[] | undefined)
       qc.invalidateQueries({ queryKey: ['repos'] })
       if (store.activeWorkspaceId != null) store.setActiveWorkspace(null)
     },
-    onError: (e) => toast.error('워크스페이스 삭제 실패', describeError(e)),
+    onError: (e) => toast.error(t('errors.workspaceDeleteFailed'), describeError(e)),
   })
 
   const activeWorkspace = computed(() =>

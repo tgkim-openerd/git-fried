@@ -37,11 +37,11 @@ const newBranch = ref('')
 // (현재 worktree 별 repo_id 가 별도가 아니므로 active worktree 추적 무의미 — 시각 highlight 만 유지)
 const selectedPath = ref<string | null>(null)
 
-function onWorktreeDblClick(t: { path: string; isMain: boolean }) {
-  if (t.isMain) return
+function onWorktreeDblClick(wt: { path: string; isMain: boolean }) {
+  if (wt.isMain) return
   if (props.repoId == null) return
   reposStore.setActiveRepo(props.repoId)
-  toast.success('활성화', t.path)
+  toast.success(t('toast.activate'), wt.path)
 }
 
 const addMut = useMutation({

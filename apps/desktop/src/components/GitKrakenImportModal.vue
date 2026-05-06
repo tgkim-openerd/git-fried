@@ -93,7 +93,7 @@ async function confirm() {
         }
       } catch (e) {
         // 탭 복원 실패는 import 자체 성공이므로 warning 만.
-        toast.warning('탭 복원 실패', describeError(e))
+        toast.warning(t('errors.tabRestoreFailed'), describeError(e))
       }
     }
 

@@ -90,9 +90,9 @@ const meta = useLaunchpadMeta()
 async function copyText(text: string, label: string) {
   try {
     await navigator.clipboard.writeText(text)
-    toast.success('복사', label)
+    toast.success(t('toast.copied'), label)
   } catch (e) {
-    toast.error('복사 실패', describeError(e))
+    toast.error(t('errors.copyFailed'), describeError(e))
   }
 }
 

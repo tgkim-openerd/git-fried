@@ -18,6 +18,9 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import type { CommitResult } from '@/types/git'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export interface UseCommitMutationOptions {
   /** 활성 레포 id getter (반응성). */
@@ -95,7 +98,7 @@ export function useCommitMutation(opts: UseCommitMutationOptions) {
         }
       }
     },
-    onError: (e) => toast.error('커밋 호출 실패', describeError(e)),
+    onError: (e) => toast.error(t('errors.commitInvokeFailed'), describeError(e)),
   })
 
   function commit(noVerifyOverride: boolean) {

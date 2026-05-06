@@ -71,7 +71,7 @@ const stageMut = useMutation({
     qc.invalidateQueries({ queryKey: ['conflicted'] })
     emit('close')
   },
-  onError: (e) => toast.error('충돌 해결 저장 실패', describeError(e)),
+  onError: (e) => toast.error(t('errors.conflictResolveSaveFailed'), describeError(e)),
 })
 
 const sideMut = useMutation({

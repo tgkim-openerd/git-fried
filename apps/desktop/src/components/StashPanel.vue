@@ -153,10 +153,10 @@ async function onApplyFile(path: string) {
   if (props.repoId == null || previewIndex.value == null) return
   await applyStashFile(props.repoId, previewIndex.value, path)
     .then(() => {
-      toast.success('파일 apply', `${path} 만 working tree 에 적용됨`)
+      toast.success(t('toast.fileApply'), `${path} 만 working tree 에 적용됨`)
       invalidate(props.repoId)
     })
-    .catch((e) => toast.error('파일 apply 실패', describeError(e)))
+    .catch((e) => toast.error(t('errors.fileApplyFailed'), describeError(e)))
 }
 
 // === AI stash message (Sprint B7) ===

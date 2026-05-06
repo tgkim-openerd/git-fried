@@ -27,6 +27,7 @@ import { useSidebarGroups, type GroupMode } from '@/composables/useSidebarGroups
 import { useBulkQuickStatus } from '@/composables/useBulkQuickStatus'
 import { useToast } from '@/composables/useToast'
 import { describeError, humanizeGitError } from '@/api/errors'
+import { useI18n } from 'vue-i18n'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 import CloneRepoModal from '@/components/CloneRepoModal.vue'
 import BulkFetchResultModal from '@/components/BulkFetchResultModal.vue'
@@ -39,6 +40,7 @@ const store = useReposStore()
 const aliases = useRepoAliases()
 const toast = useToast()
 const qc = useQueryClient()
+const { t } = useI18n()
 
 const cloneOpen = ref(false)
 const filter = ref('')
@@ -124,7 +126,7 @@ const bulkFetchMut = useMutation({
       toast.success(`일괄 Fetch 완료 (${ok} 레포)`)
     }
   },
-  onError: (e) => toast.error('일괄 Fetch 실패', describeError(e)),
+  onError: (e) => toast.error(t('errors.bulkFetchFailed'), describeError(e)),
 })
 
 // === Actions ===
@@ -135,7 +137,7 @@ async function browseAndAdd() {
       addRepoMut.mutate({ localPath: selected })
     }
   } catch (e) {
-    toast.error('폴더 선택 실패', describeError(e))
+    toast.error(t('errors.folderSelectFailed'), describeError(e))
   }
 }
 

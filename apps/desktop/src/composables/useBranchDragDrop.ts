@@ -83,7 +83,7 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
           toast.success('Cherry-pick 완료', target.name)
           invalidate(repoId)
         } else if (r.conflicted) {
-          toast.error('충돌 발생', '변경 패널에서 해결')
+          toast.error(t('errors.conflictOccurred'), t('errors.conflictBody'))
           invalidate(repoId)
         } else {
           toast.error('Cherry-pick 실패', r.stderr.slice(0, 200))
@@ -134,7 +134,7 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
           invalidate(repoId)
         }
       } catch (e) {
-        toast.error('호출 실패', describeError(e))
+        toast.error(t('errors.callFailed'), describeError(e))
       }
     }
   }

@@ -26,7 +26,7 @@ const activateMut = useMutation({
     open.value = false
     toast.success(`프로파일 활성화: ${p.name}`)
   },
-  onError: (e) => toast.error('프로파일 활성화 실패', describeError(e)),
+  onError: (e) => toast.error(t('errors.profileActivateFailed'), describeError(e)),
 })
 
 async function pick(id: number) {

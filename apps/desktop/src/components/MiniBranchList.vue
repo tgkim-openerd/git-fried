@@ -69,9 +69,9 @@ const switchMut = useMutation({
   mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name),
   onSuccess: (_res, vars) => {
     invalidate(store.activeRepoId)
-    toast.success('브랜치 전환', vars.name)
+    toast.success(t('toast.branchSwitched'), vars.name)
   },
-  onError: (e) => toast.error('브랜치 전환 실패', describeError(e)),
+  onError: (e) => toast.error(t('errors.branchSwitchFailed'), describeError(e)),
 })
 
 async function onSwitchBranch(name: string, isHead: boolean) {

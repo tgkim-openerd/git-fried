@@ -39,7 +39,7 @@ export function useMaintenanceActions() {
 
   const gcMut = useMutation({
     mutationFn: (aggressive: boolean) => {
-      if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
+      if (reposStore.activeRepoId == null) throw new Error(t('errors.noRepo'))
       return maintenanceGc(reposStore.activeRepoId, aggressive)
     },
     onSuccess: (r, aggressive) =>
@@ -49,7 +49,7 @@ export function useMaintenanceActions() {
 
   const fsckMut = useMutation({
     mutationFn: () => {
-      if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
+      if (reposStore.activeRepoId == null) throw new Error(t('errors.noRepo'))
       return maintenanceFsck(reposStore.activeRepoId)
     },
     onSuccess: (r) => onMaintenanceDone('git fsck --full', r),
@@ -68,7 +68,7 @@ export function useMaintenanceActions() {
 
   const lfsInstallMut = useMutation({
     mutationFn: () => {
-      if (reposStore.activeRepoId == null) throw new Error('레포 미선택')
+      if (reposStore.activeRepoId == null) throw new Error(t('errors.noRepo'))
       return lfsInstall(reposStore.activeRepoId)
     },
     onSuccess: () => {

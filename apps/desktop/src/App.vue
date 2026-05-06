@@ -122,11 +122,11 @@ useShortcut('closeModal', closeAllModals)
 const toast = useToast()
 useShortcut('openInExplorer', () => {
   if (reposStore.activeRepoId == null) {
-    toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+    toast.warning(t('errors.noRepo'), t('errors.noRepoBody'))
     return
   }
   void openInExplorer(reposStore.activeRepoId).catch((e) => {
-    toast.error('파일 매니저 열기 실패', describeError(e))
+    toast.error(t('errors.fileMgrOpenFailed'), describeError(e))
   })
 })
 
@@ -192,7 +192,7 @@ useShortcut('toggleFullscreen', () => {
       const next = !(await w.isFullscreen())
       await w.setFullscreen(next)
     } catch (e) {
-      toast.error('전체화면 토글 실패', describeError(e))
+      toast.error(t('errors.fullscreenToggleFailed'), describeError(e))
     }
   })()
 })

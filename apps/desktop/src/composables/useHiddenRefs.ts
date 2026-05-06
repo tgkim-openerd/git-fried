@@ -21,6 +21,9 @@ import {
 import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { describeError } from '@/api/errors'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export function hiddenRefsKey(repoId: number | null): readonly unknown[] {
   return ['hiddenRefs', repoId] as const
@@ -55,7 +58,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
 
   const hide = useMutation({
     mutationFn: ({ refName, refKind }: { refName: string; refKind: HiddenRefKind }) => {
-      if (repoId.value == null) throw new Error('레포 미선택')
+      if (repoId.value == null) throw new Error(t('errors.noRepo'))
       return apiHideRef(repoId.value, refName, refKind)
     },
     onSuccess: () => invalidate(),
@@ -64,7 +67,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
 
   const unhide = useMutation({
     mutationFn: (refName: string) => {
-      if (repoId.value == null) throw new Error('레포 미선택')
+      if (repoId.value == null) throw new Error(t('errors.noRepo'))
       return apiUnhideRef(repoId.value, refName)
     },
     onSuccess: () => invalidate(),
@@ -73,7 +76,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
 
   const bulkHide = useMutation({
     mutationFn: (refs: { refName: string; refKind: HiddenRefKind }[]) => {
-      if (repoId.value == null) throw new Error('레포 미선택')
+      if (repoId.value == null) throw new Error(t('errors.noRepo'))
       return hideRefsBulk(repoId.value, refs)
     },
     onSuccess: () => invalidate(),
@@ -82,7 +85,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
 
   const unhideKind = useMutation({
     mutationFn: (kind: HiddenRefKind) => {
-      if (repoId.value == null) throw new Error('레포 미선택')
+      if (repoId.value == null) throw new Error(t('errors.noRepo'))
       return unhideRefsByKind(repoId.value, kind)
     },
     onSuccess: () => invalidate(),
@@ -91,7 +94,7 @@ export function useHiddenRefMutations(repoIdRef: MaybeRefOrGetter<number | null>
 
   const unhideAll = useMutation({
     mutationFn: () => {
-      if (repoId.value == null) throw new Error('레포 미선택')
+      if (repoId.value == null) throw new Error(t('errors.noRepo'))
       return unhideAllRefs(repoId.value)
     },
     onSuccess: () => invalidate(),
@@ -147,9 +150,7 @@ export function useSoloRef(repoIdRef: MaybeRefOrGetter<number | null>) {
  * 그래프 / BranchPanel 렌더링 전 호출.
  * Hidden + Solo 결합 결과 — `(refName) => boolean` (true = visible).
  */
-export function useRefVisibility(
-  repoIdRef: MaybeRefOrGetter<number | null>,
-): {
+export function useRefVisibility(repoIdRef: MaybeRefOrGetter<number | null>): {
   visibleFn: ComputedRef<(refName: string) => boolean>
   hiddenSet: ComputedRef<Set<string>>
   soloRef: ComputedRef<string | null>

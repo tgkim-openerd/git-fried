@@ -47,7 +47,7 @@ window.gitFriedReloadRepos = () => {
   qc.invalidateQueries({ queryKey: ['repos-all-for-tabs'] })
   qc.invalidateQueries({ queryKey: ['repos-all-for-management'] })
   qc.invalidateQueries({ queryKey: ['workspaces'] })
-  toast.success('레포 reload', '워크스페이스/레포 목록 갱신 중')
+  toast.success(t('toast.repoReload'), '워크스페이스/레포 목록 갱신 중')
 }
 
 // Phase 12-2 — ⌘⌥F = sidebar 검색 input focus (예전 동작 복원).

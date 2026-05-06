@@ -37,7 +37,7 @@ const createMut = useMutation({
     Object.assign(form, emptyForm())
     qc.invalidateQueries({ queryKey: ['profiles'] })
   },
-  onError: (e) => toast.error('프로파일 생성 실패', describeError(e)),
+  onError: (e) => toast.error(t('errors.profileCreateFailed'), describeError(e)),
 })
 const updateMut = useMutation({
   mutationFn: ({ id, input }: { id: number; input: ProfileInput }) => updateProfile(id, input),
@@ -46,17 +46,17 @@ const updateMut = useMutation({
     editingId.value = null
     qc.invalidateQueries({ queryKey: ['profiles'] })
   },
-  onError: (e) => toast.error('프로파일 수정 실패', describeError(e)),
+  onError: (e) => toast.error(t('errors.profileUpdateFailed'), describeError(e)),
 })
 const deleteMut = useMutation({
   mutationFn: (id: number) => deleteProfile(id),
   onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  onError: (e) => toast.error('프로파일 삭제 실패', describeError(e)),
+  onError: (e) => toast.error(t('errors.profileDeleteFailed'), describeError(e)),
 })
 const activateMut = useMutation({
   mutationFn: (id: number) => activateProfile(id),
   onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
-  onError: (e) => toast.error('프로파일 활성화 실패', describeError(e)),
+  onError: (e) => toast.error(t('errors.profileActivateFailed'), describeError(e)),
 })
 
 function startEdit(p: Profile) {

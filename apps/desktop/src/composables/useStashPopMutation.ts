@@ -60,7 +60,7 @@ export function useStashPopMutation(options: UseStashPopMutationOptions) {
   async function onStash() {
     const id = repoId()
     if (id == null) {
-      toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+      toast.warning(t('errors.noRepo'), t('errors.noRepoBody'))
       return
     }
     if (!hasChanges.value) {
@@ -80,7 +80,7 @@ export function useStashPopMutation(options: UseStashPopMutationOptions) {
   async function onPop() {
     const id = repoId()
     if (id == null) {
-      toast.warning('레포 미선택', '먼저 레포를 선택하세요.')
+      toast.warning(t('errors.noRepo'), t('errors.noRepoBody'))
       return
     }
     if (stashCount.value === 0) {

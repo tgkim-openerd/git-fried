@@ -4,14 +4,13 @@
 // 폼 컴포넌트가 reactive 로 받아서 v-model 바인딩.
 import { computed, type MaybeRefOrGetter, toRef } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import {
-  applyRepoConfig,
-  readRepoConfig,
-  type RepoConfigSnapshot,
-} from '@/api/git'
+import { applyRepoConfig, readRepoConfig, type RepoConfigSnapshot } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export const EMPTY_REPO_CONFIG: RepoConfigSnapshot = {
   hooksPath: null,
@@ -46,7 +45,7 @@ export function useRepoConfig(repoIdRef: MaybeRefOrGetter<number | null>) {
 
   const applyMut = useMutation({
     mutationFn: (snap: RepoConfigSnapshot) => {
-      if (repoId.value == null) throw new Error('레포 미선택')
+      if (repoId.value == null) throw new Error(t('errors.noRepo'))
       return applyRepoConfig(repoId.value, snap)
     },
     onSuccess: () => {
