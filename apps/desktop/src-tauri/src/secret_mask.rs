@@ -36,6 +36,15 @@ static SECRET_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
         .unwrap(),
         // 한국 주민등록번호
         Regex::new(r"\b\d{6}-?[1-4]\d{6}\b").unwrap(),
+        // Generic env-var-secret (KEY_NAME=VALUE) — stack trace / error message 노출 방어.
+        // 보다 구체적인 패턴 (GitHub PAT, AWS, JWT, etc.) 이 먼저 매칭되도록 본 패턴은 끝에 배치.
+        // 키워드: API_KEY / ACCESS_KEY / SECRET_KEY / API_SECRET / CLIENT_SECRET /
+        //        ACCESS_TOKEN / AUTH_TOKEN / BEARER_TOKEN / REFRESH_TOKEN / PASSWORD / PASSWD.
+        // `[_-]?` 로 dash/underscore/연결 변형 모두 수용 (APIKEY / API-KEY / API_KEY).
+        Regex::new(
+            r"(?i)\b(API[_-]?KEY|ACCESS[_-]?KEY|SECRET[_-]?KEY|API[_-]?SECRET|CLIENT[_-]?SECRET|ACCESS[_-]?TOKEN|AUTH[_-]?TOKEN|BEARER[_-]?TOKEN|REFRESH[_-]?TOKEN|PASSWORD|PASSWD)\s*[:=]\s*\S+",
+        )
+        .unwrap(),
     ]
 });
 
@@ -83,5 +92,45 @@ mod tests {
     fn masks_ssn() {
         let s = mask_secrets("주민번호: 900101-1234567");
         assert!(s.contains("[MASKED]"));
+    }
+
+    // c46+ /code-review SEC-1 후속 — generic env-var-secret 패턴.
+    // 사전 결함 `ai::prompts::tests::test_mask_env_pattern` 동시 해소.
+
+    #[test]
+    fn masks_env_api_key() {
+        let s = mask_secrets("API_KEY=mySecretKey123");
+        assert!(s.contains("[MASKED]"));
+        assert!(!s.contains("mySecretKey123"));
+    }
+
+    #[test]
+    fn masks_env_password_lowercase() {
+        let s = mask_secrets("password = '12345!'");
+        assert!(s.contains("[MASKED]"));
+        assert!(!s.contains("12345!"));
+    }
+
+    #[test]
+    fn masks_env_dashed_variants() {
+        // ACCESS-TOKEN, BEARER-TOKEN 도 mask 대상.
+        let s = mask_secrets("ACCESS-TOKEN: sometokenvalue");
+        assert!(s.contains("[MASKED]"));
+    }
+
+    #[test]
+    fn env_pattern_does_not_overmatch_generic_text() {
+        // 키워드 미포함 일반 KEY=VALUE 는 mask 되지 않아야 함.
+        let s = mask_secrets("path=/usr/local/bin");
+        assert_eq!(s, "path=/usr/local/bin");
+        let s = mask_secrets("count=42 status=ok");
+        assert_eq!(s, "count=42 status=ok");
+    }
+
+    #[test]
+    fn env_pattern_keyword_without_assignment_kept() {
+        // "the password field is required" 처럼 = / : 가 없으면 mask 하지 않음.
+        let s = mask_secrets("the password field is required");
+        assert_eq!(s, "the password field is required");
     }
 }
