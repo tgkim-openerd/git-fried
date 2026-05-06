@@ -1,19 +1,23 @@
-// v0.2 stretch IPC — Worktree / Cherry-pick / 3-way merge / Reflog / File history / Conflict prediction.
+// v0.2 stretch IPC — Cherry-pick / Reflog / File history / Conflict prediction
+// + system path 명령 (open_in_explorer / open_path_in_explorer).
 //
 // 2026-05-04 /analyze 후속 (c39) — LFS / Bisect / Rebase 분리. lib.rs 의 generate_handler!
 // 에 등록된 path `ipc::v02_commands::lfs_install` 등을 보존하기 위해 `pub use` 로 re-export.
 // 2026-05-05 /analyze 후속 (c40+) — AI subprocess 영역 (~410 LOC, 9 commands) 을
 // `ai_commands.rs` 로 분리. 동일 re-export 패턴.
+// 2026-05-06 c48 Wave D-4 — Worktree (6) + 3-way merge (4) 분리. lib.rs path 보존.
 pub use crate::ipc::ai_commands::*;
 pub use crate::ipc::bisect_commands::*;
 pub use crate::ipc::lfs_commands::*;
+pub use crate::ipc::merge_commands::*;
 pub use crate::ipc::rebase_commands::*;
+pub use crate::ipc::worktree_commands::*;
 
 use super::repo_path;
 use crate::error::{AppError, AppResult};
 use crate::git::{
     cherry_pick as git_cp, conflict_prediction as git_cp_pred, file_history as git_fh,
-    merge as git_merge, reflog as git_reflog, worktree as git_wt,
+    reflog as git_reflog,
 };
 use crate::AppState;
 use serde::Deserialize;
@@ -126,104 +130,7 @@ fn open_path_in_os(path: &std::path::Path) -> AppResult<()> {
     Ok(())
 }
 
-// ====== Worktree ======
-
-#[tauri::command]
-pub async fn list_worktrees(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<Vec<git_wt::WorktreeEntry>> {
-    let path = repo_path(&state, repo_id).await?;
-    git_wt::list_worktrees(&path).await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AddWorktreeArgs {
-    pub repo_id: i64,
-    pub path: String,
-    pub create_branch: Option<String>,
-    pub branch: Option<String>,
-    pub start_point: Option<String>,
-}
-
-#[tauri::command]
-pub async fn add_worktree(
-    args: AddWorktreeArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_wt::add_worktree(
-        &path,
-        &git_wt::AddWorktreeOpts {
-            path: args.path,
-            create_branch: args.create_branch,
-            branch: args.branch,
-            start_point: args.start_point,
-        },
-    )
-    .await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RemoveWorktreeArgs {
-    pub repo_id: i64,
-    pub path: String,
-    #[serde(default)]
-    pub force: bool,
-}
-
-#[tauri::command]
-pub async fn remove_worktree(
-    args: RemoveWorktreeArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_wt::remove_worktree(&path, &args.path, args.force).await
-}
-
-#[tauri::command]
-pub async fn prune_worktrees(
-    repo_id: i64,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, repo_id).await?;
-    git_wt::prune_worktrees(&path).await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LockWorktreeArgs {
-    pub repo_id: i64,
-    pub path: String,
-    pub reason: Option<String>,
-}
-
-#[tauri::command]
-pub async fn lock_worktree(
-    args: LockWorktreeArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_wt::lock_worktree(&path, &args.path, args.reason.as_deref()).await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UnlockWorktreeArgs {
-    pub repo_id: i64,
-    pub path: String,
-}
-
-#[tauri::command]
-pub async fn unlock_worktree(
-    args: UnlockWorktreeArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_wt::unlock_worktree(&path, &args.path).await
-}
+// ====== Worktree — 분리 (ipc/worktree_commands.rs, c48 Wave D-4) ======
 
 // ====== Cherry-pick (단일 + 멀티 레포) ======
 
@@ -252,95 +159,7 @@ pub async fn bulk_cherry_pick(
     .await
 }
 
-// ====== 3-way merge ======
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ConflictedFileArgs {
-    pub repo_id: i64,
-    pub path: String,
-}
-
-#[tauri::command]
-pub async fn read_conflicted(
-    args: ConflictedFileArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<git_merge::ConflictedFile> {
-    let path = repo_path(&state, args.repo_id).await?;
-    let p = args.path;
-    tokio::task::spawn_blocking(move || git_merge::read_conflicted(&path, &p))
-        .await
-        .map_err(|e| AppError::internal(format!("spawn_blocking: {e}")))?
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WriteResolvedArgs {
-    pub repo_id: i64,
-    pub path: String,
-    pub content: String,
-}
-
-#[tauri::command]
-pub async fn write_resolved(
-    args: WriteResolvedArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_merge::write_resolved(&path, &args.path, &args.content).await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TakeSideArgs {
-    pub repo_id: i64,
-    pub path: String,
-    pub side: git_merge::SideTake,
-}
-
-#[tauri::command]
-pub async fn take_side(
-    args: TakeSideArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<()> {
-    let path = repo_path(&state, args.repo_id).await?;
-    git_merge::take_side(&path, &args.path, args.side).await
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LaunchMergetoolArgs {
-    pub repo_id: i64,
-    /// merge tool 이름 (선택, git config merge.tool 사용 시 None).
-    pub tool: Option<String>,
-    /// 특정 파일만 (선택, 전체 conflicted 파일 처리 시 None).
-    pub file: Option<String>,
-}
-
-#[derive(Debug, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MergetoolResult {
-    pub success: bool,
-    pub stdout: String,
-    pub stderr: String,
-    pub exit_code: Option<i32>,
-}
-
-#[tauri::command]
-pub async fn launch_mergetool(
-    args: LaunchMergetoolArgs,
-    state: tauri::State<'_, Arc<AppState>>,
-) -> AppResult<MergetoolResult> {
-    let path = repo_path(&state, args.repo_id).await?;
-    let out =
-        git_merge::launch_mergetool(&path, args.tool.as_deref(), args.file.as_deref()).await?;
-    Ok(MergetoolResult {
-        success: out.exit_code == Some(0),
-        stdout: out.stdout,
-        stderr: out.stderr,
-        exit_code: out.exit_code,
-    })
-}
+// ====== 3-way merge — 분리 (ipc/merge_commands.rs, c48 Wave D-4) ======
 
 // ====== Bisect — 분리 (ipc/bisect_commands.rs) ======
 

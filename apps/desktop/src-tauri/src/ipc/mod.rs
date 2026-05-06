@@ -33,6 +33,7 @@ pub mod hide_commands;
 pub mod importer_commands;
 pub mod launchpad_commands;
 pub mod lfs_commands;
+pub mod merge_commands;
 pub mod profile_commands;
 pub mod pty_commands;
 pub mod rebase_commands;
@@ -45,6 +46,7 @@ pub mod sync_commands;
 pub mod tag_commands;
 pub mod v02_commands;
 pub mod workspace_commands;
+pub mod worktree_commands;
 
 // repo_id → 로컬 경로. 분해된 IPC 모듈들이 공유하는 헬퍼.
 // `pub(crate)` 로 외부 노출 차단 + ipc/* 자유 사용.
