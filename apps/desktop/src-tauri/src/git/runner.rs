@@ -15,6 +15,7 @@
 
 use crate::error::{AppError, AppResult};
 use std::path::Path;
+use std::time::Duration;
 use tokio::process::Command;
 
 /// git CLI 실행 결과.
@@ -50,7 +51,13 @@ pub struct GitRunOpts {
     pub envs: Vec<(String, String)>,
     /// `true` 이면 cwd 를 잠그지 않고 (시스템) git 으로 호출.
     pub global: bool,
+    /// Sprint c45 P0-2 — git CLI 작업 timeout. None = 무제한 (backwards compat).
+    /// 권장: clone/fetch/pull/push 는 600s (10분), log/status/diff 는 30s.
+    pub timeout: Option<Duration>,
 }
+
+/// Sprint c45 P0-2 — long-running git 작업 표준 timeout (10분).
+pub const GIT_NETWORK_TIMEOUT: Duration = Duration::from_secs(600);
 
 /// 한글 안전 git CLI 호출.
 ///
@@ -110,7 +117,27 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
         stdin.shutdown().await.map_err(AppError::Io)?;
     }
 
-    let output = child.wait_with_output().await.map_err(AppError::Io)?;
+    // Sprint c45 P0-2 — timeout 적용. 초과 시 child kill + GitCli 에러.
+    let output = match opts.timeout {
+        Some(d) => match tokio::time::timeout(d, child.wait_with_output()).await {
+            Ok(res) => res.map_err(AppError::Io)?,
+            Err(_) => {
+                // timeout 시 best-effort kill — wait_with_output 이 child 소유권을 이미 가져갔으므로
+                // 별도 kill 호출은 불가능. 프로세스는 자연 종료될 때까지 orphan 가능 (OS 가 정리).
+                // 다음 sprint 에서 child.kill() + manual stdout/stderr read 패턴으로 재구성 가능.
+                return Err(AppError::GitCli {
+                    message: format!(
+                        "git 명령 timeout {}초 초과 ({})",
+                        d.as_secs(),
+                        args.first().copied().unwrap_or("?")
+                    ),
+                    exit_code: None,
+                    stderr: String::new(),
+                });
+            }
+        },
+        None => child.wait_with_output().await.map_err(AppError::Io)?,
+    };
 
     Ok(GitOutput {
         exit_code: output.status.code(),

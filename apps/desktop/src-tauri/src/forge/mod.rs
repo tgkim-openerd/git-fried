@@ -12,8 +12,48 @@ pub use model::{
     PullRequest, Release, ReviewVerdict,
 };
 
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use async_trait::async_trait;
+use reqwest::{Response, StatusCode};
+
+/// Sprint c45 P0-3 — Forge HTTP 응답 status code 검증 extension trait.
+///
+/// 401/403 → AppError::AuthExpired (frontend AuthExpired modal trigger)
+/// 429     → AppError::RateLimit { retry_after } (Retry-After 헤더 파싱, 기본 60s)
+/// 그 외 4xx/5xx → reqwest::Response::error_for_status() 표준 에러 매핑
+///
+/// 사용:
+/// ```ignore
+/// let body: T = self.http.get(&url).send().await?
+///     .error_for_status_forge("github")?
+///     .json().await?;
+/// ```
+pub trait ResponseForgeExt: Sized {
+    fn error_for_status_forge(self, provider: &str) -> AppResult<Self>;
+}
+
+impl ResponseForgeExt for Response {
+    fn error_for_status_forge(self, provider: &str) -> AppResult<Self> {
+        match self.status() {
+            StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => {
+                Err(AppError::auth_expired(provider))
+            }
+            StatusCode::TOO_MANY_REQUESTS => {
+                let retry_after = self
+                    .headers()
+                    .get("Retry-After")
+                    .and_then(|h| h.to_str().ok())
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .unwrap_or(60);
+                Err(AppError::rate_limit(provider, retry_after))
+            }
+            s if s.is_client_error() || s.is_server_error() => {
+                self.error_for_status().map_err(AppError::Http)
+            }
+            _ => Ok(self),
+        }
+    }
+}
 
 /// Forge 클라이언트 공통 인터페이스.
 #[async_trait]

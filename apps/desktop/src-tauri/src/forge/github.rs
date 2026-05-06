@@ -7,7 +7,7 @@ use super::model::{
     Author, ForgeKind, Issue, IssueState, Label, MergeMethod, PrComment, PrFile, PrState,
     PullRequest, Release, ReviewVerdict,
 };
-use super::{CreatePullRequestReq, ForgeClient};
+use super::{CreatePullRequestReq, ForgeClient, ResponseForgeExt};
 use crate::error::{AppError, AppResult};
 use async_trait::async_trait;
 use chrono::DateTime;
@@ -90,7 +90,7 @@ impl ForgeClient for GithubClient {
             .get(&url)
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(res.into_iter().map(|r| r.into_pr(owner, repo)).collect())
@@ -108,7 +108,7 @@ impl ForgeClient for GithubClient {
             .get(&url)
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(r.into_pr(owner, repo))
@@ -134,7 +134,7 @@ impl ForgeClient for GithubClient {
             .json(&body)
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(r.into_pr(owner, repo))
@@ -150,7 +150,7 @@ impl ForgeClient for GithubClient {
             .get(&url)
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(res
@@ -167,7 +167,7 @@ impl ForgeClient for GithubClient {
             .get(&url)
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(res
@@ -183,7 +183,7 @@ impl ForgeClient for GithubClient {
             .get(&url)
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(r.into_author())
@@ -204,7 +204,7 @@ impl ForgeClient for GithubClient {
             .get(&url)
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(res.into_iter().map(|c| c.into_comment()).collect())
@@ -224,7 +224,7 @@ impl ForgeClient for GithubClient {
             .json(&serde_json::json!({ "body": body }))
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(r.into_comment())
@@ -262,7 +262,7 @@ impl ForgeClient for GithubClient {
             }))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status_forge("github")?;
         Ok(())
     }
 
@@ -285,7 +285,7 @@ impl ForgeClient for GithubClient {
             .json(&serde_json::json!({ "event": event, "body": body }))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status_forge("github")?;
         Ok(())
     }
 
@@ -313,7 +313,7 @@ impl ForgeClient for GithubClient {
             }))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status_forge("github")?;
         Ok(())
     }
 
@@ -324,7 +324,7 @@ impl ForgeClient for GithubClient {
             .json(&serde_json::json!({ "state": "closed" }))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status_forge("github")?;
         Ok(())
     }
 
@@ -335,7 +335,7 @@ impl ForgeClient for GithubClient {
             .json(&serde_json::json!({ "state": "open" }))
             .send()
             .await?
-            .error_for_status()?;
+            .error_for_status_forge("github")?;
         Ok(())
     }
 
@@ -350,7 +350,7 @@ impl ForgeClient for GithubClient {
             .get(&url)
             .send()
             .await?
-            .error_for_status()?
+            .error_for_status_forge("github")?
             .json()
             .await?;
         Ok(res.into_iter().map(RawPrFile::into_file).collect())
