@@ -27,6 +27,10 @@ pub struct WorktreeEntry {
 }
 
 /// `git worktree list --porcelain` 파싱.
+///
+/// Sprint c45 PERF-4 — dirty check / measure_dir 병렬화 (8 wt 200ms→50ms 추정).
+///   1차 phase: 동기 파싱 (entries Vec)
+///   2차 phase: futures::future::join_all 로 모든 dirty/size 동시 측정
 pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
     let out = git_run(
         repo,
@@ -54,8 +58,6 @@ pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
             if !current.path.is_empty() {
                 current.is_main = first;
                 first = false;
-                current.size_bytes = measure_dir(Path::new(&current.path));
-                current.is_dirty = check_dirty(Path::new(&current.path)).await;
                 entries.push(current.clone());
             }
             current = WorktreeEntry {
@@ -73,8 +75,6 @@ pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
         } else if let Some(b) = line.strip_prefix("branch refs/heads/") {
             current.branch = Some(b.to_string());
         } else if line == "locked" || line.starts_with("locked ") {
-            // `locked` 단독 또는 `locked <reason>` (Sprint C1 lock_worktree 가 reason
-            // 지정 시 후자) — 둘 다 locked 상태.
             current.is_locked = true;
         } else if line == "prunable" || line.starts_with("prunable ") {
             current.is_prunable = true;
@@ -82,10 +82,28 @@ pub async fn list_worktrees(repo: &Path) -> AppResult<Vec<WorktreeEntry>> {
     }
     if !current.path.is_empty() {
         current.is_main = first;
-        current.size_bytes = measure_dir(Path::new(&current.path));
-        current.is_dirty = check_dirty(Path::new(&current.path)).await;
         entries.push(current);
     }
+
+    // Sprint c45 PERF-4 — 모든 worktree dirty/size 병렬 측정.
+    let dirty_futs = entries
+        .iter()
+        .map(|e| {
+            let p = e.path.clone();
+            async move { check_dirty(Path::new(&p)).await }
+        })
+        .collect::<Vec<_>>();
+    let size_results: Vec<Option<u64>> = entries
+        .iter()
+        .map(|e| measure_dir(Path::new(&e.path)))
+        .collect();
+    let dirty_results: Vec<Option<bool>> = futures::future::join_all(dirty_futs).await;
+
+    for (i, e) in entries.iter_mut().enumerate() {
+        e.size_bytes = size_results[i];
+        e.is_dirty = dirty_results[i];
+    }
+
     Ok(entries)
 }
 

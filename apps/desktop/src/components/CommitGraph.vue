@@ -104,12 +104,22 @@ const {
 } = useGraphSearch(rows, { onClose: () => drawGraph() })
 
 // Sprint c30 / GitKraken UX (Phase 8a) — wipActive 시 virtualizer count + 1.
+// Sprint c45 PERF-2 — overscan 동적: 5000+ commits 시 stutter 감소 (12 → 최대 24).
+//   기준: 1000 미만 12 / 1000~3000 16 / 3000~5000 20 / 5000+ 24.
+//   소규모 repo 는 메모리 경량, 대규모는 스크롤 평탄화.
+const dynamicOverscan = computed(() => {
+  const n = rows.value.length
+  if (n < 1000) return 12
+  if (n < 3000) return 16
+  if (n < 5000) return 20
+  return 24
+})
 const virtualizer = useVirtualizer(
   computed(() => ({
     count: rows.value.length + (wipActive.value ? 1 : 0),
     getScrollElement: () => containerRef.value,
     estimateSize: () => ROW_H,
-    overscan: 12,
+    overscan: dynamicOverscan.value,
   })),
 )
 const virtualItems = computed(() => virtualizer.value.getVirtualItems())

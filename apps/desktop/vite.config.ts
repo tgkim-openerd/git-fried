@@ -75,6 +75,22 @@ export default defineConfig({
       process.env.TAURI_ENV_PLATFORM === 'windows' ? 'chrome105' : 'safari13',
     minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    // Sprint c45 PERF-1 — vendor 청크 분리. 초기 FCP 개선 (~50ms 추정).
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-vue': ['vue', 'vue-router', 'pinia', 'vue-i18n'],
+          'vendor-query': ['@tanstack/vue-query', '@tanstack/vue-virtual'],
+          'vendor-ui': ['reka-ui', 'vue-draggable-plus'],
+          'vendor-codemirror': [
+            '@codemirror/state',
+            '@codemirror/view',
+            '@codemirror/language',
+            '@codemirror/merge',
+          ],
+        },
+      },
+    },
   },
   test: {
     environment: 'happy-dom',

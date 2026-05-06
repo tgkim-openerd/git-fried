@@ -30,10 +30,34 @@ export function useTheme() {
     theme.value = theme.value === 'dark' ? 'light' : 'dark'
   }
 
+  // Sprint c45 DS-1 — OS prefers-color-scheme 자동 감지.
+  //   1) localStorage 우선 (사용자 명시 선택 보존)
+  //   2) localStorage 비어있을 때만 OS 설정 적용
+  //   3) localStorage 없을 때 OS 변경 watch (사용자가 OS 토글 시 즉시 반영)
+  function detectOsPrefers(): 'dark' | 'light' {
+    if (typeof window === 'undefined' || !window.matchMedia) return 'dark'
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+
   onMounted(() => {
     const stored = localStorage.getItem('git-fried.theme')
     if (stored === 'light' || stored === 'dark') {
       theme.value = stored
+    } else {
+      theme.value = detectOsPrefers()
+      // OS 변경 watch — 사용자가 OS 다크모드 토글 시 자동 반영 (단 명시 선택 시 무시).
+      try {
+        const mq = window.matchMedia('(prefers-color-scheme: dark)')
+        const onChange = (e: MediaQueryListEvent) => {
+          if (!localStorage.getItem('git-fried.theme')) {
+            theme.value = e.matches ? 'dark' : 'light'
+          }
+        }
+        mq.addEventListener('change', onChange)
+        // cleanup 은 onUnmounted 외 영구 리스너 — useTheme 는 App.vue 한 번 호출.
+      } catch {
+        // matchMedia 미지원 환경 (vitest happy-dom) silent.
+      }
     }
     apply(theme.value)
   })
