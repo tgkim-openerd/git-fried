@@ -190,6 +190,10 @@
     "themeApplied": "Theme applied",
     "themeReset": "Theme reset"
   },
+  "contextMenu": {
+    "confirmDestructiveTitle": "⚠ Confirm destructive action",
+    "confirmDestructiveMessage": "'{label}' may be hard to undo. Continue?"
+  },
   "templ": {
     "noChanges": "No changes ✓",
     "fileRowTitle": "Double-click — fullscreen diff",

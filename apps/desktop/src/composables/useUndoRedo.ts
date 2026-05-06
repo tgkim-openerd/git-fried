@@ -40,9 +40,18 @@ export function useUndoRedo(repoIdGetter: () => number | null) {
           : `${verb} 완료`,
       )
     } else {
-      const title =
-        kind === 'Undo' ? `${res.action} 은 자동 undo 미지원` : `Redo 거부 (${res.action})`
-      toast.warning(title, (res.rejectionReason ?? '') + ' — Reflog 모달에서 직접 처리하세요.')
+      const reason = res.rejectionReason ?? ''
+      // Sprint c46 DOM-3 — force-pushed gone SHA 명시 (안전성 우선, 복구 불가).
+      const isForcePushed = /force[- ]?push|gone|missing\s+blob|unreachable/i.test(reason)
+      const title = isForcePushed
+        ? `${res.action} 복구 불가 — 원격 force-push`
+        : kind === 'Undo'
+          ? `${res.action} 은 자동 undo 미지원`
+          : `Redo 거부 (${res.action})`
+      const body = isForcePushed
+        ? `원격에서 force-push 되어 sha 가 사라졌습니다. git-fried 는 안전성 우선으로 force-pushed gone SHA 의 working tree 마운트를 거부합니다.\n원본: ${reason}`
+        : reason + ' — Reflog 모달에서 직접 처리하세요.'
+      toast.warning(title, body)
       // 거부된 경우 ReflogModal 자동 오픈 — 사용자 후속 액션 가이드.
       window.gitFriedOpenReflog?.()
     }

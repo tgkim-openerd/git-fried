@@ -26,6 +26,10 @@
 //   - destructive 항목 빨강
 //   - submenu 1 depth (충분, 더 깊으면 다른 UI 패턴 권장)
 import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { confirmDialog } from '@/composables/useConfirm'
+
+const { t } = useI18n()
 
 export interface ContextMenuItem {
   label?: string // divider 면 생략 가능
@@ -36,6 +40,10 @@ export interface ContextMenuItem {
   disabled?: boolean
   submenu?: ContextMenuItem[]
   action?: () => void
+  /** Sprint c46 CMP-3 — destructive 액션 자동 confirm 우회 (이미 자체 confirm 있음). */
+  skipConfirm?: boolean
+  /** Sprint c46 CMP-3 — destructive 시 커스텀 confirm 메시지. 미지정 시 default. */
+  confirmMessage?: string
 }
 
 export interface ContextMenuExpose {
@@ -93,10 +101,43 @@ function clampToViewport() {
   if (rect.bottom > vh) y.value = Math.max(4, vh - rect.height - 4)
 }
 
-function onItemClick(item: ContextMenuItem, idx: number) {
+async function onSubItemClick(sub: ContextMenuItem) {
+  // Sprint c46 CMP-3 — submenu destructive 항목도 confirm.
+  if (sub.destructive && !sub.skipConfirm) {
+    close()
+    const ok = await confirmDialog({
+      title: t('contextMenu.confirmDestructiveTitle'),
+      message:
+        sub.confirmMessage ??
+        t('contextMenu.confirmDestructiveMessage', { label: sub.label ?? '' }),
+      danger: true,
+    })
+    if (!ok) return
+    sub.action?.()
+    return
+  }
+  sub.action?.()
+  close()
+}
+
+async function onItemClick(item: ContextMenuItem, idx: number) {
   if (item.disabled || item.divider) return
   if (item.submenu) {
     openSubmenu(idx)
+    return
+  }
+  // Sprint c46 CMP-3 — destructive 항목 자동 confirm (skipConfirm 시 우회).
+  if (item.destructive && !item.skipConfirm) {
+    close()
+    const ok = await confirmDialog({
+      title: t('contextMenu.confirmDestructiveTitle'),
+      message:
+        item.confirmMessage ??
+        t('contextMenu.confirmDestructiveMessage', { label: item.label ?? '' }),
+      danger: true,
+    })
+    if (!ok) return
+    item.action?.()
     return
   }
   item.action?.()
@@ -347,13 +388,7 @@ defineExpose<ContextMenuExpose>({ openAt, close })
             sub.destructive ? 'text-destructive hover:text-destructive' : '',
           ]"
           :disabled="sub.disabled"
-          @click="
-            !sub.disabled &&
-            (() => {
-              sub.action?.()
-              close()
-            })()
-          "
+          @click="!sub.disabled && onSubItemClick(sub)"
           @mouseenter="submenuFocusedIndex = subRawIdx"
         >
           <span class="flex items-center gap-2">

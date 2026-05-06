@@ -190,6 +190,10 @@
     "themeApplied": "테마 적용",
     "themeReset": "테마 초기화"
   },
+  "contextMenu": {
+    "confirmDestructiveTitle": "⚠ 파괴적 액션 확인",
+    "confirmDestructiveMessage": "'{label}' 액션은 되돌리기 어려울 수 있습니다. 계속할까요?"
+  },
   "templ": {
     "noChanges": "변경사항 없음 ✓",
     "fileRowTitle": "더블클릭 — fullscreen diff",
