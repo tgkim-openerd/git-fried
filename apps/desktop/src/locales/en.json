@@ -196,6 +196,7 @@
   },
   "templ": {
     "noChanges": "No changes ✓",
+    "graphResizeHandle": "Drag to resize graph width",
     "fileRowTitle": "Double-click — fullscreen diff",
     "statusSectionToggle": "Right-click = collapse / expand",
     "toastClose": "Close notification",

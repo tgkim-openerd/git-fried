@@ -31,12 +31,20 @@ impl From<GitOutput> for SyncResult {
 
 /// 모든 remote 에서 fetch.
 pub async fn fetch_all(repo: &Path) -> AppResult<SyncResult> {
+    let started = std::time::Instant::now();
+    tracing::debug!(target: "git_fried_lib::sync", repo = %repo.display(), "fetch_all 시작");
     let out = git_run(
         repo,
         &["fetch", "--all", "--prune", "--tags"],
         &GitRunOpts::default(),
     )
     .await?;
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    if out.exit_code == Some(0) {
+        tracing::info!(target: "git_fried_lib::sync", repo = %repo.display(), elapsed_ms, "fetch_all 완료");
+    } else {
+        tracing::warn!(target: "git_fried_lib::sync", repo = %repo.display(), elapsed_ms, exit_code = ?out.exit_code, "fetch_all 실패");
+    }
     Ok(out.into())
 }
 

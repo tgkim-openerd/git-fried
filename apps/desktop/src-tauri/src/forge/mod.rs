@@ -34,8 +34,11 @@ pub trait ResponseForgeExt: Sized {
 
 impl ResponseForgeExt for Response {
     fn error_for_status_forge(self, provider: &str) -> AppResult<Self> {
-        match self.status() {
+        let status = self.status();
+        let url = self.url().clone();
+        match status {
             StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => {
+                tracing::warn!(provider, %status, %url, "Forge auth expired");
                 Err(AppError::auth_expired(provider))
             }
             StatusCode::TOO_MANY_REQUESTS => {
@@ -45,12 +48,17 @@ impl ResponseForgeExt for Response {
                     .and_then(|h| h.to_str().ok())
                     .and_then(|s| s.parse::<u64>().ok())
                     .unwrap_or(60);
+                tracing::warn!(provider, retry_after, %url, "Forge rate limit");
                 Err(AppError::rate_limit(provider, retry_after))
             }
             s if s.is_client_error() || s.is_server_error() => {
+                tracing::error!(provider, %status, %url, "Forge HTTP error");
                 self.error_for_status().map_err(AppError::Http)
             }
-            _ => Ok(self),
+            _ => {
+                tracing::debug!(provider, %status, %url, "Forge response OK");
+                Ok(self)
+            }
         }
     }
 }

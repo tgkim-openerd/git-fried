@@ -196,6 +196,7 @@
   },
   "templ": {
     "noChanges": "변경사항 없음 ✓",
+    "graphResizeHandle": "드래그로 그래프 폭 조절",
     "fileRowTitle": "더블클릭 — fullscreen diff",
     "statusSectionToggle": "우클릭 = 섹션 접기/펴기",
     "toastClose": "알림 닫기",

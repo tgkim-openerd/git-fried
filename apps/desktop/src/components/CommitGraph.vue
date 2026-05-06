@@ -8,7 +8,10 @@
 //  - 노드 원 6px, 엣지 stroke 1.5px
 //  - 8개 stable color (브랜치 hash)
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useVirtualizer } from '@tanstack/vue-virtual'
+
+const { t } = useI18n()
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
 // Sprint c30 / GitKraken UX (Phase 8a) — graph 첫 row 에 WIP pseudo-row 직접 통합.
@@ -368,16 +371,31 @@ onUnmounted(() => cleanupGraphWidth())
           :style="{
             position: 'sticky',
             top: 0,
-            left: graphWidth - 2 + 'px',
-            width: '4px',
+            left: graphWidth - 6 + 'px',
+            width: '12px',
             height: '100%',
             zIndex: 2,
             cursor: 'col-resize',
           }"
-          class="hover:bg-primary/40 transition-colors"
-          title="드래그로 그래프 폭 조절"
+          class="group transition-colors"
+          :title="t('templ.graphResizeHandle')"
+          aria-label="Resize graph width"
+          role="separator"
           @mousedown="onDragHandleStart"
-        />
+        >
+          <!-- Sprint c46 UX-10 — handle hit area 4px → 12px, visual marker 1px (inner ghost divider) -->
+          <div
+            :style="{
+              position: 'absolute',
+              top: 0,
+              left: '5px',
+              width: '2px',
+              height: '100%',
+              pointerEvents: 'none',
+            }"
+            class="bg-transparent group-hover:bg-primary/60 transition-colors"
+          />
+        </div>
         <!-- Sprint c30 / GitKraken UX (Phase 8a) — virtualizer 의 idx=0 + wipActive = WIP row.
              그 외 idx → commitRowAt(idx) (wipActive 시 idx-1 offset). -->
         <template v-for="v in virtualItems" :key="`v-${v.index}`">

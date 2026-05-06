@@ -168,15 +168,32 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
 
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
 
+    // Sprint c46 BE-3 — clone 시작/완료 tracing.
+    tracing::info!(target: "git_fried_lib::clone", url = %url, target = %target_str, "git clone 시작");
+    let started = std::time::Instant::now();
+
     // clone 은 부모 디렉토리에서 실행 (target 자체는 아직 없음).
     let clone_out = git_run(parent, &arg_refs, &GitRunOpts::default()).await?;
     if clone_out.exit_code != Some(0) {
+        tracing::error!(
+            target: "git_fried_lib::clone",
+            url = %url,
+            exit_code = ?clone_out.exit_code,
+            elapsed_ms = started.elapsed().as_millis() as u64,
+            "git clone 실패"
+        );
         return Err(AppError::GitCli {
             message: format!("git clone 실패 (exit={:?})", clone_out.exit_code),
             exit_code: clone_out.exit_code,
             stderr: clone_out.stderr,
         });
     }
+    tracing::info!(
+        target: "git_fried_lib::clone",
+        url = %url,
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        "git clone 완료"
+    );
 
     let mut combined_stderr = clone_out.stderr.clone();
 
