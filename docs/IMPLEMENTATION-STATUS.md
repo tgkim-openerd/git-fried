@@ -1,6 +1,6 @@
 # 구현 현황 인벤토리 (Implementation Status)
 
-작성: 2026-04-30 / 갱신: 2026-05-06 Sprint c31 22 + c32 3 + c33 14 + c34 5 + c35 6 + c36 4 + c37 11 + c38 5 + c39 1 + c40 11 + c40 후속 4 + c40 후속 (전체) 3 + c40 review-fix 6 + c40+ /analyze 2차 3 + c41 /analyze 1~6 자율 4 + c42 추가 자율 2 + **c43 자율 3차 2** = 106 commit / 트리거: c43 — c42 후속 자율 발굴 → c43-1 i18n 잔여 9 파일 / 25+ 위치 (themeIO/statusSelection/aiResult/issues 신규 + branchActions/commitActions 잔여 정리) / c43-2 AiResultModal+IssuesPanel template 4건 / c43-3 forge mock HTTP 보류 (mockito 단독 sprint c44+) — ko/en 838→856 line
+작성: 2026-04-30 / 갱신: 2026-05-06 누적 c31~c46 + **c46+** = 122 commit / **c46+ 트리거**: c46 종료 직후 사용자 "전부 자율 진행" → /analyze HIGH 2 + /code-review 16 + 사전 결함 1 = 19건 자율 (3 main commits) → main push (`1ec88d2..3a0d79d`, 24 commits 누적) + toolkit /teach 3 skill + /compound 2 solution. c46+ 핵심: vue-query 5.59→5.100.9 / FE `registerGlobalErrorHandler` (Vue 3 standalone 전역 funnel) / Rust `ipc/diagnostic_commands.rs` (secret_mask + CRLF escape + OnceLock rate-limit) / `secret_mask.rs` env-var-secret 패턴 (사전 결함 `test_mask_env_pattern` 동시 해소) — vitest 675→682 / cargo test ~215+1fail → **225/225** / i18n ko/en 919→921
 
 > **목적**: 26개 plan 문서 + CHANGELOG Unreleased + lib.rs invoke_handler + 5 SQLite migrations + 161 IPC + 191 frontend 파일 / 66 Rust 파일을 한 문서에 매핑. 신규 개발자 / 다음 세션 entry / dogfood 시점에 "어디까지 됐고 어디 남았나" 단일 진실원천.
 >
