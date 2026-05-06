@@ -903,5 +903,109 @@
       "detail": "Detail",
       "help": "Help"
     }
+  },
+  "cmd": {
+    "_disabled": "off",
+    "_enabled": "on",
+    "_show": "show",
+    "_hide": "hide",
+    "_minutes": "{n}m",
+    "_osDefault": "OS default",
+    "_initial": "initial",
+    "_gravatar": "Gravatar",
+    "_categoryIntegration": "Integration (external)",
+    "repoSwitch": { "label": "Repo: Quick switch", "hint": "⌘⇧P / ⌘T" },
+    "repoRefresh": { "label": "Repo: Refresh all queries", "hint": "invalidate everything" },
+    "repoFetch": { "label": "Repo: Fetch (all remotes)", "hint": "⌘L" },
+    "repoPull": { "label": "Repo: Pull", "hint": "⌘⇧L" },
+    "repoPush": { "label": "Repo: Push", "hint": "⌘⇧K" },
+    "repoWorkspaceAll": { "label": "Workspace: All" },
+    "repoUnselect": { "label": "Repo: Deselect" },
+    "repoTabClose": { "label": "Tab: Close active", "hint": "⌘⇧W" },
+    "repoTabCloseOthers": { "label": "Tab: Close others" },
+    "repoTabCloseAll": { "label": "Tab: Close all" },
+    "repoTabNext": { "label": "Tab: Next", "hint": "⌃Tab" },
+    "repoTabPrev": { "label": "Tab: Previous", "hint": "⌃⇧Tab" },
+    "repoFilter": { "label": "Sidebar: Focus repo filter", "hint": "⌘⌥F" },
+    "repoGoHome": { "label": "Go home", "hint": "navigate /" },
+    "repoGoLaunchpad": { "label": "Launchpad", "hint": "navigate /launchpad" },
+    "repoGoSettings": { "label": "Settings", "hint": "navigate /settings" },
+    "repoOpenInExplorer": { "label": "Open repo folder (OS file manager)", "hint": "⌥O" },
+    "repoAutoFetch": {
+      "label": "Auto-Fetch cycle (current: {current})",
+      "hint": "off → 1m → 5m → 15m"
+    },
+    "repoAutoPrune": {
+      "label": "Auto-Prune {state} (prune on fetch)",
+      "hint": "toggle prune-on-fetch"
+    },
+    "branchTab": { "label": "Go to Branch tab", "hint": "⌘B" },
+    "branchNewPr": { "label": "Create PR modal", "hint": "⌘N" },
+    "branchRebase": { "label": "Interactive rebase", "hint": "drop / reword / squash / fixup" },
+    "branchSyncTemplate": {
+      "label": "Sync template — bulk cherry-pick",
+      "hint": "bulk cherry-pick"
+    },
+    "branchBisect": { "label": "Bisect — find bad commit", "hint": "binary search" },
+    "branchCompare": { "label": "Compare — two refs", "hint": "ahead/behind + commits + diff" },
+    "branchConflictDetection": {
+      "label": "Conflict detection {state}",
+      "hint": "StatusBar ⚠ toggle"
+    },
+    "branchSubmoduleAutoUpdate": {
+      "label": "Submodule auto-update {state}",
+      "hint": "auto-update after pull"
+    },
+    "fileStageAll": { "label": "Stage all", "hint": "⌘⇧S" },
+    "fileUnstageAll": { "label": "Unstage all", "hint": "⌘⇧U" },
+    "fileStageAndCommit": { "label": "Stage all + Commit", "hint": "⌘⇧Enter" },
+    "fileCommit": { "label": "Commit (current message)", "hint": "⌘Enter" },
+    "fileFocusMessage": { "label": "Focus message input", "hint": "⌘⇧M" },
+    "viewToggleSidebar": { "label": "Toggle left sidebar", "hint": "⌘J" },
+    "viewToggleDetail": { "label": "Toggle right panel", "hint": "⌘K" },
+    "viewTerminal": { "label": "Terminal — toggle integrated terminal", "hint": "⌘`" },
+    "viewZoomIn": { "label": "Zoom in", "hint": "⌘=" },
+    "viewZoomOut": { "label": "Zoom out", "hint": "⌘-" },
+    "viewZoomReset": { "label": "Zoom reset (14px)", "hint": "⌘0" },
+    "viewThemeToggle": { "label": "Toggle dark / light mode" },
+    "viewShowDiff": { "label": "Selected commit diff modal", "hint": "⌘D" },
+    "viewDateLocale": {
+      "label": "Date format cycle (current: {current})",
+      "hint": "auto → ko-KR → en-US"
+    },
+    "viewAvatarStyle": {
+      "label": "Avatar style toggle (current: {current})",
+      "hint": "initial ↔ gravatar"
+    },
+    "viewHideLaunchpad": { "label": "Launchpad menu {state}", "hint": "hide-launchpad toggle" },
+    "viewThemeCopyJson": {
+      "label": "Copy custom theme JSON (current vars)",
+      "hint": "clipboard.writeText"
+    },
+    "viewThemeReset": { "label": "Reset custom theme (restore default)", "hint": "reset" },
+    "viewFullscreen": { "label": "Toggle fullscreen", "hint": "F11 / ⌃⌘F" },
+    "stashTab": { "label": "Go to Stash tab", "hint": "⌘3" },
+    "historyFile": { "label": "File history (current file)", "hint": "⌘⇧H" },
+    "historyReflog": { "label": "Reflog (HEAD) — recover lost commit", "hint": "reflog viewer" },
+    "diffToggleInline": { "label": "Toggle inline diff panel", "hint": "⌘⇧D" },
+    "diffPrevHunk": { "label": "Diff previous hunk", "hint": "Alt+↑" },
+    "diffNextHunk": { "label": "Diff next hunk", "hint": "Alt+↓" },
+    "aiExplainCurrent": { "label": "✨ Explain current commit", "hint": "⌘D then ✨" },
+    "settingsShortcuts": { "label": "Keyboard shortcuts help", "hint": "?" },
+    "settingsCloseModal": { "label": "Close active modal", "hint": "⌘W" },
+    "settingsProfiles": { "label": "Manage profiles", "hint": "/settings → Profiles" },
+    "settingsForge": { "label": "Manage Forge accounts (PAT)", "hint": "/settings" },
+    "integrationGithubActions": {
+      "label": "🔜 GitHub Actions CI status (v0.4 planned)",
+      "hint": "placeholder"
+    },
+    "integrationLinearJira": {
+      "label": "🔜 Linear / Jira issue mapping (v0.5 planned)",
+      "hint": "placeholder"
+    },
+    "integrationDiscordSlack": {
+      "label": "🔜 Discord / Slack notifications (v0.5 planned)",
+      "hint": "placeholder"
+    }
   }
 }

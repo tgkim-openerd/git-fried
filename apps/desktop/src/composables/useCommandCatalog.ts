@@ -1,6 +1,6 @@
 // Sprint c31 / god comp 분리 2/N — CommandPalette.vue 의 명령 catalog + 헬퍼를 분리.
 //
-// 본 composable 은 30+ 명령 정의 (`Cmd[]`) + 카테고리별 toggle/cycle 헬퍼 +
+// 본 composable 은 60개 명령 정의 (`Cmd[]`) + 카테고리별 toggle/cycle 헬퍼 +
 // Category 타입 / CATEGORY_LABELS / CATEGORY_ORDER 를 통합 export.
 //
 // 컴포넌트는 catalog 호출만 하고 fuzzy filter / keyboard nav / UI rendering 만 담당.
@@ -10,6 +10,11 @@
 //
 // Sprint 22-19 E-8 — design §8-3 Plugin/Integration slot. v0.4 placeholder 명령
 // (toast.info 만 표시) 도 본 catalog 에 포함.
+//
+// Sprint c47 Wave A-1 — 60개 명령 label/hint 전부 i18n cmd.* 키로 마이그.
+// 동적 toggle label (auto-fetch/auto-prune/conflict-detection/submodule/date-locale/
+// avatar-style/hide-launchpad) 은 `_disabled`/`_enabled`/`_show`/`_hide`/`_minutes`/
+// `_osDefault`/`_initial`/`_gravatar` 공유 키 + `{state}`/`{current}` interpolation.
 import { computed, type ComputedRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { useReposStore } from '@/stores/repos'
@@ -46,18 +51,27 @@ export interface Cmd {
   action: () => void | Promise<unknown>
 }
 
-export const CATEGORY_LABELS: Record<Category, string> = {
-  repo: 'Repo',
-  branch: 'Branch',
-  file: 'File / Stage',
-  view: 'View / Layout',
-  stash: 'Stash',
-  history: 'History',
-  ai: 'AI',
-  settings: 'Settings',
-  // Sprint 22-19 E-8 — design §8-3
-  integration: 'Integration (외부 도구)',
-}
+// Category 라벨 — 영문 카테고리는 i18n 불필요 (Repo/Branch/...). integration 만 한국어 포함.
+// Sprint c47 Wave A-1: integration 라벨도 i18n 으로 이동 (locale 동적 갱신 위해 getter).
+export const CATEGORY_LABELS: Record<Category, string> = new Proxy(
+  {
+    repo: 'Repo',
+    branch: 'Branch',
+    file: 'File / Stage',
+    view: 'View / Layout',
+    stash: 'Stash',
+    history: 'History',
+    ai: 'AI',
+    settings: 'Settings',
+    integration: '', // proxy 가 동적 resolve
+  } as Record<Category, string>,
+  {
+    get(target, prop: string) {
+      if (prop === 'integration') return t('cmd._categoryIntegration')
+      return target[prop as Category]
+    },
+  },
+)
 
 export const CATEGORY_ORDER: Category[] = [
   'repo',
@@ -76,6 +90,17 @@ type WindowTriggerKey = Extract<keyof Window, `gitFried${string}`>
 
 export interface UseCommandCatalogReturn {
   allCommands: ComputedRef<Cmd[]>
+}
+
+// helper — `cmd.<key>` namespace 의 label/hint 추출. dynamic label 은 params 전달.
+function lbl(key: string, params?: Record<string, string | number>): string {
+  return params ? t(`cmd.${key}.label`, params) : t(`cmd.${key}.label`)
+}
+function hnt(key: string): string | undefined {
+  const path = `cmd.${key}.hint`
+  // i18n.global.te 는 missing 시 false — hint 없는 명령 위해 분기.
+  // legacy=false 모드는 i18n.global 이 Composer 라 te() 직접 호출 가능.
+  return i18n.global.te(path) ? t(path) : undefined
 }
 
 export function useCommandCatalog(): UseCommandCatalogReturn {
@@ -182,60 +207,64 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     }
   }
 
+  // 동적 toggle label 용 helper — `_disabled`/`_enabled`/`_show`/`_hide` 공유 키 lookup.
+  const onOff = (b: boolean) => (b ? t('cmd._enabled') : t('cmd._disabled'))
+  const showHide = (b: boolean) => (b ? t('cmd._show') : t('cmd._hide'))
+
   const allCommands = computed<Cmd[]>(() => [
-    // ===== Repo (10) =====
+    // ===== Repo (19) =====
     {
       id: 'repo.switch',
       category: 'repo',
-      label: 'Repo: 빠른 전환',
-      hint: '⌘⇧P / ⌘T',
+      label: lbl('repoSwitch'),
+      hint: hnt('repoSwitch'),
       action: trigger('newTab'),
     },
     {
       id: 'repo.refresh',
       category: 'repo',
-      label: 'Repo: 모든 쿼리 새로고침',
-      hint: 'invalidate everything',
+      label: lbl('repoRefresh'),
+      hint: hnt('repoRefresh'),
       action: () => qc.invalidateQueries(),
     },
     {
       id: 'repo.fetch',
       category: 'repo',
-      label: 'Repo: Fetch (모든 remote)',
-      hint: '⌘L',
+      label: lbl('repoFetch'),
+      hint: hnt('repoFetch'),
       action: trigger('fetch'),
     },
     {
       id: 'repo.pull',
       category: 'repo',
-      label: 'Repo: Pull',
-      hint: '⌘⇧L',
+      label: lbl('repoPull'),
+      hint: hnt('repoPull'),
       action: trigger('pull'),
     },
     {
       id: 'repo.push',
       category: 'repo',
-      label: 'Repo: Push',
-      hint: '⌘⇧K',
+      label: lbl('repoPush'),
+      hint: hnt('repoPush'),
       action: trigger('push'),
     },
     {
       id: 'repo.workspace.all',
       category: 'repo',
-      label: 'Workspace: 전체',
+      label: lbl('repoWorkspaceAll'),
       action: () => store.setActiveWorkspace(null),
     },
     {
       id: 'repo.unselect',
       category: 'repo',
-      label: 'Repo: 선택 해제',
+      label: lbl('repoUnselect'),
       action: () => store.setActiveRepo(null),
     },
     {
       id: 'repo.tab.close',
       category: 'repo',
-      label: '탭: 활성 탭 닫기',
-      hint: '⌘⇧W',
+      label: lbl('repoTabClose'),
+      hint: hnt('repoTabClose'),
       action: () => {
         if (store.activeRepoId != null) store.closeTab(store.activeRepoId)
       },
@@ -243,7 +272,7 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'repo.tab.close-others',
       category: 'repo',
-      label: '탭: 다른 탭 모두 닫기',
+      label: lbl('repoTabCloseOthers'),
       action: () => {
         if (store.activeRepoId != null) store.closeOthers(store.activeRepoId)
       },
@@ -251,74 +280,75 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'repo.tab.close-all',
       category: 'repo',
-      label: '탭: 모두 닫기',
+      label: lbl('repoTabCloseAll'),
       action: () => store.closeAll(),
     },
     {
       id: 'repo.tab.next',
       category: 'repo',
-      label: '탭: 다음',
-      hint: '⌃Tab',
+      label: lbl('repoTabNext'),
+      hint: hnt('repoTabNext'),
       action: store.nextTab,
     },
     {
       id: 'repo.tab.prev',
       category: 'repo',
-      label: '탭: 이전',
-      hint: '⌃⇧Tab',
+      label: lbl('repoTabPrev'),
+      hint: hnt('repoTabPrev'),
       action: store.prevTab,
     },
     {
       id: 'repo.filter',
       category: 'repo',
-      label: 'Sidebar 레포 필터 focus',
-      hint: '⌘⌥F',
+      label: lbl('repoFilter'),
+      hint: hnt('repoFilter'),
       action: trigger('filterRepos'),
     },
     {
       id: 'repo.go.home',
       category: 'repo',
-      label: '홈으로',
-      hint: 'navigate /',
+      label: lbl('repoGoHome'),
+      hint: hnt('repoGoHome'),
       action: () => router.push('/'),
     },
     {
       id: 'repo.go.launchpad',
       category: 'repo',
-      label: 'Launchpad',
-      hint: 'navigate /launchpad',
+      label: lbl('repoGoLaunchpad'),
+      hint: hnt('repoGoLaunchpad'),
       action: () => router.push('/launchpad'),
     },
     {
       id: 'repo.go.settings',
       category: 'repo',
-      label: '설정',
-      hint: 'navigate /settings',
+      label: lbl('repoGoSettings'),
+      hint: hnt('repoGoSettings'),
       action: () => router.push('/settings'),
     },
     {
       id: 'repo.open-in-explorer',
       category: 'repo',
-      label: '레포 폴더 열기 (OS 파일 매니저)',
-      hint: '⌥O',
+      label: lbl('repoOpenInExplorer'),
+      hint: hnt('repoOpenInExplorer'),
       action: trigger('openInExplorer'),
     },
     {
       id: 'repo.auto-fetch',
       category: 'repo',
-      label: `Auto-Fetch 주기 순환 (현재: ${
-        general.value.autoFetchIntervalMin === 0
-          ? '비활성'
-          : `${general.value.autoFetchIntervalMin}분`
-      })`,
-      hint: 'off → 1m → 5m → 15m',
+      label: lbl('repoAutoFetch', {
+        current:
+          general.value.autoFetchIntervalMin === 0
+            ? t('cmd._disabled')
+            : t('cmd._minutes', { n: general.value.autoFetchIntervalMin }),
+      }),
+      hint: hnt('repoAutoFetch'),
       action: cycleAutoFetch,
     },
     {
       id: 'repo.auto-prune',
       category: 'repo',
-      label: `Auto-Prune ${general.value.autoPruneOnFetch ? '비활성' : '활성'} (Fetch 시 prune)`,
-      hint: 'toggle prune-on-fetch',
+      label: lbl('repoAutoPrune', { state: onOff(!general.value.autoPruneOnFetch) }),
+      hint: hnt('repoAutoPrune'),
       action: toggleAutoPruneOnFetch,
     },
 
@@ -326,57 +356,59 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'branch.tab',
       category: 'branch',
-      label: 'Branch 탭으로 이동',
-      hint: '⌘B',
+      label: lbl('branchTab'),
+      hint: hnt('branchTab'),
       action: trigger('newBranch'),
     },
     {
       id: 'branch.new-pr',
       category: 'branch',
-      label: 'PR 생성 모달',
-      hint: '⌘N',
+      label: lbl('branchNewPr'),
+      hint: hnt('branchNewPr'),
       action: trigger('newPr'),
     },
     {
       id: 'branch.rebase',
       category: 'branch',
-      label: 'Interactive rebase',
-      hint: 'drop / reword / squash / fixup',
+      label: lbl('branchRebase'),
+      hint: hnt('branchRebase'),
       action: callWindow('gitFriedOpenRebase'),
     },
     {
       id: 'branch.sync.template',
       category: 'branch',
-      label: 'Sync template — 다중 레포 cherry-pick',
-      hint: 'bulk cherry-pick',
+      label: lbl('branchSyncTemplate'),
+      hint: hnt('branchSyncTemplate'),
       action: callWindow('gitFriedOpenSyncTemplate'),
     },
     {
       id: 'branch.bisect',
       category: 'branch',
-      label: 'Bisect — 잘못된 commit 찾기',
-      hint: 'binary search',
+      label: lbl('branchBisect'),
+      hint: hnt('branchBisect'),
       action: callWindow('gitFriedOpenBisect'),
     },
     {
       id: 'branch.compare',
       category: 'branch',
-      label: 'Compare — 두 ref 비교',
-      hint: 'ahead/behind + commits + diff',
+      label: lbl('branchCompare'),
+      hint: hnt('branchCompare'),
       action: callWindow('gitFriedOpenCompare'),
     },
     {
       id: 'branch.conflict-detection',
       category: 'branch',
-      label: `Conflict 예측 ${general.value.conflictDetection ? '비활성' : '활성'}`,
-      hint: 'StatusBar ⚠ toggle',
+      label: lbl('branchConflictDetection', { state: onOff(!general.value.conflictDetection) }),
+      hint: hnt('branchConflictDetection'),
       action: toggleConflictDetection,
     },
     {
       id: 'branch.submodule-auto-update',
       category: 'branch',
-      label: `Submodule 자동 update ${general.value.autoUpdateSubmodules ? '비활성' : '활성'}`,
-      hint: 'pull 후 자동 update',
+      label: lbl('branchSubmoduleAutoUpdate', {
+        state: onOff(!general.value.autoUpdateSubmodules),
+      }),
+      hint: hnt('branchSubmoduleAutoUpdate'),
       action: toggleAutoUpdateSubmodules,
     },
 
@@ -384,36 +416,36 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'file.stage-all',
       category: 'file',
-      label: '모두 stage',
-      hint: '⌘⇧S',
+      label: lbl('fileStageAll'),
+      hint: hnt('fileStageAll'),
       action: trigger('stageAllExplicit'),
     },
     {
       id: 'file.unstage-all',
       category: 'file',
-      label: '모두 unstage',
-      hint: '⌘⇧U',
+      label: lbl('fileUnstageAll'),
+      hint: hnt('fileUnstageAll'),
       action: trigger('unstageAll'),
     },
     {
       id: 'file.stage-and-commit',
       category: 'file',
-      label: 'Stage all + Commit',
-      hint: '⌘⇧Enter',
+      label: lbl('fileStageAndCommit'),
+      hint: hnt('fileStageAndCommit'),
       action: trigger('stageAndCommit'),
     },
     {
       id: 'file.commit',
       category: 'file',
-      label: 'Commit (현재 메시지)',
-      hint: '⌘Enter',
+      label: lbl('fileCommit'),
+      hint: hnt('fileCommit'),
       action: trigger('commit'),
     },
     {
       id: 'file.focus-message',
       category: 'file',
-      label: '메시지 입력창 focus',
-      hint: '⌘⇧M',
+      label: lbl('fileFocusMessage'),
+      hint: hnt('fileFocusMessage'),
       action: trigger('focusMessage'),
     },
 
@@ -421,49 +453,49 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'view.toggle-sidebar',
       category: 'view',
-      label: '좌측 사이드바 토글',
-      hint: '⌘J',
+      label: lbl('viewToggleSidebar'),
+      hint: hnt('viewToggleSidebar'),
       action: ui.toggleSidebar,
     },
     {
       id: 'view.toggle-detail',
       category: 'view',
-      label: '우측 패널 토글',
-      hint: '⌘K',
+      label: lbl('viewToggleDetail'),
+      hint: hnt('viewToggleDetail'),
       action: trigger('toggleDetail'),
     },
     {
       id: 'view.terminal',
       category: 'view',
-      label: 'Terminal — 통합 터미널 토글',
-      hint: '⌘`',
+      label: lbl('viewTerminal'),
+      hint: hnt('viewTerminal'),
       action: callWindow('gitFriedToggleTerminal'),
     },
     {
       id: 'view.zoom-in',
       category: 'view',
-      label: 'Zoom in',
-      hint: '⌘=',
+      label: lbl('viewZoomIn'),
+      hint: hnt('viewZoomIn'),
       action: ui.zoomIn,
     },
     {
       id: 'view.zoom-out',
       category: 'view',
-      label: 'Zoom out',
-      hint: '⌘-',
+      label: lbl('viewZoomOut'),
+      hint: hnt('viewZoomOut'),
       action: ui.zoomOut,
     },
     {
       id: 'view.zoom-reset',
       category: 'view',
-      label: 'Zoom reset (14px)',
-      hint: '⌘0',
+      label: lbl('viewZoomReset'),
+      hint: hnt('viewZoomReset'),
       action: ui.zoomReset,
     },
     {
       id: 'view.theme.toggle',
       category: 'view',
-      label: '다크 / 라이트 모드 토글',
+      label: lbl('viewThemeToggle'),
       action: () => {
         const root = document.documentElement
         root.classList.toggle('dark')
@@ -473,54 +505,58 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'view.show-diff',
       category: 'view',
-      label: '선택 commit diff 모달',
-      hint: '⌘D',
+      label: lbl('viewShowDiff'),
+      hint: hnt('viewShowDiff'),
       action: trigger('showDiff'),
     },
     {
       id: 'view.date-locale',
       category: 'view',
-      label: `날짜 형식 순환 (현재: ${
-        uiSettings.value.dateLocale === 'auto' ? 'OS 기본' : uiSettings.value.dateLocale
-      })`,
-      hint: 'auto → ko-KR → en-US',
+      label: lbl('viewDateLocale', {
+        current:
+          uiSettings.value.dateLocale === 'auto'
+            ? t('cmd._osDefault')
+            : uiSettings.value.dateLocale,
+      }),
+      hint: hnt('viewDateLocale'),
       action: cycleDateLocale,
     },
     {
       id: 'view.avatar-style',
       category: 'view',
-      label: `아바타 스타일 토글 (현재: ${
-        uiSettings.value.avatarStyle === 'initial' ? '이니셜' : 'Gravatar'
-      })`,
-      hint: 'initial ↔ gravatar',
+      label: lbl('viewAvatarStyle', {
+        current:
+          uiSettings.value.avatarStyle === 'initial' ? t('cmd._initial') : t('cmd._gravatar'),
+      }),
+      hint: hnt('viewAvatarStyle'),
       action: toggleAvatarStyle,
     },
     {
       id: 'view.hide-launchpad',
       category: 'view',
-      label: `Launchpad 메뉴 ${uiSettings.value.hideLaunchpad ? '표시' : '숨김'}`,
-      hint: 'hide-launchpad toggle',
+      label: lbl('viewHideLaunchpad', { state: showHide(uiSettings.value.hideLaunchpad) }),
+      hint: hnt('viewHideLaunchpad'),
       action: toggleHideLaunchpad,
     },
     {
       id: 'view.theme.copy-json',
       category: 'view',
-      label: 'Custom theme JSON 복사 (현재 vars)',
-      hint: 'clipboard.writeText',
+      label: lbl('viewThemeCopyJson'),
+      hint: hnt('viewThemeCopyJson'),
       action: copyCustomThemeJson,
     },
     {
       id: 'view.theme.reset',
       category: 'view',
-      label: 'Custom theme 초기화 (기본 테마 복원)',
-      hint: 'reset',
+      label: lbl('viewThemeReset'),
+      hint: hnt('viewThemeReset'),
       action: resetCustomTheme,
     },
     {
       id: 'view.fullscreen',
       category: 'view',
-      label: '전체화면 토글',
-      hint: 'F11 / ⌃⌘F',
+      label: lbl('viewFullscreen'),
+      hint: hnt('viewFullscreen'),
       action: trigger('toggleFullscreen'),
     },
 
@@ -528,8 +564,8 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'stash.tab',
       category: 'stash',
-      label: 'Stash 탭으로 이동',
-      hint: '⌘3',
+      label: lbl('stashTab'),
+      hint: hnt('stashTab'),
       action: trigger('tab3'),
     },
 
@@ -537,36 +573,36 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'history.file',
       category: 'history',
-      label: 'File history (현재 파일)',
-      hint: '⌘⇧H',
+      label: lbl('historyFile'),
+      hint: hnt('historyFile'),
       action: trigger('fileHistorySearch'),
     },
     {
       id: 'history.reflog',
       category: 'history',
-      label: 'Reflog (HEAD) — 잃은 commit 복구',
-      hint: 'reflog viewer',
+      label: lbl('historyReflog'),
+      hint: hnt('historyReflog'),
       action: callWindow('gitFriedOpenReflog'),
     },
     {
       id: 'diff.toggle-inline',
       category: 'history',
-      label: 'Inline diff panel 토글',
-      hint: '⌘⇧D',
+      label: lbl('diffToggleInline'),
+      hint: hnt('diffToggleInline'),
       action: trigger('toggleInlineDiff'),
     },
     {
       id: 'diff.prev-hunk',
       category: 'history',
-      label: 'Diff 이전 hunk',
-      hint: 'Alt+↑',
+      label: lbl('diffPrevHunk'),
+      hint: hnt('diffPrevHunk'),
       action: trigger('prevHunk'),
     },
     {
       id: 'diff.next-hunk',
       category: 'history',
-      label: 'Diff 다음 hunk',
-      hint: 'Alt+↓',
+      label: lbl('diffNextHunk'),
+      hint: hnt('diffNextHunk'),
       action: trigger('nextHunk'),
     },
 
@@ -574,8 +610,8 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'ai.explain-current',
       category: 'ai',
-      label: '✨ 현재 commit 설명',
-      hint: '⌘D 후 ✨',
+      label: lbl('aiExplainCurrent'),
+      hint: hnt('aiExplainCurrent'),
       action: trigger('showDiff'),
     },
 
@@ -583,29 +619,29 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'settings.shortcuts',
       category: 'settings',
-      label: '키보드 단축키 도움말',
-      hint: '?',
+      label: lbl('settingsShortcuts'),
+      hint: hnt('settingsShortcuts'),
       action: trigger('help'),
     },
     {
       id: 'settings.close-modal',
       category: 'settings',
-      label: '활성 모달 닫기',
-      hint: '⌘W',
+      label: lbl('settingsCloseModal'),
+      hint: hnt('settingsCloseModal'),
       action: trigger('closeModal'),
     },
     {
       id: 'settings.profiles',
       category: 'settings',
-      label: '프로파일 관리',
-      hint: '/settings 의 Profiles',
+      label: lbl('settingsProfiles'),
+      hint: hnt('settingsProfiles'),
       action: () => router.push('/settings'),
     },
     {
       id: 'settings.forge',
       category: 'settings',
-      label: 'Forge 계정 관리 (PAT)',
-      hint: '/settings',
+      label: lbl('settingsForge'),
+      hint: hnt('settingsForge'),
       action: () => router.push('/settings'),
     },
 
@@ -614,8 +650,8 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'integration.github-actions',
       category: 'integration',
-      label: '🔜 GitHub Actions CI status (v0.4 예정)',
-      hint: 'placeholder',
+      label: lbl('integrationGithubActions'),
+      hint: hnt('integrationGithubActions'),
       action: () => {
         toast.info(t('cmdToast.ghActionsTitle'), t('cmdToast.ghActionsBody'))
       },
@@ -623,8 +659,8 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'integration.linear-jira',
       category: 'integration',
-      label: '🔜 Linear / Jira 이슈 매핑 (v0.5 예정)',
-      hint: 'placeholder',
+      label: lbl('integrationLinearJira'),
+      hint: hnt('integrationLinearJira'),
       action: () => {
         toast.info(t('cmdToast.linearJiraTitle'), t('cmdToast.linearJiraBody'))
       },
@@ -632,8 +668,8 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     {
       id: 'integration.discord-slack',
       category: 'integration',
-      label: '🔜 Discord / Slack 알림 (v0.5 예정)',
-      hint: 'placeholder',
+      label: lbl('integrationDiscordSlack'),
+      hint: hnt('integrationDiscordSlack'),
       action: () => {
         toast.info(t('cmdToast.webhookTitle'), t('cmdToast.webhookBody'))
       },

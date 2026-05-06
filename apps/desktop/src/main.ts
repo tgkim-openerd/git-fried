@@ -11,7 +11,7 @@ import App from './App.vue'
 import { queryClient } from './api/queryClient'
 // Sprint c31 / plan/03 §6 — i18n (한국어 1순위 / 영어 2순위).
 import { i18n } from './i18n'
-import { registerGlobalErrorHandler } from './composables/registerGlobalErrorHandler'
+import { registerGlobalErrorHandler } from './utils/registerGlobalErrorHandler'
 import './styles/main.css'
 
 // Tauri 데스크탑 앱은 SPA 모드로만 동작 (SSR / hydration 없음).
