@@ -16,6 +16,9 @@ import { stageAll as apiStageAll } from '@/api/git'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   repoId: number | null
@@ -66,7 +69,7 @@ function onStageAll(e: MouseEvent) {
       @click="emit('navigate-status')"
     >
       <span class="font-semibold">
-        <span v-if="isClean" class="text-muted-foreground">변경사항 없음 ✓</span>
+        <span v-if="isClean" class="text-muted-foreground">{{ t('templ.noChanges') }}</span>
         <span v-else>
           <span class="text-foreground">{{ counts.total }}</span>
           <span class="text-muted-foreground"> file changes</span>

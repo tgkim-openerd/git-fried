@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { FileChange } from '@/types/git'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 defineProps<{
   file: FileChange
@@ -18,7 +21,7 @@ defineEmits<{ action: []; select: []; dblclick: [] }>()
     class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
     :class="selected ? 'bg-accent ring-1 ring-primary/40' : ''"
     draggable="true"
-    title="더블클릭 — fullscreen diff"
+    :title="t('templ.fileRowTitle')"
     @click="$emit('select')"
     @dblclick="$emit('dblclick')"
     @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', file.path)"

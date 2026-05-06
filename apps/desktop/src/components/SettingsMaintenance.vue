@@ -4,9 +4,11 @@
 //
 // 의존: useReposStore (활성 레포 guard) + useMaintenanceActions (gc/fsck/lfs mutation +
 // confirm + result/label).
+import { useI18n } from 'vue-i18n'
 import { useReposStore } from '@/stores/repos'
 import { useMaintenanceActions } from '@/composables/useMaintenanceActions'
 
+const { t } = useI18n()
 const reposStore = useReposStore()
 const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiveGc } =
   useMaintenanceActions()
@@ -14,7 +16,7 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
 
 <template>
   <div class="flex max-w-2xl flex-col gap-4">
-    <h2 class="text-lg font-semibold">레포 유지보수</h2>
+    <h2 class="text-lg font-semibold">{{ t('templ.repoMaintenance') }}</h2>
     <p class="text-xs text-muted-foreground">
       현재 활성 레포에 git gc / fsck / lfs install 실행. 거대 레포는 수 분 걸릴 수 있습니다.
     </p>

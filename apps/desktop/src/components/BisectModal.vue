@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Bisect — binary search 로 잘못된 commit 식별.
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { bisectMark, bisectReset, bisectStart, getBisectStatus } from '@/api/git'
 import { describeError } from '@/api/errors'
@@ -10,6 +11,7 @@ import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import BaseModal from './BaseModal.vue'
 
+const { t } = useI18n()
 const toast = useToast()
 
 const props = defineProps<{ open: boolean }>()
@@ -107,7 +109,7 @@ const resetMut = useMutation({
       <div v-else-if="statusQuery.data.value?.inProgress">
         <div class="mb-3 rounded-md border border-border bg-muted/20 p-3">
           <div class="text-xs">
-            <strong>현재 commit:</strong>
+            <strong>{{ t('templ.currentCommit') }}</strong>
             <span class="ml-2 font-mono">{{ statusQuery.data.value.currentSha?.slice(0, 8) }}</span>
           </div>
           <div class="mt-1 text-xs text-muted-foreground">

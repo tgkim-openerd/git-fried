@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useToast } from '@/composables/useToast'
 import type { ToastKind } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const { toasts, dismiss } = useToast()
 
 function kindClass(kind: ToastKind): string {
@@ -38,37 +40,37 @@ function kindIcon(kind: ToastKind): string {
     >
       <TransitionGroup name="toast" tag="div" class="flex flex-col-reverse gap-2">
         <div
-          v-for="t in toasts"
-          :key="t.id"
+          v-for="toast in toasts"
+          :key="toast.id"
           class="pointer-events-auto rounded-md border bg-card shadow-lg"
-          :class="kindClass(t.kind)"
+          :class="kindClass(toast.kind)"
         >
           <div class="flex items-start gap-2 px-3 py-2">
-            <span class="mt-0.5 shrink-0 font-bold">{{ kindIcon(t.kind) }}</span>
+            <span class="mt-0.5 shrink-0 font-bold">{{ kindIcon(toast.kind) }}</span>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5 text-sm font-semibold">
-                <span class="truncate">{{ t.title }}</span>
+                <span class="truncate">{{ toast.title }}</span>
                 <!-- Sprint 22-12 Q-6 — dedup count badge ("같은 메시지 +N") -->
                 <span
-                  v-if="t.count > 1"
+                  v-if="toast.count > 1"
                   class="shrink-0 rounded-full bg-current/20 px-1.5 text-[10px] font-bold tabular-nums"
-                  :title="`같은 메시지 ${t.count}회 누적 (1초 내 dedup)`"
-                  :aria-label="`${t.count}회 누적`"
+                  :title="`같은 메시지 ${toast.count}회 누적 (1초 내 dedup)`"
+                  :aria-label="`${toast.count}회 누적`"
                 >
-                  +{{ t.count - 1 }}
+                  +{{ toast.count - 1 }}
                 </span>
               </div>
               <pre
-                v-if="t.message"
+                v-if="toast.message"
                 class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] opacity-90"
-                >{{ t.message }}</pre
+                >{{ toast.message }}</pre
               >
             </div>
             <button
               type="button"
               class="shrink-0 text-xs opacity-60 hover:opacity-100"
-              aria-label="알림 닫기"
-              @click="dismiss(t.id)"
+              :aria-label="t('templ.toastClose')"
+              @click="dismiss(toast.id)"
             >
               ✕
             </button>

@@ -13,6 +13,10 @@
 //   - sticky top-0 z-10 + 우클릭 = 접기/펴기 동작 동일
 //   - 클릭 영역: outer div + inner span 둘 다 토글 (UX 동등)
 //   - "모두 X" 버튼은 click.stop 으로 outer 토글 차단
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 defineProps<{
   title: string
   count: number
@@ -37,7 +41,7 @@ function toggle(current: boolean) {
 <template>
   <div
     class="sticky top-0 z-10 mb-1 flex cursor-pointer select-none items-center justify-between border-b border-border/40 bg-card"
-    title="우클릭 = 섹션 접기/펴기"
+    :title="t('templ.statusSectionToggle')"
     @contextmenu.prevent="toggle(collapsed)"
     @click="toggle(collapsed)"
   >

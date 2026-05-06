@@ -7,6 +7,7 @@
 // Sprint c31 god comp 분리 2/N — 명령 catalog + 헬퍼는 useCommandCatalog 로 분리.
 // 본 컴포넌트는 open / filter / keyboard nav / UI rendering 만 담당.
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
@@ -15,6 +16,7 @@ import {
   type Cmd,
 } from '@/composables/useCommandCatalog'
 
+const { t } = useI18n()
 const { allCommands } = useCommandCatalog()
 
 const open = ref(false)
@@ -149,7 +151,7 @@ onUnmounted(() => {
         <input
           v-model="filter"
           autofocus
-          placeholder="명령 검색... (이름 / 카테고리 / 단축키 — ⌘P 닫기)"
+          :placeholder="t('templ.commandPalettePlaceholder')"
           class="w-full rounded-t-lg border-b border-border bg-transparent px-3 py-2 text-sm outline-none"
         />
         <div class="max-h-[60vh] overflow-auto py-1">

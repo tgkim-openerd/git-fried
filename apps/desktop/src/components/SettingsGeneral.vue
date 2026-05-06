@@ -2,8 +2,10 @@
 // Sprint c40 후속 — settings.vue 의 General 영역 sub-component.
 //
 // localStorage 영속 (useGeneralSettings composable 직접 사용).
+import { useI18n } from 'vue-i18n'
 import { useGeneralSettings } from '@/composables/useUserSettings'
 
+const { t } = useI18n()
 const general = useGeneralSettings()
 </script>
 
@@ -31,7 +33,7 @@ const general = useGeneralSettings()
     <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
       <span>
         <span class="font-medium">Auto-Prune on fetch</span>
-        <span class="ml-2 text-xs text-muted-foreground">사라진 remote 자동 정리</span>
+        <span class="ml-2 text-xs text-muted-foreground">{{ t('templ.autoPruneHint') }}</span>
       </span>
       <input v-model="general.autoPruneOnFetch" type="checkbox" />
     </label>

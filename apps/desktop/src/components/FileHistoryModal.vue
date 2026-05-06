@@ -2,11 +2,14 @@
 // 파일 단위 history + blame 모달.
 // 좌: 커밋 리스트 (시간 역순), 우: 선택 커밋의 blame 또는 파일 내용.
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFileBlame, useFileHistory } from '@/composables/useFileHistory'
 import { describeError } from '@/api/errors'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import BaseModal from './BaseModal.vue'
 import type { CommitSummary } from '@/types/git'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   repoId: number | null
@@ -55,7 +58,7 @@ function fmtDate(unix: number): string {
     <template #header>
       <div class="flex items-center gap-3">
         <h2 class="font-mono text-sm">
-          <span class="text-muted-foreground">파일:</span>
+          <span class="text-muted-foreground">{{ t('templ.fileLabel') }}</span>
           <span class="ml-1 font-semibold">{{ path }}</span>
         </h2>
         <nav class="flex gap-1 text-xs">

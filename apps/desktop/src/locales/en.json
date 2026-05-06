@@ -190,6 +190,20 @@
     "themeApplied": "Theme applied",
     "themeReset": "Theme reset"
   },
+  "templ": {
+    "noChanges": "No changes ✓",
+    "fileRowTitle": "Double-click — fullscreen diff",
+    "statusSectionToggle": "Right-click = collapse / expand",
+    "toastClose": "Close notification",
+    "newRepoTab": "Add new repo tab (⌘T)",
+    "commandPalettePlaceholder": "Search commands... (name / category / shortcut — ⌘P close)",
+    "ccBuilderHint": "Format: type(scope)!: subject (ideal ≤50, limit ≤72)",
+    "autoPruneHint": "Auto-prune removed remotes",
+    "repoMaintenance": "Repo maintenance",
+    "syncTemplateShaPlaceholder": "e.g. c51a617 or c51a617deadbeef...",
+    "fileLabel": "File:",
+    "currentCommit": "Current commit:"
+  },
   "cmdToast": {
     "autoFetchTitle": "Auto-Fetch",
     "autoFetchOff": "Disabled",

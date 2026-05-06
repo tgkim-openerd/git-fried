@@ -6,8 +6,11 @@
 //
 // 부모 (CommitMessageInput) 는 v-model 6개 (defineModel) 와 subjectRef expose 만 노출.
 import { computed, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { CONVENTIONAL_TYPES, type ConventionalType } from '@/types/git'
 import { visualWidth } from '@/utils/visualWidth'
+
+const { t } = useI18n()
 
 // v-model 6 페어 — Vue 3.4+ defineModel 패턴 (기존 ref 와 양방향 바인딩).
 const type = defineModel<ConventionalType>('type', { required: true })
@@ -87,7 +90,7 @@ defineExpose({ subjectRef })
         ></div>
       </div>
       <div class="flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>형식: type(scope)!: subject (이상 ≤50, 한계 ≤72)</span>
+        <span>{{ t('templ.ccBuilderHint') }}</span>
         <span
           :class="{
             'text-diff-add': subjectZone === 'ideal' && subjectLength > 0,

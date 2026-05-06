@@ -116,7 +116,7 @@ function repoName(id: number): string {
         </label>
         <input
           v-model="sha"
-          placeholder="예: c51a617 또는 c51a617deadbeef..."
+          :placeholder="t('templ.syncTemplateShaPlaceholder')"
           class="w-full rounded-md border border-input bg-background px-3 py-1.5 font-mono text-sm"
         />
         <p class="mt-1 text-[10px] text-muted-foreground">

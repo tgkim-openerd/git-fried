@@ -241,7 +241,7 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
         <button
           type="button"
           class="ml-1 shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
-          aria-label="새 레포 탭 추가 (⌘T)"
+          :aria-label="t('templ.newRepoTab')"
           @click="$emit('openSwitcher')"
         >
           +
