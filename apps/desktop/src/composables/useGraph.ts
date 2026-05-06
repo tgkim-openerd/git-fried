@@ -1,18 +1,14 @@
-import { computed, type MaybeRefOrGetter, toRef } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { computed, type MaybeRefOrGetter } from 'vue'
 import { getGraph } from '@/api/git'
+import { useRepositoryQuery } from './useRepositoryQuery'
 
-export function useGraph(
-  repoIdRef: MaybeRefOrGetter<number | null>,
-  limit = 500,
-) {
-  const repoId = toRef(repoIdRef)
-  return useQuery({
-    queryKey: computed(() => ['graph', repoId.value, limit]),
-    queryFn: () => {
-      if (repoId.value == null) return Promise.resolve({ rows: [], maxLane: 0 })
-      return getGraph(repoId.value, limit)
-    },
-    enabled: computed(() => repoId.value != null),
+// Sprint c48 Wave C-3 — useRepositoryQuery factory 위임. extraKey 로 limit 추가.
+export function useGraph(repoIdRef: MaybeRefOrGetter<number | null>, limit = 500) {
+  return useRepositoryQuery({
+    name: 'graph',
+    repoIdRef,
+    fetchFn: (repoId) => getGraph(repoId, limit),
+    emptyValue: { rows: [], maxLane: 0 },
+    extraKey: computed(() => [limit] as const),
   })
 }

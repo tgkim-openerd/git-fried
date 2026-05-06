@@ -1,15 +1,13 @@
-import { computed, type MaybeRefOrGetter, toRef } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { type MaybeRefOrGetter } from 'vue'
 import { listWorktrees } from '@/api/git'
+import { useRepositoryQuery } from './useRepositoryQuery'
 
+// Sprint c48 Wave C-3 — useRepositoryQuery factory 위임.
 export function useWorktrees(repoIdRef: MaybeRefOrGetter<number | null>) {
-  const repoId = toRef(repoIdRef)
-  return useQuery({
-    queryKey: computed(() => ['worktrees', repoId.value]),
-    queryFn: () => {
-      if (repoId.value == null) return Promise.resolve([])
-      return listWorktrees(repoId.value)
-    },
-    enabled: computed(() => repoId.value != null),
+  return useRepositoryQuery({
+    name: 'worktrees',
+    repoIdRef,
+    fetchFn: listWorktrees,
+    emptyValue: [],
   })
 }
