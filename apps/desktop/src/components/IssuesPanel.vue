@@ -126,7 +126,7 @@ function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
       <EmptyState
         v-if="issues && issues.length === 0 && !isFetching"
         icon="📭"
-        title="Open issue 없음"
+        :title="t('issues.empty')"
         size="sm"
       />
     </div>

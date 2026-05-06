@@ -39,10 +39,10 @@ async function copyAll() {
           type="button"
           class="rounded border border-border px-2 py-0.5 text-xs hover:bg-accent/40 disabled:opacity-50"
           :disabled="!content || !!loading"
-          aria-label="결과 전체 복사"
+          :aria-label="t('aiResult.btnCopy')"
           @click="copyAll"
         >
-          복사
+          {{ t('aiResult.btnCopy') }}
         </button>
       </div>
     </template>
@@ -54,14 +54,14 @@ async function copyAll() {
         {{ error }}
       </p>
       <p v-else-if="loading" class="p-6 text-center text-sm text-muted-foreground">
-        AI 응답 대기 중...
+        {{ t('aiResult.loading') }}
       </p>
       <pre
         v-else-if="content"
         class="m-0 whitespace-pre-wrap break-words rounded bg-muted/30 p-3 text-[13px]"
         >{{ content }}</pre
       >
-      <p v-else class="p-6 text-center text-sm text-muted-foreground">응답 없음.</p>
+      <p v-else class="p-6 text-center text-sm text-muted-foreground">{{ t('aiResult.empty') }}</p>
     </div>
   </BaseModal>
 </template>

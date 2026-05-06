@@ -715,6 +715,14 @@
     "resetBody": "Restored to default dark/light",
     "clipboardCopy": "Copied to clipboard"
   },
+  "aiResult": {
+    "loading": "Waiting for AI response...",
+    "empty": "No response.",
+    "btnCopy": "Copy"
+  },
+  "issues": {
+    "empty": "No open issues"
+  },
   "statusSelection": {
     "pathCopied": "Path copied"
   },

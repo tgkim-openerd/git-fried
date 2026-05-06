@@ -715,6 +715,14 @@
     "resetBody": "기본 dark/light 로 복원",
     "clipboardCopy": "클립보드 복사"
   },
+  "aiResult": {
+    "loading": "AI 응답 대기 중...",
+    "empty": "응답 없음.",
+    "btnCopy": "복사"
+  },
+  "issues": {
+    "empty": "Open issue 없음"
+  },
   "statusSelection": {
     "pathCopied": "경로 복사"
   },
