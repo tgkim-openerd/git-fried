@@ -10,6 +10,19 @@ import { Page } from '@playwright/test'
 
 const FRONTEND_REPO_ID = 1
 const TABS_LOCAL_STORAGE_KEY = 'git-fried.repo-tabs.v1'
+const LOCALE_LOCAL_STORAGE_KEY = 'git-fried.locale.v1'
+
+// e2e text assertion 은 한국어 1순위 — Chromium 의 navigator.language='en-US' 가
+// detectInitialLocale() 에서 'en' 으로 떨어지지 않도록 locale='ko' 강제 부팅.
+// (Sprint c31 / plan/03 §6 — 한국어 1순위 정책 정합)
+export async function setKoreanLocale(page: Page): Promise<void> {
+  await page.evaluate(
+    ({ key }) => {
+      localStorage.setItem(key, 'ko')
+    },
+    { key: LOCALE_LOCAL_STORAGE_KEY },
+  )
+}
 
 /**
  * fresh chromium 의 localStorage 는 비어있어 activeRepoId=null.
@@ -21,6 +34,7 @@ const TABS_LOCAL_STORAGE_KEY = 'git-fried.repo-tabs.v1'
  */
 export async function selectFrontendRepo(page: Page): Promise<void> {
   await page.goto('/')
+  await setKoreanLocale(page)
   await page.evaluate(
     ({ key, repoId }) => {
       localStorage.setItem(key, JSON.stringify({ tabs: [repoId], active: repoId }))
@@ -38,6 +52,7 @@ export async function selectFrontendRepo(page: Page): Promise<void> {
  */
 export async function ensureDetailVisible(page: Page): Promise<void> {
   await page.goto('/')
+  await setKoreanLocale(page)
   await page.evaluate(
     ({ tabsKey, repoId }) => {
       localStorage.setItem(tabsKey, JSON.stringify({ tabs: [repoId], active: repoId }))
@@ -55,6 +70,7 @@ export async function ensureDetailVisible(page: Page): Promise<void> {
  */
 export async function selectFrontendAndBackendRepos(page: Page): Promise<void> {
   await page.goto('/')
+  await setKoreanLocale(page)
   await page.evaluate(
     ({ key }) => {
       // frontend(1) + backend-api(3) 둘 다 open, frontend active.

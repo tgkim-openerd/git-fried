@@ -7,10 +7,15 @@ test.describe('actions — Toolbar Redo / Stash 진입', () => {
   })
 
   test('Toolbar Redo button → confirm → toast (Phase 1 reflog-undo)', async ({ page }) => {
-    page.on('dialog', (d) => d.accept())
+    // Sprint c33 — `window.confirm()` → 커스텀 ConfirmDialog (BaseModal 기반).
+    // page.on('dialog') 는 native 다이얼로그만 잡으므로, modal 의 confirm 버튼을 직접 클릭한다.
     const redoBtn = page.getByRole('button', { name: /Redo$/ })
     await expect(redoBtn).toBeVisible()
     await redoBtn.click()
+    // ConfirmDialog (BaseModal `[role=dialog][aria-modal=true]`) 가 마운트되면 '확인' 버튼 클릭.
+    const dialog = page.locator('[role=dialog][aria-modal=true]')
+    await expect(dialog).toBeVisible({ timeout: 2_000 })
+    await dialog.getByRole('button', { name: '확인' }).click()
     await expect(page.getByText(/Redo:\s*reset/i)).toBeVisible({ timeout: 2_000 })
   })
 

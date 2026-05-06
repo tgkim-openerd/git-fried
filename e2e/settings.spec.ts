@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { setKoreanLocale } from './helpers'
 
 // Sprint c40 후속 / /analyze LOW 7 — Settings page e2e (5 sub-component 분해 검증).
 //
@@ -10,6 +11,9 @@ import { expect, test } from '@playwright/test'
 
 test.describe('Settings page — 5 sub-component 마운트 + 카테고리 nav', () => {
   test.beforeEach(async ({ page }) => {
+    // 한국어 i18n assertion 대상 — locale 'ko' 강제 (Chromium 기본 navigator='en-US' 회피).
+    await page.goto('/')
+    await setKoreanLocale(page)
     await page.goto('/settings')
   })
 
