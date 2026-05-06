@@ -3,7 +3,7 @@
 > 자동 생성: `bun scripts/generate-tauri-commands-index.mjs`
 > 소스: `apps/desktop/src-tauri/src/ipc/*.rs`
 
-**총 168 commands**, 25 파일, 65 카테고리.
+**총 169 commands**, 26 파일, 66 카테고리.
 
 ## 파일별 분포
 
@@ -33,6 +33,7 @@
 | `ipc/graph_commands.rs` | 3 |
 | `ipc/importer_commands.rs` | 3 |
 | `ipc/commands.rs` | 1 |
+| `ipc/diagnostic_commands.rs` | 1 |
 | `ipc/mod.rs` | 0 |
 
 ## 카테고리별 분포 (prefix snake_case 1번째 토큰)
@@ -79,6 +80,7 @@
 | `undo_*` | 1 |
 | `redo_*` | 1 |
 | `count_*` | 1 |
+| `report_*` | 1 |
 | `submit_*` | 1 |
 | `close_*` | 1 |
 | `reopen_*` | 1 |
@@ -369,6 +371,10 @@
 ### `count_*` (1)
 
 - **`count_hangul_commits(args: CountHangulCommitsArgs) -> AppResult<git_identity::HangulCommitStats>`** — `ipc/commit_commands.rs`
+
+### `report_*` (1)
+
+- **`report_frontend_error(message: String, source: Option<String>, info: Option<String>, component: Option<String>) -> ()`** — `ipc/diagnostic_commands.rs`
 
 ### `submit_*` (1)
 
