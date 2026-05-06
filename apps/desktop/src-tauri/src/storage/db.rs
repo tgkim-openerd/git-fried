@@ -505,6 +505,79 @@ mod tests {
         assert!(!unpinned.is_pinned);
     }
 
+    // 2026-05-06 c42 — 5 migration smoke: 모든 migration 이 적용된 후
+    // 예상 테이블 + 핵심 인덱스가 모두 생성되었는지 검증.
+    #[tokio::test]
+    async fn test_5_migrations_apply_expected_schema() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = Db::open(tmp.path()).await.unwrap();
+
+        // 11 테이블 (0001 7 + 0002 1 + 0003 2 + 0004 1) — sqlx_migrations 1 + index 들 제외.
+        let rows = sqlx::query(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+        )
+        .fetch_all(&db.pool)
+        .await
+        .unwrap();
+        let names: Vec<String> = rows
+            .iter()
+            .map(|r| r.try_get::<String, _>(0).unwrap())
+            .collect();
+        // 모든 migration 의 핵심 테이블이 모두 존재해야 함.
+        for expected in [
+            "workspaces",
+            "repos",
+            "forge_accounts",
+            "profiles",
+            "settings",
+            "commits",
+            "repo_ref_hidden",
+            "pr_meta",
+            "saved_views",
+            "repo_alias",
+        ] {
+            assert!(
+                names.iter().any(|n| n == expected),
+                "expected table '{expected}' not found; got: {names:?}"
+            );
+        }
+
+        // c41 + c42 추가 인덱스 검증 (성능 INDEX 2개).
+        let idx_rows = sqlx::query(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%'",
+        )
+        .fetch_all(&db.pool)
+        .await
+        .unwrap();
+        let idx_names: Vec<String> = idx_rows
+            .iter()
+            .map(|r| r.try_get::<String, _>(0).unwrap())
+            .collect();
+        assert!(
+            idx_names.iter().any(|n| n == "idx_commits_lookup"),
+            "0005 의 idx_commits_lookup 가 누락; got: {idx_names:?}"
+        );
+        assert!(
+            idx_names.iter().any(|n| n == "idx_repo_ref_hidden_kind"),
+            "0002 의 idx_repo_ref_hidden_kind 가 누락; got: {idx_names:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_migrations_idempotent_on_reopen() {
+        // 같은 DB 파일을 두 번 열어도 migration 이 멱등이어야 함 (CREATE TABLE IF NOT EXISTS).
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db1 = Db::open(tmp.path()).await.unwrap();
+        // 첫 open 후 데이터 INSERT.
+        let w = db1.create_workspace("재오픈테스트", None).await.unwrap();
+        drop(db1);
+
+        // 같은 파일 재open — migration 재실행 (idempotent) + 데이터 보존.
+        let db2 = Db::open(tmp.path()).await.unwrap();
+        let ws = db2.list_workspaces().await.unwrap();
+        assert!(ws.iter().any(|x| x.id == w.id && x.name == "재오픈테스트"));
+    }
+
     #[tokio::test]
     async fn test_workspace_delete_cascade_sets_repo_workspace_id_null() {
         // FK ON DELETE SET NULL 확인 (workspaces -> repos.workspace_id).
