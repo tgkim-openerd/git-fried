@@ -19,6 +19,9 @@ import { useUiState } from '@/composables/useUiState'
 import { useGeneralSettings, useUiSettingsStore } from '@/composables/useUserSettings'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
+import { i18n } from '@/i18n'
+
+const t = i18n.global.t
 
 export type Category =
   | 'repo'
@@ -91,7 +94,10 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     const idx = AUTO_FETCH_CYCLE.findIndex((m) => m === cur)
     const next = AUTO_FETCH_CYCLE[(idx + 1) % AUTO_FETCH_CYCLE.length]
     general.value = { ...general.value, autoFetchIntervalMin: next }
-    toast.info('Auto-Fetch', next === 0 ? '비활성화' : `${next}분 마다 fetch`)
+    toast.info(
+      t('cmdToast.autoFetchTitle'),
+      next === 0 ? t('cmdToast.autoFetchOff') : t('cmdToast.autoFetchEvery', { n: next }),
+    )
   }
 
   const DATE_LOCALE_CYCLE = ['auto', 'ko-KR', 'en-US'] as const
@@ -100,52 +106,67 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
     const idx = DATE_LOCALE_CYCLE.findIndex((m) => m === cur)
     const next = DATE_LOCALE_CYCLE[(idx + 1) % DATE_LOCALE_CYCLE.length]
     uiSettings.value = { ...uiSettings.value, dateLocale: next }
-    toast.info('날짜 형식', next === 'auto' ? 'OS 기본' : next)
+    toast.info(
+      t('cmdToast.dateFormatTitle'),
+      next === 'auto' ? t('cmdToast.dateFormatOsDefault') : next,
+    )
   }
 
   function toggleAvatarStyle() {
     const next = uiSettings.value.avatarStyle === 'initial' ? 'gravatar' : 'initial'
     uiSettings.value = { ...uiSettings.value, avatarStyle: next }
-    toast.info('아바타 스타일', next === 'gravatar' ? 'Gravatar (이메일 md5)' : '이니셜')
+    toast.info(
+      t('cmdToast.avatarStyleTitle'),
+      next === 'gravatar' ? t('cmdToast.avatarGravatar') : t('cmdToast.avatarInitial'),
+    )
   }
 
   function toggleHideLaunchpad() {
     const next = !uiSettings.value.hideLaunchpad
     uiSettings.value = { ...uiSettings.value, hideLaunchpad: next }
-    toast.info('Launchpad 메뉴', next ? '숨김' : '표시')
+    toast.info(t('cmdToast.launchpadMenuTitle'), next ? t('cmdToast.hidden') : t('cmdToast.shown'))
   }
 
   function toggleConflictDetection() {
     const next = !general.value.conflictDetection
     general.value = { ...general.value, conflictDetection: next }
-    toast.info('Conflict 예측', next ? '활성' : '비활성')
+    toast.info(
+      t('cmdToast.conflictPredictTitle'),
+      next ? t('cmdToast.enabled') : t('cmdToast.disabled'),
+    )
   }
 
   function toggleAutoUpdateSubmodules() {
     const next = !general.value.autoUpdateSubmodules
     general.value = { ...general.value, autoUpdateSubmodules: next }
-    toast.info('Submodule 자동 update', next ? '활성' : '비활성')
+    toast.info(
+      t('cmdToast.submoduleAutoUpdateTitle'),
+      next ? t('cmdToast.enabled') : t('cmdToast.disabled'),
+    )
   }
 
   function toggleAutoPruneOnFetch() {
     const next = !general.value.autoPruneOnFetch
     general.value = { ...general.value, autoPruneOnFetch: next }
-    toast.info('Auto-Prune', next ? 'Fetch 시 함께' : '비활성')
+    toast.info(
+      t('cmdToast.autoPruneTitle'),
+      next ? t('cmdToast.autoPruneOnFetch') : t('cmdToast.disabled'),
+    )
   }
 
   async function copyCustomThemeJson() {
     const json = customTheme.exportJson()
     try {
       await navigator.clipboard.writeText(json)
-      toast.success('Custom theme JSON', '클립보드 복사')
+      toast.success(t('cmdToast.themeJsonTitle'), t('cmdToast.themeJsonCopied'))
     } catch {
-      toast.error('복사 실패', '권한 또는 컨텍스트 문제')
+      toast.error(t('errors.copyFailed'), t('cmdToast.themeJsonCopyFailedBody'))
     }
   }
 
   function resetCustomTheme() {
     customTheme.reset()
-    toast.success('Custom theme', '기본 테마로 복원')
+    toast.success(t('cmdToast.themeResetTitle'), t('cmdToast.themeResetBody'))
   }
 
   function trigger(action: Parameters<typeof dispatchShortcut>[0]) {
@@ -596,10 +617,7 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
       label: '🔜 GitHub Actions CI status (v0.4 예정)',
       hint: 'placeholder',
       action: () => {
-        toast.info(
-          'GitHub Actions — v0.4 예정',
-          'CI run 상태 인디케이터 (per-branch / per-PR).\n진행 상황: docs/plan/05',
-        )
+        toast.info(t('cmdToast.ghActionsTitle'), t('cmdToast.ghActionsBody'))
       },
     },
     {
@@ -608,10 +626,7 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
       label: '🔜 Linear / Jira 이슈 매핑 (v0.5 예정)',
       hint: 'placeholder',
       action: () => {
-        toast.info(
-          'Linear / Jira — v0.5 예정',
-          'commit / branch 이름 → 이슈 자동 매핑.\n진행 상황: docs/plan/05',
-        )
+        toast.info(t('cmdToast.linearJiraTitle'), t('cmdToast.linearJiraBody'))
       },
     },
     {
@@ -620,10 +635,7 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
       label: '🔜 Discord / Slack 알림 (v0.5 예정)',
       hint: 'placeholder',
       action: () => {
-        toast.info(
-          'Discord / Slack 알림 — v0.5 예정',
-          'bulk fetch / push / PR 머지 결과 webhook.\n진행 상황: docs/plan/05',
-        )
+        toast.info(t('cmdToast.webhookTitle'), t('cmdToast.webhookBody'))
       },
     },
   ])
