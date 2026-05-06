@@ -7,70 +7,46 @@
 //  - lane 폭 16px
 //  - 노드 원 6px, 엣지 stroke 1.5px
 //  - 8개 stable color (브랜치 hash)
+// Sprint c48 Wave B-2 — script 227 LOC → ~110 LOC. WIP+virtualizer 와 row interaction 을
+// useCommitGraphRows / useCommitGraphInteraction 으로 분리.
 import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useVirtualizer } from '@tanstack/vue-virtual'
-
-const { t } = useI18n()
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
-// Sprint c30 / GitKraken UX (Phase 8a) — graph 첫 row 에 WIP pseudo-row 직접 통합.
-import { useStatus } from '@/composables/useStatus'
-// Sprint c40 후속 review ARCH-004 — ref visibility (hide/solo) 분리.
 import { useGraphRefVisibility } from '@/composables/useGraphRefVisibility'
-// Sprint c40 후속 review ARCH-004 — column 토글/재정렬 + header menu 분리.
 import { useCommitGraphHeader } from '@/composables/useCommitGraphHeader'
 import { useCommitActions } from '@/composables/useCommitActions'
-// Sprint c31 god comp 분리 7/N — 검색 state + isMatch + ⌘F/Esc 통합 composable.
 import { useGraphSearch } from '@/composables/useGraphSearch'
-// Sprint c37 god 18/N — graphWidth + laneW + zoom + drag handle 분리.
 import { useGraphWidth, ROW_H } from '@/composables/useGraphWidth'
-// Sprint c37 god 19/N — selectedSha + vim nav 분리.
 import { useGraphSelection } from '@/composables/useGraphSelection'
-// Sprint c40 god comp 분리 — canvas 렌더링 (palette + laneColor + drawGraph) 분리.
 import { useGraphCanvasRenderer } from '@/composables/useGraphCanvasRenderer'
-import { formatDateLocalized } from '@/composables/useUserSettings'
+import { useCommitGraphRows } from '@/composables/useCommitGraphRows'
+import { useCommitGraphInteraction } from '@/composables/useCommitGraphInteraction'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import type { GraphRow } from '@/api/git'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   repoId: number | null
   /** Sprint c30 / GitKraken UX (Phase 8a) — '__WIP__' 선택 시 WIP row 활성 highlight. */
   selectedWip?: boolean
 }>()
-const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
-// Sprint c30 / GitKraken UX (Phase 8a) — working dir dirty 감지.
-const { data: status } = useStatus(() => props.repoId)
-const wipActive = computed(() => !!status.value && !status.value.isClean)
-const wipChangeCount = computed(() => {
-  const s = status.value
-  if (!s) return 0
-  return s.staged.length + s.unstaged.length + s.untracked.length + s.conflicted.length
-})
 
-/**
- * virtualizer index → row 매핑.
- * wipActive 시 idx=0 는 WIP, idx=1+ 는 rows[idx-1].
- * 그 외 (clean) idx 그대로 rows[idx].
- * isWipIdx 는 useGraphCanvasRenderer composable 에서 destructure (아래).
- */
-function commitRowAt(idx: number): GraphRow | null {
-  if (isWipIdx(idx)) return null
-  const offset = wipActive.value ? idx - 1 : idx
-  return rows.value[offset] ?? null
-}
-function commitTooltip(row: GraphRow | null | undefined): string {
-  if (!row) return ''
-  const subject = row.commit.subject ?? ''
-  const body = (row.commit.body ?? '').trim()
-  return body ? `${subject}\n\n${body}` : subject
-}
-// Sprint c40 후속 review ARCH-004 — ref hide/solo composable 위임.
+const emit = defineEmits<{
+  selectCommit: [sha: string]
+  /** Sprint c30 / GitKraken UX (Phase 8a) — WIP row click. */
+  selectWip: []
+  showDiff: [sha: string]
+  compareWith: [sha: string]
+  explainAi: [sha: string]
+  openInForge: [sha: string]
+}>()
+
+const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
 const { visibleRef, soloRef, toggleSoloRef, hideRefByName } = useGraphRefVisibility(
   () => props.repoId,
 )
-
-// === 검색 — Sprint c31 분리 7/N. composable 호출은 rows 정의 이후 (TDZ 회피) — line ~137 부근. ===
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -79,7 +55,6 @@ const rows = computed<GraphRow[]>(() => graph.value?.rows ?? [])
 const maxLane = computed(() => graph.value?.maxLane ?? 1)
 
 // Sprint c37 god 18/N — graphWidth + laneW + zoom + drag handle composable.
-//   graphWidth state (localStorage 영속) / laneW 자동 계산 / zoomIn,Out / onDragHandleStart.
 const {
   graphWidth,
   laneW,
@@ -91,10 +66,11 @@ const {
   cleanup: cleanupGraphWidth,
 } = useGraphWidth(maxLane)
 
-// === 검색 (Sprint c31 god comp 분리 7/N — useGraphSearch composable) ===
-// v0.x 단계: 현재 그래프 (최대 500 commits) 내에서 subject / author / sha / refs 부분일치.
-// FTS5 인덱싱은 v1.0 (Cross-repo + 5000+ commits 시).
-// drawGraph 는 function declaration (hoisting 됨) 이라 callback 으로 안전하게 참조.
+// Sprint c48 Wave B-2 — WIP + virtualizer + commitRowAt/Tooltip 분리.
+const { wipActive, wipChangeCount, virtualItems, totalHeight, commitRowAt, commitTooltip } =
+  useCommitGraphRows({ repoId: () => props.repoId, rows, containerRef })
+
+// Sprint c31 — 검색 composable. drawGraph 는 hoisting 으로 callback 안전.
 const {
   searchQuery,
   searchOpen,
@@ -106,29 +82,7 @@ const {
   onKeydown,
 } = useGraphSearch(rows, { onClose: () => drawGraph() })
 
-// Sprint c30 / GitKraken UX (Phase 8a) — wipActive 시 virtualizer count + 1.
-// Sprint c45 PERF-2 — overscan 동적: 5000+ commits 시 stutter 감소 (12 → 최대 24).
-//   기준: 1000 미만 12 / 1000~3000 16 / 3000~5000 20 / 5000+ 24.
-//   소규모 repo 는 메모리 경량, 대규모는 스크롤 평탄화.
-const dynamicOverscan = computed(() => {
-  const n = rows.value.length
-  if (n < 1000) return 12
-  if (n < 3000) return 16
-  if (n < 5000) return 20
-  return 24
-})
-const virtualizer = useVirtualizer(
-  computed(() => ({
-    count: rows.value.length + (wipActive.value ? 1 : 0),
-    getScrollElement: () => containerRef.value,
-    estimateSize: () => ROW_H,
-    overscan: dynamicOverscan.value,
-  })),
-)
-const virtualItems = computed(() => virtualizer.value.getVirtualItems())
-const totalHeight = computed(() => virtualizer.value.getTotalSize())
-
-// Sprint c40 — canvas 렌더링 + WIP idx 판정 composable 위임.
+// Sprint c40 — canvas 렌더링 + WIP idx 판정.
 const { drawGraph, isWipIdx } = useGraphCanvasRenderer({
   canvasRef,
   containerRef,
@@ -145,32 +99,16 @@ onMounted(() => {
   window.addEventListener('keydown', onKeydown)
 })
 watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  cleanupGraphWidth()
+})
 
 function onScroll() {
   drawGraph()
 }
 
-function formatDate(unix: number): string {
-  return formatDateLocalized(unix, {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-const emit = defineEmits<{
-  selectCommit: [sha: string]
-  /** Sprint c30 / GitKraken UX (Phase 8a) — WIP row click. */
-  selectWip: []
-  showDiff: [sha: string]
-  compareWith: [sha: string]
-  explainAi: [sha: string]
-  openInForge: [sha: string]
-}>()
-
-// Sprint c37 god 19/N — selectedSha + moveSelection (vim J/K) + selectWip composable.
+// Sprint c37 god 19/N — selectedSha + moveSelection (vim J/K) + selectWip.
 const { selectedSha, selectRow, selectWipRow, moveSelection } = useGraphSelection({
   rows,
   containerRef,
@@ -179,38 +117,19 @@ const { selectedSha, selectRow, selectWipRow, moveSelection } = useGraphSelectio
   rowHeight: ROW_H,
 })
 
-// === Sprint 22-2 CM-1: row 우클릭 메뉴 ===
+// Sprint 22-2/22-3 — row 우클릭 / 더블클릭. Sprint c48 Wave B-2 분리.
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
 const commitActions = useCommitActions(() => props.repoId)
-
-// === Sprint 22-3 V-1: row 더블클릭 → CommitDiffModal auto-open ===
-function onRowDblClick(row: GraphRow | undefined) {
-  if (!row) return
-  selectedSha.value = row.commit.sha
-  emit('selectCommit', row.commit.sha)
-  emit('showDiff', row.commit.sha)
-}
-
-function onRowContextMenu(ev: MouseEvent, row: GraphRow | undefined) {
-  if (!row) return
-  ev.preventDefault()
-  const sha = row.commit.sha
-  selectedSha.value = sha
-  emit('selectCommit', sha)
-  ctxMenu.value?.openAt(
-    ev,
-    commitActions.buildItems(sha, {
-      onShowDiff: (s) => emit('showDiff', s),
-      onCompare: (s) => emit('compareWith', s),
-      onExplainAi: (s) => emit('explainAi', s),
-      onOpenInForge: (s) => emit('openInForge', s),
-    }),
-  )
-}
+const { onRowDblClick, onRowContextMenu, formatDate } = useCommitGraphInteraction({
+  selectedSha,
+  ctxMenu,
+  commitActions,
+  emit,
+})
 // moveSelection 은 useGraphSelection 에서 노출 — 사용 안 한 변수 lint 회피용.
 void moveSelection
 
-// === 컬럼 토글 / 재정렬 (Sprint A3) — useCommitGraphHeader 위임 (c40 review ARCH-004) ===
+// Sprint A3 / c40 review ARCH-004 — 컬럼 토글 / 재정렬 + header menu.
 const {
   cols,
   headerMenuOpen,
@@ -222,10 +141,8 @@ const {
   resetColsAndCloseMenu,
   colDef,
 } = useCommitGraphHeader()
-
-// Sprint c37 god 18/N — drag-resize 로직은 useGraphWidth composable 위임.
-//   onDragHandleStart 는 위에서 destructure, cleanup 은 unmount 시.
-onUnmounted(() => cleanupGraphWidth())
+// headerMenuRef 는 template ref 로 사용 (자동 매핑) — script 직접 참조 없으나 v-bind 필요.
+void headerMenuRef
 </script>
 
 <template>

@@ -23,312 +23,35 @@
 //   - Teleport to body, z-50
 //   - mouse position 기반 + viewport edge 회피
 //   - 키보드: ↑↓ Tab 이동, Enter 실행, Esc/outside-click 닫기, → submenu 진입, ← submenu 종료
-//   - destructive 항목 빨강
+//   - destructive 항목 빨강 + auto confirm (Sprint c46 CMP-3)
 //   - submenu 1 depth (충분, 더 깊으면 다른 UI 패턴 권장)
-import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
+//
+// Sprint c48 Wave B-1 — script 316 LOC → composables/useContextMenu 분리.
+// 본 SFC 는 template 바인딩 + defineExpose 만 담당.
+import {
+  useContextMenu,
+  type ContextMenuExpose,
+  type ContextMenuItem,
+} from '@/composables/useContextMenu'
 
-const { t } = useI18n()
+export type { ContextMenuItem, ContextMenuExpose }
 
-export interface ContextMenuItem {
-  label?: string // divider 면 생략 가능
-  icon?: string
-  shortcut?: string // 표시용 (예: '⌘D'). 실제 키 바인딩 아님
-  destructive?: boolean
-  divider?: boolean
-  disabled?: boolean
-  submenu?: ContextMenuItem[]
-  action?: () => void
-  /** Sprint c46 CMP-3 — destructive 액션 자동 confirm 우회 (이미 자체 confirm 있음). */
-  skipConfirm?: boolean
-  /** Sprint c46 CMP-3 — destructive 시 커스텀 confirm 메시지. 미지정 시 default. */
-  confirmMessage?: string
-}
-
-export interface ContextMenuExpose {
-  openAt: (event: MouseEvent | { x: number; y: number }, items: ContextMenuItem[]) => void
-  close: () => void
-}
-
-const items = ref<ContextMenuItem[]>([])
-const open = ref(false)
-const x = ref(0)
-const y = ref(0)
-const focusedIndex = ref(-1)
-
-// submenu 1 depth
-const submenuOpen = ref(false)
-const submenuParentIndex = ref(-1)
-const submenuFocusedIndex = ref(-1)
-const submenuX = ref(0)
-const submenuY = ref(0)
-
-const rootRef = useTemplateRef<HTMLElement>('rootRef')
-const submenuRef = useTemplateRef<HTMLElement>('submenuRef')
-
-const visibleItems = computed(() => items.value.filter((i) => !i.divider))
-
-function openAt(event: MouseEvent | { x: number; y: number }, next: ContextMenuItem[]) {
-  items.value = next
-  x.value = 'clientX' in event ? event.clientX : event.x
-  y.value = 'clientY' in event ? event.clientY : event.y
-  open.value = true
-  focusedIndex.value = 0
-  submenuOpen.value = false
-  void nextTick(() => {
-    clampToViewport()
-    // Sprint c37 a11y — open 시 첫 menuitem 에 실제 DOM focus (screen reader 알림).
-    focusVisibleMenuItem(0)
-  })
-}
-
-function close() {
-  open.value = false
-  submenuOpen.value = false
-  items.value = []
-  focusedIndex.value = -1
-  submenuParentIndex.value = -1
-  submenuFocusedIndex.value = -1
-}
-
-function clampToViewport() {
-  if (!rootRef.value) return
-  const rect = rootRef.value.getBoundingClientRect()
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  if (rect.right > vw) x.value = Math.max(4, vw - rect.width - 4)
-  if (rect.bottom > vh) y.value = Math.max(4, vh - rect.height - 4)
-}
-
-async function onSubItemClick(sub: ContextMenuItem) {
-  // Sprint c46 CMP-3 — submenu destructive 항목도 confirm.
-  if (sub.destructive && !sub.skipConfirm) {
-    close()
-    const ok = await confirmDialog({
-      title: t('contextMenu.confirmDestructiveTitle'),
-      message:
-        sub.confirmMessage ??
-        t('contextMenu.confirmDestructiveMessage', { label: sub.label ?? '' }),
-      danger: true,
-    })
-    if (!ok) return
-    sub.action?.()
-    return
-  }
-  sub.action?.()
-  close()
-}
-
-async function onItemClick(item: ContextMenuItem, idx: number) {
-  if (item.disabled || item.divider) return
-  if (item.submenu) {
-    openSubmenu(idx)
-    return
-  }
-  // Sprint c46 CMP-3 — destructive 항목 자동 confirm (skipConfirm 시 우회).
-  if (item.destructive && !item.skipConfirm) {
-    close()
-    const ok = await confirmDialog({
-      title: t('contextMenu.confirmDestructiveTitle'),
-      message:
-        item.confirmMessage ??
-        t('contextMenu.confirmDestructiveMessage', { label: item.label ?? '' }),
-      danger: true,
-    })
-    if (!ok) return
-    item.action?.()
-    return
-  }
-  item.action?.()
-  close()
-}
-
-function openSubmenu(idx: number) {
-  if (!rootRef.value) return
-  const item = items.value[idx]
-  if (!item?.submenu) return
-  // submenu 위치: parent item 의 우측
-  const itemEl =
-    rootRef.value.querySelectorAll<HTMLElement>('[data-ctx-item]')[visibleIndexFromRaw(idx)]
-  if (!itemEl) return
-  const rect = itemEl.getBoundingClientRect()
-  submenuX.value = rect.right + 2
-  submenuY.value = rect.top
-  submenuParentIndex.value = idx
-  // submenuFocusedIndex 는 raw idx — 첫 non-divider 찾기.
-  const sub = item.submenu ?? []
-  let firstNonDivider = 0
-  for (let i = 0; i < sub.length; i++) {
-    if (!sub[i].divider) {
-      firstNonDivider = i
-      break
-    }
-  }
-  submenuFocusedIndex.value = firstNonDivider
-  submenuOpen.value = true
-  void nextTick(() => {
-    clampSubmenuToViewport()
-    // Sprint c37 a11y — submenu open 시 첫 menuitem 에 focus.
-    focusSubMenuItem(firstNonDivider)
-  })
-}
-
-function clampSubmenuToViewport() {
-  if (!submenuRef.value || !rootRef.value) return
-  const rect = submenuRef.value.getBoundingClientRect()
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  if (rect.right > vw) {
-    // 좌측에 다시 띄움
-    const parentRect = rootRef.value.getBoundingClientRect()
-    submenuX.value = Math.max(4, parentRect.left - rect.width - 2)
-  }
-  if (rect.bottom > vh) submenuY.value = Math.max(4, vh - rect.height - 4)
-}
-
-// visible (divider 제외) 인덱스 ↔ raw 인덱스 변환
-function rawIndexFromVisible(visIdx: number): number {
-  let count = 0
-  for (let i = 0; i < items.value.length; i++) {
-    if (items.value[i].divider) continue
-    if (count === visIdx) return i
-    count++
-  }
-  return -1
-}
-
-function visibleIndexFromRaw(rawIdx: number): number {
-  let count = 0
-  for (let i = 0; i < rawIdx; i++) {
-    if (!items.value[i].divider) count++
-  }
-  return count
-}
-
-function moveFocus(delta: number) {
-  const total = visibleItems.value.length
-  if (total === 0) return
-  const next = (focusedIndex.value + delta + total) % total
-  focusedIndex.value = next
-  // Sprint c37 a11y — focus 변경 시 실제 DOM focus 동기화 (WCAG 2.1.1 + ARIA menu 패턴).
-  focusVisibleMenuItem(next)
-}
-
-// Sprint c37 a11y — visible index 의 menuitem 버튼 DOM focus.
-function focusVisibleMenuItem(visIdx: number) {
-  void nextTick(() => {
-    const buttons = rootRef.value?.querySelectorAll<HTMLButtonElement>('[data-ctx-item]')
-    buttons?.[visIdx]?.focus()
-  })
-}
-
-function moveSubFocus(delta: number) {
-  const sub = items.value[submenuParentIndex.value]?.submenu ?? []
-  const total = sub.filter((s) => !s.divider).length
-  if (total === 0) return
-  submenuFocusedIndex.value = (submenuFocusedIndex.value + delta + total) % total
-  // Sprint c37 a11y — submenu DOM focus 동기화.
-  focusSubMenuItem(submenuFocusedIndex.value)
-}
-
-function focusSubMenuItem(rawIdx: number) {
-  void nextTick(() => {
-    const buttons = submenuRef.value?.querySelectorAll<HTMLButtonElement>('[data-ctx-sub-item]')
-    // submenuFocusedIndex 는 raw idx (divider 포함). visible 만 querySelectorAll → idx 매핑 필요.
-    const sub = items.value[submenuParentIndex.value]?.submenu ?? []
-    let visIdx = 0
-    for (let i = 0; i < rawIdx; i++) {
-      if (!sub[i]?.divider) visIdx++
-    }
-    buttons?.[visIdx]?.focus()
-  })
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (!open.value) return
-  if (submenuOpen.value) {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      moveSubFocus(1)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      moveSubFocus(-1)
-    } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
-      e.preventDefault()
-      submenuOpen.value = false
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      const sub = items.value[submenuParentIndex.value]?.submenu ?? []
-      const visibleSub = sub.filter((s) => !s.divider)
-      const target = visibleSub[submenuFocusedIndex.value]
-      if (target && !target.disabled) {
-        target.action?.()
-        close()
-      }
-    }
-    return
-  }
-  if (e.key === 'ArrowDown') {
-    e.preventDefault()
-    moveFocus(1)
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault()
-    moveFocus(-1)
-  } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
-    e.preventDefault()
-    const rawIdx = rawIndexFromVisible(focusedIndex.value)
-    const target = items.value[rawIdx]
-    if (target?.submenu) {
-      openSubmenu(rawIdx)
-    } else if (target && !target.disabled) {
-      target.action?.()
-      close()
-    }
-  } else if (e.key === 'Escape') {
-    e.preventDefault()
-    close()
-  }
-}
-
-function onOutsideClick(e: MouseEvent) {
-  if (!open.value) return
-  const t = e.target as Node | null
-  if (rootRef.value?.contains(t)) return
-  if (submenuRef.value?.contains(t)) return
-  close()
-}
-
-watch(open, (v) => {
-  if (v) {
-    window.addEventListener('keydown', onKeydown)
-    window.addEventListener('mousedown', onOutsideClick, { capture: true })
-  } else {
-    window.removeEventListener('keydown', onKeydown)
-    window.removeEventListener('mousedown', onOutsideClick, { capture: true })
-  }
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('mousedown', onOutsideClick, { capture: true })
-})
-
-defineExpose<ContextMenuExpose>({ openAt, close })
+const cm = useContextMenu()
+defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
 </script>
 
 <template>
   <Teleport to="body">
     <div
-      v-if="open"
+      v-if="cm.open.value"
       ref="rootRef"
       class="fixed z-50 min-w-[180px] rounded-md border border-border bg-popover py-1 text-xs shadow-lg"
-      :style="{ left: `${x}px`, top: `${y}px` }"
+      :style="{ left: `${cm.x.value}px`, top: `${cm.y.value}px` }"
       role="menu"
       aria-orientation="vertical"
       aria-label="컨텍스트 메뉴"
     >
-      <template v-for="(item, rawIdx) in items" :key="rawIdx">
+      <template v-for="(item, rawIdx) in cm.items.value" :key="rawIdx">
         <div v-if="item.divider" class="my-1 border-t border-border" role="separator" />
         <button
           v-else
@@ -336,17 +59,21 @@ defineExpose<ContextMenuExpose>({ openAt, close })
           data-ctx-item
           role="menuitem"
           :aria-haspopup="item.submenu ? 'menu' : undefined"
-          :aria-expanded="item.submenu ? submenuOpen && submenuParentIndex === rawIdx : undefined"
+          :aria-expanded="
+            item.submenu
+              ? cm.submenuOpen.value && cm.submenuParentIndex.value === rawIdx
+              : undefined
+          "
           class="flex w-full items-center justify-between gap-3 px-3 py-1 text-left hover:bg-accent disabled:opacity-50"
           :class="[
-            visibleIndexFromRaw(rawIdx) === focusedIndex && !submenuOpen
+            cm.visibleIndexFromRaw(rawIdx) === cm.focusedIndex.value && !cm.submenuOpen.value
               ? 'bg-accent text-accent-foreground'
               : '',
             item.destructive ? 'text-destructive hover:text-destructive' : '',
           ]"
           :disabled="item.disabled"
-          @click="onItemClick(item, rawIdx)"
-          @mouseenter="focusedIndex = visibleIndexFromRaw(rawIdx)"
+          @click="cm.onItemClick(item, rawIdx)"
+          @mouseenter="cm.focusedIndex.value = cm.visibleIndexFromRaw(rawIdx)"
         >
           <span class="flex items-center gap-2">
             <span v-if="item.icon" class="w-4 text-center">{{ item.icon }}</span>
@@ -364,16 +91,16 @@ defineExpose<ContextMenuExpose>({ openAt, close })
 
     <!-- submenu (1 depth) -->
     <div
-      v-if="submenuOpen && submenuParentIndex >= 0"
+      v-if="cm.submenuOpen.value && cm.submenuParentIndex.value >= 0"
       ref="submenuRef"
       class="fixed z-50 min-w-[160px] rounded-md border border-border bg-popover py-1 text-xs shadow-lg"
-      :style="{ left: `${submenuX}px`, top: `${submenuY}px` }"
+      :style="{ left: `${cm.submenuX.value}px`, top: `${cm.submenuY.value}px` }"
       role="menu"
       aria-orientation="vertical"
       aria-label="서브메뉴"
     >
       <template
-        v-for="(sub, subRawIdx) in items[submenuParentIndex]?.submenu ?? []"
+        v-for="(sub, subRawIdx) in cm.items.value[cm.submenuParentIndex.value]?.submenu ?? []"
         :key="`s-${subRawIdx}`"
       >
         <div v-if="sub.divider" class="my-1 border-t border-border" role="separator" />
@@ -384,12 +111,12 @@ defineExpose<ContextMenuExpose>({ openAt, close })
           role="menuitem"
           class="flex w-full items-center justify-between gap-3 px-3 py-1 text-left hover:bg-accent disabled:opacity-50"
           :class="[
-            subRawIdx === submenuFocusedIndex ? 'bg-accent text-accent-foreground' : '',
+            subRawIdx === cm.submenuFocusedIndex.value ? 'bg-accent text-accent-foreground' : '',
             sub.destructive ? 'text-destructive hover:text-destructive' : '',
           ]"
           :disabled="sub.disabled"
-          @click="!sub.disabled && onSubItemClick(sub)"
-          @mouseenter="submenuFocusedIndex = subRawIdx"
+          @click="!sub.disabled && cm.onSubItemClick(sub)"
+          @mouseenter="cm.submenuFocusedIndex.value = subRawIdx"
         >
           <span class="flex items-center gap-2">
             <span v-if="sub.icon" class="w-4 text-center">{{ sub.icon }}</span>

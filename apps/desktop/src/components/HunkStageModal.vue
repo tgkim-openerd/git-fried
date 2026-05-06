@@ -8,26 +8,14 @@
 //   - shift-click 으로 range select.
 //
 // `git apply --cached [--reverse] -` 사용 (apply_patch IPC).
-import { computed, ref, useTemplateRef } from 'vue'
-import { useMutation, useQuery } from '@tanstack/vue-query'
-import { applyPatch, getDiff, restoreWorktreePatch } from '@/api/git'
+// Sprint c48 Wave B-3 — script 235 → ~85 LOC. mutations + handlers 를
+// useHunkStageActions composable 로 분리.
+import { ref, useTemplateRef } from 'vue'
 import { describeError } from '@/api/errors'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
-import { useToast } from '@/composables/useToast'
-import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import BaseModal from './BaseModal.vue'
-// Sprint c38 / plan/29 E1 후속 — hunk-level restore worktree 의 destructive confirm.
-import { confirmDialog } from '@/composables/useConfirm'
-import {
-  buildHunkPatch,
-  buildLinePatch,
-  isStageableLine,
-  parseDiffWithHunks,
-  type DiffFileWithHunks,
-  type DiffHunk,
-} from '@/utils/parseDiff'
-// Sprint c40 후속 review ARCH-004 — line 선택 state 분리.
-import { useHunkLineSelection } from '@/composables/useHunkLineSelection'
+import { isStageableLine } from '@/utils/parseDiff'
+import { useHunkStageActions } from '@/composables/useHunkStageActions'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -41,122 +29,28 @@ const props = defineProps<{
 }>()
 defineEmits<{ close: [] }>()
 
-const toast = useToast()
-const invalidate = useInvalidateRepoQueries()
-
-const diffQuery = useQuery({
-  queryKey: computed(() => ['hunk-diff', props.repoId, props.path, props.staged] as const),
-  queryFn: () => {
-    if (props.repoId == null || !props.path) return Promise.resolve('')
-    return getDiff({
-      repoId: props.repoId,
-      staged: props.staged,
-      path: props.path,
-      context: null,
-    })
-  },
-  enabled: computed(() => props.open && props.repoId != null && props.path != null),
-  // staleTime=0 의도적 (always-fresh): hunk-stage 모달 진입 시 항상 최신 patch 필요.
-  // 정책 STALE_TIME.REALTIME(2s) 보다 짧아 별도 처리.
-  staleTime: 0,
+const {
+  diffQuery,
+  file,
+  hunks,
+  selected,
+  isSelected,
+  toggleLine,
+  selectAllLines,
+  clearLines,
+  totalSelected,
+  applyMut,
+  restoreWtMut,
+  applyHunk,
+  applySelectedLines,
+  restoreHunkToWorktree,
+  applyAllHunks,
+} = useHunkStageActions({
+  repoId: () => props.repoId,
+  path: () => props.path,
+  staged: () => props.staged,
+  open: () => props.open,
 })
-
-const file = computed<DiffFileWithHunks | null>(() => {
-  const raw = diffQuery.data.value || ''
-  return parseDiffWithHunks(raw)[0] ?? null
-})
-
-const hunks = computed<DiffHunk[]>(() => file.value?.hunks ?? [])
-
-// Sprint N → c40 후속 — 라인 선택 state composable 위임.
-const { selected, isSelected, toggleLine, selectAllLines, clearLines, totalSelected, resetAll } =
-  useHunkLineSelection(hunks)
-
-const applyMut = useMutation({
-  mutationFn: (args: { patch: string; what: string }) => {
-    if (props.repoId == null) return Promise.reject(new Error(t('hunkStage.errRepoNotSelected')))
-    return applyPatch(props.repoId, args.patch, props.staged).then(() => args.what)
-  },
-  onSuccess: (what) => {
-    const action = props.staged ? t('hunkStage.actionUnstage') : t('hunkStage.actionStage')
-    toast.success(t('hunkStage.applySuccessTitle', { what, action }), '')
-    invalidate(props.repoId)
-    diffQuery.refetch()
-    resetAll()
-  },
-  onError: (e) =>
-    toast.error(
-      props.staged ? t('hunkStage.unstageFailed') : t('hunkStage.stageFailed'),
-      describeError(e),
-    ),
-})
-
-function applyHunk(idx: number) {
-  const f = file.value
-  const h = hunks.value[idx]
-  if (!f || !h) return
-  applyMut.mutate({ patch: buildHunkPatch(f, h), what: t('hunkStage.wholeHunk') })
-}
-
-function applySelectedLines(hunkIdx: number) {
-  const f = file.value
-  const h = hunks.value[hunkIdx]
-  const s = selected.value.get(hunkIdx)
-  if (!f || !h || !s || s.size === 0) return
-  const patch = buildLinePatch(f, h, s)
-  if (!patch) {
-    toast.warning(t('hunkStage.noChange'), t('hunkStage.noChangeMessage'))
-    return
-  }
-  applyMut.mutate({ patch, what: t('hunkStage.linesSuffix', { n: s.size }) })
-}
-
-// === Sprint c38 / plan/29 E1 후속 — hunk 단위 워킹트리 복원 (discard hunk) ===
-//
-// staged=false 모드 (unstaged hunk 보기) 에서만 의미. 그 hunk 의 변경을
-// 워킹트리에서 완전히 폐기 (`git apply --reverse`, 인덱스 보존). selected
-// lines 가 있으면 그 라인만, 없으면 hunk 전체.
-const restoreWtMut = useMutation({
-  mutationFn: (args: { patch: string; what: string }) => {
-    if (props.repoId == null) return Promise.reject(new Error(t('hunkStage.errRepoNotSelected')))
-    return restoreWorktreePatch(props.repoId, args.patch).then(() => args.what)
-  },
-  onSuccess: (what) => {
-    toast.success(t('hunkStage.restoreSuccessTitle', { what }), '')
-    invalidate(props.repoId)
-    diffQuery.refetch()
-    resetAll()
-  },
-  onError: (e) => toast.error(t('hunkStage.restoreFailed'), describeError(e)),
-})
-
-async function restoreHunkToWorktree(hunkIdx: number, linesOnly: boolean) {
-  const f = file.value
-  const h = hunks.value[hunkIdx]
-  if (!f || !h) return
-  let patch: string | null
-  let what: string
-  if (linesOnly) {
-    const s = selected.value.get(hunkIdx)
-    if (!s || s.size === 0) return
-    patch = buildLinePatch(f, h, s)
-    what = t('hunkStage.linesSuffix', { n: s.size })
-  } else {
-    patch = buildHunkPatch(f, h)
-    what = t('hunkStage.wholeHunk')
-  }
-  if (!patch) {
-    toast.warning(t('hunkStage.noChange'), t('hunkStage.noChangeMessage'))
-    return
-  }
-  const ok = await confirmDialog({
-    title: t('hunkStage.restoreConfirmTitle'),
-    message: t('hunkStage.restoreConfirmMessage', { what, path: props.path ?? '' }),
-    danger: true,
-  })
-  if (!ok) return
-  restoreWtMut.mutate({ patch, what })
-}
 
 // === Sprint 22-2 CM-4: hunk row 우클릭 메뉴 ===
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
@@ -211,14 +105,6 @@ function onHunkContextMenu(ev: MouseEvent, hIdx: number) {
     },
   )
   ctxMenu.value?.openAt(ev, items)
-}
-
-function applyAllHunks() {
-  const f = file.value
-  if (!f || hunks.value.length === 0) return
-  const tail = hunks.value.map((h) => `${h.header}\n${h.bodyLines.join('\n')}`).join('\n')
-  const patch = `${f.fileHeader}\n${tail}\n`
-  applyMut.mutate({ patch, what: t('hunkStage.wholeHunk') })
 }
 
 function lineColor(prefix: string): string {
