@@ -8,7 +8,8 @@ import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { createBranch, deleteBranch, switchBranch } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
-import { useHiddenRefs, useHiddenRefMutations, useSoloRef } from '@/composables/useHiddenRefs'
+// Sprint c44 W4 — Hide/Solo 통합 composable 위임 (50 LOC 축약).
+import { useBranchVisibilityActions } from '@/composables/useBranchVisibilityActions'
 import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
 // Sprint c32 god comp 분리 9/N — Explain branch (modal state + IPC) composable.
 import { useExplainBranch } from '@/composables/useExplainBranch'
@@ -34,58 +35,18 @@ const newBranchName = ref('')
 const filterKind = ref<'all' | 'local' | 'remote'>('local')
 const remoteManageOpen = ref(false)
 
-// Hide/Solo state
-const { data: hiddenList } = useHiddenRefs(() => props.repoId)
-const hiddenMut = useHiddenRefMutations(() => props.repoId)
-const { current: soloRef, setSolo } = useSoloRef(() => props.repoId)
-
-const hiddenSet = computed<Set<string>>(() => {
-  const s = new Set<string>()
-  for (const h of hiddenList.value ?? []) s.add(h.refName)
-  return s
-})
+// Hide/Solo state — useBranchVisibilityActions composable 위임 (Sprint c44 W4).
+const { hiddenSet, soloRef, isHidden, toggleHide, toggleSolo, setSolo, bulkHideKind, unhideAll } =
+  useBranchVisibilityActions(() => props.repoId)
+function bulkHide(kind: HiddenRefKind) {
+  bulkHideKind(kind, branches.value)
+}
 
 const filtered = computed(() => {
   if (!branches.value) return []
   if (filterKind.value === 'all') return branches.value
   return branches.value.filter((b) => b.kind === filterKind.value)
 })
-
-function refKindOf(b: BranchInfo): HiddenRefKind {
-  return b.kind === 'remote' ? 'remote' : 'branch'
-}
-
-function isHidden(name: string): boolean {
-  return hiddenSet.value.has(name)
-}
-
-function toggleHide(b: BranchInfo) {
-  if (props.repoId == null) return
-  if (isHidden(b.name)) {
-    hiddenMut.unhide.mutate(b.name)
-  } else {
-    hiddenMut.hide.mutate({ refName: b.name, refKind: refKindOf(b) })
-  }
-}
-
-function toggleSolo(b: BranchInfo) {
-  setSolo(b.name)
-}
-
-function bulkHideKind(kind: HiddenRefKind) {
-  if (!branches.value) return
-  const targets = branches.value
-    .filter((b) => refKindOf(b) === kind && !isHidden(b.name))
-    .map((b) => ({ refName: b.name, refKind: kind }))
-  if (targets.length === 0) {
-    toast.success(t('branch.toastBulkHideAlready'), '')
-    return
-  }
-  hiddenMut.bulkHide.mutate(targets, {
-    onSuccess: (n) => toast.success(`${n}개 hidden`, kind),
-    onError: (e) => toast.error(t('branch.toastBulkHideFailed'), describeError(e)),
-  })
-}
 
 const switchMut = useMutation({
   mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name, false),
@@ -271,7 +232,7 @@ async function onExplainBranch(b: BranchInfo) {
         type="button"
         class="rounded border border-border px-1.5 hover:bg-accent/40"
         :title="t('branch.hideAllRemotesTitle')"
-        @click="bulkHideKind('remote')"
+        @click="bulkHide('remote')"
       >
         {{ t('branch.hideAllRemotes') }}
       </button>
@@ -279,7 +240,7 @@ async function onExplainBranch(b: BranchInfo) {
         type="button"
         class="rounded border border-border px-1.5 hover:bg-accent/40"
         :title="t('branch.hideAllLocalTitle')"
-        @click="bulkHideKind('branch')"
+        @click="bulkHide('branch')"
       >
         {{ t('branch.hideAllLocal') }}
       </button>
@@ -289,7 +250,7 @@ async function onExplainBranch(b: BranchInfo) {
         type="button"
         class="rounded border border-border px-1.5 hover:bg-accent/40"
         :title="t('branch.restoreTitle')"
-        @click="hiddenMut.unhideAll.mutate()"
+        @click="unhideAll()"
       >
         {{ t('branch.restore', { n: hiddenSet.size }) }}
       </button>
