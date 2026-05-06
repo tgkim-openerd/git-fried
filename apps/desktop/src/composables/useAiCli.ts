@@ -43,14 +43,32 @@ export function useAiCli() {
  *
  * Sprint c33 — window.confirm() 의 OS 다이얼로그 → 커스텀 ConfirmDialog 마이그레이션.
  * vue setup context 외부에서도 호출되므로 i18n.global.t 사용 (useI18n() 안 됨).
+ *
+ * Sprint c45 UX-5 — 30s TTL 캐시. 사용자가 한 번 동의하면 30초 내 다른 AI composable 호출 시
+ * 자동 true 반환 (5 composable AI confirm 중복 마찰 해소).
  */
+const AI_CONFIRM_TTL_MS = 30_000
+let lastAiConfirmAt = 0
+
 export function confirmAiSend(): Promise<boolean> {
+  const now = Date.now()
+  if (now - lastAiConfirmAt < AI_CONFIRM_TTL_MS) {
+    return Promise.resolve(true)
+  }
   const t = i18n.global.t
   return confirmDialog({
     title: t('confirm.aiSendTitle'),
     message: t('confirm.aiSendMessage'),
     danger: true,
+  }).then((ok) => {
+    if (ok) lastAiConfirmAt = Date.now()
+    return ok
   })
+}
+
+/** 테스트 / 보안 reset — TTL 캐시 즉시 만료. */
+export function __resetAiConfirmCache(): void {
+  lastAiConfirmAt = 0
 }
 
 // ====== AI 호출 카운터 (Sprint c36, IdentityCard dogfood 통계) ======

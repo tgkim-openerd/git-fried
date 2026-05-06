@@ -41,6 +41,7 @@ vi.mock('@/i18n', () => ({
 
 import {
   __resetAiCallCountForTest,
+  __resetAiConfirmCache,
   aiCallCountRef,
   confirmAiSend,
   incrementAiCallCount,
@@ -107,6 +108,7 @@ describe('useAiCli', () => {
   })
 
   it('confirmAiSend — confirmDialog resolve true 시 true', async () => {
+    __resetAiConfirmCache() // Sprint c45 UX-5 — TTL 캐시 초기화
     mockConfirmDialog.mockResolvedValueOnce(true)
     await expect(confirmAiSend()).resolves.toBe(true)
     expect(mockConfirmDialog).toHaveBeenCalledWith(
@@ -119,8 +121,19 @@ describe('useAiCli', () => {
   })
 
   it('confirmAiSend — confirmDialog resolve false 시 false', async () => {
+    __resetAiConfirmCache()
     mockConfirmDialog.mockResolvedValueOnce(false)
     await expect(confirmAiSend()).resolves.toBe(false)
+  })
+
+  it('confirmAiSend — 30s TTL 캐시 (UX-5): 두 번째 호출 자동 true', async () => {
+    __resetAiConfirmCache()
+    mockConfirmDialog.mockResolvedValueOnce(true)
+    await expect(confirmAiSend()).resolves.toBe(true)
+    expect(mockConfirmDialog).toHaveBeenCalledTimes(1)
+    // 두 번째 호출은 캐시 hit → confirmDialog 호출 안 됨
+    await expect(confirmAiSend()).resolves.toBe(true)
+    expect(mockConfirmDialog).toHaveBeenCalledTimes(1)
   })
 
   it('notifyAiDone — title 에 ✨ prefix + notify 호출', () => {

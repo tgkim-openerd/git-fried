@@ -762,7 +762,9 @@
   "aiResult": {
     "loading": "Waiting for AI response...",
     "empty": "No response.",
-    "btnCopy": "Copy"
+    "btnCopy": "Copy",
+    "timeout": "No response within 60 seconds. Check CLI status or retry.",
+    "btnRetry": "Retry"
   },
   "issues": {
     "empty": "No open issues"

@@ -2,22 +2,54 @@
 // AI 결과 표시 공용 modal — Explain commit / Explain branch / 기타.
 // 마크다운 raw <pre> + 복사 버튼 (간단 v1).
 // Sprint 22-5 Q-1/Q-2: BaseModal 마이그레이션.
+// Sprint c45 UX-6 — loading timeout (60s) + 재시도 emit.
+import { ref, watch, onUnmounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import BaseModal from './BaseModal.vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const props = defineProps<{
-  open: boolean
-  title: string
-  content: string
-  loading?: boolean
-  error?: string | null
-}>()
-const emit = defineEmits<{ close: [] }>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    title: string
+    content: string
+    loading?: boolean
+    error?: string | null
+    /** Sprint c45 UX-6 — loading timeout (ms). 0 = 무제한. */
+    timeoutMs?: number
+  }>(),
+  { timeoutMs: 60_000 },
+)
+const emit = defineEmits<{ close: []; retry: [] }>()
 
 const toast = useToast()
+const timedOut = ref(false)
+let timer: ReturnType<typeof setTimeout> | null = null
+
+function clearTimer() {
+  if (timer) {
+    clearTimeout(timer)
+    timer = null
+  }
+}
+
+watch(
+  () => [props.open, props.loading],
+  ([open, loading]) => {
+    clearTimer()
+    timedOut.value = false
+    if (open && loading && props.timeoutMs > 0) {
+      timer = setTimeout(() => {
+        timedOut.value = true
+      }, props.timeoutMs)
+    }
+  },
+  { immediate: true },
+)
+
+onUnmounted(() => clearTimer())
 
 async function copyAll() {
   if (!props.content) return
@@ -27,6 +59,11 @@ async function copyAll() {
   } catch {
     toast.error(t('errors.copyFailed'), '')
   }
+}
+
+function onRetry() {
+  timedOut.value = false
+  emit('retry')
 }
 </script>
 
@@ -53,6 +90,25 @@ async function copyAll() {
       >
         {{ error }}
       </p>
+      <div v-else-if="loading && timedOut" class="p-6 text-center text-sm">
+        <p class="mb-3 text-warning-amber">{{ t('aiResult.timeout') }}</p>
+        <div class="flex justify-center gap-2">
+          <button
+            type="button"
+            class="rounded border border-border px-3 py-1 text-xs hover:bg-accent/40"
+            @click="onRetry"
+          >
+            {{ t('aiResult.btnRetry') }}
+          </button>
+          <button
+            type="button"
+            class="rounded border border-border px-3 py-1 text-xs hover:bg-accent/40"
+            @click="emit('close')"
+          >
+            {{ t('common.close') }}
+          </button>
+        </div>
+      </div>
       <p v-else-if="loading" class="p-6 text-center text-sm text-muted-foreground">
         {{ t('aiResult.loading') }}
       </p>

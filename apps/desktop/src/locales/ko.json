@@ -762,7 +762,9 @@
   "aiResult": {
     "loading": "AI 응답 대기 중...",
     "empty": "응답 없음.",
-    "btnCopy": "복사"
+    "btnCopy": "복사",
+    "timeout": "응답이 60초 이내 도착하지 않았습니다. CLI 실행 상태를 확인하거나 재시도하세요.",
+    "btnRetry": "재시도"
   },
   "issues": {
     "empty": "Open issue 없음"
