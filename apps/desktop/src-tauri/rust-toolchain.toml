@@ -1,0 +1,14 @@
+# Sprint c52 — toolchain mismatch 해소.
+#
+# 원인: chocolatey 의 rustc 1.60.0 이 PATH 우선 → cargo 1.95 (rustup) 가 rustc spawn
+# 시 1.60.0 호출 → `--check-cfg` flag 가 1.60.0 에서 unstable 로 거부 → cargo check 실패.
+# 사용자/CI 환경 모두 rustup proxy 를 통하도록 toolchain 명시.
+#
+# rustup 가 설치된 환경이면 자동으로 stable channel 의 rustc/cargo 를 spawn.
+# `rustup which cargo` / `rustup which rustc` 둘 다 ~/.rustup/toolchains/stable/.../bin/ 가리킴.
+#
+# CI: `rustup show` 또는 `cargo --version` 호출 시 자동 install (rustup ≥ 1.27 시).
+[toolchain]
+channel = "stable"
+profile = "minimal"
+components = ["rustfmt", "clippy"]
