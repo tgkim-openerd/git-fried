@@ -412,9 +412,14 @@ function workspaceName(id: number | null): string {
             @toggle="(e) => setOpen(g.key, (e.target as HTMLDetailsElement).open)"
           >
             <summary
-              class="flex cursor-pointer select-none items-center justify-between gap-2 rounded-t-md px-3 py-2 text-sm font-semibold hover:bg-accent/30"
+              class="flex cursor-pointer select-none items-center justify-between gap-2 rounded-t-md px-3 py-2 text-sm font-semibold hover:bg-accent/30 [&::-webkit-details-marker]:hidden"
             >
               <span class="flex flex-1 items-center gap-2 truncate">
+                <!-- Sprint c50 — design-verify Critical 1: native <details> marker 가 flex summary 에서 가려져
+                     명시 ▼/▶ 추가 (isOpen 으로 양방향 동기화 — Pattern 10). -->
+                <span class="w-3 text-[10px] text-muted-foreground">{{
+                  isOpen(g.key) ? '▼' : '▶'
+                }}</span>
                 <span v-if="g.label">📦 {{ g.label }}</span>
                 <span v-else class="text-muted-foreground italic">기타</span>
                 <span
