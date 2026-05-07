@@ -24,6 +24,7 @@ import { useUiState } from '@/composables/useUiState'
 import { useGeneralSettings, useUiSettingsStore } from '@/composables/useUserSettings'
 import { useCustomTheme } from '@/composables/useCustomTheme'
 import { useToast } from '@/composables/useToast'
+import { useNavigateHome } from '@/composables/useNavigateHome'
 import { i18n } from '@/i18n'
 
 const t = i18n.global.t
@@ -105,6 +106,7 @@ function hnt(key: string): string | undefined {
 
 export function useCommandCatalog(): UseCommandCatalogReturn {
   const router = useRouter()
+  const goHome = useNavigateHome()
   const store = useReposStore()
   const qc = useQueryClient()
   const ui = useUiState()
@@ -309,7 +311,7 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
       category: 'repo',
       label: lbl('repoGoHome'),
       hint: hnt('repoGoHome'),
-      action: () => router.push('/'),
+      action: goHome,
     },
     {
       id: 'repo.go.launchpad',

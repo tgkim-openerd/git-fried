@@ -8,6 +8,7 @@
 //   - localStorage 'git-fried.repo-tabs.v1' = { tabs, active }
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import type { Repo } from '@/types/git'
 
 const TABS_KEY = 'git-fried.repo-tabs.v1'
 
@@ -26,9 +27,7 @@ function loadPersisted(): PersistedTabs {
       ? obj.tabs.filter((x): x is number => typeof x === 'number')
       : []
     const active =
-      typeof obj.active === 'number' && tabs.includes(obj.active)
-        ? obj.active
-        : tabs[0] ?? null
+      typeof obj.active === 'number' && tabs.includes(obj.active) ? obj.active : (tabs[0] ?? null)
     return { tabs, active }
   } catch {
     return { tabs: [], active: null }
@@ -78,6 +77,18 @@ export const useReposStore = defineStore('repos', () => {
     activeRepoId.value = id
   }
 
+  // Sprint c50 — Pattern 9 (caller-decision API): 핵심 책임만 — 일괄 openTab + 첫 활성 + first 반환.
+  // workspace 전환 / router.push / emit close 같은 caller-specific side effect 는 caller 결정.
+  // caller 가 정렬 후 넘김 (pinned 우선 등 — alias 의존이 store 외부라 sort 도 caller).
+  function openRepoGroup(repos: readonly Repo[]): Repo | null {
+    if (repos.length === 0) return null
+    for (const r of repos) {
+      if (!tabs.value.includes(r.id)) tabs.value = [...tabs.value, r.id]
+    }
+    activeRepoId.value = repos[0].id
+    return repos[0]
+  }
+
   function closeTab(id: number) {
     const idx = tabs.value.indexOf(id)
     if (idx === -1) return
@@ -122,8 +133,7 @@ export const useReposStore = defineStore('repos', () => {
     if (tabs.value.length < 2 || activeRepoId.value == null) return
     const idx = tabs.value.indexOf(activeRepoId.value)
     if (idx === -1) return
-    activeRepoId.value =
-      tabs.value[(idx - 1 + tabs.value.length) % tabs.value.length]
+    activeRepoId.value = tabs.value[(idx - 1 + tabs.value.length) % tabs.value.length]
   }
 
   return {
@@ -133,6 +143,7 @@ export const useReposStore = defineStore('repos', () => {
     setActiveRepo,
     setActiveWorkspace,
     openTab,
+    openRepoGroup,
     closeTab,
     closeOthers,
     closeAll,

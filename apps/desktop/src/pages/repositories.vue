@@ -24,6 +24,8 @@ import {
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { useSidebarGroups, type GroupMode } from '@/composables/useSidebarGroups'
+import { useGroupCollapse } from '@/composables/useGroupCollapse'
+import { useNavigateHome } from '@/composables/useNavigateHome'
 import { useBulkQuickStatus } from '@/composables/useBulkQuickStatus'
 import { useToast } from '@/composables/useToast'
 import { describeError, humanizeGitError } from '@/api/errors'
@@ -36,6 +38,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import type { Repo } from '@/types/git'
 
 const router = useRouter()
+const goHome = useNavigateHome()
 const store = useReposStore()
 const aliases = useRepoAliases()
 const toast = useToast()
@@ -82,40 +85,20 @@ const filteredRepos = computed<readonly Repo[]>(() => {
 // 그룹 모드 (Sidebar 와 동일 useSidebarGroups composable 재사용 — localStorage 공유).
 const { groupMode, setGroupMode, groups } = useSidebarGroups(filteredRepos)
 
-// Sprint c49 — Collapse/Expand all + 그룹 단위 multi-add.
-// collapsedKeys: collapse 된 그룹 key 집합. (default: 모두 expand)
-const collapsedKeys = ref(new Set<string>())
-const allCollapsed = computed(
-  () => groups.value.length > 0 && groups.value.every((g) => collapsedKeys.value.has(g.key)),
-)
-function isOpen(key: string): boolean {
-  return !collapsedKeys.value.has(key)
-}
-function onDetailsToggle(key: string, open: boolean): void {
-  // <details> native @toggle ↔ collapsedKeys 동기화. Set 재할당으로 reactive 보장.
-  const next = new Set(collapsedKeys.value)
-  if (open) next.delete(key)
-  else next.add(key)
-  collapsedKeys.value = next
-}
-function collapseAll(): void {
-  collapsedKeys.value = new Set(groups.value.map((g) => g.key))
-}
-function expandAll(): void {
-  collapsedKeys.value = new Set()
-}
+// Sprint c50 — useGroupCollapse composable (Pattern 10) 위임.
+const { collapsedKeys, allCollapsed, isOpen, setOpen, collapseAll, expandAll } =
+  useGroupCollapse(groups)
+
 // 그룹 ⊕ 액션 — 그 그룹의 모든 레포 탭 추가 + 첫 활성 (pinned 우선) + 홈으로.
+// Sprint c50 — Pattern 9 (caller-decision): caller 정렬 → store.openRepoGroup 위임 → caller 가 router 결정.
 function openGroupAll(g: { repos: Repo[] }): void {
-  if (g.repos.length === 0) return
-  for (const r of g.repos) store.openTab(r.id)
   const sorted = [...g.repos].sort((a, b) => {
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
     return aliases
       .resolveLocal(a.id, a.name)
       .display.localeCompare(aliases.resolveLocal(b.id, b.name).display)
   })
-  store.setActiveRepo(sorted[0].id)
-  void router.push('/')
+  if (store.openRepoGroup(sorted)) goHome()
 }
 
 // 활성 탭 / 즐겨찾기 분리 표시.
@@ -179,7 +162,7 @@ async function browseAndAdd() {
 
 function openRepo(repo: Repo) {
   store.openTab(repo.id)
-  void router.push('/')
+  goHome()
 }
 
 function repoBranch(id: number): string | null {
@@ -426,7 +409,7 @@ function workspaceName(id: number | null): string {
             :key="g.key"
             :open="isOpen(g.key)"
             class="group mb-3 rounded-md border border-border bg-card/30"
-            @toggle="(e) => onDetailsToggle(g.key, (e.target as HTMLDetailsElement).open)"
+            @toggle="(e) => setOpen(g.key, (e.target as HTMLDetailsElement).open)"
           >
             <summary
               class="flex cursor-pointer select-none items-center justify-between gap-2 rounded-t-md px-3 py-2 text-sm font-semibold hover:bg-accent/30"

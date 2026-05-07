@@ -7,7 +7,6 @@
 //   - 폴더 행도 keyboard navigable. Enter/Click → 그룹 모든 레포 openTab + 첫 활성 + close.
 //   - 단독 그룹 (isSolo) 은 폴더 헤더 숨김 — 평면처럼 표시.
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { listRepos } from '@/api/git'
@@ -16,13 +15,14 @@ import type { Repo } from '@/types/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { useSidebarGroups, type RepoGroup } from '@/composables/useSidebarGroups'
+import { useNavigateHome } from '@/composables/useNavigateHome'
 import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
 const { t } = useI18n()
-const router = useRouter()
+const goHome = useNavigateHome()
 const store = useReposStore()
 const filter = ref('')
 const selected = ref(0)
@@ -124,10 +124,6 @@ watch(selected, () => {
   })
 })
 
-function goHome() {
-  if (router.currentRoute.value.path !== '/') void router.push('/')
-}
-
 function pick(r: Repo) {
   if (r.workspaceId !== store.activeWorkspaceId) {
     store.setActiveWorkspace(r.workspaceId ?? null)
@@ -138,19 +134,18 @@ function pick(r: Repo) {
 }
 
 // 폴더 헤더 행 선택 — 그룹의 모든 레포를 탭에 추가하고 첫 레포 활성.
+// Sprint c50 — Pattern 9 (caller-decision): caller 가 정렬한 list 를 store.openRepoGroup 에 위임.
 // pinned 우선, 그 다음 alias/이름 알파벳 (filteredRepos 정렬과 동일 로직).
 function pickGroup(g: RepoGroup) {
-  if (g.repos.length === 0) return
-  for (const r of g.repos) store.openTab(r.id)
   const sorted = [...g.repos].sort((a, b) => {
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
     return aliasOrName(a).localeCompare(aliasOrName(b))
   })
-  const first = sorted[0]
+  const first = store.openRepoGroup(sorted)
+  if (!first) return
   if (first.workspaceId !== store.activeWorkspaceId) {
     store.setActiveWorkspace(first.workspaceId ?? null)
   }
-  store.setActiveRepo(first.id)
   goHome()
   emit('close')
 }
