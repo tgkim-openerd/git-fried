@@ -111,7 +111,7 @@ function toggleTagExpand(name: string) {
 // composable: confirm/prompt/clipboard/API 모두 흡수
 // caller (component): vue-query mutation 객체 보유 + mutate fn 만 콜백으로 노출
 const tagCtxMenu = useTemplateRef<ContextMenuExpose>('tagCtxMenu')
-const { onTagContextMenu, deleteLocal, deleteRemote } = useTagInteraction({
+const { onTagContextMenu, deleteTagLocal, deleteTagRemote } = useTagInteraction({
   repoId: () => props.repoId,
   ctxMenu: tagCtxMenu,
   onPush: (name) => pushMut.mutate(name),
@@ -223,14 +223,14 @@ const { onTagContextMenu, deleteLocal, deleteRemote } = useTagInteraction({
           <button
             class="hover:underline text-destructive"
             :aria-label="t('tag.delLocalAria', { name: tg.name })"
-            @click.stop="deleteLocal(tg.name)"
+            @click.stop="deleteTagLocal(tg.name)"
           >
             del local
           </button>
           <button
             class="hover:underline text-destructive"
             :aria-label="t('tag.delRemoteAria', { name: tg.name })"
-            @click.stop="deleteRemote(tg.name)"
+            @click.stop="deleteTagRemote(tg.name)"
           >
             del remote
           </button>

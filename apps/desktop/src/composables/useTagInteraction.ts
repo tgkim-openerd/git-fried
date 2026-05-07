@@ -99,7 +99,7 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
   }
 
   // Sprint c52 ARCH-001 — confirm 흡수 후 caller mutate callback 호출. caller 의 confirm 보일러플레이트 제거.
-  async function deleteLocal(name: string) {
+  async function deleteTagLocal(name: string) {
     const ok = await confirmDialog({
       title: t('confirm.deleteTagTitle'),
       message: t('confirm.deleteLocalTagMessage', { name }),
@@ -109,7 +109,7 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
     opts.onDelete(name)
   }
 
-  async function deleteRemote(name: string) {
+  async function deleteTagRemote(name: string) {
     const ok = await confirmDialog({
       title: t('confirm.deleteTagTitle'),
       message: t('confirm.deleteRemoteTagMessage', { name }),
@@ -146,13 +146,13 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
         label: t('tagActions.cmDeleteLocal'),
         icon: '🗑',
         destructive: true,
-        action: () => void deleteLocal(tag.name),
+        action: () => void deleteTagLocal(tag.name),
       },
       {
         label: t('tagActions.cmDeleteRemote'),
         icon: '🗑',
         destructive: true,
-        action: () => void deleteRemote(tag.name),
+        action: () => void deleteTagRemote(tag.name),
       },
     ]
     opts.ctxMenu.value?.openAt(ev, items)
@@ -162,8 +162,8 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
     checkoutTag,
     createBranchFromTag,
     copyTagSha,
-    deleteLocal,
-    deleteRemote,
+    deleteTagLocal,
+    deleteTagRemote,
     onTagContextMenu,
   }
 }

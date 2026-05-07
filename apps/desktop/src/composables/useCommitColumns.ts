@@ -30,8 +30,19 @@ export interface CommitColumnDef {
   widthPx: number | null
 }
 
+/**
+ * Sprint c52 ARCH-008 — fallback drift 회피용 SOT export.
+ * `find(...)?.widthPx ?? 128` 의 128 도 동일 출처에서 derive — Pattern 13 (SOT derive fallback).
+ */
+export const BRANCH_TAG_DEFAULT_WIDTH_PX = 128
+
 export const ALL_COLUMNS: CommitColumnDef[] = [
-  { id: 'branchTag', label: 'BRANCH/TAG', widthClass: 'w-32 shrink-0', widthPx: 128 },
+  {
+    id: 'branchTag',
+    label: 'BRANCH/TAG',
+    widthClass: 'w-32 shrink-0',
+    widthPx: BRANCH_TAG_DEFAULT_WIDTH_PX,
+  },
   { id: 'sha', label: 'SHA', widthClass: 'w-16 shrink-0', widthPx: 64 },
   { id: 'message', label: 'Message', widthClass: 'flex-1 min-w-0', widthPx: null },
   { id: 'author', label: 'Author', widthClass: 'w-32 shrink-0', widthPx: 128 },

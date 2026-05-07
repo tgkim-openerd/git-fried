@@ -16,6 +16,7 @@ import { useGraph } from '@/composables/useGraph'
 import { useGraphRefVisibility } from '@/composables/useGraphRefVisibility'
 import type { HiddenRefKind } from '@/api/git'
 import { useCommitGraphHeader } from '@/composables/useCommitGraphHeader'
+import { BRANCH_TAG_DEFAULT_WIDTH_PX } from '@/composables/useCommitColumns'
 import { useCommitActions } from '@/composables/useCommitActions'
 import { useGraphSearch } from '@/composables/useGraphSearch'
 import { useGraphWidth, ROW_H } from '@/composables/useGraphWidth'
@@ -195,9 +196,13 @@ void headerMenuRef
 // Sprint c52 / c51 보류 #5 — branch chip sticky overlay 좌표.
 // Sprint c52 후속 (ARCH-002): widthPx SOT 통합 — useCommitColumns.ALL_COLUMNS 의 branchTag
 // widthPx 단일 출처에서 derive. drag handle 폭 (12px) 도 inline style 과 단일 상수 공유.
+// Sprint c52 후속 (ARCH-008): fallback `?? 128` 도 BRANCH_TAG_DEFAULT_WIDTH_PX SOT 에서.
+// Sprint c52 후속 (ARCH-009): inner ghost divider 매직넘버 통합 — Pattern 13 SOT derive.
 const HANDLE_WIDTH = 12
+const INNER_DIVIDER_WIDTH = 2
+const INNER_DIVIDER_LEFT = (HANDLE_WIDTH - INNER_DIVIDER_WIDTH) / 2 // = 5
 const branchChipStickyWidth = computed(
-  () => cols.allColumns.find((c) => c.id === 'branchTag')?.widthPx ?? 128,
+  () => cols.allColumns.find((c) => c.id === 'branchTag')?.widthPx ?? BRANCH_TAG_DEFAULT_WIDTH_PX,
 )
 const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
 </script>
@@ -358,12 +363,13 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
           @mousedown="onDragHandleStart"
         >
           <!-- Sprint c46 UX-10 — handle hit area 4px → 12px, visual marker 1px (inner ghost divider) -->
+          <!-- Sprint c52 ARCH-009 — left/width 매직넘버 → INNER_DIVIDER_* SOT derive -->
           <div
             :style="{
               position: 'absolute',
               top: 0,
-              left: '5px',
-              width: '2px',
+              left: INNER_DIVIDER_LEFT + 'px',
+              width: INNER_DIVIDER_WIDTH + 'px',
               height: '100%',
               pointerEvents: 'none',
             }"
