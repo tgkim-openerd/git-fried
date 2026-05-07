@@ -721,7 +721,17 @@
   },
   "tagActions": {
     "createBranchTitle": "Tag 에서 브랜치 생성",
-    "createBranchMessage": "tag '{name}' 에서 새 브랜치 — 이름을 입력하세요."
+    "createBranchMessage": "tag '{name}' 에서 새 브랜치 — 이름을 입력하세요.",
+    "toastBranchCreated": "브랜치 생성",
+    "toastBranchFailed": "브랜치 생성 실패",
+    "toastShaCopied": "SHA 복사",
+    "toastShaCopyFailed": "복사 실패",
+    "cmPushOrigin": "origin 으로 푸시",
+    "cmCheckout": "체크아웃 (detached HEAD)",
+    "cmCreateBranch": "브랜치 생성...",
+    "cmCopySha": "커밋 SHA 복사",
+    "cmDeleteLocal": "로컬 삭제",
+    "cmDeleteRemote": "원격(origin) 삭제"
   },
   "reflog": {
     "recoverBranchTitle": "Reflog 복구 브랜치",

@@ -7,25 +7,18 @@
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import {
-  createBranch,
-  createTag,
-  deleteRemoteTag,
-  deleteTag,
-  listTags,
-  pushTag,
-  switchBranch,
-  type TagInfo,
-} from '@/api/git'
+import { createTag, deleteRemoteTag, deleteTag, listTags, pushTag, type TagInfo } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
-import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { formatDateLocalized } from '@/composables/useUserSettings'
-import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
-import { confirmDialog, promptDialog } from '@/composables/useConfirm'
+import { confirmDialog } from '@/composables/useConfirm'
+// Sprint c52 — context menu + 3 액션 (checkout/createBranch/copySha) 추출.
+// 4 mutations 는 vue-query queryClient access 자연스럽게 component scope 잔존.
+import { useTagInteraction } from '@/composables/useTagInteraction'
 
 const props = defineProps<{ repoId: number | null }>()
 
@@ -134,96 +127,15 @@ function toggleTagExpand(name: string) {
   expandedTag.value = expandedTag.value === name ? null : name
 }
 
-// === Sprint 22-4 CM-8: tag row 우클릭 (5 액션) ===
+// === Sprint 22-4 CM-8: tag row 우클릭 (5 액션) — Sprint c52 useTagInteraction 추출 ===
 const tagCtxMenu = useTemplateRef<ContextMenuExpose>('tagCtxMenu')
-const invalidateAll = useInvalidateRepoQueries()
-
-async function checkoutTag(tag: TagInfo) {
-  if (props.repoId == null) return
-  const ok = await confirmDialog({
-    title: t('confirm.checkoutTagTitle'),
-    message: t('confirm.checkoutTagMessage', { name: tag.name }),
-  })
-  if (!ok) return
-  try {
-    await switchBranch(props.repoId, tag.name, false)
-    toast.success(t('tag.toastCheckout'), tag.name)
-    invalidateAll(props.repoId)
-  } catch (e) {
-    toast.error(t('tag.toastCheckoutFailed'), describeError(e))
-  }
-}
-
-async function createBranchFromTag(tag: TagInfo) {
-  if (props.repoId == null) return
-  const name = await promptDialog({
-    title: t('tagActions.createBranchTitle'),
-    message: t('tagActions.createBranchMessage', { name: tag.name }),
-    defaultValue: tag.name + '-branch',
-  })
-  if (!name?.trim()) return
-  try {
-    await createBranch(props.repoId, name.trim(), tag.name)
-    toast.success('브랜치 생성', `${name.trim()} from ${tag.name}`)
-    invalidateAll(props.repoId)
-  } catch (e) {
-    toast.error('브랜치 생성 실패', describeError(e))
-  }
-}
-
-async function copyTagSha(t: TagInfo) {
-  const sha = t.commitSha
-  if (!sha) return
-  try {
-    await navigator.clipboard.writeText(sha)
-    toast.success('SHA 복사', sha.slice(0, 8))
-  } catch (e) {
-    toast.error('복사 실패', describeError(e))
-  }
-}
-
-function onTagContextMenu(ev: MouseEvent, t: TagInfo) {
-  ev.preventDefault()
-  ev.stopPropagation()
-  const items: ContextMenuItem[] = [
-    {
-      label: 'Push to origin',
-      icon: '⬆',
-      action: () => pushMut.mutate(t.name),
-    },
-    {
-      label: 'Checkout (detached HEAD)',
-      icon: '✓',
-      action: () => void checkoutTag(t),
-    },
-    {
-      label: 'Create branch from...',
-      icon: '🌿',
-      action: () => void createBranchFromTag(t),
-    },
-    { divider: true },
-    {
-      label: 'Copy commit SHA',
-      icon: '📋',
-      disabled: !t.commitSha,
-      action: () => void copyTagSha(t),
-    },
-    { divider: true },
-    {
-      label: 'Delete local',
-      icon: '🗑',
-      destructive: true,
-      action: () => onDelete(t.name),
-    },
-    {
-      label: 'Delete remote (origin)',
-      icon: '🗑',
-      destructive: true,
-      action: () => onDeleteRemote(t.name),
-    },
-  ]
-  tagCtxMenu.value?.openAt(ev, items)
-}
+const { onTagContextMenu } = useTagInteraction({
+  repoId: () => props.repoId,
+  ctxMenu: tagCtxMenu,
+  pushMut,
+  onDelete,
+  onDeleteRemote,
+})
 </script>
 
 <template>

@@ -721,7 +721,17 @@
   },
   "tagActions": {
     "createBranchTitle": "Create branch from tag",
-    "createBranchMessage": "Enter a new branch name from tag '{name}'."
+    "createBranchMessage": "Enter a new branch name from tag '{name}'.",
+    "toastBranchCreated": "Branch created",
+    "toastBranchFailed": "Branch creation failed",
+    "toastShaCopied": "SHA copied",
+    "toastShaCopyFailed": "Copy failed",
+    "cmPushOrigin": "Push to origin",
+    "cmCheckout": "Checkout (detached HEAD)",
+    "cmCreateBranch": "Create branch from...",
+    "cmCopySha": "Copy commit SHA",
+    "cmDeleteLocal": "Delete local",
+    "cmDeleteRemote": "Delete remote (origin)"
   },
   "reflog": {
     "recoverBranchTitle": "Reflog recovery branch",
