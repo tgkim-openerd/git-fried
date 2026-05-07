@@ -193,10 +193,12 @@ const {
 void headerMenuRef
 
 // Sprint c52 / c51 보류 #5 — branch chip sticky overlay 좌표.
-// useCommitColumns.ALL_COLUMNS[0].widthPx (branchTag = 128) 와 동기화.
-// drag handle 폭 12px (라인 ~338 `width: '12px'`) 다음에 배치.
-const BRANCH_CHIP_STICKY_WIDTH = 128
+// Sprint c52 후속 (ARCH-002): widthPx SOT 통합 — useCommitColumns.ALL_COLUMNS 의 branchTag
+// widthPx 단일 출처에서 derive. drag handle 폭 (12px) 도 inline style 과 단일 상수 공유.
 const HANDLE_WIDTH = 12
+const branchChipStickyWidth = computed(
+  () => cols.allColumns.find((c) => c.id === 'branchTag')?.widthPx ?? 128,
+)
 const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
 </script>
 
@@ -343,8 +345,8 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
           :style="{
             position: 'sticky',
             top: 0,
-            left: graphWidth - 6 + 'px',
-            width: '12px',
+            left: graphWidth - HANDLE_WIDTH / 2 + 'px',
+            width: HANDLE_WIDTH + 'px',
             height: '100%',
             zIndex: 2,
             cursor: 'col-resize',
@@ -379,7 +381,7 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
             position: 'sticky',
             top: 0,
             left: branchChipStickyLeft + 'px',
-            width: BRANCH_CHIP_STICKY_WIDTH + 'px',
+            width: branchChipStickyWidth + 'px',
             height: '100%',
             zIndex: 3,
             pointerEvents: 'none',

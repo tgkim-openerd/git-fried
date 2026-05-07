@@ -54,19 +54,18 @@ describe('useTagInteraction', () => {
     vi.restoreAllMocks()
   })
 
-  it('onTagContextMenu — 7 items 빌드 후 ctxMenu.openAt 호출', () => {
+  it('onTagContextMenu — 8 items 빌드 후 ctxMenu.openAt 호출', () => {
     const openAt = vi.fn()
     const ctxMenu = ref<ContextMenuExpose | null>({
       openAt,
       close: vi.fn(),
     } as unknown as ContextMenuExpose)
-    const pushMut = { mutate: vi.fn() }
 
     const { onTagContextMenu } = setup(() =>
       useTagInteraction({
         repoId: () => 1,
         ctxMenu,
-        pushMut,
+        onPush: vi.fn(),
         onDelete: vi.fn(),
         onDeleteRemote: vi.fn(),
       }),
@@ -96,7 +95,7 @@ describe('useTagInteraction', () => {
       useTagInteraction({
         repoId: () => 1,
         ctxMenu: ref(null),
-        pushMut: { mutate: vi.fn() },
+        onPush: vi.fn(),
         onDelete: vi.fn(),
         onDeleteRemote: vi.fn(),
       }),
@@ -110,7 +109,7 @@ describe('useTagInteraction', () => {
       useTagInteraction({
         repoId: () => null,
         ctxMenu: ref(null),
-        pushMut: { mutate: vi.fn() },
+        onPush: vi.fn(),
         onDelete: vi.fn(),
         onDeleteRemote: vi.fn(),
       }),

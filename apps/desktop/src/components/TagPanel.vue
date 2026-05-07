@@ -15,9 +15,9 @@ import { formatDateLocalized } from '@/composables/useUserSettings'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import EmptyState from './EmptyState.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
-import { confirmDialog } from '@/composables/useConfirm'
-// Sprint c52 — context menu + 3 액션 (checkout/createBranch/copySha) 추출.
-// 4 mutations 는 vue-query queryClient access 자연스럽게 component scope 잔존.
+// Sprint c52 — context menu + 모든 user-facing side effect (confirm/prompt/clipboard) 흡수.
+// 4 mutations 객체는 vue-query queryClient access 자연스럽게 component scope 잔존.
+// ARCH-001 (caller-decision uniformity): mutate fn 만 callback 으로 노출.
 import { useTagInteraction } from '@/composables/useTagInteraction'
 
 const props = defineProps<{ repoId: number | null }>()
@@ -58,7 +58,7 @@ const createMut = useMutation({
   onError: (e) => toast.error(t('tag.toastCreateFailed'), describeError(e)),
 })
 
-// === delete (local) ===
+// === delete (local) — confirm 은 useTagInteraction 안에서 처리 (c52 ARCH-001) ===
 const deleteMut = useMutation({
   mutationFn: (name: string) => {
     if (props.repoId == null) throw new Error(t('tag.errNoRepo'))
@@ -70,16 +70,6 @@ const deleteMut = useMutation({
   },
   onError: (e) => toast.error(t('tag.toastDeleteFailed'), describeError(e)),
 })
-
-async function onDelete(name: string) {
-  const ok = await confirmDialog({
-    title: t('confirm.deleteTagTitle'),
-    message: t('confirm.deleteLocalTagMessage', { name }),
-    danger: true,
-  })
-  if (!ok) return
-  deleteMut.mutate(name)
-}
 
 // === push (remote=origin 기본) ===
 const pushMut = useMutation({
@@ -102,16 +92,6 @@ const deleteRemoteMut = useMutation({
   onError: (e) => toast.error(t('tag.toastRemoteDeleteFailed'), describeError(e)),
 })
 
-async function onDeleteRemote(name: string) {
-  const ok = await confirmDialog({
-    title: t('confirm.deleteTagTitle'),
-    message: t('confirm.deleteRemoteTagMessage', { name }),
-    danger: true,
-  })
-  if (!ok) return
-  deleteRemoteMut.mutate(name)
-}
-
 function fmt(unix: number | null): string {
   if (!unix) return ''
   return formatDateLocalized(unix, {
@@ -127,14 +107,16 @@ function toggleTagExpand(name: string) {
   expandedTag.value = expandedTag.value === name ? null : name
 }
 
-// === Sprint 22-4 CM-8: tag row 우클릭 (5 액션) — Sprint c52 useTagInteraction 추출 ===
+// === Sprint 22-4 CM-8 + Sprint c52 ARCH-001 — Pattern 9 caller-decision uniformity ===
+// composable: confirm/prompt/clipboard/API 모두 흡수
+// caller (component): vue-query mutation 객체 보유 + mutate fn 만 콜백으로 노출
 const tagCtxMenu = useTemplateRef<ContextMenuExpose>('tagCtxMenu')
-const { onTagContextMenu } = useTagInteraction({
+const { onTagContextMenu, deleteLocal, deleteRemote } = useTagInteraction({
   repoId: () => props.repoId,
   ctxMenu: tagCtxMenu,
-  pushMut,
-  onDelete,
-  onDeleteRemote,
+  onPush: (name) => pushMut.mutate(name),
+  onDelete: (name) => deleteMut.mutate(name),
+  onDeleteRemote: (name) => deleteRemoteMut.mutate(name),
 })
 </script>
 
@@ -241,14 +223,14 @@ const { onTagContextMenu } = useTagInteraction({
           <button
             class="hover:underline text-destructive"
             :aria-label="t('tag.delLocalAria', { name: tg.name })"
-            @click.stop="onDelete(tg.name)"
+            @click.stop="deleteLocal(tg.name)"
           >
             del local
           </button>
           <button
             class="hover:underline text-destructive"
             :aria-label="t('tag.delRemoteAria', { name: tg.name })"
-            @click.stop="onDeleteRemote(tg.name)"
+            @click.stop="deleteRemote(tg.name)"
           >
             del remote
           </button>

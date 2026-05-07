@@ -1,22 +1,29 @@
 // Sprint c52 / c48 보류 후속 — TagPanel.vue script 227 LOC → 200 임계 미달.
 //
-// 책임 (TagPanel context menu 영역만):
+// 책임 (TagPanel context menu + 모든 user-facing side effect):
 //   - 3 액션 (checkoutTag / createBranchFromTag / copyTagSha) — confirm/prompt + invalidate
-//   - onTagContextMenu — 7항목 context menu items 빌드 + ctxMenu.openAt
+//   - 2 액션 (deleteLocal / deleteRemote) — confirm + caller mutate callback
+//   - onTagContextMenu — 8항목 context menu items 빌드 + ctxMenu.openAt
 //
-// 추출 범위 결정 (c48 useCommitGraphInteraction 패턴과 동일):
-//   - 4 mutations (create/delete/push/deleteRemote) 는 잔존 — vue-query useMutation 의 invalidate
-//     queryClient access 가 component scope 자연스러움. composable 로 옮기면 callback 누적
-//   - context menu + actions 는 confirmDialog/promptDialog/clipboard/router 등 외부 의존성 묶음
-//     → 별도 composable 로 분리 시 component 가독성 ↑
+// Pattern 9 caller-decision 원칙 (c50 정착):
+//   - composable: 모든 user-facing side effect (confirmDialog / promptDialog / clipboard / API) 흡수
+//   - caller: vue-query mutation 객체 보유 (queryClient access scope 자연스러움) + mutate 콜백 노출
+//
+// Sprint c52 ARCH-001/006 후속 (caller-decision 일관성 통일):
+//   기존: pushMut 만 mutation 객체로 받고 onDelete/onDeleteRemote 는 caller 가 confirm 후 mutate
+//        → 동일 mutation wrapping 방식 split + side effect uniformity 60% drift
+//   현재: 5개 콜백 모두 mutate fn 만 받고 confirm/prompt 는 composable 안 — uniformity 100%
 //
 // 사용 예시:
-//   const { onTagContextMenu, checkoutTag, createBranchFromTag, copyTagSha } = useTagInteraction({
+//   const {
+//     onTagContextMenu, checkoutTag, createBranchFromTag, copyTagSha,
+//     deleteLocal, deleteRemote,
+//   } = useTagInteraction({
 //     repoId: () => props.repoId,
 //     ctxMenu,
-//     pushMut,
-//     onDelete,
-//     onDeleteRemote,
+//     onPush:         (name) => pushMut.mutate(name),
+//     onDelete:       (name) => deleteMut.mutate(name),
+//     onDeleteRemote: (name) => deleteRemoteMut.mutate(name),
 //   })
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -32,12 +39,12 @@ interface UseTagInteractionOpts {
   repoId: () => number | null
   /** ContextMenu 컴포넌트 ref (template ref) */
   ctxMenu: Ref<ContextMenuExpose | null>
-  /** pushMut.mutate(name) — caller 가 직접 vue-query mutation 보유 */
-  pushMut: { mutate: (name: string) => void }
-  /** onDelete(name) — caller side confirm + mutate (local tag 삭제) */
-  onDelete: (name: string) => void | Promise<void>
-  /** onDeleteRemote(name) — caller side confirm + mutate (remote tag 삭제) */
-  onDeleteRemote: (name: string) => void | Promise<void>
+  /** push tag → origin (no confirm). caller 가 vue-query mutation 보유 */
+  onPush: (name: string) => void
+  /** delete local tag — composable 안에서 confirm 후 호출 */
+  onDelete: (name: string) => void
+  /** delete remote tag (origin) — composable 안에서 confirm 후 호출 */
+  onDeleteRemote: (name: string) => void
 }
 
 export function useTagInteraction(opts: UseTagInteractionOpts) {
@@ -91,6 +98,27 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
     }
   }
 
+  // Sprint c52 ARCH-001 — confirm 흡수 후 caller mutate callback 호출. caller 의 confirm 보일러플레이트 제거.
+  async function deleteLocal(name: string) {
+    const ok = await confirmDialog({
+      title: t('confirm.deleteTagTitle'),
+      message: t('confirm.deleteLocalTagMessage', { name }),
+      danger: true,
+    })
+    if (!ok) return
+    opts.onDelete(name)
+  }
+
+  async function deleteRemote(name: string) {
+    const ok = await confirmDialog({
+      title: t('confirm.deleteTagTitle'),
+      message: t('confirm.deleteRemoteTagMessage', { name }),
+      danger: true,
+    })
+    if (!ok) return
+    opts.onDeleteRemote(name)
+  }
+
   function onTagContextMenu(ev: MouseEvent, tag: TagInfo) {
     ev.preventDefault()
     ev.stopPropagation()
@@ -98,7 +126,7 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
       {
         label: t('tagActions.cmPushOrigin'),
         icon: '⬆',
-        action: () => opts.pushMut.mutate(tag.name),
+        action: () => opts.onPush(tag.name),
       },
       { label: t('tagActions.cmCheckout'), icon: '✓', action: () => void checkoutTag(tag) },
       {
@@ -118,17 +146,24 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
         label: t('tagActions.cmDeleteLocal'),
         icon: '🗑',
         destructive: true,
-        action: () => void opts.onDelete(tag.name),
+        action: () => void deleteLocal(tag.name),
       },
       {
         label: t('tagActions.cmDeleteRemote'),
         icon: '🗑',
         destructive: true,
-        action: () => void opts.onDeleteRemote(tag.name),
+        action: () => void deleteRemote(tag.name),
       },
     ]
     opts.ctxMenu.value?.openAt(ev, items)
   }
 
-  return { checkoutTag, createBranchFromTag, copyTagSha, onTagContextMenu }
+  return {
+    checkoutTag,
+    createBranchFromTag,
+    copyTagSha,
+    deleteLocal,
+    deleteRemote,
+    onTagContextMenu,
+  }
 }
