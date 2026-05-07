@@ -23,11 +23,24 @@ describe('dispatchDeepLink', () => {
   let setActiveRepoSpy: ReturnType<typeof vi.fn>
   let ctx: Parameters<typeof dispatchDeepLink>[1]
 
+  // Sprint c50 — Pattern 8 inline 가드 도입 후 ctx.router.currentRoute 도 mock.
+  // default '/elsewhere' — push 발생 (기존 테스트 보존). '/' 케이스는 별도 it.
+  let currentPath: string
   beforeEach(() => {
     pushSpy = vi.fn()
     setActiveRepoSpy = vi.fn()
+    currentPath = '/elsewhere'
     ctx = {
-      router: { push: pushSpy },
+      router: {
+        push: pushSpy,
+        currentRoute: {
+          value: {
+            get path() {
+              return currentPath
+            },
+          },
+        },
+      } as unknown as Parameters<typeof dispatchDeepLink>[1]['router'],
       store: { setActiveRepo: setActiveRepoSpy },
     }
     dispatchShortcutSpy.mockClear()
@@ -51,6 +64,19 @@ describe('dispatchDeepLink', () => {
   it('git-fried://home → /', () => {
     dispatchDeepLink('git-fried://home', ctx)
     expect(pushSpy).toHaveBeenCalledWith('/')
+  })
+
+  it('git-fried://home — 이미 / 면 push 안 함 (Pattern 8 가드)', () => {
+    currentPath = '/'
+    dispatchDeepLink('git-fried://home', ctx)
+    expect(pushSpy).not.toHaveBeenCalled()
+  })
+
+  it('git-fried://repo/42 — 이미 / 면 setActiveRepo 만, push 안 함 (Pattern 8 가드)', () => {
+    currentPath = '/'
+    dispatchDeepLink('git-fried://repo/42', ctx)
+    expect(setActiveRepoSpy).toHaveBeenCalledWith(42)
+    expect(pushSpy).not.toHaveBeenCalled()
   })
 
   it('git-fried://repo/42 → setActiveRepo(42) + push("/")', () => {

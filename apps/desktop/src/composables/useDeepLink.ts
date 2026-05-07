@@ -50,8 +50,13 @@ interface UnlistenFn {
 }
 
 interface DeepLinkContext {
-  router: Pick<Router, 'push'>
+  router: Pick<Router, 'push' | 'currentRoute'>
   store: { setActiveRepo: (id: number) => void }
+}
+
+/** Sprint c50 — Pattern 8 inline 가드 (ctx-based 라 useNavigateHome composable 직접 사용 불가). */
+function pushHomeIfNeeded(router: DeepLinkContext['router']): void {
+  if (router.currentRoute.value.path !== '/') router.push('/')
 }
 
 /** Deep link URL 1개를 dispatch — store/router 통한 라우팅 + shortcut trigger. test 가능 export. */
@@ -71,14 +76,14 @@ export function dispatchDeepLink(rawUrl: string, ctx: DeepLinkContext): void {
         ctx.router.push('/settings')
         break
       case 'home':
-        ctx.router.push('/')
+        pushHomeIfNeeded(ctx.router)
         break
       case 'repo': {
         if (arg) {
           const id = Number(arg)
           if (!Number.isNaN(id)) {
             ctx.store.setActiveRepo(id)
-            ctx.router.push('/')
+            pushHomeIfNeeded(ctx.router)
           }
         }
         break
