@@ -176,12 +176,14 @@ const { onRowDblClick, onRowContextMenu, formatDate } = useCommitGraphInteractio
 void moveSelection
 
 // Sprint A3 / c40 review ARCH-004 — 컬럼 토글 / 재정렬 + header menu.
+// Sprint c52 — branchTagSticky (branchTag visible + 첫 위치) 활성 시 sticky overlay column 노출.
 const {
   cols,
   headerMenuOpen,
   headerMenuRef,
   headerOrder,
   branchTagColumnVisible,
+  branchTagSticky,
   openHeaderMenu,
   onReorder,
   resetColsAndCloseMenu,
@@ -189,6 +191,13 @@ const {
 } = useCommitGraphHeader()
 // headerMenuRef 는 template ref 로 사용 (자동 매핑) — script 직접 참조 없으나 v-bind 필요.
 void headerMenuRef
+
+// Sprint c52 / c51 보류 #5 — branch chip sticky overlay 좌표.
+// useCommitColumns.ALL_COLUMNS[0].widthPx (branchTag = 128) 와 동기화.
+// drag handle 폭 12px (라인 ~338 `width: '12px'`) 다음에 배치.
+const BRANCH_CHIP_STICKY_WIDTH = 128
+const HANDLE_WIDTH = 12
+const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
 </script>
 
 <template>
@@ -359,6 +368,72 @@ void headerMenuRef
             class="bg-transparent group-hover:bg-primary/60 transition-colors"
           />
         </div>
+        <!-- Sprint c52 / c51 보류 #5 — branch chip sticky-left overlay column.
+             branchTagSticky (branchTag visible + 첫 위치) 시 활성. 가로 스크롤 시 좌측 고정.
+             기존 commit row 의 branchTag column 은 placeholder (width 만 유지) 로 변경 (아래 v-if).
+             pointerEvents: 'none' 로 overlay 자체는 click 통과, 안의 chip 만 'auto' 로 처리.
+             z-index 3 = canvas(1) + handle(2) 보다 위. -->
+        <div
+          v-if="branchTagSticky"
+          :style="{
+            position: 'sticky',
+            top: 0,
+            left: branchChipStickyLeft + 'px',
+            width: BRANCH_CHIP_STICKY_WIDTH + 'px',
+            height: '100%',
+            zIndex: 3,
+            pointerEvents: 'none',
+          }"
+          class="bg-background/0"
+          data-testid="branch-chip-sticky-overlay"
+        >
+          <template v-for="v in virtualItems" :key="`stk-${v.index}`">
+            <div
+              v-if="!isWipIdx(v.index)"
+              :style="{
+                position: 'absolute',
+                top: v.start + 'px',
+                left: 0,
+                width: '100%',
+                height: ROW_H + 'px',
+                pointerEvents: 'auto',
+              }"
+              class="flex items-center gap-1 overflow-hidden bg-background/95 px-2"
+            >
+              <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="`stk-r-${r}`">
+                <span
+                  v-if="visibleRef(r)"
+                  class="ref-pill inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
+                  :class="refPillClass(r)"
+                >
+                  <button
+                    type="button"
+                    class="ref-pill-body cursor-pointer hover:underline"
+                    :title="
+                      soloRef === r
+                        ? `Solo 해제: ${r}`
+                        : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
+                    "
+                    :aria-label="soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`"
+                    @click.stop="toggleSoloRef(r)"
+                  >
+                    {{ r }}
+                  </button>
+                  <button
+                    type="button"
+                    class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
+                    :title="`그래프에서 숨김: ${r}`"
+                    :aria-label="`'${r}' 그래프에서 숨김`"
+                    @click.stop="hideRefByName(r)"
+                  >
+                    🙈
+                  </button>
+                </span>
+              </template>
+            </div>
+          </template>
+        </div>
+
         <!-- Sprint c30 / GitKraken UX (Phase 8a) — virtualizer 의 idx=0 + wipActive = WIP row.
              그 외 idx → commitRowAt(idx) (wipActive 시 idx-1 offset). -->
         <template v-for="v in virtualItems" :key="`v-${v.index}`">
@@ -428,9 +503,16 @@ void headerMenuRef
             @contextmenu="onRowContextMenu($event, commitRowAt(v.index) ?? undefined)"
           >
             <template v-for="col in cols.visibleColumns.value" :key="col.id">
-              <!-- branchTag (Phase 13-4 — GitKraken parity 별도 컬럼) -->
+              <!-- branchTag (Phase 13-4 — GitKraken parity 별도 컬럼).
+                   Sprint c52 — branchTagSticky 시 sticky overlay (위) 가 chip 책임,
+                   여기는 width placeholder 만 (layout 보존, chip 중복 방지). -->
               <span
-                v-if="col.id === 'branchTag'"
+                v-if="col.id === 'branchTag' && branchTagSticky"
+                :class="[col.widthClass]"
+                aria-hidden="true"
+              />
+              <span
+                v-else-if="col.id === 'branchTag'"
                 :class="[col.widthClass, 'flex items-center gap-1 overflow-hidden']"
               >
                 <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">

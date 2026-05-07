@@ -22,15 +22,21 @@ export interface CommitColumnDef {
   label: string
   /** Tailwind 폭 클래스 (sha=w-16, author=w-32 등). message 는 flex-1 자동. */
   widthClass: string
+  /**
+   * Tailwind w-N 의 px 환산 — sticky overlay 의 좌표 계산에 필요 (Sprint c52).
+   * w-32 = 128px, w-16 = 64px, w-20 = 80px, w-3 = 12px. message 는 flex-1 (null).
+   * Tailwind config 변경 시 동기화 필요. 회귀 방지: 변경 시 useCommitColumns.test 점검.
+   */
+  widthPx: number | null
 }
 
 export const ALL_COLUMNS: CommitColumnDef[] = [
-  { id: 'branchTag', label: 'BRANCH/TAG', widthClass: 'w-32 shrink-0' },
-  { id: 'sha', label: 'SHA', widthClass: 'w-16 shrink-0' },
-  { id: 'message', label: 'Message', widthClass: 'flex-1 min-w-0' },
-  { id: 'author', label: 'Author', widthClass: 'w-32 shrink-0' },
-  { id: 'date', label: 'Date', widthClass: 'w-20 shrink-0' },
-  { id: 'signed', label: '✓', widthClass: 'w-3 shrink-0' },
+  { id: 'branchTag', label: 'BRANCH/TAG', widthClass: 'w-32 shrink-0', widthPx: 128 },
+  { id: 'sha', label: 'SHA', widthClass: 'w-16 shrink-0', widthPx: 64 },
+  { id: 'message', label: 'Message', widthClass: 'flex-1 min-w-0', widthPx: null },
+  { id: 'author', label: 'Author', widthClass: 'w-32 shrink-0', widthPx: 128 },
+  { id: 'date', label: 'Date', widthClass: 'w-20 shrink-0', widthPx: 80 },
+  { id: 'signed', label: '✓', widthClass: 'w-3 shrink-0', widthPx: 12 },
 ]
 
 interface PersistedState {

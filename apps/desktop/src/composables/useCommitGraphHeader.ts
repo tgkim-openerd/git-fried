@@ -26,6 +26,19 @@ export function useCommitGraphHeader() {
     cols.visibleColumns.value.some((c) => c.id === 'branchTag'),
   )
 
+  /**
+   * Sprint c52 / c51 보류 #5 — branch chip column sticky-left 활성 조건.
+   *
+   * 활성 조건: branchTag column 이 visible AND **첫 번째 위치**.
+   * 사용자가 branchTag 를 다른 위치로 reorder 하면 sticky off (자연스러운 동작).
+   *
+   * 활성 시 CommitGraph.vue 가 commit row 좌측 (canvas+handle 다음) 에 별도 sticky
+   * overlay column 을 그려, 가로 스크롤 시 BRANCH/TAG 칩이 좌측 고정 — GitKraken parity.
+   */
+  const branchTagSticky = computed(
+    () => branchTagColumnVisible.value && cols.visibleIds.value[0] === 'branchTag',
+  )
+
   const headerMenuOpen = ref(false)
   const headerMenuRef = ref<HTMLDivElement | null>(null)
 
@@ -78,6 +91,7 @@ export function useCommitGraphHeader() {
     headerMenuRef,
     headerOrder,
     branchTagColumnVisible,
+    branchTagSticky,
     openHeaderMenu,
     onHeaderMenuOutside,
     onReorder,
