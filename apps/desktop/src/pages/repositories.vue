@@ -23,7 +23,7 @@ import {
 } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
-import { useSidebarGroups, type GroupMode } from '@/composables/useSidebarGroups'
+import { useSidebarGroups, type GroupMode, type RepoGroup } from '@/composables/useSidebarGroups'
 import { useGroupCollapse } from '@/composables/useGroupCollapse'
 import { useNavigateHome } from '@/composables/useNavigateHome'
 import { useBulkQuickStatus } from '@/composables/useBulkQuickStatus'
@@ -91,7 +91,7 @@ const { collapsedKeys, allCollapsed, isOpen, setOpen, collapseAll, expandAll } =
 
 // 그룹 ⊕ 액션 — 그 그룹의 모든 레포 탭 추가 + 첫 활성 (pinned 우선) + 홈으로.
 // Sprint c50 — Pattern 9 (caller-decision): caller 정렬 → store.openRepoGroup 위임 → caller 가 router 결정.
-function openGroupAll(g: { repos: Repo[] }): void {
+function openGroupAll(g: RepoGroup): void {
   const sorted = [...g.repos].sort((a, b) => {
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
     return aliases
@@ -135,14 +135,14 @@ const bulkFetchMut = useMutation({
         .slice(0, PREVIEW)
         .map((f) => `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`)
       if (failed.length > PREVIEW) {
-        lines.push(`...외 ${failed.length - PREVIEW}개 — 📡 버튼으로 전체 보기`)
+        lines.push(t('repos.bulkResultMore', { n: failed.length - PREVIEW }))
       }
       toast.warning(
-        `일괄 Fetch: ${ok}/${results.length} 성공 (${failed.length} 실패)`,
+        t('repos.bulkFetchResult', { ok, total: results.length, failed: failed.length }),
         lines.join('\n'),
       )
     } else if (results.length > 0) {
-      toast.success(`일괄 Fetch 완료 (${ok} 레포)`)
+      toast.success(t('repos.bulkFetchSuccess', { n: ok }))
     }
   },
   onError: (e) => toast.error(t('errors.bulkFetchFailed'), describeError(e)),
@@ -193,7 +193,7 @@ function workspaceName(id: number | null): string {
           type="button"
           class="flex items-center gap-1 rounded-md border border-input bg-card px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50"
           :disabled="addRepoMut.isPending.value"
-          title="로컬 폴더 선택 → 레포 추가"
+          :title="t('repos.browseTitle')"
           @click="browseAndAdd"
         >
           📂 Browse
@@ -201,7 +201,7 @@ function workspaceName(id: number | null): string {
         <button
           type="button"
           class="flex items-center gap-1 rounded-md border border-input bg-card px-3 py-1.5 text-sm hover:bg-accent"
-          title="원격 URL 에서 clone (sparse / shallow 옵션)"
+          :title="t('repos.cloneTitle')"
           @click="cloneOpen = true"
         >
           ⬇ Clone
@@ -210,10 +210,10 @@ function workspaceName(id: number | null): string {
           type="button"
           class="flex items-center gap-1 rounded-md border border-input bg-card px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50"
           :disabled="bulkFetchMut.isPending.value || (allRepos?.length ?? 0) === 0"
-          :title="`전체 ${allRepos?.length ?? 0} 레포 일괄 fetch`"
+          :title="t('repos.fetchAllTitle', { n: allRepos?.length ?? 0 })"
           @click="bulkFetchMut.mutate()"
         >
-          {{ bulkFetchMut.isPending.value ? '⟳ Fetching...' : '⤓ Fetch All' }}
+          {{ bulkFetchMut.isPending.value ? t('repos.fetching') : t('repos.fetchAllBtn') }}
         </button>
         <button
           v-if="bulkResultStore.last.value"
@@ -221,8 +221,8 @@ function workspaceName(id: number | null): string {
           class="relative rounded-md border border-input bg-card px-3 py-1.5 text-sm hover:bg-accent"
           :title="
             bulkResultFailedCount > 0
-              ? `최근 일괄 fetch — ${bulkResultFailedCount}개 실패, 자세히 보기`
-              : '최근 일괄 fetch 결과'
+              ? t('repos.bulkResultFailed', { n: bulkResultFailedCount })
+              : t('repos.bulkResultRecent')
           "
           @click="bulkResultOpen = true"
         >
@@ -237,7 +237,7 @@ function workspaceName(id: number | null): string {
         <button
           type="button"
           class="flex items-center gap-1 rounded-md border border-input bg-card px-3 py-1.5 text-sm hover:bg-accent"
-          title="설정 → 워크스페이스 관리"
+          :title="t('repos.workspacesBtnTitle')"
           @click="router.push('/settings')"
         >
           ⚙ Workspaces
@@ -250,11 +250,11 @@ function workspaceName(id: number | null): string {
       <input
         v-model="filter"
         type="search"
-        placeholder="레포 검색 (이름 / 별칭 / org / 경로)"
+        :placeholder="t('repos.searchPlaceholder')"
         class="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
       />
       <div class="flex items-center gap-1 text-xs text-muted-foreground">
-        <span class="mr-1">그룹:</span>
+        <span class="mr-1">{{ t('repos.groupLabel') }}</span>
         <button
           v-for="m in ['directory', 'org', 'forge'] as GroupMode[]"
           :key="m"
@@ -267,7 +267,7 @@ function workspaceName(id: number | null): string {
           "
           @click="setGroupMode(m)"
         >
-          {{ m === 'directory' ? '폴더' : m === 'org' ? 'Org' : 'Forge' }}
+          {{ m === 'directory' ? t('repos.groupModeFolder') : m === 'org' ? 'Org' : 'Forge' }}
         </button>
       </div>
       <!-- Sprint c49 — Collapse/Expand all (GitKraken parity). -->
@@ -291,7 +291,9 @@ function workspaceName(id: number | null): string {
           {{ t('repos.expandAll') }}
         </button>
       </div>
-      <span class="text-xs text-muted-foreground">총 {{ filteredRepos.length }}</span>
+      <span class="text-xs text-muted-foreground">{{
+        t('repos.totalCount', { n: filteredRepos.length })
+      }}</span>
     </div>
 
     <!-- 본문 — Open / Favorites / All -->
@@ -384,22 +386,20 @@ function workspaceName(id: number | null): string {
               {{ filteredRepos.length }}
             </span>
           </span>
-          <span v-if="isFetching" class="text-[10px] normal-case">로딩...</span>
+          <span v-if="isFetching" class="text-[10px] normal-case">{{ t('repos.loading') }}</span>
         </h2>
 
         <LoadingSpinner
           v-if="isFetching && (allRepos?.length ?? 0) === 0"
-          label="레포 목록 로딩 중..."
+          :label="t('repos.loadingDetail')"
           size="sm"
         />
 
         <EmptyState
           v-else-if="filteredRepos.length === 0"
           icon="📁"
-          :title="filter ? `'${filter}' 매칭 없음` : '레포 없음'"
-          :description="
-            filter ? '검색어를 변경해 보세요.' : '우상단 [Browse] 또는 [Clone] 으로 시작하세요.'
-          "
+          :title="filter ? t('repos.emptyMatchedTitle', { filter }) : t('repos.emptyTitle')"
+          :description="filter ? t('repos.emptyMatchedDescription') : t('repos.emptyDescription')"
           size="sm"
         />
 
@@ -409,7 +409,7 @@ function workspaceName(id: number | null): string {
             :key="g.key"
             :open="isOpen(g.key)"
             class="group mb-3 rounded-md border border-border bg-card/30"
-            @toggle="(e) => setOpen(g.key, (e.target as HTMLDetailsElement).open)"
+            @toggle="(e) => setOpen(g.key, (e.currentTarget as HTMLDetailsElement).open)"
           >
             <summary
               class="flex cursor-pointer select-none items-center justify-between gap-2 rounded-t-md px-3 py-2 text-sm font-semibold hover:bg-accent/30 [&::-webkit-details-marker]:hidden"
@@ -421,7 +421,9 @@ function workspaceName(id: number | null): string {
                   isOpen(g.key) ? '▼' : '▶'
                 }}</span>
                 <span v-if="g.label">📦 {{ g.label }}</span>
-                <span v-else class="text-muted-foreground italic">기타</span>
+                <span v-else class="text-muted-foreground italic">{{
+                  t('repos.miscGroupLabel')
+                }}</span>
                 <span
                   class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground"
                 >
@@ -489,7 +491,7 @@ function workspaceName(id: number | null): string {
                 <button
                   type="button"
                   class="rounded p-1 text-xs opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
-                  title="OS 파일 매니저로 열기"
+                  :title="t('repos.openInExplorerTitle')"
                   @click.stop="openInExplorer(repo.id)"
                 >
                   📂

@@ -220,7 +220,11 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
             ? 'bg-card text-foreground font-semibold'
             : 'bg-muted/20 text-muted-foreground'
         "
-        :title="g.isSolo ? `${g.label} (단독)` : `프로젝트: ${g.label} (${g.tabIds.length} 레포)`"
+        :title="
+          g.isSolo
+            ? t('tabs.soloTitle', { label: g.label })
+            : t('tabs.projectTitle', { label: g.label, n: g.tabIds.length })
+        "
         @click="onActivateProject(g)"
         @contextmenu="onProjectContextMenu($event, g)"
       >
@@ -235,7 +239,7 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
       </button>
       <BaseTooltip
         v-if="isOverflow"
-        :text="`${overflowHiddenCount}+ 탭이 가려져 있음 — 검색·전환`"
+        :text="t('tabs.overflowTooltip', { n: overflowHiddenCount })"
         kbd="⌘T"
         placement="bottom"
       >
@@ -247,7 +251,7 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
           ▾ {{ overflowHiddenCount }}+
         </button>
       </BaseTooltip>
-      <BaseTooltip text="새 레포 탭 추가" kbd="⌘T" placement="bottom">
+      <BaseTooltip :text="t('tabs.newRepoTooltip')" kbd="⌘T" placement="bottom">
         <button
           type="button"
           class="ml-1 shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
@@ -296,8 +300,8 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
           <button
             type="button"
             class="rounded text-muted-foreground opacity-50 hover:bg-destructive/40 hover:text-destructive-foreground hover:opacity-100"
-            :title="`탭 닫기: ${tabLabel(id)}`"
-            :aria-label="`탭 닫기: ${tabLabel(id)}`"
+            :title="t('tabs.closeTab', { label: tabLabel(id) })"
+            :aria-label="t('tabs.closeTab', { label: tabLabel(id) })"
             @click="close(id, $event)"
           >
             ✕

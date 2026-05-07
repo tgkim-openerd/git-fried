@@ -124,7 +124,7 @@ watch(selected, () => {
   })
 })
 
-function pick(r: Repo) {
+function pickRepo(r: Repo) {
   if (r.workspaceId !== store.activeWorkspaceId) {
     store.setActiveWorkspace(r.workspaceId ?? null)
   }
@@ -151,7 +151,7 @@ function pickGroup(g: RepoGroup) {
 }
 
 function pickRow(row: FlatRow) {
-  if (row.kind === 'repo') pick(row.repo)
+  if (row.kind === 'repo') pickRepo(row.repo)
   else pickGroup(row.group)
 }
 
@@ -237,7 +237,7 @@ function onKeydown(e: KeyboardEvent) {
               row.group.label ? 'pl-6' : 'pl-3',
             ]"
             @mouseenter="selected = i"
-            @click="pick(row.repo)"
+            @click="pickRepo(row.repo)"
           >
             <div class="flex items-center justify-between gap-2">
               <span class="flex items-center gap-2 truncate">
