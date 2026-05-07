@@ -144,15 +144,49 @@ export function useGraphCanvasRenderer(opts: UseGraphCanvasRendererOptions) {
         }
       }
 
-      // 3. node circle (이 commit 의 lane)
+      // 3. node circle (이 commit 의 lane) — Sprint c51 type-별 시각 구분 (GitKraken parity).
+      //   - 일반 commit: filled 3.5px
+      //   - merge: filled 4.5px + 어두운 outer stroke + 흰 inner dot 1.5px (donut)
+      //   - tag (refs/tags/ 또는 tag: prefix): violet outer ring radius 6
+      //   - signed (GPG): green outer ring (tag 와 동시면 한 단계 더 바깥)
       const cx = row.lane * lw + lw / 2
+      const isTag = row.commit.refs.some((r) => r.startsWith('refs/tags/') || r.startsWith('tag: '))
+      const isSigned = row.commit.signed
+
+      // base filled circle
       ctx.fillStyle = laneColor(row.lane)
       ctx.beginPath()
-      ctx.arc(cx, y, row.isMerge ? 4 : 3.5, 0, Math.PI * 2)
+      ctx.arc(cx, y, row.isMerge ? 4.5 : 3.5, 0, Math.PI * 2)
       ctx.fill()
+
+      // merge: dark outer stroke + 흰 inner dot (donut)
       if (row.isMerge) {
         ctx.strokeStyle = '#0a0a0a'
         ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(cx, y, 4.5, 0, Math.PI * 2)
+        ctx.stroke()
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.arc(cx, y, 1.5, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      // tag: violet outer ring
+      if (isTag) {
+        ctx.strokeStyle = '#a78bfa'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.arc(cx, y, 6, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+
+      // signed: green outer ring (tag 와 동시 시 한 단계 더 바깥)
+      if (isSigned) {
+        ctx.strokeStyle = '#22c55e'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(cx, y, isTag ? 7.5 : 5.5, 0, Math.PI * 2)
         ctx.stroke()
       }
     }

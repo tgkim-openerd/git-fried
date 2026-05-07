@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
 import { useGraphRefVisibility } from '@/composables/useGraphRefVisibility'
+import type { HiddenRefKind } from '@/api/git'
 import { useCommitGraphHeader } from '@/composables/useCommitGraphHeader'
 import { useCommitActions } from '@/composables/useCommitActions'
 import { useGraphSearch } from '@/composables/useGraphSearch'
@@ -44,9 +45,54 @@ const emit = defineEmits<{
 }>()
 
 const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
-const { visibleRef, soloRef, toggleSoloRef, hideRefByName } = useGraphRefVisibility(
+const { visibleRef, soloRef, toggleSoloRef, hideRefByName, refKindOf } = useGraphRefVisibility(
   () => props.repoId,
 )
+
+// Sprint c51 — GitKraken parity Minor:
+//   1) commit body 첫 줄 회색 inline (subject 다음 줄, 80 char trim)
+//   2) ref-pill type-별 (branch/remote/tag/stash) color 분기
+//   3) author column avatar prefix (initial letter mini-circle)
+function bodyFirstLine(body: string | undefined | null): string {
+  if (!body) return ''
+  const first = body.trim().split('\n')[0]?.trim() ?? ''
+  return first.length > 80 ? first.slice(0, 80) + '…' : first
+}
+
+const REF_KIND_CLASS: Record<HiddenRefKind, string> = {
+  branch: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
+  remote: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+  tag: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
+  stash: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+}
+function refPillClass(refName: string): string {
+  return soloRef.value === refName
+    ? 'bg-orange-500/20 text-orange-700 dark:text-orange-500 ring-1 ring-orange-500/40'
+    : REF_KIND_CLASS[refKindOf(refName)]
+}
+
+function authorInitial(name: string | undefined | null): string {
+  if (!name) return '?'
+  const trimmed = name.trim()
+  return trimmed.charAt(0).toUpperCase()
+}
+// 8 stable color hash — useGraphCanvasRenderer PALETTE 와 동일 시스템.
+const AVATAR_PALETTE = [
+  'bg-emerald-500',
+  'bg-sky-500',
+  'bg-amber-500',
+  'bg-violet-500',
+  'bg-rose-500',
+  'bg-teal-500',
+  'bg-yellow-500',
+  'bg-cyan-500',
+]
+function authorAvatarBg(name: string | undefined | null): string {
+  if (!name) return 'bg-muted'
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length]
+}
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -391,11 +437,7 @@ void headerMenuRef
                   <span
                     v-if="visibleRef(r)"
                     class="ref-pill inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
-                    :class="
-                      soloRef === r
-                        ? 'bg-orange-500/20 text-orange-700 dark:text-orange-500 ring-1 ring-orange-500/40'
-                        : 'bg-muted text-muted-foreground'
-                    "
+                    :class="refPillClass(r)"
                   >
                     <button
                       type="button"
@@ -429,23 +471,25 @@ void headerMenuRef
               >
                 {{ commitRowAt(v.index)?.commit.shortSha }}
               </span>
-              <!-- message + (refs only when branchTag column hidden — backward compat) -->
+              <!-- message + body 첫 줄 회색 inline (Sprint c51 GitKraken parity) + (refs only when branchTag column hidden — backward compat) -->
               <span
                 v-else-if="col.id === 'message'"
                 :class="[col.widthClass, 'truncate']"
                 :title="commitTooltip(commitRowAt(v.index))"
               >
                 {{ commitRowAt(v.index)?.commit.subject }}
+                <span
+                  v-if="bodyFirstLine(commitRowAt(v.index)?.commit.body)"
+                  class="ml-2 text-[11px] text-muted-foreground/70"
+                >
+                  {{ bodyFirstLine(commitRowAt(v.index)?.commit.body) }}
+                </span>
                 <template v-if="!branchTagColumnVisible">
                   <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
                     <span
                       v-if="visibleRef(r)"
                       class="ref-pill ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
-                      :class="
-                        soloRef === r
-                          ? 'bg-orange-500/20 text-orange-700 dark:text-orange-500 ring-1 ring-orange-500/40'
-                          : 'bg-muted text-muted-foreground'
-                      "
+                      :class="refPillClass(r)"
                     >
                       <button
                         type="button"
@@ -473,12 +517,23 @@ void headerMenuRef
                   </template>
                 </template>
               </span>
-              <!-- author -->
+              <!-- author + Sprint c51 avatar prefix (initial-letter mini circle, hash-color) -->
               <span
                 v-else-if="col.id === 'author'"
-                :class="[col.widthClass, 'truncate text-xs text-muted-foreground']"
+                :class="[
+                  col.widthClass,
+                  'flex items-center gap-1.5 truncate text-xs text-muted-foreground',
+                ]"
               >
-                {{ commitRowAt(v.index)?.commit.authorName }}
+                <span
+                  class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold text-white"
+                  :class="authorAvatarBg(commitRowAt(v.index)?.commit.authorName)"
+                  :title="commitRowAt(v.index)?.commit.authorEmail || ''"
+                  aria-hidden="true"
+                >
+                  {{ authorInitial(commitRowAt(v.index)?.commit.authorName) }}
+                </span>
+                <span class="truncate">{{ commitRowAt(v.index)?.commit.authorName }}</span>
               </span>
               <!-- date -->
               <span
