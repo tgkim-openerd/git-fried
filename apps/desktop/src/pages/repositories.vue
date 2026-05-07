@@ -82,6 +82,42 @@ const filteredRepos = computed<readonly Repo[]>(() => {
 // 그룹 모드 (Sidebar 와 동일 useSidebarGroups composable 재사용 — localStorage 공유).
 const { groupMode, setGroupMode, groups } = useSidebarGroups(filteredRepos)
 
+// Sprint c49 — Collapse/Expand all + 그룹 단위 multi-add.
+// collapsedKeys: collapse 된 그룹 key 집합. (default: 모두 expand)
+const collapsedKeys = ref(new Set<string>())
+const allCollapsed = computed(
+  () => groups.value.length > 0 && groups.value.every((g) => collapsedKeys.value.has(g.key)),
+)
+function isOpen(key: string): boolean {
+  return !collapsedKeys.value.has(key)
+}
+function onDetailsToggle(key: string, open: boolean): void {
+  // <details> native @toggle ↔ collapsedKeys 동기화. Set 재할당으로 reactive 보장.
+  const next = new Set(collapsedKeys.value)
+  if (open) next.delete(key)
+  else next.add(key)
+  collapsedKeys.value = next
+}
+function collapseAll(): void {
+  collapsedKeys.value = new Set(groups.value.map((g) => g.key))
+}
+function expandAll(): void {
+  collapsedKeys.value = new Set()
+}
+// 그룹 ⊕ 액션 — 그 그룹의 모든 레포 탭 추가 + 첫 활성 (pinned 우선) + 홈으로.
+function openGroupAll(g: { repos: Repo[] }): void {
+  if (g.repos.length === 0) return
+  for (const r of g.repos) store.openTab(r.id)
+  const sorted = [...g.repos].sort((a, b) => {
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+    return aliases
+      .resolveLocal(a.id, a.name)
+      .display.localeCompare(aliases.resolveLocal(b.id, b.name).display)
+  })
+  store.setActiveRepo(sorted[0].id)
+  void router.push('/')
+}
+
 // 활성 탭 / 즐겨찾기 분리 표시.
 const openTabRepos = computed<Repo[]>(() => {
   const map = new Map((allRepos.value ?? []).map((r) => [r.id, r]))
@@ -251,6 +287,27 @@ function workspaceName(id: number | null): string {
           {{ m === 'directory' ? '폴더' : m === 'org' ? 'Org' : 'Forge' }}
         </button>
       </div>
+      <!-- Sprint c49 — Collapse/Expand all (GitKraken parity). -->
+      <div class="flex items-center gap-1 text-xs text-muted-foreground">
+        <button
+          type="button"
+          class="rounded border border-input px-2 py-1 hover:bg-accent/40 disabled:opacity-50"
+          :disabled="groups.length === 0 || allCollapsed"
+          :title="t('repos.collapseAllTitle', { n: groups.length })"
+          @click="collapseAll"
+        >
+          {{ t('repos.collapseAll') }}
+        </button>
+        <button
+          type="button"
+          class="rounded border border-input px-2 py-1 hover:bg-accent/40 disabled:opacity-50"
+          :disabled="groups.length === 0 || collapsedKeys.size === 0"
+          :title="t('repos.expandAllTitle', { n: groups.length })"
+          @click="expandAll"
+        >
+          {{ t('repos.expandAll') }}
+        </button>
+      </div>
       <span class="text-xs text-muted-foreground">총 {{ filteredRepos.length }}</span>
     </div>
 
@@ -367,19 +424,33 @@ function workspaceName(id: number | null): string {
           <details
             v-for="g in groups"
             :key="g.key"
-            open
-            class="mb-3 rounded-md border border-border bg-card/30"
+            :open="isOpen(g.key)"
+            class="group mb-3 rounded-md border border-border bg-card/30"
+            @toggle="(e) => onDetailsToggle(g.key, (e.target as HTMLDetailsElement).open)"
           >
             <summary
-              class="cursor-pointer select-none rounded-t-md px-3 py-2 text-sm font-semibold hover:bg-accent/30"
+              class="flex cursor-pointer select-none items-center justify-between gap-2 rounded-t-md px-3 py-2 text-sm font-semibold hover:bg-accent/30"
             >
-              <span v-if="g.label">📦 {{ g.label }}</span>
-              <span v-else class="text-muted-foreground italic">기타</span>
-              <span
-                class="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground"
-              >
-                {{ g.repos.length }}
+              <span class="flex flex-1 items-center gap-2 truncate">
+                <span v-if="g.label">📦 {{ g.label }}</span>
+                <span v-else class="text-muted-foreground italic">기타</span>
+                <span
+                  class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground"
+                >
+                  {{ g.repos.length }}
+                </span>
               </span>
+              <!-- Sprint c49 — 그룹 hover ⊕: 그룹 모든 레포 탭 추가. label 있는 그룹만. -->
+              <button
+                v-if="g.label && g.repos.length > 0"
+                type="button"
+                class="rounded p-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                :title="t('repos.openGroupAllTitle', { label: g.label, n: g.repos.length })"
+                :aria-label="t('repos.openGroupAllAriaLabel', { label: g.label })"
+                @click.stop.prevent="openGroupAll(g)"
+              >
+                {{ t('repos.openGroupAllBtn') }}
+              </button>
             </summary>
             <ul class="space-y-0.5 border-t border-border/50 px-2 py-1">
               <li

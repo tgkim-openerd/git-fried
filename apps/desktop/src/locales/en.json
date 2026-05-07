@@ -1007,5 +1007,22 @@
       "label": "🔜 Discord / Slack notifications (v0.5 planned)",
       "hint": "placeholder"
     }
+  },
+  "repos": {
+    "collapseAll": "⊟ Collapse all",
+    "expandAll": "⊞ Expand all",
+    "collapseAllTitle": "Collapse all groups ({n})",
+    "expandAllTitle": "Expand all groups ({n})",
+    "openGroupAllBtn": "⊕ Open all",
+    "openGroupAllTitle": "Open all {n} repos in '{label}' group as tabs",
+    "openGroupAllAriaLabel": "Open all '{label}' group"
+  },
+  "switcher": {
+    "searchPlaceholder": "Search repos... (name / path / owner) — Esc to close",
+    "searchAriaLabel": "Search repositories",
+    "openAllInGroupTitle": "Open all {n} repos in '{label}' group as tabs",
+    "openAllInGroupHint": "Enter → open all",
+    "empty": "No results",
+    "footer": "↑↓ navigate · Enter select (📦 group = open all) · Esc close · ⭐ pinned first"
   }
 }

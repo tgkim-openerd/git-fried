@@ -14,6 +14,7 @@
 //
 // store.tabs ↔ Repo[] 매핑은 listRepos(null) 에서 (모든 workspace 통합).
 import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { VueDraggable } from 'vue-draggable-plus'
 import { listRepos } from '@/api/git'
@@ -36,8 +37,15 @@ const OVERFLOW_THRESHOLD = 8
 
 const store = useReposStore()
 const aliases = useRepoAliases()
+const router = useRouter()
 
 defineEmits<{ openSwitcher: [] }>()
+
+// 탭/프로젝트 클릭 시 항상 홈(/) 으로 — 사용자가 어느 화면(settings, launchpad, repositories)
+// 에 있어도 레포 컨텍스트로 자연스럽게 복귀.
+function goHome() {
+  if (router.currentRoute.value.path !== '/') void router.push('/')
+}
 
 const reposQuery = useQuery({
   queryKey: ['repos-all-for-tabs'],
@@ -74,6 +82,12 @@ const { projectGroups, activeGroup, activeGroupTabs, activateProject } = useTabG
 
 function activate(id: number) {
   store.setActiveRepo(id)
+  goHome()
+}
+
+function onActivateProject(g: ProjectGroup) {
+  activateProject(g)
+  goHome()
 }
 
 function close(id: number, e: MouseEvent) {
@@ -211,7 +225,7 @@ function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
             : 'bg-muted/20 text-muted-foreground'
         "
         :title="g.isSolo ? `${g.label} (단독)` : `프로젝트: ${g.label} (${g.tabIds.length} 레포)`"
-        @click="activateProject(g)"
+        @click="onActivateProject(g)"
         @contextmenu="onProjectContextMenu($event, g)"
       >
         <span class="text-[10px]">{{ g.isSolo ? '📁' : '📦' }}</span>

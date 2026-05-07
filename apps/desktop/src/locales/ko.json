@@ -1004,5 +1004,22 @@
       "label": "🔜 Discord / Slack 알림 (v0.5 예정)",
       "hint": "placeholder"
     }
+  },
+  "repos": {
+    "collapseAll": "⊟ 모두 접기",
+    "expandAll": "⊞ 모두 펼치기",
+    "collapseAllTitle": "모든 그룹 접기 ({n})",
+    "expandAllTitle": "모든 그룹 펼치기 ({n})",
+    "openGroupAllBtn": "⊕ 모두 열기",
+    "openGroupAllTitle": "'{label}' 그룹의 {n}개 레포 모두 탭에 열기",
+    "openGroupAllAriaLabel": "'{label}' 그룹 모두 열기"
+  },
+  "switcher": {
+    "searchPlaceholder": "레포 검색... (이름 / 경로 / owner) — Esc 닫기",
+    "searchAriaLabel": "레포 검색",
+    "openAllInGroupTitle": "'{label}' 그룹의 {n}개 레포 모두 탭에 열기",
+    "openAllInGroupHint": "Enter → 모두 열기",
+    "empty": "결과 없음",
+    "footer": "↑↓ 탐색 · Enter 선택 (📦 그룹 = 모두 열기) · Esc 닫기 · ⭐ pinned 우선"
   }
 }
