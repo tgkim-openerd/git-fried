@@ -33,8 +33,9 @@ export const i18n = createI18n({
   locale: detectInitialLocale(),
   fallbackLocale: 'ko',
   messages: { ko, en },
-  // 2026-05-04 ko/en 606 keys 완전 대칭 검증 (drift 0, 미번역 0) → DEV 모드만 경고 ON.
-  // 프로덕션은 console noise 방지 위해 OFF 유지.
+  // 2026-05-07 c51 종료: ko/en 954 leaf-keys 완전 대칭 (jq '[.. | strings] | length').
+  // drift 0, 미번역 0 → DEV 모드만 경고 ON. 프로덕션은 console noise 방지 위해 OFF.
+  // 누적 카운트는 sprint catalog 참조 — 키 수는 sprint 마다 증가.
   missingWarn: import.meta.env.DEV,
   fallbackWarn: import.meta.env.DEV,
 })

@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "bun run --cwd apps/desktop dev",
+    "dev:cleanup": "node scripts/dev-cleanup.mjs",
     "build": "bun run --cwd apps/desktop build",
     "tauri": "bun run --cwd apps/desktop tauri",
     "tauri:dev": "bun run --cwd apps/desktop tauri dev",
