@@ -1114,6 +1114,7 @@
     "bulkResultRecent": "Recent bulk fetch result",
     "bulkResultFailed": "Recent bulk fetch — {n} failed, view details",
     "workspacesBtnTitle": "Settings → manage workspaces",
+    "workspacesBtnLabel": "Workspace settings",
     "searchPlaceholder": "Search repos (name / alias / org / path)",
     "groupLabel": "Group:",
     "groupModeFolder": "Folder",

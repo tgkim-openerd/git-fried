@@ -1111,6 +1111,7 @@
     "bulkResultRecent": "최근 일괄 fetch 결과",
     "bulkResultFailed": "최근 일괄 fetch — {n}개 실패, 자세히 보기",
     "workspacesBtnTitle": "설정 → 워크스페이스 관리",
+    "workspacesBtnLabel": "워크스페이스 설정",
     "searchPlaceholder": "레포 검색 (이름 / 별칭 / org / 경로)",
     "groupLabel": "그룹:",
     "groupModeFolder": "폴더",

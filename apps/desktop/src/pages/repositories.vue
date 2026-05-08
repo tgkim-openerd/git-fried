@@ -240,7 +240,7 @@ function workspaceName(id: number | null): string {
           :title="t('repos.workspacesBtnTitle')"
           @click="router.push('/settings')"
         >
-          ⚙ Workspaces
+          ⚙ {{ t('repos.workspacesBtnLabel') }}
         </button>
       </div>
     </header>
