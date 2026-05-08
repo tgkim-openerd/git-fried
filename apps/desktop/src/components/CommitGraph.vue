@@ -370,7 +370,10 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
           :title="t('templ.graphResizeHandle')"
           aria-label="Resize graph width"
           role="separator"
+          tabindex="0"
           @mousedown="onDragHandleStart"
+          @keydown.left.prevent="zoomOut"
+          @keydown.right.prevent="zoomIn"
         >
           <!-- Sprint c46 UX-10 — handle hit area 4px → 12px, visual marker 1px (inner ghost divider) -->
           <!-- Sprint c52 ARCH-009 — left/width 매직넘버 → INNER_DIVIDER_* SOT derive -->
