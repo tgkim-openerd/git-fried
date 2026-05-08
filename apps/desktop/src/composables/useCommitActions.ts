@@ -197,7 +197,7 @@ export function useCommitActions(getRepoId: () => number | null) {
         action: () => void createBranchFrom(sha),
       },
       {
-        label: 'Create tag from...',
+        label: 'Create tag from... (lightweight + optional annotation)',
         icon: '🏷',
         action: () => void createTagFrom(sha),
       },
