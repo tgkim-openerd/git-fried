@@ -43,7 +43,7 @@ type Category =
 interface CategoryGroup {
   id: string
   label: string
-  items: { id: Category; label: string }[]
+  items: { id: Category; label: string; futureRelease?: boolean }[]
 }
 
 const CATEGORY_GROUPS: CategoryGroup[] = [
@@ -80,7 +80,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'plugin',
     label: 'Plugin',
-    items: [{ id: 'plugin', label: '외부 도구 연결 (v0.5 예정)' }],
+    items: [{ id: 'plugin', label: '외부 도구 연결 (v0.5 예정)', futureRelease: true }],
   },
   {
     id: 'start',
@@ -146,15 +146,22 @@ const buildInfo = computed(() => ({
             <li v-for="c in g.items" :key="c.id">
               <button
                 type="button"
-                class="w-full px-4 py-1 pl-6 text-left text-[13px] hover:bg-accent/40"
-                :class="
-                  active === c.id
+                class="w-full px-4 py-1 pl-6 text-left text-[13px]"
+                :class="[
+                  c.futureRelease
+                    ? 'cursor-not-allowed text-muted-foreground/50'
+                    : 'hover:bg-accent/40',
+                  active === c.id && !c.futureRelease
                     ? 'bg-accent text-accent-foreground font-semibold'
-                    : 'text-muted-foreground'
-                "
+                    : c.futureRelease
+                      ? ''
+                      : 'text-muted-foreground',
+                ]"
                 :aria-pressed="active === c.id"
+                :aria-disabled="c.futureRelease ? 'true' : undefined"
                 :aria-label="`${t(GROUP_I18N_KEY[g.id] ?? g.label)} > ${c.label}`"
-                @click="active = c.id"
+                :title="c.futureRelease ? 'v0.5 출시 예정 — 현재 비활성' : undefined"
+                @click="!c.futureRelease && (active = c.id)"
               >
                 {{ c.label }}
               </button>
