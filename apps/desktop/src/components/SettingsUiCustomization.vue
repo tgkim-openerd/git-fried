@@ -56,6 +56,22 @@ const {
       </select>
     </label>
 
+    <!-- plan/30 P3-3 — commit time format -->
+    <label class="flex items-center justify-between gap-2 rounded border border-border p-3 text-sm">
+      <span>
+        <span class="font-medium">Commit 시간 형식</span>
+        <span class="ml-2 text-xs text-muted-foreground">절대 / 상대 / 둘 다</span>
+      </span>
+      <select
+        v-model="ui.commitTimeFormat"
+        class="w-32 rounded border border-input bg-background px-2 py-1 text-sm"
+      >
+        <option value="absolute">절대 (05.08 17:40)</option>
+        <option value="relative">상대 (3시간 전)</option>
+        <option value="both">둘 다</option>
+      </select>
+    </label>
+
     <p class="text-[10px] text-muted-foreground">
       v1.x 추가 예정: 그래프 메타데이터 토글 / 알림 위치.
     </p>

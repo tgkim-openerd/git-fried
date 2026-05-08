@@ -24,6 +24,8 @@ export interface UiSettings {
   dateLocale: 'auto' | 'ko-KR' | 'en-US'
   hideLaunchpad: boolean
   avatarStyle: 'initial' | 'gravatar'
+  /** plan/30 P3-3 — commit time format: absolute / relative / both. */
+  commitTimeFormat: 'absolute' | 'relative' | 'both'
 }
 
 const GENERAL_KEY = 'git-fried.general.v1'
@@ -45,7 +47,25 @@ function defaultUi(): UiSettings {
     dateLocale: 'auto',
     hideLaunchpad: false,
     avatarStyle: 'initial',
+    commitTimeFormat: 'absolute',
   }
+}
+
+/**
+ * plan/30 P3-3 — relative time formatter (ko/en).
+ * 60s / 60m / 24h / 7d / 30d / year boundaries.
+ * Returns '방금' / '5분 전' / '3시간 전' / '2일 전' / '3주 전' / '5개월 전' / '2년 전'
+ */
+export function formatRelativeTime(unix: number): string {
+  const now = Math.floor(Date.now() / 1000)
+  const diff = now - unix
+  if (diff < 60) return '방금'
+  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`
+  if (diff < 604800) return `${Math.floor(diff / 86400)}일 전`
+  if (diff < 2592000) return `${Math.floor(diff / 604800)}주 전`
+  if (diff < 31536000) return `${Math.floor(diff / 2592000)}개월 전`
+  return `${Math.floor(diff / 31536000)}년 전`
 }
 
 function loadGeneral(): GeneralSettings {
@@ -113,10 +133,7 @@ export function useUiSettingsStore() {
  * Date locale 헬퍼 — settings 의 dateLocale 따른 toLocaleString.
  * `auto` 는 OS 기본 (`undefined` locale).
  */
-export function formatDateLocalized(
-  unix: number,
-  options?: Intl.DateTimeFormatOptions,
-): string {
+export function formatDateLocalized(unix: number, options?: Intl.DateTimeFormatOptions): string {
   const d = new Date(unix * 1000)
   const loc = ui.value.dateLocale
   const localeArg = loc === 'auto' ? undefined : loc
