@@ -399,7 +399,7 @@
   "sidebar": {
     "managementRepos": "📂 레포",
     "managementTitle": "모든 레포 관리 (Browse / Clone / 프로젝트 그룹) — ⌘⇧R",
-    "workspaceAll": "전체",
+    "workspaceAll": "전체 워크스페이스",
     "workspaceTitleAll": "전체 워크스페이스",
     "workspaceTitle": "워크스페이스: {name}",
     "searchPlaceholder": "검색 (브랜치 / 태그 / submodule) — ⌘⌥F",
