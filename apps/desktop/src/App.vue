@@ -242,15 +242,15 @@ useMenuListener()
             <span class="mx-0.5 text-muted-foreground">·</span>
             <RouterLink
               to="/"
-              class="text-muted-foreground hover:text-foreground"
-              active-class="text-foreground font-semibold"
+              class="text-muted-foreground hover:text-foreground border-b-2 border-transparent pb-0.5"
+              active-class="!text-foreground font-semibold !border-emerald-500"
             >
               {{ t('nav.home') }}
             </RouterLink>
             <RouterLink
               to="/repositories"
-              class="text-muted-foreground hover:text-foreground"
-              active-class="text-foreground font-semibold"
+              class="text-muted-foreground hover:text-foreground border-b-2 border-transparent pb-0.5"
+              active-class="!text-foreground font-semibold !border-emerald-500"
               :title="t('nav.reposTitle')"
             >
               {{ t('nav.repos') }}
@@ -258,15 +258,15 @@ useMenuListener()
             <RouterLink
               v-if="!uiSettings.hideLaunchpad"
               to="/launchpad"
-              class="text-muted-foreground hover:text-foreground"
-              active-class="text-foreground font-semibold"
+              class="text-muted-foreground hover:text-foreground border-b-2 border-transparent pb-0.5"
+              active-class="!text-foreground font-semibold !border-emerald-500"
             >
               {{ t('nav.launchpad') }}
             </RouterLink>
             <RouterLink
               to="/settings"
-              class="text-muted-foreground hover:text-foreground"
-              active-class="text-foreground font-semibold"
+              class="text-muted-foreground hover:text-foreground border-b-2 border-transparent pb-0.5"
+              active-class="!text-foreground font-semibold !border-emerald-500"
             >
               {{ t('nav.settings') }}
             </RouterLink>
