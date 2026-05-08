@@ -72,6 +72,37 @@ const {
       </select>
     </label>
 
+    <!-- plan/30 P1-5 — Mini sidebar 섹션 visibility -->
+    <fieldset class="rounded border border-border p-3 text-sm">
+      <legend class="px-1 font-medium">Mini sidebar 섹션 표시</legend>
+      <p class="mb-2 text-xs text-muted-foreground">
+        좌측 사이드바 9 섹션 (Miller 7±2 상한) — 사용 빈도 낮은 섹션 숨김 가능.
+      </p>
+      <div class="grid grid-cols-2 gap-1.5 text-xs">
+        <label class="flex items-center gap-1.5">
+          <input v-model="ui.miniSidebarSections.branch" type="checkbox" /> LOCAL 브랜치
+        </label>
+        <label class="flex items-center gap-1.5">
+          <input v-model="ui.miniSidebarSections.remote" type="checkbox" /> REMOTE
+        </label>
+        <label class="flex items-center gap-1.5">
+          <input v-model="ui.miniSidebarSections.worktree" type="checkbox" /> Worktree
+        </label>
+        <label class="flex items-center gap-1.5">
+          <input v-model="ui.miniSidebarSections.stash" type="checkbox" /> Stash
+        </label>
+        <label class="flex items-center gap-1.5">
+          <input v-model="ui.miniSidebarSections.submodule" type="checkbox" /> Submodule
+        </label>
+        <label class="flex items-center gap-1.5">
+          <input v-model="ui.miniSidebarSections.pr" type="checkbox" /> Open PR
+        </label>
+        <label class="flex items-center gap-1.5">
+          <input v-model="ui.miniSidebarSections.tag" type="checkbox" /> Tag
+        </label>
+      </div>
+    </fieldset>
+
     <p class="text-[10px] text-muted-foreground">
       v1.x 추가 예정: 그래프 메타데이터 토글 / 알림 위치.
     </p>

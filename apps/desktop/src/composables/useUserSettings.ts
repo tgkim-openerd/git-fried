@@ -26,6 +26,16 @@ export interface UiSettings {
   avatarStyle: 'initial' | 'gravatar'
   /** plan/30 P3-3 — commit time format: absolute / relative / both. */
   commitTimeFormat: 'absolute' | 'relative' | 'both'
+  /** plan/30 P1-5 — Mini sidebar 섹션 visibility (사용자가 빈도 낮은 섹션 숨김). */
+  miniSidebarSections: {
+    branch: boolean
+    remote: boolean
+    worktree: boolean
+    stash: boolean
+    submodule: boolean
+    pr: boolean
+    tag: boolean
+  }
 }
 
 const GENERAL_KEY = 'git-fried.general.v1'
@@ -48,6 +58,15 @@ function defaultUi(): UiSettings {
     hideLaunchpad: false,
     avatarStyle: 'initial',
     commitTimeFormat: 'absolute',
+    miniSidebarSections: {
+      branch: true,
+      remote: true,
+      worktree: true,
+      stash: true,
+      submodule: true,
+      pr: true,
+      tag: true,
+    },
   }
 }
 

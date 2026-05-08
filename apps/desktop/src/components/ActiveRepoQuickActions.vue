@@ -9,6 +9,8 @@ import { useStatus } from '@/composables/useStatus'
 import { useStatusCounts } from '@/composables/useStatusCounts'
 import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 import { useReposStore } from '@/stores/repos'
+// plan/30 P1-5 — Mini sidebar 섹션 visibility 사용자 토글.
+import { useUiSettingsStore } from '@/composables/useUserSettings'
 import MiniBranchList from './MiniBranchList.vue'
 import MiniRemoteBranchList from './MiniRemoteBranchList.vue'
 import MiniStashList from './MiniStashList.vue'
@@ -19,6 +21,8 @@ import MiniPrList from './MiniPrList.vue'
 import EmptyState from './EmptyState.vue'
 
 const store = useReposStore()
+const uiSettings = useUiSettingsStore()
+const sections = computed(() => uiSettings.value.miniSidebarSections)
 
 const repoIdRef = computed(() => store.activeRepoId)
 const { data: status } = useStatus(repoIdRef)
@@ -103,13 +107,13 @@ const QUICK_TABS: ReadonlyArray<{
       <!-- c27-1 (ARCH-003 fix) — mini list 는 sub-component 로 분리.
            Phase 11-6 (issue #2 GitKraken parity) — MiniRemoteBranchList / MiniTagList 추가.
            Phase 12-1/2/3 — branch tree (LOCAL/REMOTE/TAGS) + 검색 query 통합 + MiniSubmoduleList. -->
-      <MiniBranchList />
-      <MiniRemoteBranchList />
-      <MiniWorktreeList />
-      <MiniStashList />
-      <MiniSubmoduleList />
-      <MiniPrList />
-      <MiniTagList />
+      <MiniBranchList v-if="sections.branch" />
+      <MiniRemoteBranchList v-if="sections.remote" />
+      <MiniWorktreeList v-if="sections.worktree" />
+      <MiniStashList v-if="sections.stash" />
+      <MiniSubmoduleList v-if="sections.submodule" />
+      <MiniPrList v-if="sections.pr" />
+      <MiniTagList v-if="sections.tag" />
     </div>
   </div>
 </template>
