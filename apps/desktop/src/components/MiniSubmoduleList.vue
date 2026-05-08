@@ -85,7 +85,7 @@ function statusColor(s: SubmoduleEntry): string {
       <li
         v-for="s in miniSubmodules"
         :key="`ms-${s.path}`"
-        class="group flex items-center gap-1 rounded px-1 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
+        class="group flex items-center gap-1 rounded px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40"
         :title="`${s.path} (${s.status})${s.sha ? ' · ' + s.sha.slice(0, 7) : ''}`"
       >
         <span class="shrink-0 w-3 text-center text-[10px]" :class="statusColor(s)">

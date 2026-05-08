@@ -90,7 +90,7 @@ async function onPop(idx: number) {
       <li
         v-for="s in miniStashes"
         :key="`ms-${s.index}`"
-        class="group flex items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-accent/30"
+        class="group flex items-center gap-1 rounded px-1 py-1 text-[11px] hover:bg-accent/30"
         :title="`stash@{${s.index}} on ${s.branch ?? 'unknown'} — ${s.message}`"
       >
         <span class="shrink-0 font-mono text-[10px] text-muted-foreground"> @{{ s.index }} </span>

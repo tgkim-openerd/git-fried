@@ -68,7 +68,7 @@ const tree = computed(() => {
     >
       <template #default="{ data }: { data: BranchInfo }">
         <div
-          class="flex items-center gap-1 px-1 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40 rounded"
+          class="flex items-center gap-1 px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40 rounded"
           :title="`${data.name} (remote tracking)`"
           @contextmenu="onBranchContextMenu($event, data)"
         >

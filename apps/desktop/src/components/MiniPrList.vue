@@ -36,7 +36,7 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
       <li
         v-for="p in miniPrs"
         :key="`mp-${p.number}`"
-        class="flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-[11px] hover:bg-accent/30"
+        class="flex cursor-pointer items-center gap-1 rounded px-1 py-1 text-[11px] hover:bg-accent/30"
         :title="`#${p.number} ${p.title}\nby ${p.author.username} — ${p.headBranch} → ${p.baseBranch}`"
         @click="dispatchShortcut('tab6')"
       >

@@ -54,7 +54,7 @@ function worktreeName(path: string): string {
       <li
         v-for="w in miniWorktrees"
         :key="`mw-${w.path}`"
-        class="flex items-center gap-1 rounded px-1 py-0.5 text-[11px]"
+        class="flex items-center gap-1 rounded px-1 py-1 text-[11px]"
         :title="`${w.path}${w.branch ? ' [' + w.branch + ']' : ''}${w.isLocked ? ' (locked)' : ''}`"
       >
         <span class="shrink-0 w-3 text-center text-[10px]">

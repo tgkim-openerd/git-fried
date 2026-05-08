@@ -132,7 +132,7 @@ async function onSwitchBranch(name: string, isHead: boolean) {
       <template #default="{ data }: { data: BranchInfo }">
         <button
           type="button"
-          class="group flex w-full items-center gap-1 px-1 py-0.5 text-[11px]"
+          class="group flex w-full items-center gap-1 px-1 py-1 text-[11px]"
           @contextmenu="onBranchContextMenu($event, data)"
           :class="
             data.isHead
