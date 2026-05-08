@@ -19,17 +19,19 @@ const settings = useUiSettingsStore()
 const imgError = ref(false)
 
 const useImage = computed(
-  () =>
-    settings.value.avatarStyle === 'gravatar' &&
-    !!props.avatarUrl &&
-    !imgError.value,
+  () => settings.value.avatarStyle === 'gravatar' && !!props.avatarUrl && !imgError.value,
 )
 
 const initial = computed(() => {
-  const u = props.username || '?'
-  // 한글 한 글자 / 영문 1~2자.
-  const first = u.charAt(0).toUpperCase()
-  return first
+  const u = (props.username || '?').trim()
+  if (!u) return '?'
+  // plan/30 P3-5 — 한글: 첫 2글자 (e.g. "김태길" → "김태"), 영문/혼합: 첫 1자 대문자.
+  // 한글 검출: 가-힯 (Hangul Syllables block)
+  const isHangul = /^[가-힯]/.test(u)
+  if (isHangul) {
+    return u.slice(0, 2)
+  }
+  return u.charAt(0).toUpperCase()
 })
 
 /** username hash → 9 색 중 하나 (안정). */

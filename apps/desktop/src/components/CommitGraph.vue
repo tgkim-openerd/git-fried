@@ -76,6 +76,9 @@ function refPillClass(refName: string): string {
 function authorInitial(name: string | undefined | null): string {
   if (!name) return '?'
   const trimmed = name.trim()
+  if (!trimmed) return '?'
+  // plan/30 P3-5 — 한글 첫 2자 (e.g. 김태길 → 김태), 영문 첫 1자 대문자.
+  if (/^[가-힯]/.test(trimmed)) return trimmed.slice(0, 2)
   return trimmed.charAt(0).toUpperCase()
 }
 // 8 stable color hash — useGraphCanvasRenderer PALETTE 와 동일 시스템.

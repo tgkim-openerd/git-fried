@@ -54,7 +54,13 @@ const fileStats = computed(() => {
   return parsePatchStats(patch)
 })
 
-const authorInitial = computed(() => commit.value?.authorName?.charAt(0)?.toUpperCase() ?? '?')
+// plan/30 P3-5 — 한글 첫 2자 (e.g. 김태길 → 김태), 영문 첫 1자 대문자.
+const authorInitial = computed(() => {
+  const name = commit.value?.authorName?.trim()
+  if (!name) return '?'
+  if (/^[가-힯]/.test(name)) return name.slice(0, 2)
+  return name.charAt(0).toUpperCase()
+})
 
 function fmtDate(unix: number): string {
   return formatDateLocalized(unix, {
