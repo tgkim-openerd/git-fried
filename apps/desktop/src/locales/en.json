@@ -1,4 +1,15 @@
 {
+  "launchpad": {
+    "header": {
+      "repo": "Repo",
+      "title": "Title",
+      "author": "Author",
+      "branch": "Branch",
+      "status": "Status",
+      "updated": "Updated"
+    },
+    "snoozedHint": "{n} snoozed (tab to switch)"
+  },
   "common": {
     "ok": "OK",
     "cancel": "Cancel",
@@ -375,6 +386,18 @@
       "maintenance": "Maintenance",
       "plugin": "Plugins",
       "start": "Start & Migration"
+    },
+    "items": {
+      "profiles": "Profiles",
+      "forge": "Forge accounts (PAT)",
+      "repoSpecific": "Repository-Specific",
+      "editor": "Editor / Terminal (★ AI CLI)",
+      "ui": "UI Customization",
+      "maintenance": "gc / fsck / LFS",
+      "plugin": "External tool integration (v0.5 planned)",
+      "general": "General",
+      "migrate": "GitKraken migration",
+      "about": "About"
     }
   },
   "locale": {

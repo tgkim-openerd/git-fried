@@ -94,7 +94,7 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
 ]
 
 // Sprint c31 — group label 은 i18n settings.categories.* 키로 매핑.
-// items.label 은 점진 마이그레이션 (대다수가 고유명사 / Conventional 명칭이라 보존 가치 있음).
+// plan/30 P1-8 — items.label 도 settings.items.* 로 i18n 마이그 (Round 6 EN 16+ hardcoded ko 해소).
 const GROUP_I18N_KEY: Record<string, string> = {
   account: 'settings.categories.account',
   workspace: 'settings.categories.workspace',
@@ -103,6 +103,18 @@ const GROUP_I18N_KEY: Record<string, string> = {
   maintenance: 'settings.categories.maintenance',
   plugin: 'settings.categories.plugin',
   start: 'settings.categories.start',
+}
+const ITEM_I18N_KEY: Record<string, string> = {
+  profiles: 'settings.items.profiles',
+  forge: 'settings.items.forge',
+  repoSpecific: 'settings.items.repoSpecific',
+  editor: 'settings.items.editor',
+  ui: 'settings.items.ui',
+  maintenance: 'settings.items.maintenance',
+  plugin: 'settings.items.plugin',
+  general: 'settings.items.general',
+  migrate: 'settings.items.migrate',
+  about: 'settings.items.about',
 }
 
 const { t } = useI18n()
@@ -159,11 +171,11 @@ const buildInfo = computed(() => ({
                 ]"
                 :aria-pressed="active === c.id"
                 :aria-disabled="c.futureRelease ? 'true' : undefined"
-                :aria-label="`${t(GROUP_I18N_KEY[g.id] ?? g.label)} > ${c.label}`"
+                :aria-label="`${t(GROUP_I18N_KEY[g.id] ?? g.label)} > ${t(ITEM_I18N_KEY[c.id] ?? c.label)}`"
                 :title="c.futureRelease ? 'v0.5 출시 예정 — 현재 비활성' : undefined"
                 @click="!c.futureRelease && (active = c.id)"
               >
-                {{ c.label }}
+                {{ t(ITEM_I18N_KEY[c.id] ?? c.label) }}
               </button>
             </li>
           </ul>

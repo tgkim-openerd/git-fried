@@ -262,7 +262,7 @@ const {
         <h2 class="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
           PR ({{ activeNotSnoozedRows.length }})
           <span v-if="stats.snoozed > 0" class="ml-2 text-[10px] normal-case">
-            💤 {{ stats.snoozed }}개 snoozed (탭 전환)
+            💤 {{ t('launchpad.snoozedHint', { n: stats.snoozed }) }}
           </span>
         </h2>
         <div class="overflow-hidden rounded-md border border-border">
@@ -270,13 +270,23 @@ const {
             <thead class="bg-muted/30 text-xs text-muted-foreground">
               <tr>
                 <th class="w-8 px-2 py-1.5 text-left font-normal">📌</th>
-                <th class="w-40 px-2 py-1.5 text-left font-normal">레포</th>
+                <th class="w-40 px-2 py-1.5 text-left font-normal">
+                  {{ t('launchpad.header.repo') }}
+                </th>
                 <th class="w-12 px-2 py-1.5 text-left font-normal">#</th>
-                <th class="px-2 py-1.5 text-left font-normal">제목</th>
-                <th class="w-28 px-2 py-1.5 text-left font-normal">작성자</th>
-                <th class="w-32 px-2 py-1.5 text-left font-normal">브랜치</th>
-                <th class="w-16 px-2 py-1.5 text-left font-normal">상태</th>
-                <th class="w-16 px-2 py-1.5 text-left font-normal">갱신</th>
+                <th class="px-2 py-1.5 text-left font-normal">{{ t('launchpad.header.title') }}</th>
+                <th class="w-28 px-2 py-1.5 text-left font-normal">
+                  {{ t('launchpad.header.author') }}
+                </th>
+                <th class="w-32 px-2 py-1.5 text-left font-normal">
+                  {{ t('launchpad.header.branch') }}
+                </th>
+                <th class="w-16 px-2 py-1.5 text-left font-normal">
+                  {{ t('launchpad.header.status') }}
+                </th>
+                <th class="w-16 px-2 py-1.5 text-left font-normal">
+                  {{ t('launchpad.header.updated') }}
+                </th>
                 <th class="w-16 px-2 py-1.5 text-center font-normal">💤</th>
               </tr>
             </thead>

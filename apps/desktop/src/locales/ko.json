@@ -1,4 +1,15 @@
 {
+  "launchpad": {
+    "header": {
+      "repo": "레포",
+      "title": "제목",
+      "author": "작성자",
+      "branch": "브랜치",
+      "status": "상태",
+      "updated": "갱신"
+    },
+    "snoozedHint": "{n}개 snoozed (탭 전환)"
+  },
   "common": {
     "ok": "확인",
     "cancel": "취소",
@@ -375,6 +386,18 @@
       "maintenance": "유지보수",
       "plugin": "Plugin",
       "start": "시작·마이그레이션"
+    },
+    "items": {
+      "profiles": "프로파일",
+      "forge": "Forge 계정 (PAT)",
+      "repoSpecific": "Repository-Specific",
+      "editor": "에디터 / 터미널 (★ AI CLI)",
+      "ui": "UI Customization",
+      "maintenance": "gc / fsck / LFS",
+      "plugin": "외부 도구 연결 (v0.5 예정)",
+      "general": "General",
+      "migrate": "GitKraken 마이그레이션",
+      "about": "About"
     }
   },
   "locale": {
