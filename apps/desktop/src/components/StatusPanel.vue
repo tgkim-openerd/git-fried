@@ -584,6 +584,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+                :title="t('status.resolveTitle')"
                 @click="openMerge(p)"
               >
                 {{ t('status.resolve') }}
@@ -622,6 +623,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 <button
                   type="button"
                   class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+                  :title="t('status.resolveTitle')"
                   @click="openMerge(row.path)"
                 >
                   {{ t('status.resolve') }}
