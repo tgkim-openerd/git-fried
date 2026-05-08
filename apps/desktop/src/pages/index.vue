@@ -298,7 +298,7 @@ onUnmounted(() => {
         focusMode
           ? 'grid-cols-[0_1fr]'
           : ui.detailVisible.value
-            ? 'grid-cols-[1fr_420px]'
+            ? 'grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]'
             : 'grid-cols-[1fr_0]'
       "
     >
