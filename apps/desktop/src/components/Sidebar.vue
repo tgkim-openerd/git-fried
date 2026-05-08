@@ -74,7 +74,13 @@ useShortcut('filterRepos', focusSidebarSearch)
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <span class="font-mono text-sm font-semibold tracking-tight">git-fried</span>
       <!-- Sprint c31 PR-B — version 0.0.0 → 0.3.0 동기 (tauri.conf.json + Cargo.toml + package.json) -->
-      <span class="text-[10px] text-muted-foreground">v0.3.0</span>
+      <!-- plan/30 P3-4 — release date / Sprint context tooltip -->
+      <span
+        class="cursor-help text-[10px] text-muted-foreground"
+        :title="t('sidebar.versionTitle')"
+      >
+        v0.3.0
+      </span>
     </header>
 
     <!-- Workspace context (compact) + 레포 페이지 진입.
