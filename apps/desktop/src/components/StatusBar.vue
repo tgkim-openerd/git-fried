@@ -132,13 +132,29 @@ interface ShortcutHint {
   label: string
   action?: ShortcutAction
 }
-const shortcutHints = computed<ShortcutHint[]>(() => [
-  { combo: `${modKey.value}+P`, label: t('statusBar.shortcut.palette') },
-  { combo: `${modKey.value}+1~7`, label: t('statusBar.shortcut.view') },
+interface ShortcutHintExt extends ShortcutHint {
+  /** 직접 핸들러 (window.gitFriedOpenCommandPalette 등 외부 트리거) */
+  onClick?: () => void
+}
+const shortcutHints = computed<ShortcutHintExt[]>(() => [
+  {
+    combo: `${modKey.value}+P`,
+    label: t('statusBar.shortcut.palette'),
+    onClick: () => window.gitFriedOpenCommandPalette?.(),
+  },
+  {
+    combo: `${modKey.value}+1~7`,
+    label: t('statusBar.shortcut.view'),
+    onClick: () => dispatchShortcut('tab1'),
+  },
   { combo: `${modKey.value}+K`, label: t('statusBar.shortcut.detail'), action: 'toggleDetail' },
   { combo: '?', label: t('statusBar.shortcut.help'), action: 'help' },
 ])
-function onShortcutClick(h: ShortcutHint) {
+function onShortcutClick(h: ShortcutHintExt) {
+  if (h.onClick) {
+    h.onClick()
+    return
+  }
   if (!h.action) return
   dispatchShortcut(h.action)
 }
@@ -213,9 +229,11 @@ function onShortcutClick(h: ShortcutHint) {
         :key="h.combo"
         type="button"
         class="flex items-center gap-1 rounded transition-colors"
-        :class="h.action ? 'cursor-pointer hover:text-foreground' : 'cursor-default'"
-        :disabled="!h.action"
-        :title="h.action ? `${h.combo} — ${h.label} (클릭 가능)` : `${h.combo} — ${h.label}`"
+        :class="h.action || h.onClick ? 'cursor-pointer hover:text-foreground' : 'cursor-default'"
+        :disabled="!h.action && !h.onClick"
+        :title="
+          h.action || h.onClick ? `${h.combo} — ${h.label} (클릭 가능)` : `${h.combo} — ${h.label}`
+        "
         @click="onShortcutClick(h)"
       >
         <kbd
