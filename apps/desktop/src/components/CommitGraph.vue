@@ -25,6 +25,7 @@ import { useGraphCanvasRenderer } from '@/composables/useGraphCanvasRenderer'
 import { useCommitGraphRows } from '@/composables/useCommitGraphRows'
 import { useCommitGraphInteraction } from '@/composables/useCommitGraphInteraction'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
 import type { GraphRow } from '@/api/git'
 
 const { t } = useI18n()
@@ -330,8 +331,17 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
     </div>
 
     <div ref="containerRef" class="relative flex-1 overflow-auto" @scroll="onScroll">
+      <!-- Sprint c54 — rows 첫 로딩 시 skeleton placeholder (Issue 2). isFetching 이지만
+           graph.value 가 아직 undefined 또는 rows 0 인 시점에 빈 영역 대신 시각적 안정. -->
+      <div
+        v-if="isFetching && rows.length === 0"
+        class="px-4 py-3"
+        data-testid="commit-graph-skeleton"
+      >
+        <SkeletonBlock :count="12" height="md" :width-range="[40, 90]" />
+      </div>
       <!-- 가상 height -->
-      <div :style="{ height: totalHeight + 'px', position: 'relative' }">
+      <div v-else :style="{ height: totalHeight + 'px', position: 'relative' }">
         <!-- canvas (sticky 좌측) -->
         <canvas
           ref="canvasRef"
@@ -380,7 +390,12 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
              branchTagSticky (branchTag visible + 첫 위치) 시 활성. 가로 스크롤 시 좌측 고정.
              기존 commit row 의 branchTag column 은 placeholder (width 만 유지) 로 변경 (아래 v-if).
              pointerEvents: 'none' 로 overlay 자체는 click 통과, 안의 chip 만 'auto' 로 처리.
-             z-index 3 = canvas(1) + handle(2) 보다 위. -->
+             z-index 3 = canvas(1) + handle(2) 보다 위.
+
+             [DEAD until c54+ sticky redesign] — Sprint c54 (사용자 보고 회귀):
+             `position: sticky + top: 0 + height: 100%` 와 virtualizer children `top: v.start`
+             좌표 mismatch → chip 잘못된 위치 또는 0건. branchTagSticky 강제 false 로 임시 폐기
+             (useCommitGraphHeader.ts:33-44 주석 참조). c54+ 재설계 시 활성 조건 복원. -->
         <div
           v-if="branchTagSticky"
           :style="{

@@ -92,9 +92,14 @@ function onStageAll(e: MouseEvent) {
           ⚠ {{ counts.conflicted }}
         </span>
       </span>
-      <span v-if="branch" class="ml-auto font-mono text-[11px] text-muted-foreground">
+      <!-- Sprint c54+ — branch 이름 길면 truncate (우측 360→420 fix 와 함께). -->
+      <span
+        v-if="branch"
+        class="ml-auto flex min-w-0 items-center gap-0.5 font-mono text-[11px] text-muted-foreground"
+        :title="branch"
+      >
         on
-        <span class="ml-0.5 font-semibold text-foreground">{{ branch }}</span>
+        <span class="truncate font-semibold text-foreground">{{ branch }}</span>
       </span>
     </button>
 

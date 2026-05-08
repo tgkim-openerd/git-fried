@@ -18,6 +18,10 @@ tauri-build = { version = "2.0", features = [] }
 tauri = { version = "2.1", features = [] }
 tauri-plugin-deep-link = "2.0"
 tauri-plugin-dialog = "2.0"
+# tauri-plugin-fs : capability 차단 (capabilities/default.json — c40 SEC-010).
+# Frontend `@tauri-apps/plugin-fs` import 0건. plan/04 §file-system-watch (notify 통합) 의
+# 자매 reservation — v0.x 후속 .git refs/index watch 시 capability scope 부활 예정.
+# 2026-05-08 /analyze c53: 위 의도 보존 결정 유지 (User Decision A 동일).
 tauri-plugin-fs = "2.0"
 tauri-plugin-notification = "2.0"
 tauri-plugin-shell = "2.0"
@@ -52,6 +56,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 # 2026-05-05 /analyze: 코드 0 import 확인 (5-Check certain). plan/04 의 외부 변경 감지
 # (.git refs / index / FETCH_HEAD watch) 로드맵 보존 차원에서 잔존.
 # 2026-05-06 /analyze 재확인: 사용량 0 동일, 의도 보존 결정 유지 (User Decision A).
+# 2026-05-08 /analyze c53 재확인: 사용량 0 동일. plugin-fs 와 자매 reservation (위 21:참조).
 notify = "6.1"
 
 # 로그

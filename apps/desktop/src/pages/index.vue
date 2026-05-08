@@ -288,13 +288,17 @@ onUnmounted(() => {
 
     <!-- Phase 14-2/14-4 — fullscreen diff 시 우측 detail 은 유지 (다른 파일 click 으로 전환 가능).
          좌측 sidebar 만 자동 collapse (App.vue 의 sidebarShown). -->
+    <!-- Sprint c54+ — 우측 사이드바 width 360 → 420px (사용자 보고 우측 panel 깨짐).
+         ChangeCountBadge 헤더 (16 file changes / mod N / new N / on branch / Stage All) +
+         CommitMessageInput footer (Commit / Stage Changes / Amend / signoff) 모두 360px 초과.
+         420px 에서 1440 viewport 안 좌측 sidebar (260) + 가운데 그래프 (760+) 확보 가능. -->
     <div
       class="grid min-h-0 overflow-hidden"
       :class="
         focusMode
           ? 'grid-cols-[0_1fr]'
           : ui.detailVisible.value
-            ? 'grid-cols-[1fr_360px]'
+            ? 'grid-cols-[1fr_420px]'
             : 'grid-cols-[1fr_0]'
       "
     >

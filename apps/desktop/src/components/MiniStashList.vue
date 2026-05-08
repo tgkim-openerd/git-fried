@@ -12,6 +12,8 @@ import { applyStash, popStash } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import MiniSection from './MiniSection.vue'
+// Sprint c54 — Issue 2 — sidebar skeleton placeholder.
+import SkeletonBlock from './SkeletonBlock.vue'
 import { useI18n } from 'vue-i18n'
 import { confirmDialog } from '@/composables/useConfirm'
 
@@ -23,7 +25,7 @@ const invalidate = useInvalidateRepoQueries()
 const queryClient = useQueryClient()
 const repoIdRef = computed(() => store.activeRepoId)
 
-const { data: stashes } = useStash(repoIdRef)
+const { data: stashes, isFetching } = useStash(repoIdRef)
 const miniStashes = computed(() => (stashes.value ?? []).slice(0, 3))
 const moreCount = computed(() =>
   Math.max(0, (stashes.value?.length ?? 0) - miniStashes.value.length),
@@ -71,14 +73,20 @@ async function onPop(idx: number) {
 
 <template>
   <MiniSection
-    v-if="miniStashes.length > 0"
+    v-if="miniStashes.length > 0 || isFetching"
     title="Stash"
     :count="stashes?.length ?? 0"
     storage-key="active-repo-quick.stash"
     full-tooltip="Stash 패널 (⌘3)"
     @full="dispatchShortcut('tab3')"
   >
-    <ul class="space-y-0.5">
+    <SkeletonBlock
+      v-if="miniStashes.length === 0 && isFetching"
+      :count="3"
+      height="sm"
+      data-testid="mini-stash-skeleton"
+    />
+    <ul v-else class="space-y-0.5">
       <li
         v-for="s in miniStashes"
         :key="`ms-${s.index}`"

@@ -10,11 +10,13 @@ import { buildBranchTree, filterTree } from '@/composables/useBranchTree'
 import { useSidebarSearch } from '@/composables/useSidebarSearch'
 import MiniSection from './MiniSection.vue'
 import BranchTreeView from './BranchTreeView.vue'
+// Sprint c54+ (ARCH-c54-001 sister uniformity) — sidebar skeleton placeholder.
+import SkeletonBlock from './SkeletonBlock.vue'
 
 const store = useReposStore()
 const search = useSidebarSearch()
 
-const { data: tags } = useQuery({
+const { data: tags, isFetching } = useQuery({
   queryKey: computed(() => ['tags', store.activeRepoId]),
   queryFn: () => {
     if (store.activeRepoId == null) return Promise.resolve([])
@@ -34,12 +36,19 @@ const tree = computed(() => {
 
 <template>
   <MiniSection
-    v-if="tagsList.length > 0"
+    v-if="tagsList.length > 0 || isFetching"
     title="TAGS"
     :count="tagsList.length"
     storage-key="active-repo-quick.tags"
   >
+    <SkeletonBlock
+      v-if="tagsList.length === 0 && isFetching"
+      :count="5"
+      height="sm"
+      data-testid="mini-tag-skeleton"
+    />
     <BranchTreeView
+      v-else
       :nodes="tree"
       storage-key="branch-tree.tags"
       :auto-expand="search.isActive.value"

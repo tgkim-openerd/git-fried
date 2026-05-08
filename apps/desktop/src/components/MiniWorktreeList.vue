@@ -6,11 +6,13 @@ import { useWorktrees } from '@/composables/useWorktrees'
 import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import MiniSection from './MiniSection.vue'
+// Sprint c54+ (ARCH-c54-001 sister uniformity) — sidebar skeleton placeholder.
+import SkeletonBlock from './SkeletonBlock.vue'
 
 const store = useReposStore()
 const repoIdRef = computed(() => store.activeRepoId)
 
-const { data: worktrees } = useWorktrees(repoIdRef)
+const { data: worktrees, isFetching } = useWorktrees(repoIdRef)
 const sortedWorktrees = computed(() => {
   const list = [...(worktrees.value ?? [])]
   list.sort((a, b) => {
@@ -35,14 +37,20 @@ function worktreeName(path: string): string {
 
 <template>
   <MiniSection
-    v-if="miniWorktrees.length > 1"
+    v-if="miniWorktrees.length > 1 || isFetching"
     title="Worktree"
     :count="sortedWorktrees.length"
     storage-key="active-repo-quick.worktree"
     full-tooltip="Worktree 패널 (⌘7)"
     @full="dispatchShortcut('tab7')"
   >
-    <ul class="space-y-0.5">
+    <SkeletonBlock
+      v-if="miniWorktrees.length <= 1 && isFetching"
+      :count="3"
+      height="sm"
+      data-testid="mini-worktree-skeleton"
+    />
+    <ul v-else class="space-y-0.5">
       <li
         v-for="w in miniWorktrees"
         :key="`mw-${w.path}`"

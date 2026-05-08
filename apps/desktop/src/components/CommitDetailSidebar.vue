@@ -22,6 +22,8 @@ import { flattenTree, type FlatTreeRow } from '@/composables/useStatusTreeView'
 import { aiExplainCommit } from '@/api/git'
 import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import AiResultModal from './AiResultModal.vue'
+// Sprint c54 — Issue 2 — file changes 영역 첫 fetch 시 skeleton placeholder.
+import SkeletonBlock from './SkeletonBlock.vue'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 import { useI18n } from 'vue-i18n'
@@ -303,9 +305,19 @@ function onExplainCommit() {
         </div>
       </div>
 
+      <!-- Sprint c54 — Issue 2 — fileStats 첫 fetch skeleton placeholder. -->
+      <div
+        v-if="!fileStats && cd.isFetching.value"
+        class="space-y-2"
+        data-testid="commit-detail-files-skeleton"
+      >
+        <SkeletonBlock :count="1" height="md" :width-range="[35, 50]" />
+        <SkeletonBlock :count="6" height="sm" :width-range="[50, 90]" />
+      </div>
+
       <!-- file stats summary -->
       <div
-        v-if="fileStats"
+        v-else-if="fileStats"
         class="flex items-center gap-3 rounded-md border border-border bg-muted/20 px-2 py-1.5 text-xs"
         title="이 commit 의 변경 통계 (좌측 inline diff 의 patch 기반)"
       >

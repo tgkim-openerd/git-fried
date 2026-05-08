@@ -10,11 +10,13 @@ import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import { useSidebarSearch } from '@/composables/useSidebarSearch'
 import MiniSection from './MiniSection.vue'
+// Sprint c54 — Issue 2 — sidebar skeleton placeholder.
+import SkeletonBlock from './SkeletonBlock.vue'
 
 const store = useReposStore()
 const search = useSidebarSearch()
 
-const { data: submodules } = useQuery({
+const { data: submodules, isFetching } = useQuery({
   queryKey: computed(() => ['submodules', store.activeRepoId]),
   queryFn: () => {
     if (store.activeRepoId == null) return Promise.resolve([])
@@ -31,6 +33,8 @@ const filtered = computed<SubmoduleEntry[]>(() => {
   return list.filter((s) => s.path.toLowerCase().includes(q))
 })
 
+// Sprint c54+ ARCH-c54-005 — sister 와 length 형식 통일 (Mini*Branch/Stash 와 동일 패턴).
+const submoduleCount = computed(() => submodules.value?.length ?? 0)
 const miniSubmodules = computed(() => filtered.value.slice(0, 5))
 const moreCount = computed(() => Math.max(0, filtered.value.length - miniSubmodules.value.length))
 
@@ -64,14 +68,20 @@ function statusColor(s: SubmoduleEntry): string {
 
 <template>
   <MiniSection
-    v-if="(submodules?.length ?? 0) > 0"
+    v-if="submoduleCount > 0 || isFetching"
     title="SUBMODULES"
-    :count="submodules?.length ?? 0"
+    :count="submoduleCount"
     storage-key="active-repo-quick.submodules"
     full-tooltip="전체 Submodule 패널 (⌘4)"
     @full="dispatchShortcut('tab4')"
   >
-    <ul class="space-y-0.5">
+    <SkeletonBlock
+      v-if="submoduleCount === 0 && isFetching"
+      :count="3"
+      height="sm"
+      data-testid="mini-submodule-skeleton"
+    />
+    <ul v-else class="space-y-0.5">
       <li
         v-for="s in miniSubmodules"
         :key="`ms-${s.path}`"

@@ -13,7 +13,10 @@ import HunkStageModal from './HunkStageModal.vue'
 // Sprint c30 / HIGH 1 — 4 섹션 sticky header sub-component.
 import StatusSectionHeader from './StatusSectionHeader.vue'
 // Sprint c31 — inline diff preview 분리 (StatusPanel.vue God comp 분리 1/N).
-import StatusInlineDiff from './StatusInlineDiff.vue'
+// Sprint c54+ — StatusInlineDiff 우측 panel 사용 제거 (사용자 보고 GitKraken parity).
+// 단클릭 시 좌측 fullscreen viewer (FullscreenDiffView) 가 diff 표시 — 우측 inline preview 중복.
+// StatusInlineDiff.vue 파일 자체는 dead 보존 (재활성화 옵션) — c55+ 정리 후보.
+// import StatusInlineDiff from './StatusInlineDiff.vue'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
 import { useStatusFilter } from '@/composables/useStatusFilter'
 import { useStatusTreeView } from '@/composables/useStatusTreeView'
@@ -155,11 +158,8 @@ const {
   filteredConflicted,
 })
 
-// 선택 파일이 staged 인지 — StatusInlineDiff 에 prop 으로 전달.
-const selectedIsStaged = computed<boolean>(() => {
-  if (!selectedPath.value) return false
-  return status.value?.staged.some((f) => f.path === selectedPath.value) ?? false
-})
+// Sprint c54+ — selectedIsStaged 제거 (StatusInlineDiff prop 전용이었음, 우측 inline preview 폐기 후 사용처 0).
+// selectedPath 는 vim shortcut + copyPath + isSelected hover 표시 용도로 잔존.
 
 const isSelected = computed(() => (path: string) => selectedPath.value === path)
 </script>
@@ -632,19 +632,12 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
         </div>
       </div>
 
-      <!-- Sprint 22-7 V-5: 선택 파일 inline diff preview (하단 fixed 30%) — Sprint c31 분리 1/N -->
-      <StatusInlineDiff
-        v-if="selectedPath"
-        :repo-id="repoId"
-        :path="selectedPath"
-        :is-staged="selectedIsStaged"
-        @close="selectedPath = null"
-        @stage="onStageOne"
-        @unstage="onUnstageOne"
-        @discard="onDiscardOne"
-        @hunk="(p, s) => openHunk(p, s)"
-        @history="openHistory"
-      />
+      <!-- Sprint c54+ — StatusInlineDiff 우측 panel 사용 제거.
+           기존: 단클릭 시 우측 panel 하단 30% 에 inline diff preview + 인라인 액션 row (WORKDIR badge,
+           Hunk↑↓, History, +stage, ✂hunk, ⤺discard, ✕close) 표시 → 좁은 420px 안에 깨짐 + 좌측
+           메인 fullscreen viewer 와 중복.
+           현재: 단클릭 시 onFileClick → fsDiff.openWip → 좌측 메인 FullscreenDiffView 만 표시.
+           우측 panel = file list + 우클릭 컨텍스트 메뉴 (GitKraken parity 100%). -->
     </template>
 
     <FileHistoryModal

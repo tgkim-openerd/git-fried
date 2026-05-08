@@ -27,17 +27,17 @@ export function useCommitGraphHeader() {
   )
 
   /**
-   * Sprint c52 / c51 보류 #5 — branch chip column sticky-left 활성 조건.
+   * Sprint c52 / c51 보류 #5 — branch chip column sticky-left.
    *
-   * 활성 조건: branchTag column 이 visible AND **첫 번째 위치**.
-   * 사용자가 branchTag 를 다른 위치로 reorder 하면 sticky off (자연스러운 동작).
+   * Sprint c54 — disable: sticky overlay 의 `position: sticky + top: 0 + height: 100%` 조합이
+   * viewport-stick + children `top: v.start` (virtualizer 좌표) mismatch 야기 → chip 이
+   * 잘못된 위치 또는 0건으로 보이는 회귀. 사용자 보고 "그래프 모든 commit chip 부재" + 스크롤 시
+   * UI artifact. 일단 false 로 강제하여 일반 row chip 분기 (정상 chip 표시) 복귀.
    *
-   * 활성 시 CommitGraph.vue 가 commit row 좌측 (canvas+handle 다음) 에 별도 sticky
-   * overlay column 을 그려, 가로 스크롤 시 BRANCH/TAG 칩이 좌측 고정 — GitKraken parity.
+   * c54+ 에서 sticky-left 재설계 (예: column 헤더 외부 fixed overlay + scrollTop 동기화) 시점에
+   * 위 computed 로 복원.
    */
-  const branchTagSticky = computed(
-    () => branchTagColumnVisible.value && cols.visibleIds.value[0] === 'branchTag',
-  )
+  const branchTagSticky = computed(() => false)
 
   const headerMenuOpen = ref(false)
   const headerMenuRef = ref<HTMLDivElement | null>(null)

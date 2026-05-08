@@ -20,9 +20,10 @@ import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import BaseModal from './BaseModal.vue'
-import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
+// Sprint c53 — /analyze HIGH-1 — context menu + remove confirm 흡수 (Pattern 9 caller-decision).
+import { useRemoteInteraction } from '@/composables/useRemoteInteraction'
 
 const { t } = useI18n()
 
@@ -79,16 +80,6 @@ const removeMut = useMutation({
   },
   onError: (e) => toast.error(t('remote.removeFailed'), describeError(e)),
 })
-
-async function onRemove(name: string) {
-  const ok = await confirmDialog({
-    title: t('confirm.removeRemoteTitle'),
-    message: t('confirm.removeRemoteMessage', { name }),
-    danger: true,
-  })
-  if (!ok) return
-  removeMut.mutate(name)
-}
 
 // === rename ===
 const renameTarget = ref<string | null>(null)
@@ -147,7 +138,9 @@ function close() {
   emit('close')
 }
 
-// === Sprint 22-10 CM-12 — 우클릭 ContextMenu ===
+// === Sprint 22-10 CM-12 + Sprint c53 ARCH-001 (Pattern 9 caller-decision) ===
+// composable: ContextMenu items 빌드 + confirmDialog 흡수
+// caller: 5 mutations + form state 보유, mutate fn 만 콜백으로 노출
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
 
 const fetchAllMut = useMutation({
@@ -167,37 +160,13 @@ const fetchAllMut = useMutation({
   onError: (e) => toast.error(t('remote.fetchAllFailed'), describeError(e)),
 })
 
-function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
-  ev.preventDefault()
-  ev.stopPropagation()
-  const items: ContextMenuItem[] = [
-    {
-      // 단일 remote fetch IPC 부재 → fetchAll 일괄 매핑.
-      label: t('remote.ctxFetchAll'),
-      icon: '⬇',
-      action: () => fetchAllMut.mutate(),
-    },
-    { divider: true },
-    {
-      label: t('remote.ctxRename'),
-      icon: '✏',
-      action: () => startRename(r.name),
-    },
-    {
-      label: t('remote.ctxChangeUrl'),
-      icon: '🔗',
-      action: () => startUrlChange(r),
-    },
-    { divider: true },
-    {
-      label: t('remote.ctxRemove'),
-      icon: '🗑',
-      destructive: true,
-      action: () => onRemove(r.name),
-    },
-  ]
-  ctxMenu.value?.openAt(ev, items)
-}
+const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
+  ctxMenu,
+  onFetchAll: () => fetchAllMut.mutate(),
+  onStartRename: (name) => startRename(name),
+  onStartUrlChange: (r) => startUrlChange(r),
+  onRemove: (name) => removeMut.mutate(name),
+})
 </script>
 
 <template>
@@ -240,7 +209,7 @@ function onRemoteContextMenu(ev: MouseEvent, r: RemoteInfo) {
               </button>
               <button
                 class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
-                @click="onRemove(r.name)"
+                @click="removeRemoteSafely(r.name)"
               >
                 {{ t('remote.remove') }}
               </button>

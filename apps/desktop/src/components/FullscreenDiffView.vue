@@ -19,11 +19,15 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { readFile } from '@/api/git'
 import DiffViewer, { type DiffViewerExpose } from './DiffViewer.vue'
+// Sprint c54+++ Issue 2 — GitKraken parity Split (side-by-side) Diff Viewer.
+import DiffViewerMerge from './DiffViewerMerge.vue'
 import FileViewer from './FileViewer.vue'
 import FileHistoryModal from './FileHistoryModal.vue'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 // Sprint c35 god 16/N — diff query 영역 분리.
 import { useFullscreenDiffQuery } from '@/composables/useFullscreenDiffQuery'
+// Sprint c54+++ Issue 2 — Split (side-by-side) diff query (a=base / b=current 두 readFile).
+import { useFullscreenDiffSplitQuery } from '@/composables/useFullscreenDiffSplitQuery'
 import { useFileBlame } from '@/composables/useFileHistory'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
@@ -74,15 +78,22 @@ function openHistory() {
   historyOpen.value = true
 }
 
-// Sprint c30 / GitKraken UX (Phase 4-1 + 6b + 7b) — View mode 3개:
-//     'diff'  = 기존 patch + DiffViewer (default)
+// Sprint c30 / GitKraken UX (Phase 4-1 + 6b + 7b) — View mode 4개 (c54+++ split 추가):
+//     'diff'  = 기존 patch + DiffViewer (unified, default)
+//     'split' = base + current readFile + DiffViewerMerge (side-by-side, GitKraken parity)
 //     'file'  = readFile + FileViewer (CodeMirror syntax highlight, Phase 7c)
 //     'blame' = useFileBlame + line-by-line author/sha (Phase 7b inline)
-type ViewMode = 'diff' | 'file' | 'blame'
+type ViewMode = 'diff' | 'split' | 'file' | 'blame'
 const viewMode = ref<ViewMode>('diff')
 function setViewMode(m: ViewMode) {
   viewMode.value = m
 }
+
+// Sprint c54+++ Issue 2 — Split diff query (viewMode='split' 시만 fetch).
+const { splitQuery } = useFullscreenDiffSplitQuery(
+  () => props.repoId,
+  () => viewMode.value === 'split',
+)
 
 const currentPath = computed(() => fs.current.value?.path ?? null)
 
@@ -184,11 +195,26 @@ watch(
               ? 'bg-accent text-accent-foreground font-semibold'
               : 'text-muted-foreground hover:text-foreground'
           "
-          aria-label="Diff View"
+          aria-label="Diff View — unified"
           data-testid="fullscreen-diff-diff-view"
           @click="setViewMode('diff')"
         >
           Diff
+        </button>
+        <!-- Sprint c54+++ Issue 2 — GitKraken parity Split (side-by-side) View. -->
+        <button
+          type="button"
+          class="rounded px-1.5 py-0.5 text-[10px]"
+          :class="
+            viewMode === 'split'
+              ? 'bg-accent text-accent-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground'
+          "
+          aria-label="Split View — side-by-side"
+          data-testid="fullscreen-diff-split-view"
+          @click="setViewMode('split')"
+        >
+          Split
         </button>
         <button
           type="button"
@@ -355,6 +381,28 @@ watch(
           </tr>
         </tbody>
       </table>
+    </template>
+
+    <!-- Sprint c54+++ Issue 2 — Split (side-by-side) view. -->
+    <template v-else-if="viewMode === 'split'">
+      <div
+        v-if="splitQuery.isFetching.value"
+        class="flex-1 p-6 text-center text-xs text-muted-foreground"
+      >
+        불러오는 중...
+      </div>
+      <div
+        v-else-if="splitQuery.data.value?.isBinary"
+        class="flex-1 p-6 text-center text-xs text-muted-foreground"
+      >
+        Binary 파일 — split view 미지원 (File 모드에서 hex / 메타 확인 가능)
+      </div>
+      <DiffViewerMerge
+        v-else
+        :base="splitQuery.data.value?.base ?? ''"
+        :current="splitQuery.data.value?.current ?? ''"
+        class="flex-1"
+      />
     </template>
 
     <template v-else>

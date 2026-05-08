@@ -5,9 +5,12 @@
 // useBranchTree 가 build/sort/filter 로직, BranchTreeView 가 indent/toggle 렌더.
 // useSidebarSearch query 와 통합 — 검색 시 모든 폴더 자동 expand.
 
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useBranches } from '@/composables/useBranches'
+// Sprint c54+++ — 우클릭 컨텍스트 메뉴 (GitKraken parity, Pattern 9 sister).
+import { useBranchInteraction } from '@/composables/useBranchInteraction'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 // Sprint c38 fix HIGH-2 — plan/29 E5 acceptance "다른 worktree 점유 브랜치 cross-ref 배지".
 import { useWorktrees } from '@/composables/useWorktrees'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -21,6 +24,8 @@ import { buildBranchTree, filterTree } from '@/composables/useBranchTree'
 import { useSidebarSearch } from '@/composables/useSidebarSearch'
 import MiniSection from './MiniSection.vue'
 import BranchTreeView from './BranchTreeView.vue'
+// Sprint c54 — Issue 2 — 첫 진입 시 sidebar tree skeleton placeholder.
+import SkeletonBlock from './SkeletonBlock.vue'
 import type { BranchInfo } from '@/api/git'
 import { useI18n } from 'vue-i18n'
 import { confirmDialog } from '@/composables/useConfirm'
@@ -28,12 +33,23 @@ import { confirmDialog } from '@/composables/useConfirm'
 const { t } = useI18n()
 
 const store = useReposStore()
+
+// Sprint c54+++ — 우클릭 컨텍스트 메뉴 wiring (Pattern 5 TDZ 회피: store 정의 이후 호출).
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+const { onBranchContextMenu } = useBranchInteraction({
+  ctxMenu,
+  repoId: () => store.activeRepoId,
+  onCompare: (b) => {
+    // BranchPanel 의 compare wiring 재사용 (App.vue::openCompare 트리거).
+    window.gitFriedOpenCompare?.('HEAD', b.name)
+  },
+})
 const toast = useToast()
 const invalidate = useInvalidateRepoQueries()
 const repoIdRef = computed(() => store.activeRepoId)
 const search = useSidebarSearch()
 
-const { data: branches } = useBranches(repoIdRef)
+const { data: branches, isFetching } = useBranches(repoIdRef)
 const { counts } = useStatusCounts(repoIdRef)
 // Sprint c38 fix HIGH-2 — worktree 점유 branch map (other-worktree 만, main 제외).
 // branch name → 점유 worktree path (다른 worktree).
@@ -94,14 +110,21 @@ async function onSwitchBranch(name: string, isHead: boolean) {
 
 <template>
   <MiniSection
-    v-if="localBranches.length > 0"
+    v-if="localBranches.length > 0 || isFetching"
     title="LOCAL"
     :count="localBranches.length"
     storage-key="active-repo-quick.branches"
     full-tooltip="전체 브랜치 패널 (⌘B)"
     @full="dispatchShortcut('newBranch')"
   >
+    <SkeletonBlock
+      v-if="localBranches.length === 0 && isFetching"
+      :count="5"
+      height="sm"
+      data-testid="mini-branch-skeleton"
+    />
     <BranchTreeView
+      v-else
       :nodes="tree"
       storage-key="branch-tree.local"
       :auto-expand="search.isActive.value"
@@ -110,6 +133,7 @@ async function onSwitchBranch(name: string, isHead: boolean) {
         <button
           type="button"
           class="group flex w-full items-center gap-1 px-1 py-0.5 text-[11px]"
+          @contextmenu="onBranchContextMenu($event, data)"
           :class="
             data.isHead
               ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-500 rounded'
@@ -148,5 +172,6 @@ async function onSwitchBranch(name: string, isHead: boolean) {
         </button>
       </template>
     </BranchTreeView>
+    <ContextMenu ref="ctxMenu" />
   </MiniSection>
 </template>
