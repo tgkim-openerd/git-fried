@@ -179,6 +179,21 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* plan/30 P0-1 — Tab focus indicator visible (WCAG 2.4.7 Focus Visible AA).
+   * Round 3 측정: default browser outline `rgb(16,16,16)` 다크 배경 invisible.
+   * 통일 ring: --ring 변수 활용 (light/dark 자동 대비).
+   * outline-offset 으로 hit-area 와 시각 분리.
+   */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  /* mouse click 후엔 outline 제거 (WCAG 2.4.7 spec: keyboard focus 만 visible 필요) */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
   /* Sprint 22-12 Q-5 — prefers-reduced-motion 폴백 (WCAG 2.3.3 + design 04 §1-3).
    * 사용자가 OS 설정으로 모션 감소 선택 시 모든 transition / animation 무효화.
    */
