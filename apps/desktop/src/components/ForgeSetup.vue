@@ -55,9 +55,9 @@ const saveMut = useMutation({
     qc.invalidateQueries({ queryKey: ['forgeAccounts'] })
     token.value = ''
     verified.value = null
-    toast.success('Forge 계정 등록 완료')
+    toast.success(t('settings.forgeSection.toastSuccess'))
   },
-  onError: (e) => toast.error('Forge 계정 등록 실패', describeError(e)),
+  onError: (e) => toast.error(t('settings.forgeSection.toastFailed'), describeError(e)),
 })
 
 const deleteMut = useMutation({
@@ -81,11 +81,11 @@ async function onDelete(a: ForgeAccount) {
 
 <template>
   <div class="flex flex-col gap-4">
-    <h2 class="text-lg font-semibold">Forge 계정</h2>
+    <h2 class="text-lg font-semibold">{{ t('settings.forgeSection.title') }}</h2>
 
     <!-- 등록된 계정 -->
     <section class="rounded-md border border-border p-3">
-      <h3 class="mb-2 text-sm font-semibold">등록된 계정</h3>
+      <h3 class="mb-2 text-sm font-semibold">{{ t('settings.forgeSection.registeredHeading') }}</h3>
       <ul class="space-y-1 text-sm">
         <li
           v-for="a in accounts"
@@ -104,18 +104,18 @@ async function onDelete(a: ForgeAccount) {
             class="text-xs text-destructive hover:underline"
             @click="onDelete(a)"
           >
-            삭제
+            {{ t('settings.forgeSection.btnDelete') }}
           </button>
         </li>
         <li v-if="accounts && accounts.length === 0" class="text-xs text-muted-foreground">
-          등록된 계정 없음
+          {{ t('settings.forgeSection.emptyHint') }}
         </li>
       </ul>
     </section>
 
     <!-- 새 계정 -->
     <section class="rounded-md border border-border p-3">
-      <h3 class="mb-2 text-sm font-semibold">새 계정 등록</h3>
+      <h3 class="mb-2 text-sm font-semibold">{{ t('settings.forgeSection.newHeading') }}</h3>
       <div class="grid grid-cols-2 gap-2">
         <label class="text-xs text-muted-foreground">
           forge
@@ -123,12 +123,12 @@ async function onDelete(a: ForgeAccount) {
             v-model="kind"
             class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
           >
-            <option value="gitea">Gitea (회사)</option>
-            <option value="github">GitHub (개인)</option>
+            <option value="gitea">{{ t('settings.forgeSection.kindGitea') }}</option>
+            <option value="github">{{ t('settings.forgeSection.kindGithub') }}</option>
           </select>
         </label>
         <label class="text-xs text-muted-foreground">
-          username (선택)
+          {{ t('settings.forgeSection.labelUsername') }}
           <input
             v-model="username"
             class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
@@ -148,7 +148,7 @@ async function onDelete(a: ForgeAccount) {
           <input
             v-model="token"
             type="password"
-            placeholder="ghp_xxxx... 또는 Gitea 토큰"
+            :placeholder="t('settings.forgeSection.tokenPlaceholder')"
             class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
             autocomplete="off"
           />
@@ -157,7 +157,12 @@ async function onDelete(a: ForgeAccount) {
       <div class="mt-3 flex items-center justify-between gap-2 text-xs">
         <div>
           <span v-if="verified" class="text-diff-add">
-            ✓ 검증 완료 — {{ verified.username }} ({{ verified.displayName || '?' }})
+            {{
+              t('settings.forgeSection.verifiedHint', {
+                username: verified.username,
+                displayName: verified.displayName || '?',
+              })
+            }}
           </span>
           <span v-else-if="verifyError" class="text-destructive">{{ verifyError }}</span>
         </div>
@@ -168,7 +173,7 @@ async function onDelete(a: ForgeAccount) {
             :disabled="!token || verifyMut.isPending.value"
             @click="verifyMut.mutate()"
           >
-            검증
+            {{ t('settings.forgeSection.btnVerify') }}
           </button>
           <button
             type="button"
@@ -176,13 +181,12 @@ async function onDelete(a: ForgeAccount) {
             :disabled="!token || saveMut.isPending.value"
             @click="saveMut.mutate()"
           >
-            저장
+            {{ t('settings.forgeSection.btnSave') }}
           </button>
         </div>
       </div>
       <p class="mt-2 text-[10px] text-muted-foreground">
-        토큰은 OS keychain (Windows Credential Manager / macOS Keychain) 에 저장됩니다. DB 에는
-        keychain reference 만 보관.
+        {{ t('settings.forgeSection.tokenStorageNote') }}
       </p>
     </section>
   </div>

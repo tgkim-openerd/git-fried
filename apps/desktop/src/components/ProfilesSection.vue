@@ -108,10 +108,9 @@ async function onActivate(p: Profile) {
 
 <template>
   <section class="rounded-md border border-border p-3">
-    <h3 class="mb-2 text-sm font-semibold">프로파일</h3>
+    <h3 class="mb-2 text-sm font-semibold">{{ t('settings.profilesSection.title') }}</h3>
     <p class="mb-2 text-[11px] text-muted-foreground">
-      개인 ↔ 회사 1-click 토글. 활성화 시 글로벌 git config (user.name / user.email /
-      user.signingkey) 가 적용됩니다.
+      {{ t('settings.profilesSection.description') }}
     </p>
 
     <ul class="mb-3 space-y-1 text-sm">
@@ -133,30 +132,36 @@ async function onActivate(p: Profile) {
             class="text-muted-foreground hover:text-foreground"
             @click="onActivate(p)"
           >
-            활성화
+            {{ t('settings.profilesSection.btnActivate') }}
           </button>
           <button class="text-muted-foreground hover:text-foreground" @click="startEdit(p)">
-            수정
+            {{ t('settings.profilesSection.btnEdit') }}
           </button>
-          <button class="text-destructive hover:underline" @click="onDelete(p)">삭제</button>
+          <button class="text-destructive hover:underline" @click="onDelete(p)">
+            {{ t('settings.profilesSection.btnDelete') }}
+          </button>
         </span>
       </li>
       <li v-if="profiles && profiles.length === 0" class="text-xs text-muted-foreground">
-        등록된 프로파일 없음. 아래에서 추가.
+        {{ t('settings.profilesSection.emptyHint') }}
       </li>
     </ul>
 
     <!-- form -->
     <div class="rounded-md border border-border p-2">
       <h4 class="mb-2 text-xs font-semibold">
-        {{ editingId != null ? '수정' : '새 프로파일' }}
+        {{
+          editingId != null
+            ? t('settings.profilesSection.formTitleEdit')
+            : t('settings.profilesSection.formTitleNew')
+        }}
       </h4>
       <div class="grid grid-cols-2 gap-2">
         <label class="text-xs text-muted-foreground">
-          이름
+          {{ t('settings.profilesSection.labelName') }}
           <input
             v-model="form.name"
-            placeholder="개인 / 회사 (opnd)"
+            :placeholder="t('settings.profilesSection.namePlaceholder')"
             class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
           />
         </label>
@@ -177,15 +182,15 @@ async function onActivate(p: Profile) {
           />
         </label>
         <label class="col-span-2 text-xs text-muted-foreground">
-          signing key (옵션)
+          {{ t('settings.profilesSection.labelSigningKey') }}
           <input
             v-model="form.signingKey"
-            placeholder="ssh-ed25519 AAAA... 또는 GPG fingerprint"
+            :placeholder="t('settings.profilesSection.signingKeyPlaceholder')"
             class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
           />
         </label>
         <label class="col-span-2 text-xs text-muted-foreground">
-          SSH key path (메모용, ssh-agent 자동 추가는 v1.x)
+          {{ t('settings.profilesSection.labelSshPath') }}
           <input
             v-model="form.sshKeyPath"
             placeholder="~/.ssh/opnd_ed25519"
@@ -199,14 +204,18 @@ async function onActivate(p: Profile) {
           class="rounded-md border border-input px-3 py-1 hover:bg-accent"
           @click="cancelEdit"
         >
-          취소
+          {{ t('settings.profilesSection.btnCancel') }}
         </button>
         <button
           class="rounded-md bg-primary px-3 py-1 text-primary-foreground disabled:opacity-50"
           :disabled="!form.name.trim() || createMut.isPending.value || updateMut.isPending.value"
           @click="submit"
         >
-          {{ editingId != null ? '저장' : '추가' }}
+          {{
+            editingId != null
+              ? t('settings.profilesSection.btnSave')
+              : t('settings.profilesSection.btnAdd')
+          }}
         </button>
       </div>
     </div>
