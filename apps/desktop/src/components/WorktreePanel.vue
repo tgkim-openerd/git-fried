@@ -18,6 +18,8 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import SkeletonBlock from './SkeletonBlock.vue'
+import EmptyState from './EmptyState.vue'
 // Sprint c38 / plan/29 E5 — window.prompt → promptDialog (a11y + 한글 IME).
 import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 
@@ -27,7 +29,7 @@ const { t } = useI18n()
 const toast = useToast()
 
 const props = defineProps<{ repoId: number | null }>()
-const { data: trees } = useWorktrees(() => props.repoId)
+const { data: trees, isFetching: treesFetching } = useWorktrees(() => props.repoId)
 const qc = useQueryClient()
 
 const newPath = ref('')
@@ -220,7 +222,21 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
     </div>
 
     <div class="flex-1 overflow-auto px-2 py-2 text-sm">
-      <ul>
+      <!-- c59-3 — 첫 로딩 skeleton + 빈 trees EmptyState -->
+      <SkeletonBlock
+        v-if="treesFetching && (!trees || trees.length === 0)"
+        :count="3"
+        height="sm"
+        class="px-2"
+      />
+      <EmptyState
+        v-else-if="!trees || trees.length === 0"
+        icon="🌲"
+        :title="t('worktree.empty')"
+        :description="t('worktree.emptyHint')"
+        size="sm"
+      />
+      <ul v-else>
         <li
           v-for="wt in trees"
           :key="wt.path"

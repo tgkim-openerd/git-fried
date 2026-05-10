@@ -22,6 +22,7 @@ import { useI18n } from 'vue-i18n'
 import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 import { useBranchActions, localBranchName } from '@/composables/useBranchActions'
 import SkeletonBlock from './SkeletonBlock.vue'
+import EmptyState from './EmptyState.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
 const toast = useToast()
@@ -299,6 +300,16 @@ async function onExplainBranch(b: BranchInfo) {
         :count="6"
         height="sm"
         class="px-2"
+      />
+      <!-- c59-3 — branches 로드 완료 후 결과 비었을 때 EmptyState. 필터 결과 vs 진짜 빈 저장소 구분 -->
+      <EmptyState
+        v-else-if="!filtered || filtered.length === 0"
+        icon="🌳"
+        :title="branches && branches.length > 0 ? t('branch.emptyFiltered') : t('branch.empty')"
+        :description="
+          branches && branches.length > 0 ? t('branch.emptyFilteredHint') : t('branch.emptyHint')
+        "
+        size="sm"
       />
       <ul v-else>
         <li

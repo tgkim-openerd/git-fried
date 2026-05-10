@@ -492,7 +492,9 @@
     "dirtyUnknownTitle": "Unknown (path missing / disconnected disk)",
     "lockPromptTitle": "Lock Worktree",
     "lockPromptMessage": "Lock reason for '{path}' (optional, e.g. external disk / inactive)",
-    "lockPromptPlaceholder": "e.g. external SSD detached"
+    "lockPromptPlaceholder": "e.g. external SSD detached",
+    "empty": "No worktrees",
+    "emptyHint": "Enter a path above and click add to create a new worktree."
   },
   "tag": {
     "loading": "Loading...",
@@ -776,7 +778,11 @@
     "tooltipHead": "(current HEAD)",
     "tooltipDblclick": "— dblclick=switch, right-click=menu",
     "toastAiUnavailable": "AI unavailable",
-    "toastAiUnavailableBody": "Claude/Codex CLI not installed"
+    "toastAiUnavailableBody": "Claude/Codex CLI not installed",
+    "empty": "No branches",
+    "emptyHint": "Enter a name in the input above and click + to create a new branch.",
+    "emptyFiltered": "No matching branches",
+    "emptyFilteredHint": "No branches match the current filter. Try changing the filter or clearing hide/solo."
   },
   "commitActions": {
     "resetHardTitle": "⚠ Confirm HARD reset",
