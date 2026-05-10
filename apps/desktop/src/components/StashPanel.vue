@@ -321,7 +321,15 @@ const aiMut = useMutation({
           stash@{{ '{' }}{{ previewIndex }}{{ '}' }} diff
           <span v-if="previewFiles.length > 0"> ({{ previewFiles.length }} files) </span>
         </span>
-        <button class="text-xs" @click="previewText = null">×</button>
+        <button
+          type="button"
+          class="text-xs"
+          :aria-label="t('stash.closePreviewAria')"
+          :title="t('stash.closePreviewTitle')"
+          @click="previewText = null"
+        >
+          ×
+        </button>
       </div>
       <ul v-if="previewFiles.length > 0" class="mb-2 space-y-0.5">
         <li

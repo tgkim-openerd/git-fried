@@ -630,6 +630,8 @@
     "editMessageFailed": "Edit message failed",
     "editMessageButtonTitle": "Edit message",
     "dropAria": "Drop stash@{idx}",
+    "closePreviewAria": "Close diff preview",
+    "closePreviewTitle": "Close",
     "empty": "No stashes",
     "applyFileTitle": "Apply only this file to the working tree",
     "applyFileButton": "✓ Apply only this file"

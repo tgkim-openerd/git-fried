@@ -630,6 +630,8 @@
     "editMessageFailed": "메시지 변경 실패",
     "editMessageButtonTitle": "메시지 수정",
     "dropAria": "stash@{idx} 삭제",
+    "closePreviewAria": "diff 미리보기 닫기",
+    "closePreviewTitle": "닫기",
     "empty": "stash 없음",
     "applyFileTitle": "이 파일만 working tree 에 apply",
     "applyFileButton": "✓ 이 파일만 apply"
