@@ -136,6 +136,8 @@ interface ShortcutHintExt extends ShortcutHint {
   /** 직접 핸들러 (window.gitFriedOpenCommandPalette 등 외부 트리거) */
   onClick?: () => void
 }
+/** c58 P2-4 — Ctrl+1~7 view cycler index. */
+const viewCycleIdx = ref(-1) // start at -1 → first click = 0 = tab1
 const shortcutHints = computed<ShortcutHintExt[]>(() => [
   {
     combo: `${modKey.value}+P`,
@@ -145,7 +147,13 @@ const shortcutHints = computed<ShortcutHintExt[]>(() => [
   {
     combo: `${modKey.value}+1~7`,
     label: t('statusBar.shortcut.view'),
-    onClick: () => dispatchShortcut('tab1'),
+    /* c58 P2-4 보정 — 클릭 시 다음 view tab 으로 cycle (1→2→...→7→1).
+       단순 tab1 hardcoded 보다 사용자 의도 (view 전환) 에 부합. */
+    onClick: () => {
+      const tabs: ShortcutAction[] = ['tab1', 'tab2', 'tab3', 'tab4', 'tab5', 'tab6', 'tab7']
+      viewCycleIdx.value = (viewCycleIdx.value + 1) % tabs.length
+      dispatchShortcut(tabs[viewCycleIdx.value])
+    },
   },
   { combo: `${modKey.value}+K`, label: t('statusBar.shortcut.detail'), action: 'toggleDetail' },
   { combo: '?', label: t('statusBar.shortcut.help'), action: 'help' },

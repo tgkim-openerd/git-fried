@@ -637,8 +637,14 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
                 ]"
               >
                 <span
-                  class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold text-white"
-                  :class="authorAvatarBg(commitRowAt(v.index)?.commit.authorName)"
+                  class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full font-semibold text-white"
+                  :class="[
+                    authorAvatarBg(commitRowAt(v.index)?.commit.authorName),
+                    /* c58 P3-5 보강 — 한글 2글자 시 font 축소 + tracking-tight (w-4 14px fit) */
+                    authorInitial(commitRowAt(v.index)?.commit.authorName).length >= 2
+                      ? 'text-[7px] tracking-tighter'
+                      : 'text-[9px]',
+                  ]"
                   :title="commitRowAt(v.index)?.commit.authorEmail || ''"
                   aria-hidden="true"
                 >
