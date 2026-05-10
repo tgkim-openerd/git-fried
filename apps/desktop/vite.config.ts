@@ -70,11 +70,23 @@ export default defineConfig({
   },
   // Tauri release build 환경변수
   envPrefix: ['VITE_', 'TAURI_'],
+  // c59 — release 번들 console 노이즈 차단.
+  // `pure` 사용 (drop 아님): log/debug/info 만 dead-code, warn/error 보존
+  // — registerGlobalErrorHandler 의 의도적 console.error stack trace 출력은 유지.
+  // debugger 는 release 에서 항상 제거.
+  esbuild: {
+    pure: process.env.TAURI_ENV_DEBUG
+      ? []
+      : ['console.log', 'console.debug', 'console.info'],
+    drop: process.env.TAURI_ENV_DEBUG ? [] : ['debugger'],
+  },
   build: {
     target:
       process.env.TAURI_ENV_PLATFORM === 'windows' ? 'chrome105' : 'safari13',
     minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    // c59 — 청크 경고 임계 700KB (Vite 기본 500KB 는 vendor-codemirror/vendor-vue 4 청크 정상 사이즈 노이즈)
+    chunkSizeWarningLimit: 700,
     // Sprint c45 PERF-1 — vendor 청크 분리. 초기 FCP 개선 (~50ms 추정).
     rollupOptions: {
       output: {
