@@ -4,64 +4,68 @@
 //
 // design §8-3 hard constraint: 외부 도구 연결 placeholder. v0.5+ plugin API 도입.
 // design §8-6 Cloud-Free 정체성: Cloud Workspace / Cloud AI / 자체 LLM / Diagram 의도 제외.
+// c61 — i18n 마이그.
+import { useI18n } from 'vue-i18n'
 import PlaceholderButton from './PlaceholderButton.vue'
+
+const { t } = useI18n()
 </script>
 
 <template>
   <div class="flex max-w-2xl flex-col gap-4">
-    <h2 class="text-lg font-semibold">Plugin / Integration</h2>
+    <h2 class="text-lg font-semibold">{{ t('settings.pluginIntegration.title') }}</h2>
     <p class="text-sm text-muted-foreground">
-      외부 도구 연결 (CI / 이슈 트래커 / 알림 / 동기화). git-fried 의 로컬-우선 / CLI-위임 정체성에
-      맞는 plugin 만 본 카테고리에 노출됩니다.
+      {{ t('settings.pluginIntegration.description') }}
     </p>
     <p class="text-xs text-muted-foreground">
-      ❌ 의도적 제외: Cloud Workspace / Cloud AI / 자체 LLM 인프라 / Diagram. (Cloud-Free 정체성 —
-      design §8-6).
+      {{ t('settings.pluginIntegration.exclusionNote') }}
     </p>
     <div class="rounded border border-dashed border-border bg-muted/20 p-3">
       <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        예정 (placeholder)
+        {{ t('settings.pluginIntegration.plannedHeading') }}
       </h3>
       <div class="flex flex-wrap gap-1.5">
         <PlaceholderButton
           label="GitHub Actions"
           eta="v0.4"
           icon="⚡"
-          detail="CI run 상태 인디케이터 (per-branch / per-PR)"
+          :detail="t('settings.pluginIntegration.ghaDetail')"
           size="md"
         />
         <PlaceholderButton
           label="Linear / Jira"
           eta="v0.5"
           icon="🔗"
-          detail="commit / branch 이름 → 이슈 자동 매핑"
+          :detail="t('settings.pluginIntegration.linearJiraDetail')"
           size="md"
         />
         <PlaceholderButton
-          label="Discord 알림"
+          label="Discord"
           eta="v0.5"
           icon="🔔"
-          detail="bulk fetch / push 결과 webhook"
+          :detail="t('settings.pluginIntegration.discordDetail')"
           size="md"
         />
         <PlaceholderButton
-          label="Slack 알림"
+          label="Slack"
           eta="v0.5"
           icon="💬"
-          detail="bulk fetch / PR 머지 webhook"
+          :detail="t('settings.pluginIntegration.slackDetail')"
           size="md"
         />
         <PlaceholderButton
-          label="GPG 서명"
+          label="GPG"
           eta="v0.6"
           icon="🔐"
-          detail="commit / tag 자동 GPG 서명 (per-repo 토글)"
+          :detail="t('settings.pluginIntegration.gpgDetail')"
           size="md"
         />
       </div>
     </div>
     <p class="text-[10px] text-muted-foreground">
-      진행 상황: <code class="font-mono">docs/plan/05-roadmap-v0.1-v1.0.md</code>
+      {{
+        t('settings.pluginIntegration.roadmapNote', { file: 'docs/plan/05-roadmap-v0.1-v1.0.md' })
+      }}
     </p>
   </div>
 </template>
