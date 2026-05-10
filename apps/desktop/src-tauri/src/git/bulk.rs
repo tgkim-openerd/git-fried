@@ -37,7 +37,16 @@ pub async fn bulk_fetch(
     db: &Db,
     workspace_id: Option<i64>,
 ) -> Result<Vec<BulkResult<git_sync::SyncResult>>, AppError> {
+    let started = std::time::Instant::now();
     let repos = db.list_repos(workspace_id).await?;
+    let total = repos.len();
+    tracing::info!(
+        target: "git_fried_lib::bulk",
+        workspace_id = ?workspace_id,
+        total,
+        concurrency = BULK_NETWORK_CONCURRENCY,
+        "bulk_fetch 시작"
+    );
     let sem = Arc::new(Semaphore::new(BULK_NETWORK_CONCURRENCY));
     let mut handles = Vec::with_capacity(repos.len());
 
@@ -72,6 +81,18 @@ pub async fn bulk_fetch(
             }),
         }
     }
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    let succeeded = out.iter().filter(|r| r.success).count();
+    let failed = total - succeeded;
+    tracing::info!(
+        target: "git_fried_lib::bulk",
+        workspace_id = ?workspace_id,
+        total,
+        succeeded,
+        failed,
+        elapsed_ms,
+        "bulk_fetch 완료"
+    );
     Ok(out)
 }
 

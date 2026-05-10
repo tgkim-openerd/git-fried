@@ -79,6 +79,24 @@ pub async fn pull(
     branch: Option<&str>,
     opts: PullOpts,
 ) -> AppResult<SyncResult> {
+    let started = std::time::Instant::now();
+    let strategy = if opts.rebase {
+        "rebase"
+    } else if opts.ff_only {
+        "ff_only"
+    } else if opts.no_rebase {
+        "no_rebase"
+    } else {
+        "default"
+    };
+    tracing::debug!(
+        target: "git_fried_lib::sync",
+        repo = %repo.display(),
+        remote = ?remote,
+        branch = ?branch,
+        strategy,
+        "pull 시작"
+    );
     let mut args: Vec<&str> = vec!["pull"];
     // 옵션 mutually exclusive — rebase > ff_only > no_rebase 순.
     if opts.rebase {
@@ -95,6 +113,12 @@ pub async fn pull(
         }
     }
     let out = git_run(repo, &args, &GitRunOpts::default()).await?;
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    if out.exit_code == Some(0) {
+        tracing::info!(target: "git_fried_lib::sync", repo = %repo.display(), strategy, elapsed_ms, "pull 완료");
+    } else {
+        tracing::warn!(target: "git_fried_lib::sync", repo = %repo.display(), strategy, elapsed_ms, exit_code = ?out.exit_code, "pull 실패");
+    }
     Ok(out.into())
 }
 
@@ -116,6 +140,17 @@ pub async fn push(
     branch: Option<&str>,
     opts: PushOpts,
 ) -> AppResult<SyncResult> {
+    let started = std::time::Instant::now();
+    tracing::debug!(
+        target: "git_fried_lib::sync",
+        repo = %repo.display(),
+        remote = ?remote,
+        branch = ?branch,
+        force_with_lease = opts.force_with_lease,
+        set_upstream = opts.set_upstream,
+        tags = opts.tags,
+        "push 시작"
+    );
     let mut args: Vec<&str> = vec!["push"];
     if opts.set_upstream {
         args.push("-u");
@@ -133,5 +168,11 @@ pub async fn push(
         }
     }
     let out = git_run(repo, &args, &GitRunOpts::default()).await?;
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    if out.exit_code == Some(0) {
+        tracing::info!(target: "git_fried_lib::sync", repo = %repo.display(), elapsed_ms, "push 완료");
+    } else {
+        tracing::warn!(target: "git_fried_lib::sync", repo = %repo.display(), elapsed_ms, exit_code = ?out.exit_code, "push 실패");
+    }
     Ok(out.into())
 }
