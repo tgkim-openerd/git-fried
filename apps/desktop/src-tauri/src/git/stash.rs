@@ -71,6 +71,14 @@ pub async fn push_stash(
     message: Option<&str>,
     include_untracked: bool,
 ) -> AppResult<()> {
+    let started = std::time::Instant::now();
+    tracing::debug!(
+        target: "git_fried_lib::stash",
+        repo = %repo.display(),
+        has_message = message.is_some(),
+        include_untracked,
+        "push_stash 시작"
+    );
     let mut args: Vec<&str> = vec!["stash", "push"];
     if include_untracked {
         args.push("-u");
@@ -79,9 +87,19 @@ pub async fn push_stash(
         args.push("-m");
         args.push(m);
     }
-    git_run(repo, &args, &GitRunOpts::default())
+    let result = git_run(repo, &args, &GitRunOpts::default())
         .await?
-        .into_ok()?;
+        .into_ok();
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    match &result {
+        Ok(_) => {
+            tracing::info!(target: "git_fried_lib::stash", repo = %repo.display(), elapsed_ms, "push_stash 완료")
+        }
+        Err(e) => {
+            tracing::warn!(target: "git_fried_lib::stash", repo = %repo.display(), elapsed_ms, error = %e, "push_stash 실패")
+        }
+    }
+    result?;
     Ok(())
 }
 

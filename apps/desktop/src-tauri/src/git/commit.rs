@@ -42,6 +42,20 @@ pub async fn commit(repo: &Path, message: &str, opts: CommitOpts) -> AppResult<C
         return Err(AppError::validation("커밋 메시지가 비었습니다."));
     }
 
+    let started = std::time::Instant::now();
+    let msg_len = message.len();
+    tracing::debug!(
+        target: "git_fried_lib::commit",
+        repo = %repo.display(),
+        msg_len,
+        amend = opts.amend,
+        allow_empty = opts.allow_empty,
+        no_verify = opts.no_verify,
+        signoff = opts.signoff,
+        author = opts.author.is_some(),
+        "commit 시작"
+    );
+
     // 임시 파일 작성 (UTF-8, BOM 없음, LF 종결).
     let mut tmp = tempfile::NamedTempFile::new().map_err(AppError::Io)?;
     tmp.write_all(message.as_bytes()).map_err(AppError::Io)?;
@@ -80,6 +94,26 @@ pub async fn commit(repo: &Path, message: &str, opts: CommitOpts) -> AppResult<C
     } else {
         None
     };
+
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    if out.exit_code == Some(0) {
+        tracing::info!(
+            target: "git_fried_lib::commit",
+            repo = %repo.display(),
+            sha = ?new_sha.as_deref().map(|s| &s[..7.min(s.len())]),
+            amend = opts.amend,
+            elapsed_ms,
+            "commit 완료"
+        );
+    } else {
+        tracing::warn!(
+            target: "git_fried_lib::commit",
+            repo = %repo.display(),
+            exit_code = ?out.exit_code,
+            elapsed_ms,
+            "commit 실패"
+        );
+    }
 
     Ok(CommitResult {
         success: out.exit_code == Some(0),

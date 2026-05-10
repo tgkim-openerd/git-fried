@@ -194,6 +194,15 @@ pub async fn merge_into_head(
     if source.trim().is_empty() {
         return Err(AppError::validation("source 비어있음"));
     }
+    let started = std::time::Instant::now();
+    tracing::debug!(
+        target: "git_fried_lib::merge",
+        repo = %path.display(),
+        source,
+        no_ff,
+        no_commit,
+        "merge_into_head 시작"
+    );
     // 보안: source 가 `-` 로 시작하면 거부 (CWE-88) + `--end-of-options`.
     let safe_source = reject_dash_prefix(source, "source ref")?;
     let mut args: Vec<String> = vec!["merge".into()];
@@ -218,6 +227,14 @@ pub async fn merge_into_head(
     .await?;
     let conflicted = out.exit_code == Some(1)
         && (out.stdout.contains("CONFLICT") || out.stderr.contains("CONFLICT"));
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    if out.exit_code == Some(0) {
+        tracing::info!(target: "git_fried_lib::merge", repo = %path.display(), source, elapsed_ms, "merge_into_head 완료");
+    } else if conflicted {
+        tracing::warn!(target: "git_fried_lib::merge", repo = %path.display(), source, elapsed_ms, "merge_into_head conflict — 호출자 처리");
+    } else {
+        tracing::warn!(target: "git_fried_lib::merge", repo = %path.display(), source, exit_code = ?out.exit_code, elapsed_ms, "merge_into_head 실패");
+    }
     Ok(MergeResult {
         success: out.exit_code == Some(0),
         conflicted,
