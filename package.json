@@ -22,7 +22,8 @@
     "lint": "bun run --cwd apps/desktop lint",
     "typecheck": "bun run --cwd apps/desktop typecheck",
     "fmt": "bun run --cwd apps/desktop fmt && node scripts/cargo-rustup.mjs fmt --manifest-path apps/desktop/src-tauri/Cargo.toml",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "i18n:count": "node scripts/i18n-leaf-count.mjs"
   },
   "engines": {
     "bun": ">=1.1.0"
