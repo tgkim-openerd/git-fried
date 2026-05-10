@@ -1,4 +1,13 @@
 {
+  "time": {
+    "justNow": "방금",
+    "minAgo": "{n}분 전",
+    "hourAgo": "{n}시간 전",
+    "dayAgo": "{n}일 전",
+    "weekAgo": "{n}주 전",
+    "monthAgo": "{n}개월 전",
+    "yearAgo": "{n}년 전"
+  },
   "launchpad": {
     "header": {
       "repo": "레포",

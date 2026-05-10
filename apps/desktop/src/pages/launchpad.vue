@@ -20,7 +20,11 @@ import { useLaunchpadFilter } from '@/composables/useLaunchpadFilter'
 import { useLaunchpadRows } from '@/composables/useLaunchpadRows'
 // Sprint c40 — snooze + saved views + togglePin/rowKey 분리.
 import { useLaunchpadActions, SNOOZE_OPTIONS, type Tab } from '@/composables/useLaunchpadActions'
-import { formatDateLocalized } from '@/composables/useUserSettings'
+import {
+  formatDateLocalized,
+  formatRelativeTime,
+  useUiSettingsStore,
+} from '@/composables/useUserSettings'
 import UserAvatar from '@/components/UserAvatar.vue'
 
 const { t } = useI18n()
@@ -67,11 +71,15 @@ const {
   snoozeRemaining: (pr) => meta.snoozeRemaining(pr),
 })
 
+// c58 — UiSettings.commitTimeFormat 통합 (plan/30 P3-3 후속).
+const ui = useUiSettingsStore()
 function fmtDate(unix: number): string {
-  return formatDateLocalized(unix, {
-    month: '2-digit',
-    day: '2-digit',
-  })
+  const fmt = ui.value.commitTimeFormat
+  const abs = formatDateLocalized(unix, { month: '2-digit', day: '2-digit' })
+  if (fmt === 'absolute') return abs
+  const rel = formatRelativeTime(unix, t)
+  if (fmt === 'relative') return rel
+  return `${rel} (${abs})`
 }
 
 function fmtRemaining(sec: number): string {

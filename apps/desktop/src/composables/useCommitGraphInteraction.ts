@@ -7,6 +7,7 @@
 //
 // SFC 의 emit + ctxMenu / commitActions / selectedSha 를 인자로 받아 핸들러 반환.
 import type { ShallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { GraphRow } from '@/api/git'
 import {
   formatDateLocalized,
@@ -47,6 +48,7 @@ export function useCommitGraphInteraction({
   emit,
 }: UseCommitGraphInteractionArgs) {
   const ui = useUiSettingsStore()
+  const { t } = useI18n()
   // Sprint 22-3 V-1: row 더블클릭 → CommitDiffModal auto-open.
   function onRowDblClick(row: GraphRow | undefined) {
     if (!row) return
@@ -83,7 +85,7 @@ export function useCommitGraphInteraction({
       minute: '2-digit',
     })
     if (fmt === 'absolute') return abs
-    const rel = formatRelativeTime(unix)
+    const rel = formatRelativeTime(unix, t)
     if (fmt === 'relative') return rel
     return `${rel} (${abs})`
   }

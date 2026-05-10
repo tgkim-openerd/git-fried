@@ -13,7 +13,11 @@ import { computed, ref } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useGraph } from '@/composables/useGraph'
 import { useCommitDiff } from '@/composables/useCommitDiff'
-import { formatDateLocalized } from '@/composables/useUserSettings'
+import {
+  formatDateLocalized,
+  formatRelativeTime,
+  useUiSettingsStore,
+} from '@/composables/useUserSettings'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { parsePatchStats, type PatchFile, type PatchFileChange } from '@/utils/patchStats'
@@ -62,14 +66,21 @@ const authorInitial = computed(() => {
   return name.charAt(0).toUpperCase()
 })
 
+// c58 — UiSettings.commitTimeFormat 통합 (plan/30 P3-3 후속).
+const ui = useUiSettingsStore()
 function fmtDate(unix: number): string {
-  return formatDateLocalized(unix, {
+  const fmt = ui.value.commitTimeFormat
+  const abs = formatDateLocalized(unix, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
   })
+  if (fmt === 'absolute') return abs
+  const rel = formatRelativeTime(unix, t)
+  if (fmt === 'relative') return rel
+  return `${rel} (${abs})`
 }
 
 async function copySha() {

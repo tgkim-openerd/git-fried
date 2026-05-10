@@ -1,4 +1,13 @@
 {
+  "time": {
+    "justNow": "just now",
+    "minAgo": "{n}m ago",
+    "hourAgo": "{n}h ago",
+    "dayAgo": "{n}d ago",
+    "weekAgo": "{n}w ago",
+    "monthAgo": "{n}mo ago",
+    "yearAgo": "{n}y ago"
+  },
   "launchpad": {
     "header": {
       "repo": "Repo",

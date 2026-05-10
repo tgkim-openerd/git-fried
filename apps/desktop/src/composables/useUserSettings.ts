@@ -71,20 +71,37 @@ function defaultUi(): UiSettings {
 }
 
 /**
- * plan/30 P3-3 — relative time formatter (ko/en).
+ * plan/30 P3-3 — relative time formatter.
  * 60s / 60m / 24h / 7d / 30d / year boundaries.
- * Returns '방금' / '5분 전' / '3시간 전' / '2일 전' / '3주 전' / '5개월 전' / '2년 전'
+ * c58 보정 — i18n 적용 (ko/en). i18n 키 fallback 으로 ko default.
  */
-export function formatRelativeTime(unix: number): string {
+export function formatRelativeTime(
+  unix: number,
+  t?: (key: string, params?: object) => string,
+): string {
   const now = Math.floor(Date.now() / 1000)
   const diff = now - unix
-  if (diff < 60) return '방금'
-  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`
-  if (diff < 604800) return `${Math.floor(diff / 86400)}일 전`
-  if (diff < 2592000) return `${Math.floor(diff / 604800)}주 전`
-  if (diff < 31536000) return `${Math.floor(diff / 2592000)}개월 전`
-  return `${Math.floor(diff / 31536000)}년 전`
+  // i18n 미주입 시 ko fallback (utility 호출 컨텍스트에서 useI18n 호출 어려움 대응).
+  const tr =
+    t ??
+    ((key: string, params?: { n: number }) => {
+      const n = params?.n ?? 0
+      if (key === 'time.justNow') return '방금'
+      if (key === 'time.minAgo') return `${n}분 전`
+      if (key === 'time.hourAgo') return `${n}시간 전`
+      if (key === 'time.dayAgo') return `${n}일 전`
+      if (key === 'time.weekAgo') return `${n}주 전`
+      if (key === 'time.monthAgo') return `${n}개월 전`
+      if (key === 'time.yearAgo') return `${n}년 전`
+      return ''
+    })
+  if (diff < 60) return tr('time.justNow')
+  if (diff < 3600) return tr('time.minAgo', { n: Math.floor(diff / 60) })
+  if (diff < 86400) return tr('time.hourAgo', { n: Math.floor(diff / 3600) })
+  if (diff < 604800) return tr('time.dayAgo', { n: Math.floor(diff / 86400) })
+  if (diff < 2592000) return tr('time.weekAgo', { n: Math.floor(diff / 604800) })
+  if (diff < 31536000) return tr('time.monthAgo', { n: Math.floor(diff / 2592000) })
+  return tr('time.yearAgo', { n: Math.floor(diff / 31536000) })
 }
 
 function loadGeneral(): GeneralSettings {
