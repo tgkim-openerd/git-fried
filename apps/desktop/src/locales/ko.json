@@ -422,6 +422,39 @@
       "btnSave": "저장",
       "btnAdd": "추가"
     },
+    "general": {
+      "title": "General",
+      "description": "GitKraken Preferences > General 의 핵심 토글 흡수. localStorage 영속.",
+      "autoFetchLabel": "Auto-Fetch 간격 (분)",
+      "autoFetchHint": "0 = 비활성",
+      "autoPruneLabel": "Auto-Prune on fetch",
+      "rememberTabsLabel": "Remember tabs per profile",
+      "rememberTabsHint": "profile 전환 시 마지막 탭 복원",
+      "rememberTabsNote": "(영구 활성 — Sprint B10 의 useTabPerProfile composable 동작.)",
+      "defaultBranchLabel": "Default 브랜치 (새 레포)",
+      "conflictDetectionLabel": "Conflict Detection",
+      "conflictDetectionHint": "StatusBar 의 target-branch 충돌 예측 (60s 폴링)",
+      "autoSubmoduleLabel": "Pull 후 submodule 자동 update",
+      "autoSubmoduleHint": "git submodule update --init --recursive",
+      "futureNote": "v1.x 추가 예정: .orig 자동 삭제 / Longpaths / AutoCRLF / Logging level."
+    },
+    "editor": {
+      "title": "Editor / Terminal",
+      "description": "현재 Editor 옵션은 ⌘=/-/0 (Zoom) 와 Diff 3-mode 토글 (Hunk/Inline/Context) 로 제공. 추가 옵션 (font / EOL / line-num / wrap) 은 v1.x.",
+      "fontSizeRow": "· 폰트 크기: ⌘=/-/0 (Zoom) — 현재 {n}px",
+      "diffModeRow": "· Diff 모드: CommitDiffModal 의 Hunk / Inline / Context 토글",
+      "terminalRow": "· Terminal: ⌘` 토글, pwsh.exe / bash 자동 감지",
+      "futureNote": "v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정."
+    },
+    "maintenanceSection": {
+      "description": "현재 활성 레포에 git gc / fsck / lfs install 실행. 거대 레포는 수 분 걸릴 수 있습니다.",
+      "noActiveRepoWarning": "⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.",
+      "gcHint": "(housekeeping)",
+      "fsckHint": "(무결성 검증)",
+      "lfsInstallHint": "(LFS hook 등록)",
+      "running": "실행 중...",
+      "futureNote": "v1.x 추가 후보: gc 진행률 incremental progress / 정기 자동 maintenance."
+    },
     "categories": {
       "account": "계정",
       "workspace": "워크스페이스",

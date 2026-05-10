@@ -18,14 +18,14 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
   <div class="flex max-w-2xl flex-col gap-4">
     <h2 class="text-lg font-semibold">{{ t('templ.repoMaintenance') }}</h2>
     <p class="text-xs text-muted-foreground">
-      현재 활성 레포에 git gc / fsck / lfs install 실행. 거대 레포는 수 분 걸릴 수 있습니다.
+      {{ t('settings.maintenanceSection.description') }}
     </p>
 
     <p
       v-if="reposStore.activeRepoId == null"
       class="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400"
     >
-      ⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.
+      {{ t('settings.maintenanceSection.noActiveRepoWarning') }}
     </p>
 
     <div v-else class="flex flex-col gap-3 rounded border border-border bg-muted/20 p-4">
@@ -37,7 +37,9 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
           @click="gcMut.mutate(false)"
         >
           git gc
-          <span class="ml-1 text-[10px] text-muted-foreground">(housekeeping)</span>
+          <span class="ml-1 text-[10px] text-muted-foreground">
+            {{ t('settings.maintenanceSection.gcHint') }}
+          </span>
         </button>
         <button
           type="button"
@@ -54,7 +56,9 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
           @click="fsckMut.mutate()"
         >
           git fsck --full
-          <span class="ml-1 text-[10px] text-muted-foreground">(무결성 검증)</span>
+          <span class="ml-1 text-[10px] text-muted-foreground">
+            {{ t('settings.maintenanceSection.fsckHint') }}
+          </span>
         </button>
         <button
           type="button"
@@ -63,7 +67,9 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
           @click="lfsInstallMut.mutate()"
         >
           git lfs install
-          <span class="ml-1 text-[10px] text-muted-foreground">(LFS hook 등록)</span>
+          <span class="ml-1 text-[10px] text-muted-foreground">
+            {{ t('settings.maintenanceSection.lfsInstallHint') }}
+          </span>
         </button>
       </div>
 
@@ -71,7 +77,7 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
         v-if="gcMut.isPending.value || fsckMut.isPending.value || lfsInstallMut.isPending.value"
         class="text-xs text-muted-foreground"
       >
-        실행 중...
+        {{ t('settings.maintenanceSection.running') }}
       </p>
 
       <div v-if="maintResult" class="mt-2 border-t border-border pt-3">
@@ -98,7 +104,7 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
     </div>
 
     <p class="text-[10px] text-muted-foreground">
-      v1.x 추가 후보: gc 진행률 incremental progress / 정기 자동 maintenance.
+      {{ t('settings.maintenanceSection.futureNote') }}
     </p>
   </div>
 </template>

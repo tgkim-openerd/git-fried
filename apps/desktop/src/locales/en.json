@@ -422,6 +422,39 @@
       "btnSave": "Save",
       "btnAdd": "Add"
     },
+    "general": {
+      "title": "General",
+      "description": "Core toggles ported from GitKraken Preferences > General. Persisted in localStorage.",
+      "autoFetchLabel": "Auto-Fetch interval (min)",
+      "autoFetchHint": "0 = disabled",
+      "autoPruneLabel": "Auto-Prune on fetch",
+      "rememberTabsLabel": "Remember tabs per profile",
+      "rememberTabsHint": "Restore last tabs when switching profiles",
+      "rememberTabsNote": "(Permanently enabled — Sprint B10 useTabPerProfile composable.)",
+      "defaultBranchLabel": "Default branch (new repos)",
+      "conflictDetectionLabel": "Conflict Detection",
+      "conflictDetectionHint": "StatusBar target-branch conflict prediction (60s polling)",
+      "autoSubmoduleLabel": "Auto-update submodules after pull",
+      "autoSubmoduleHint": "git submodule update --init --recursive",
+      "futureNote": "v1.x planned: auto-delete .orig / Longpaths / AutoCRLF / Logging level."
+    },
+    "editor": {
+      "title": "Editor / Terminal",
+      "description": "Editor options currently include ⌘=/-/0 (Zoom) and Diff 3-mode toggle (Hunk/Inline/Context). Additional options (font / EOL / line-num / wrap) are v1.x.",
+      "fontSizeRow": "· Font size: ⌘=/-/0 (Zoom) — currently {n}px",
+      "diffModeRow": "· Diff mode: Hunk / Inline / Context toggle in CommitDiffModal",
+      "terminalRow": "· Terminal: ⌘` toggle, auto-detects pwsh.exe / bash",
+      "futureNote": "v1.x: External diff/merge tool launch, Terminal font/cursor settings."
+    },
+    "maintenanceSection": {
+      "description": "Run git gc / fsck / lfs install on the active repository. Large repos may take several minutes.",
+      "noActiveRepoWarning": "⚠ No active repository. Select a repo from the Sidebar.",
+      "gcHint": "(housekeeping)",
+      "fsckHint": "(integrity check)",
+      "lfsInstallHint": "(register LFS hook)",
+      "running": "Running...",
+      "futureNote": "v1.x candidates: incremental gc progress / scheduled auto-maintenance."
+    },
     "categories": {
       "account": "Account",
       "workspace": "Workspaces",
