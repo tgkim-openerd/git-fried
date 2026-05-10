@@ -142,7 +142,7 @@ describe('useMaintenanceActions — onMaintenanceDone (gc onSuccess)', () => {
   })
 
   it('exitCode null → "?" fallback', () => {
-    const m = useMaintenanceActions()
+    useMaintenanceActions()
     const result = { success: false, stdout: '', stderr: '', exitCode: null }
     onSuccessFns[0](result, false)
     const call = toastWarning.mock.calls[0]
