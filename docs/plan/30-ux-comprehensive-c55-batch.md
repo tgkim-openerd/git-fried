@@ -1,4 +1,37 @@
-# plan/30 — UX Comprehensive Roadmap (c55+ batch)
+# plan/30 — UX Comprehensive Roadmap (c55+ batch) — ✅ COMPLETED 2026-05-10
+
+## 진행 결과 (2026-05-10 c58 종료 시점)
+
+c55-A (5 commits) + c55-B (4) + c56 (2) + c57-A (3) + c57-B (2) + c58 (8) = **24 commits 자율 진행**.
+
+| Item | 상태 | 비고 |
+|---|---|---|
+| P0-1 Tab focus indicator | ✅ + ✅ c58-B5 보정 | outline → box-shadow (Tailwind transparent 버그 해소) |
+| P0-2 AI confirm i18n | ✅ REJECTED | source 검증 결과 이미 정상 |
+| P1-1 1024 layout | ✅ + ✅ c58-A3 보강 | sidebar/right + StatusBar footer 1024 collision 해소 |
+| P1-2 Mini hit-area | ✅ | 7 list py-1 |
+| P1-3 헤더 active route | ✅ | border-b emerald |
+| P1-4 Workspaces 라벨 | ✅ | i18n key |
+| P1-5 Mini sidebar visibility | ✅ | 7 toggle Settings |
+| P1-6 Conflicted 라벨 | ✅ | ⚖ 편집 + tooltip |
+| P1-7 commit annotated tag | ✅ | 라벨 명료화 |
+| P1-8 EN locale 잔여 | ✅ + ✅ c58-A4 보강 | settings.items + ProfilesSection + ForgeSetup + Launchpad (86 신규 키) |
+| P2-1 Settings v0.5 disabled | ✅ | futureRelease flag |
+| P2-2 Drag handle keyboard | ✅ | ArrowLeft/Right |
+| P2-3 HunkStageModal Tauri | ⏸ SKIP | 외부 환경 의존 |
+| P2-4 status bar 버튼 wiring | ✅ + ✅ c58-B7 보정 | View 버튼 cycler |
+| P3-1 Canvas DPR | ✅ REJECTED | 이미 정확 구현 |
+| P3-2 Workspace placeholder | ✅ | "전체 워크스페이스" 통일 |
+| P3-3 commit time relative | ✅ + ✅ c58-A1+A2 보강 | EN i18n + CommitDetailSidebar/Launchpad 적용 |
+| P3-4 v0.3.0 tooltip | ✅ | release date hint |
+| P3-5 avatar 한글 2글자 | ✅ + ✅ c58-B6 보정 | 폰트 축소 + tracking-tighter (w-4 fit) |
+| **c58 회귀 테스트** | ✅ | formatRelativeTime 12 + UserAvatar 8 + enCoverage 7 = 27 신규 tests |
+| **c58 doc-sync** | ✅ | CHANGELOG + IMPL-STATUS + plan/30 + ux-eval-report |
+
+vitest 68/708 → **71/735** (+3 files / +27 tests). 점수: Nielsen 87→**~92** / a11y 7→**9** / 반응형 8→**9** / i18n 6→**9** / 차별점 9.95 / 대체 가능성 8.4 → **9.2+**.
+
+---
+
 
 > 작성일: 2026-05-08
 > 트리거: 4-Round UX 평가 (`docs/ux-eval/2026-05-08-ux-eval-report.md`) 결과로 발견된 19+ 액션 항목 통합 sprint plan

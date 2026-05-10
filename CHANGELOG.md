@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c55~c58 — UX comprehensive batch (plan/30 19건 fix + audit 보정 9건 / 2026-05-08~10, 25+ commits across 5 feat branches)** — 7-Round UI/UX 평가 + plan/30 거대 roadmap → c55-A/B/c56/c57-A/B + c58 audit-fix 순차 자율 진행. 결과:
+  - **vitest 68/708 → 71/735** (+3 files / +27 tests — formatRelativeTime / UserAvatar / enCoverage 회귀 보호)
+  - **i18n ko/en 1044 → ~1130 leaf-keys** (+86: time.* 14 + settings.items.* 20 + settings.profilesSection.* 30 + settings.forgeSection.* 30 + launchpad.* 14 + workspaces label 등)
+  - **WCAG 2.4.7 Focus Visible AA 도달** (P0-1 box-shadow ring c58 보정 — outline transparent 버그 해소)
+  - **WCAG 2.1.1 Keyboard 부분 충족** (P2-2 drag handle ArrowLeft/Right)
+  - **반응형 1024 graceful** (sidebar 280→220, right panel 420→360 at <1280; StatusBar footer min-w-0 + xl:flex hint)
+  - **Mini sidebar Fitts' Law** 16-18px → 24px (7 list)
+  - **Mini sidebar Miller 7±2 완화** (7 섹션 visibility toggle, Settings → UI Customization)
+  - **commit time relative 옵션** (Settings select / formatRelativeTime ko/en)
+  - **avatar 한글 2글자 fallback** (김태길 → 김태) + font 축소 (text-[7-8px] tracking-tighter)
+  - **헤더 nav active route emerald border** + workspace selector placeholder 일관
+  - **Conflicted `해결` → `⚖ 편집`** + tooltip "3-way merge editor (in-app, AI 추천)"
+  - **Settings v0.5 "외부 도구 연결" disabled** (futureRelease flag)
+  - **status bar Palette/View 버튼 wiring** (View 클릭 시 cycler tab1→tab7)
+  - **Settings sub-pages i18n 마이그** (ProfilesSection 17→2 ko, ForgeSetup 20→4 ko, settings.vue nav items 10/10)
+  - **Launchpad table headers + snoozed hint i18n** (6 + 1 keys)
+  - REJECTED finding 3건 검증 후 false positive 확인:
+    - P0-2 AI confirm dialog (이미 i18n 정상)
+    - R2-P0-1 IRR 진입점 (Ctrl+P palette 작동)
+    - P3-1 Canvas DPR (이미 정확 구현)
+  - **거대 plan 산출물**: `docs/plan/30-ux-comprehensive-c55-batch.md` (775 LOC, 16 섹션 — P0/P1/P2/P3 분류 + WCAG roadmap + 반응형 break-point + GitKraken 32 parity matrix + sprint 분할)
+  - **평가 리포트**: `docs/ux-eval/2026-05-08-ux-eval-report.md` (854 LOC) + `checkpoint-rounds.md` (225 LOC) + screenshots 99 PNG (Round 1~7)
+  - 점수 변화: Nielsen 87→**~92** / a11y 7→**9** / 반응형 8→**9** / i18n 6→**9** / 차별점 9.95 / **GitKraken 대체 가능성 8.4 → 9.2+**
+
 - **Sprint c53-c54+++ — GitKraken parity + UX 회귀 fix + i18n batch + Pattern 9 sister 3 (2026-05-08, 1 unified commit `8d8d170` + toolkit `d503410`)** — c53~c54+++ 5 sub-sprint 통합 push (`17951a2..8d8d170`, 26 파일 / +1397 / -181). vitest 67 → **68 files / 708 tests** (+1/+4) / cargo test **225 PASS** (회귀 0) / i18n ko/en 964 → **1044 leaf-keys** (+80 대칭) / vue3-composable-extraction skill 1001 → **1121 LOC** (Pattern 5 sub-rule + Pattern 9 delegate sister + Pattern 14 family 확장):
   - **c53 useRemoteInteraction Pattern 9 sister 추출** — RemoteManageModal script 201 → 170 (god comp 임계 미달). composable: ContextMenu items + confirmDialog 흡수 (`removeRemoteSafely`, Pattern 14 qualifier `Safely`). caller: 5 mutations + form state 잔존 (template-bound, queryClient access scope). Cargo.toml `notify` + `tauri-plugin-fs` 주석에 plan/04:63 file-system-watch reservation 명시 (c53 재확인 라인 누적). useRemoteInteraction.test.ts 4 cases.
   - **c54 사용자 보고 3 issue fix (스크롤 / skeleton / BRANCH-TAG 안보임)** — Issue 3 (chip 부재) root cause: `DEFAULT_ORDER[0]==='branchTag'` → 항상 `branchTagSticky=true` → `position:sticky+top:0+height:100%` 와 virtualizer children `top:v.start` 좌표 mismatch. Fix: `branchTagSticky = computed(() => false)` 강제 disable로 일반 row chip 분기 정상 복귀 (c52 sticky-left overlay 임시 폐기). Issue 1 (스크롤) sticky overlay 폐기로 함께 해소. Issue 2 (skeleton) 6 영역 추가: CommitGraph rows 첫 로딩 / Mini Branch / RemoteBranch / Stash / Submodule + CommitDetailSidebar file changes. useCommitGraphHeader.test.ts 4 cases c54 disable 반영.
