@@ -162,7 +162,7 @@ function onShortcutClick(h: ShortcutHintExt) {
 
 <template>
   <footer
-    class="flex items-center gap-3 border-t border-border bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground"
+    class="flex min-w-0 items-center gap-3 overflow-hidden border-t border-border bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground"
   >
     <!-- Conflict prediction -->
     <span v-if="store.activeRepoId == null">{{ t('statusBar.noRepo') }}</span>
@@ -219,9 +219,10 @@ function onShortcutClick(h: ShortcutHintExt) {
       }}
     </button>
 
-    <!-- Phase 10-3 — 단축키 hint (중앙). action 매핑된 항목은 클릭 시 dispatchShortcut. -->
+    <!-- Phase 10-3 — 단축키 hint (중앙). action 매핑된 항목은 클릭 시 dispatchShortcut.
+         c58 — 1024 viewport collision 방지: ≥1280 (xl) 에서만 노출. -->
     <div
-      class="ml-auto flex items-center gap-2 text-[10px] opacity-70 hover:opacity-100"
+      class="ml-auto hidden xl:flex items-center gap-2 text-[10px] opacity-70 hover:opacity-100"
       data-testid="status-bar-shortcuts"
     >
       <button
