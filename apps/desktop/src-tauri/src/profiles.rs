@@ -106,6 +106,7 @@ pub async fn update(pool: &SqlitePool, id: i64, input: ProfileInput) -> AppResul
 }
 
 pub async fn delete(pool: &SqlitePool, id: i64) -> AppResult<()> {
+    tracing::info!(target: "git_fried_lib::profiles", id, "delete profile");
     sqlx::query("DELETE FROM profiles WHERE id = ?")
         .bind(id)
         .execute(pool)
@@ -116,6 +117,8 @@ pub async fn delete(pool: &SqlitePool, id: i64) -> AppResult<()> {
 
 /// 프로파일 활성화 — DB 의 is_active 토글 + git config --global 적용.
 pub async fn activate(pool: &SqlitePool, id: i64) -> AppResult<Profile> {
+    let started = std::time::Instant::now();
+    tracing::info!(target: "git_fried_lib::profiles", id, "activate 시작");
     // DB: 모든 프로파일 비활성화 후 대상만 활성화 (single-active invariant)
     let mut tx = pool.begin().await.map_err(AppError::Db)?;
     sqlx::query("UPDATE profiles SET is_active = 0")
@@ -133,6 +136,15 @@ pub async fn activate(pool: &SqlitePool, id: i64) -> AppResult<Profile> {
 
     // git config --global 적용 (전역 Git 설정)
     apply_to_git_config(&profile).await?;
+
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    tracing::info!(
+        target: "git_fried_lib::profiles",
+        id,
+        name = %profile.name,
+        elapsed_ms,
+        "activate 완료 (git config --global 적용)"
+    );
 
     Ok(profile)
 }

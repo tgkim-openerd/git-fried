@@ -16,11 +16,18 @@ pub fn make_key(forge_kind: &str, base_url: &str, username: Option<&str>) -> Str
 }
 
 pub fn save_token(key: &str, token: &str) -> AppResult<()> {
+    let token_len = token.len();
     let entry =
         Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
-    entry
+    let result = entry
         .set_password(token)
-        .map_err(|e| AppError::internal(format!("keyring set: {e}")))?;
+        .map_err(|e| AppError::internal(format!("keyring set: {e}")));
+    match &result {
+        // token 본체는 절대 로그에 노출 금지 — len 만 (secret_mask 와 동일 정책).
+        Ok(_) => tracing::info!(target: "git_fried_lib::auth", key, token_len, "save_token 완료"),
+        Err(e) => tracing::warn!(target: "git_fried_lib::auth", key, error = %e, "save_token 실패"),
+    }
+    result?;
     Ok(())
 }
 
@@ -28,9 +35,18 @@ pub fn load_token(key: &str) -> AppResult<Option<String>> {
     let entry =
         Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
     match entry.get_password() {
-        Ok(t) => Ok(Some(t)),
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(AppError::internal(format!("keyring get: {e}"))),
+        Ok(t) => {
+            tracing::debug!(target: "git_fried_lib::auth", key, "load_token hit");
+            Ok(Some(t))
+        }
+        Err(keyring::Error::NoEntry) => {
+            tracing::debug!(target: "git_fried_lib::auth", key, "load_token NoEntry");
+            Ok(None)
+        }
+        Err(e) => {
+            tracing::warn!(target: "git_fried_lib::auth", key, error = %e, "load_token 실패");
+            Err(AppError::internal(format!("keyring get: {e}")))
+        }
     }
 }
 
@@ -38,8 +54,17 @@ pub fn delete_token(key: &str) -> AppResult<()> {
     let entry =
         Entry::new(SERVICE, key).map_err(|e| AppError::internal(format!("keyring: {e}")))?;
     match entry.delete_credential() {
-        Ok(()) => Ok(()),
-        Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(AppError::internal(format!("keyring delete: {e}"))),
+        Ok(()) => {
+            tracing::info!(target: "git_fried_lib::auth", key, "delete_token 완료");
+            Ok(())
+        }
+        Err(keyring::Error::NoEntry) => {
+            tracing::debug!(target: "git_fried_lib::auth", key, "delete_token NoEntry (noop)");
+            Ok(())
+        }
+        Err(e) => {
+            tracing::warn!(target: "git_fried_lib::auth", key, error = %e, "delete_token 실패");
+            Err(AppError::internal(format!("keyring delete: {e}")))
+        }
     }
 }
