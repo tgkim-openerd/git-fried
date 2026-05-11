@@ -5,6 +5,7 @@
 // - draft 토글 (GitHub 만 — Gitea 는 ignored)
 // - 생성 후 옵션: 새 탭으로 외부 열기 / 모달 안에서 상세
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { createPullRequest, listBranches } from '@/api/git'
 import type { BranchInfo } from '@/api/git'
@@ -13,6 +14,7 @@ import { useToast } from '@/composables/useToast'
 import { useAiPrBody } from '@/composables/useAiPrBody'
 import BaseModal from './BaseModal.vue'
 
+const { t } = useI18n()
 const toast = useToast()
 
 const props = defineProps<{
@@ -120,7 +122,7 @@ const titleLength = computed(() => title.value.length)
             v-model="head"
             class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
           >
-            <option value="">선택...</option>
+            <option value="">{{ t('pr.placeholderSelect') }}</option>
             <option v-for="b in localBranches" :key="b.name" :value="b.name">
               {{ b.name }}
             </option>
@@ -137,7 +139,7 @@ const titleLength = computed(() => title.value.length)
 
       <!-- title -->
       <div class="mb-3">
-        <label class="text-xs text-muted-foreground">제목</label>
+        <label class="text-xs text-muted-foreground">{{ t('pr.formTitle') }}</label>
         <input
           v-model="title"
           placeholder="feat: 한글 제목 OK"
@@ -149,7 +151,7 @@ const titleLength = computed(() => title.value.length)
       <!-- body + AI -->
       <div class="mb-3">
         <div class="mb-1 flex items-center justify-between">
-          <label class="text-xs text-muted-foreground">본문 (마크다운)</label>
+          <label class="text-xs text-muted-foreground">{{ t('pr.formBody') }}</label>
           <button
             v-if="availableCli"
             type="button"

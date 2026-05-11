@@ -233,7 +233,7 @@ function fmtSize(b: number | null): string {
           fmtSize(pushSizeQuery.data.value.totalBytes)
         }})
       </span>
-      <span v-else class="text-muted-foreground">· LFS 변경 없음</span>
+      <span v-else class="text-muted-foreground">{{ t('lfs.noChanges') }}</span>
     </section>
     <section
       v-else-if="pushSizeQuery.data.value?.note"

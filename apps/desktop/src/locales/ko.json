@@ -615,6 +615,9 @@
     "newPrAria": "새 Pull Request 생성",
     "stateFilterAria": "PR 상태 필터: {state}",
     "stateAll": "전체",
+    "placeholderSelect": "선택...",
+    "formTitle": "제목",
+    "formBody": "본문 (마크다운)",
     "errPathLineRequired": "path / line 입력 필요",
     "errNewCodeRequired": "새 코드 입력 필요",
     "suggestionAdded": "Suggestion 등록",
@@ -912,7 +915,15 @@
     "toastContinueFailed": "--continue 실패",
     "toastSkipFailed": "--skip 실패",
     "toastAbortSuccess": "Rebase 중단됨",
-    "toastAbortFailed": "--abort 실패"
+    "toastAbortFailed": "--abort 실패",
+    "setupHint": "마지막 몇 개 commit 을 편집할까요? (1 ~ 50)",
+    "userInputWaiting": "사용자 개입 대기 중 (edit 액션 등)."
+  },
+  "lfs": {
+    "noChanges": "· LFS 변경 없음"
+  },
+  "mergeEditor": {
+    "entirelyToOneSide": "전체 파일을 한 쪽으로:"
   },
   "commitDetail": {
     "errNoRepoCommit": "레포/commit 미확정",

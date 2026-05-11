@@ -11,6 +11,7 @@
 // Sprint c63-B — flow state + 5 mutation + handlers 모두 useInteractiveRebaseFlow
 // composable 위임. SFC 는 store→repoId 연결 + aiComposer 위임 + template 만.
 import { computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { VueDraggable } from 'vue-draggable-plus'
 import type { RebaseAction } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
@@ -20,6 +21,7 @@ import { useAiComposer } from '@/composables/useAiComposer'
 import { useInteractiveRebaseFlow } from '@/composables/useInteractiveRebaseFlow'
 import BaseModal from './BaseModal.vue'
 
+const { t } = useI18n()
 const store = useReposStore()
 const repoId = computed(() => store.activeRepoId)
 
@@ -67,7 +69,7 @@ onUnmounted(() => {
   >
     <!-- step: setup -->
     <section v-if="step === 'setup'" class="flex flex-col gap-3 p-4">
-      <p class="text-sm text-muted-foreground">마지막 몇 개 commit 을 편집할까요? (1 ~ 50)</p>
+      <p class="text-sm text-muted-foreground">{{ t('interactiveRebase.setupHint') }}</p>
       <input
         v-model.number="count"
         type="number"
@@ -196,7 +198,7 @@ onUnmounted(() => {
           충돌 발생: <span class="font-mono">{{ status.stoppedAt?.slice(0, 7) }}</span
           >. 변경 패널 (⌘1) 에서 conflicted 파일을 해결한 후 [Continue] 클릭.
         </p>
-        <p v-else class="mt-1 text-xs">사용자 개입 대기 중 (edit 액션 등).</p>
+        <p v-else class="mt-1 text-xs">{{ t('interactiveRebase.userInputWaiting') }}</p>
       </div>
       <div
         v-else-if="lastResult?.success"

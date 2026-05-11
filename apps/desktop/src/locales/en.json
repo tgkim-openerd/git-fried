@@ -611,6 +611,9 @@
     "emptyOpen": "No open PRs",
     "emptyAll": "No PRs",
     "emptyOpenDesc": "Switch filter to closed / all, or create a new PR.",
+    "placeholderSelect": "Select...",
+    "formTitle": "Title",
+    "formBody": "Body (markdown)",
     "newPrButton": "+ New PR",
     "newPrAria": "Create new Pull Request",
     "stateFilterAria": "PR state filter: {state}",
@@ -912,7 +915,15 @@
     "toastContinueFailed": "--continue failed",
     "toastSkipFailed": "--skip failed",
     "toastAbortSuccess": "Rebase aborted",
-    "toastAbortFailed": "--abort failed"
+    "toastAbortFailed": "--abort failed",
+    "setupHint": "How many recent commits to edit? (1 ~ 50)",
+    "userInputWaiting": "Waiting for user input (edit action, etc.)."
+  },
+  "lfs": {
+    "noChanges": "· No LFS changes"
+  },
+  "mergeEditor": {
+    "entirelyToOneSide": "Entire file to one side:"
   },
   "commitDetail": {
     "errNoRepoCommit": "Repo/commit not selected",
