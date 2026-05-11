@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c59~c73 — 자율 진행 15 sprint 누적 (2026-05-10~11, 30 commits `07b4069..c6d14ad` + toolkit `f3db168`)** — `/analyze` Recommendations + `/code-review` High 자율 fix 반복 패턴. **God comp 0 마일스톤 달성** (모든 .vue script <200 LOC, c52~c67 누적 6 컴포넌트 추출):
+  - **vitest 71/735 → 83/884** (+12 files / +149 tests)
+  - **i18n ko/en 1102 → 1201 leaf-keys** (+99: Settings 5 sub-pages + commitTable/commitGraph/cloneModal/bulkFetch/commitInputExtra/identityCard/gitkrakenImport/pr/interactiveRebase/lfs/mergeEditor 등)
+  - **Rust tracing 12 → 58 calls** (+46, 14 module path: `git_fried_lib::{commit,stash,merge,sync,clone,bulk,forge,cherry_pick,reset,restore,rebase,auth,profiles,storage,launchpad}`)
+  - **Pattern 9 sister 4 → 7** (small 6: useStatus/Remote/Branch/Tag/RepoTabInteraction + useCommitExplain / large 1: useInteractiveRebaseFlow)
+  - **god comp 6 → 0** (IRR 211→58 / RepoTabBar 204→127 / CommitGraph 212→172 / CommitDetailSidebar 214→142 + c52 TagPanel / c54+++ StatusInlineDiff)
+  - **Tested critical composable 5/13 → 10/13** (+5: useStashPopMutation/useStageMutations/usePrMutations/useMaintenanceActions/useToolbarSyncMutations/useCommitActions/useLaunchpadActions/useBranchVisibilityActions + helper test 4: buildUntrackedPatch/computeSplitArgs/localBranchName/changeIcon-Color)
+  - **vite.config esbuild.pure** (release log/debug/info dead-code, warn/error 보존) + chunkSizeWarningLimit 700
+  - **scripts/i18n-leaf-count.mjs SoT** (DRIFT 시 CI exit 1) + `bun run i18n:count`
+  - **/code-review High 3건 자율 fix (c73)**: ARCH-001 (useRepoTabContextMenu → useRepoTabInteraction rename) + ARCH-002 (useCommitGraphPresentation getter pattern) + ARCH-003 (CommitDetailSidebar avatar visual identity 회복)
+  - **/teach toolkit Pattern 17 + 18** (vue3-composable-extraction skill, 1177→1193 LOC, Pattern 15 압축 + Pattern 17 pure helper 위치 분기 + Pattern 18 small sister naming use{Domain}Interaction 컨벤션)
+
 - **Sprint c55~c58 — UX comprehensive batch (plan/30 19건 fix + audit 보정 9건 / 2026-05-08~10, 25+ commits across 5 feat branches)** — 7-Round UI/UX 평가 + plan/30 거대 roadmap → c55-A/B/c56/c57-A/B + c58 audit-fix 순차 자율 진행. 결과:
   - **vitest 68/708 → 71/735** (+3 files / +27 tests — formatRelativeTime / UserAvatar / enCoverage 회귀 보호)
   - **i18n ko/en 1044 → ~1130 leaf-keys** (+86: time.* 14 + settings.items.* 20 + settings.profilesSection.* 30 + settings.forgeSection.* 30 + launchpad.* 14 + workspaces label 등)
