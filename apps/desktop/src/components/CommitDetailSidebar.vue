@@ -28,7 +28,10 @@ import SkeletonBlock from './SkeletonBlock.vue'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 // Sprint c65 — author initial 헬퍼 재사용.
-import { authorInitial as computeAuthorInitial } from '@/composables/useCommitGraphPresentation'
+import {
+  authorInitial as computeAuthorInitial,
+  authorAvatarBg,
+} from '@/composables/useCommitGraphPresentation'
 // Sprint c67 — explain commit mutation + dialog state 추출.
 import { useCommitExplain } from '@/composables/useCommitExplain'
 import { useI18n } from 'vue-i18n'
@@ -195,7 +198,8 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
       <div class="space-y-1.5 rounded-md border border-border bg-muted/10 p-2 text-xs">
         <div class="flex items-center gap-2">
           <span
-            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[10px] font-bold text-diff-add"
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            :class="authorAvatarBg(commit.authorName)"
             :title="commit.authorEmail"
             :aria-label="`작성자: ${commit.authorName} (${commit.authorEmail})`"
           >

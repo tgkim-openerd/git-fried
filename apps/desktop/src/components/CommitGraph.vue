@@ -54,8 +54,9 @@ const { visibleRef, soloRef, toggleSoloRef, hideRefByName, refKindOf } = useGrap
 )
 
 // Sprint c51 — GitKraken parity Minor (body 첫 줄 / ref-pill 색 / avatar) — c65 useCommitGraphPresentation 위임.
+// c73 ARCH-002 — getter 패턴 마이그 (family 일관).
 const { bodyFirstLine, refPillClass, authorInitial, authorAvatarBg } = useCommitGraphPresentation({
-  soloRef,
+  soloRef: () => soloRef.value,
   refKindOf,
 })
 

@@ -12,7 +12,6 @@
 // 호출 contract:
 //   const { bodyFirstLine, refPillClass, authorInitial, authorAvatarBg } =
 //     useCommitGraphPresentation({ soloRef, refKindOf })
-import type { Ref } from 'vue'
 import type { HiddenRefKind } from '@/api/git'
 
 export const REF_KIND_CLASS: Record<HiddenRefKind, string> = {
@@ -65,8 +64,11 @@ export function authorAvatarBg(name: string | undefined | null): string {
 }
 
 export interface UseCommitGraphPresentationOptions {
-  /** 현재 solo ref 이름 (null 이면 solo 미지정). 반응성 위해 ref. */
-  soloRef: Ref<string | null>
+  /**
+   * 현재 solo ref 이름 getter (null 이면 solo 미지정).
+   * Pattern 9 sister family 컨벤션 — `() => T` getter 로 반응성 + caller mock 단순.
+   */
+  soloRef: () => string | null
   /** ref 이름 → HiddenRefKind (branch/remote/tag/stash) 매핑. */
   refKindOf: (refName: string) => HiddenRefKind
 }
@@ -74,12 +76,14 @@ export interface UseCommitGraphPresentationOptions {
 /**
  * refPillClass 만 반응성 (soloRef) 필요 → composable. 다른 helpers (bodyFirstLine /
  * authorInitial / authorAvatarBg) 는 named export 로 직접 import 가능.
+ *
+ * c73 ARCH-002 fix — getter 패턴으로 마이그 (다른 composable family 와 일관).
+ * 추가로 TYPE-002 — REF_KIND_CLASS 에 없는 kind 반환 시 빈 string fallback.
  */
 export function useCommitGraphPresentation(opts: UseCommitGraphPresentationOptions) {
   function refPillClass(refName: string): string {
-    return opts.soloRef.value === refName
-      ? REF_PILL_SOLO_CLASS
-      : REF_KIND_CLASS[opts.refKindOf(refName)]
+    if (opts.soloRef() === refName) return REF_PILL_SOLO_CLASS
+    return REF_KIND_CLASS[opts.refKindOf(refName)] ?? ''
   }
 
   return {

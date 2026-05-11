@@ -25,8 +25,8 @@ import { useRepoAliases } from '@/composables/useRepoAliases'
 // Sprint c33 — 프로젝트 그룹화 + drag-drop 모델 분리.
 import { useTabGroups, type ProjectGroup } from '@/composables/useTabGroups'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
-// Sprint c64-B — 2 ContextMenu builder + moveTab + confirm composable 위임.
-import { useRepoTabContextMenu } from '@/composables/useRepoTabContextMenu'
+// Sprint c64-B / c73 ARCH-001 — 2 ContextMenu builder + moveTab + confirm composable 위임 (rename).
+import { useRepoTabInteraction } from '@/composables/useRepoTabInteraction'
 // Sprint c31 — BaseTooltip primitive (kbd hint 노출).
 import BaseTooltip from './BaseTooltip.vue'
 import { visualWidth } from '@/utils/visualWidth'
@@ -101,8 +101,8 @@ function onMiddleClick(id: number, e: MouseEvent) {
 
 const tabCtxMenu = useTemplateRef<ContextMenuExpose>('tabCtxMenu')
 
-// Sprint c64-B — 2 ContextMenu builder + moveTab + confirm 위임.
-const { onTabContextMenu, onProjectContextMenu } = useRepoTabContextMenu({
+// Sprint c64-B / c73 ARCH-001 — 2 ContextMenu builder + moveTab + confirm 위임 (rename).
+const { onTabContextMenu, onProjectContextMenu } = useRepoTabInteraction({
   openMenu: (ev, items) => tabCtxMenu.value?.openAt(ev, items),
 })
 

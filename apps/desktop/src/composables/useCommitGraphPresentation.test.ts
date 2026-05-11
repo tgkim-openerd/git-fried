@@ -121,7 +121,10 @@ describe('useCommitGraphPresentation — refPillClass (reactive)', () => {
 
   it('soloRef 미설정 → kind 별 기본 클래스', () => {
     const soloRef = ref<string | null>(null)
-    const { refPillClass } = useCommitGraphPresentation({ soloRef, refKindOf })
+    const { refPillClass } = useCommitGraphPresentation({
+      soloRef: () => soloRef.value,
+      refKindOf,
+    })
     expect(refPillClass('main')).toBe(REF_KIND_CLASS.branch)
     expect(refPillClass('origin/main')).toBe(REF_KIND_CLASS.remote)
     expect(refPillClass('refs/tags/v1.0')).toBe(REF_KIND_CLASS.tag)
@@ -130,7 +133,10 @@ describe('useCommitGraphPresentation — refPillClass (reactive)', () => {
 
   it('soloRef 매칭 → SOLO 클래스 override', () => {
     const soloRef = ref<string | null>('main')
-    const { refPillClass } = useCommitGraphPresentation({ soloRef, refKindOf })
+    const { refPillClass } = useCommitGraphPresentation({
+      soloRef: () => soloRef.value,
+      refKindOf,
+    })
     expect(refPillClass('main')).toBe(REF_PILL_SOLO_CLASS)
     // 다른 ref 는 기본 클래스
     expect(refPillClass('feat/x')).toBe(REF_KIND_CLASS.branch)
@@ -138,11 +144,25 @@ describe('useCommitGraphPresentation — refPillClass (reactive)', () => {
 
   it('soloRef 변경 시 refPillClass 결과도 변경 (reactive)', () => {
     const soloRef = ref<string | null>(null)
-    const { refPillClass } = useCommitGraphPresentation({ soloRef, refKindOf })
+    const { refPillClass } = useCommitGraphPresentation({
+      soloRef: () => soloRef.value,
+      refKindOf,
+    })
     expect(refPillClass('feat/x')).toBe(REF_KIND_CLASS.branch)
     soloRef.value = 'feat/x'
     expect(refPillClass('feat/x')).toBe(REF_PILL_SOLO_CLASS)
     soloRef.value = null
     expect(refPillClass('feat/x')).toBe(REF_KIND_CLASS.branch)
+  })
+
+  // c73 TYPE-002 — REF_KIND_CLASS 에 없는 kind fallback (defensive)
+  it('refKindOf 가 unknown kind 반환 → 빈 string fallback', () => {
+    const soloRef = ref<string | null>(null)
+    const { refPillClass } = useCommitGraphPresentation({
+      soloRef: () => soloRef.value,
+      // @ts-expect-error — 외부 호출자가 새 kind 추가 시 시뮬레이션
+      refKindOf: () => 'unknown',
+    })
+    expect(refPillClass('main')).toBe('')
   })
 })

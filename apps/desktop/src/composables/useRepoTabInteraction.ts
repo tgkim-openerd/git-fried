@@ -1,4 +1,6 @@
 // Sprint c64-B — RepoTabBar god comp 추출 (Pattern 9 sister, small 변형).
+// Sprint c73 ARCH-001 — `useRepoTabContextMenu` → `useRepoTabInteraction` rename.
+// Pattern 9 sister small family 컨벤션 (`use{Domain}Interaction`) 일관.
 //
 // RepoTabBar.vue script 204 LOC 중 2 ContextMenu builder (onTabContextMenu,
 // onProjectContextMenu) + moveTab + Close all confirm + Close group confirm 추출.
@@ -25,7 +27,7 @@ export interface RepoTabContextMenuCallbacks {
   openMenu: (ev: MouseEvent, items: ContextMenuItem[]) => void
 }
 
-export function useRepoTabContextMenu(callbacks: RepoTabContextMenuCallbacks) {
+export function useRepoTabInteraction(callbacks: RepoTabContextMenuCallbacks) {
   const store = useReposStore()
   const { t } = useI18n()
 
