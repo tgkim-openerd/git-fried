@@ -23,8 +23,10 @@ import { useStatus } from '@/composables/useStatus'
  *
  * Frontend fallback: readFile 로 working dir 내용 fetch → 가짜 unified diff (`new file mode
  * 100644` + 모든 라인 `+` prefix) 생성. binary 감지 (null byte) 시 별도 placeholder.
+ *
+ * c64-A: export 추가 — 단위 테스트 (binary 감지 / 빈 파일 / 일반 케이스) 위해.
  */
-function buildUntrackedPatch(path: string, content: string): string {
+export function buildUntrackedPatch(path: string, content: string): string {
   if (!content) {
     return `diff --git a/${path} b/${path}\nnew file mode 100644\n(empty file)\n`
   }
