@@ -179,7 +179,7 @@ const canSubmit = computed(
 
       <div class="mt-3 grid grid-cols-[1fr_auto] gap-2">
         <label class="block">
-          <span class="text-xs font-medium">부모 폴더</span>
+          <span class="text-xs font-medium">{{ t('cloneModal.parentFolder') }}</span>
           <input
             v-model="parentPath"
             required
@@ -188,7 +188,7 @@ const canSubmit = computed(
           />
         </label>
         <label class="block">
-          <span class="text-xs font-medium">폴더명</span>
+          <span class="text-xs font-medium">{{ t('cloneModal.folderName') }}</span>
           <input
             v-model="folderName"
             required

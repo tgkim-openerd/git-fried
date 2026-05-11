@@ -3,6 +3,7 @@
 // Sprint c26-2 — 공통 로직을 useCommitDiff composable 로 추출 (DRY).
 
 import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { describeError } from '@/api/errors'
 import { DIFF_MODE_LABELS, type DiffMode } from '@/composables/useDiffMode'
 import { useCommitDiff } from '@/composables/useCommitDiff'
@@ -17,6 +18,8 @@ const props = defineProps<{
   maximized?: boolean
 }>()
 const emit = defineEmits<{ close: []; toggleMaximize: [] }>()
+
+const { t } = useI18n()
 
 const cd = useCommitDiff({
   repoId: () => props.repoId,
@@ -55,9 +58,9 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
         </span>
         <span>commit</span>
         <span v-if="sha" class="text-muted-foreground">{{ sha.slice(0, 12) }}</span>
-        <span v-if="cd.isFetching.value" class="text-[10px] text-muted-foreground"
-          >불러오는 중...</span
-        >
+        <span v-if="cd.isFetching.value" class="text-[10px] text-muted-foreground">
+          {{ t('common.loading') }}
+        </span>
       </div>
       <div class="flex flex-wrap items-center gap-1">
         <!-- Hunk ↑↓ -->

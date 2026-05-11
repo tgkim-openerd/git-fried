@@ -174,7 +174,7 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
 <template>
   <div class="flex h-full flex-col">
     <header class="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
-      <h2 class="text-sm font-semibold">커밋 그래프</h2>
+      <h2 class="text-sm font-semibold">{{ t('commitGraph.title') }}</h2>
       <div class="flex flex-1 items-center justify-end gap-2">
         <!-- Phase 1 (plan-commit-graph-ux v2) — Zoom +/- button. drag handle 보완. -->
         <div
@@ -229,7 +229,9 @@ const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
         >
           🔍
         </button>
-        <span v-if="isFetching" class="text-xs text-muted-foreground">불러오는 중...</span>
+        <span v-if="isFetching" class="text-xs text-muted-foreground">{{
+          t('commitGraph.loading')
+        }}</span>
       </div>
     </header>
 

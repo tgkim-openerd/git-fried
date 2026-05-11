@@ -29,6 +29,8 @@
     "create": "Create",
     "rename": "Rename",
     "loading": "Loading...",
+    "searching": "Searching...",
+    "noChanges": "No changes ✓",
     "refresh": "Refresh",
     "search": "Search",
     "copy": "Copy",
@@ -921,6 +923,31 @@
     "toastAiCli": "AI commit explain",
     "toastAiUnavailable": "AI CLI unavailable",
     "toastAiUnavailableBody": "Install Claude or Codex CLI and retry"
+  },
+  "commitTable": {
+    "title": "Commit log",
+    "loading": "Loading...",
+    "allAuthors": "All authors",
+    "colSubject": "Subject",
+    "colAuthor": "Author",
+    "colDate": "Date",
+    "gpgSigned": "GPG signed"
+  },
+  "commitGraph": {
+    "title": "Commit graph",
+    "loading": "Loading..."
+  },
+  "cloneModal": {
+    "parentFolder": "Parent folder",
+    "folderName": "Folder name"
+  },
+  "bulkFetch": {
+    "colStatus": "Status",
+    "colMessage": "Message / Error"
+  },
+  "commitInputExtra": {
+    "previewLabel": "Final message preview",
+    "amendLabel": "— amend last commit"
   },
   "commitInput": {
     "errFetchLastFailed": "Failed to fetch last commit message",

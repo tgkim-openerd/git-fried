@@ -5,6 +5,7 @@
 // MiniRemoteBranchList / MiniTagList 추가 → LOCAL / REMOTE / WORKTREES / STASHES / PR / TAGS.
 
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useStatus } from '@/composables/useStatus'
 import { useStatusCounts } from '@/composables/useStatusCounts'
 import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
@@ -20,6 +21,7 @@ import MiniTagList from './MiniTagList.vue'
 import MiniPrList from './MiniPrList.vue'
 import EmptyState from './EmptyState.vue'
 
+const { t } = useI18n()
 const store = useReposStore()
 const uiSettings = useUiSettingsStore()
 const sections = computed(() => uiSettings.value.miniSidebarSections)
@@ -87,7 +89,7 @@ const QUICK_TABS: ReadonlyArray<{
           ⚠ {{ counts.conflicted }}
         </span>
       </div>
-      <div v-else class="text-[10px] text-muted-foreground">변경사항 없음 ✓</div>
+      <div v-else class="text-[10px] text-muted-foreground">{{ t('common.noChanges') }}</div>
 
       <!-- quick tab buttons -->
       <div class="grid grid-cols-5 gap-1">

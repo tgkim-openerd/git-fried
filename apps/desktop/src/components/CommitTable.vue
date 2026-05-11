@@ -3,12 +3,15 @@
 // Sprint 22-2 CM-2 — row 우클릭 메뉴 (CommitGraph 와 동일 — useCommitActions 재사용).
 import { computed, ref, useTemplateRef } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { useI18n } from 'vue-i18n'
 import { getLog } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import { useCommitActions } from '@/composables/useCommitActions'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import type { CommitSummary } from '@/types/git'
+
+const { t } = useI18n()
 
 const props = defineProps<{ repoId: number | null }>()
 const emit = defineEmits<{
@@ -82,16 +85,16 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
 <template>
   <div class="flex h-full flex-col">
     <header class="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
-      <h2 class="text-sm font-semibold">커밋 로그</h2>
+      <h2 class="text-sm font-semibold">{{ t('commitTable.title') }}</h2>
       <div class="flex items-center gap-2 text-xs text-muted-foreground">
-        <span v-if="isFetching">불러오는 중...</span>
+        <span v-if="isFetching">{{ t('commitTable.loading') }}</span>
         <select
           v-if="uniqueAuthors.length > 1"
           v-model="authorFilter"
           class="rounded border border-input bg-background px-2 py-0.5 text-[11px]"
-          :title="`작성자 필터 (${uniqueAuthors.length}명)`"
+          :title="`${t('commitTable.colAuthor')} filter (${uniqueAuthors.length})`"
         >
-          <option :value="null">모든 작성자</option>
+          <option :value="null">{{ t('commitTable.allAuthors') }}</option>
           <option v-for="a in uniqueAuthors" :key="a" :value="a">
             {{ a }}
           </option>
@@ -118,9 +121,9 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
         <thead class="sticky top-0 bg-background text-xs text-muted-foreground">
           <tr>
             <th class="px-3 py-2 text-left font-normal w-20">SHA</th>
-            <th class="px-3 py-2 text-left font-normal">제목</th>
-            <th class="px-3 py-2 text-left font-normal w-40">작성자</th>
-            <th class="px-3 py-2 text-left font-normal w-44">날짜</th>
+            <th class="px-3 py-2 text-left font-normal">{{ t('commitTable.colSubject') }}</th>
+            <th class="px-3 py-2 text-left font-normal w-40">{{ t('commitTable.colAuthor') }}</th>
+            <th class="px-3 py-2 text-left font-normal w-44">{{ t('commitTable.colDate') }}</th>
             <th class="px-3 py-2 text-left font-normal w-10"></th>
           </tr>
         </thead>
@@ -151,7 +154,12 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
               {{ formatDate(c.authorAt) }}
             </td>
             <td class="px-3 py-1.5">
-              <span v-if="c.signed" class="text-xs text-diff-add" title="GPG 서명됨">✓</span>
+              <span
+                v-if="c.signed"
+                class="text-xs text-diff-add"
+                :title="t('commitTable.gpgSigned')"
+                >✓</span
+              >
             </td>
           </tr>
           <tr v-if="filteredCommits.length === 0">

@@ -146,7 +146,9 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
           <div v-if="errorMsg" class="px-3 py-4 text-xs text-red-400">
             {{ errorMsg }}
           </div>
-          <div v-else-if="isLoading" class="px-3 py-4 text-xs opacity-60">검색 중...</div>
+          <div v-else-if="isLoading" class="px-3 py-4 text-xs opacity-60">
+            {{ t('common.searching') }}
+          </div>
           <div v-else-if="!trimmedQuery" class="px-3 py-4 text-xs opacity-60">
             검색어를 입력하세요. Enter = SHA 복사, ↑↓ = 선택, Esc = 닫기.
           </div>

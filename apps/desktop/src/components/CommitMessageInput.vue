@@ -267,7 +267,9 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
 
     <!-- 미리보기 -->
     <details class="rounded-md border border-border bg-muted/30 px-2 py-1 text-xs">
-      <summary class="cursor-pointer text-muted-foreground">최종 메시지 미리보기</summary>
+      <summary class="cursor-pointer text-muted-foreground">
+        {{ t('commitInputExtra.previewLabel') }}
+      </summary>
       <pre class="mt-1 whitespace-pre-wrap font-mono text-[11px]">{{
         finalMessage || '(비어있음)'
       }}</pre>
@@ -285,7 +287,9 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
     >
       <input v-model="amend" type="checkbox" :disabled="!repoId" class="accent-amber-500" />
       <span :class="amend ? 'font-semibold text-warning-amber' : ''"> Amend previous commit </span>
-      <span v-if="amend" class="text-[10px] text-muted-foreground">— 마지막 커밋 수정</span>
+      <span v-if="amend" class="text-[10px] text-muted-foreground">{{
+        t('commitInputExtra.amendLabel')
+      }}</span>
     </label>
 
     <!-- 옵션 + commit 버튼.

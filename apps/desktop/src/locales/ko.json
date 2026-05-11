@@ -29,6 +29,8 @@
     "create": "생성",
     "rename": "이름 변경",
     "loading": "불러오는 중...",
+    "searching": "검색 중...",
+    "noChanges": "변경사항 없음 ✓",
     "refresh": "갱신",
     "search": "검색",
     "copy": "복사",
@@ -921,6 +923,31 @@
     "toastAiCli": "AI commit 설명",
     "toastAiUnavailable": "AI CLI 미설치",
     "toastAiUnavailableBody": "Claude 또는 Codex CLI 설치 후 재시도"
+  },
+  "commitTable": {
+    "title": "커밋 로그",
+    "loading": "불러오는 중...",
+    "allAuthors": "모든 작성자",
+    "colSubject": "제목",
+    "colAuthor": "작성자",
+    "colDate": "날짜",
+    "gpgSigned": "GPG 서명됨"
+  },
+  "commitGraph": {
+    "title": "커밋 그래프",
+    "loading": "불러오는 중..."
+  },
+  "cloneModal": {
+    "parentFolder": "부모 폴더",
+    "folderName": "폴더명"
+  },
+  "bulkFetch": {
+    "colStatus": "상태",
+    "colMessage": "메시지 / Error"
+  },
+  "commitInputExtra": {
+    "previewLabel": "최종 메시지 미리보기",
+    "amendLabel": "— 마지막 커밋 수정"
   },
   "commitInput": {
     "errFetchLastFailed": "마지막 커밋 메시지 조회 실패",

@@ -5,6 +5,7 @@
 // 결과 전체를 표 형태로 표시 + 실패 stderr 전체 expand.
 // Sprint 22-5 Q-1/Q-2: BaseModal 마이그레이션.
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { humanizeGitError } from '@/api/errors'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 import { formatDateLocalized } from '@/composables/useUserSettings'
@@ -13,6 +14,7 @@ import BaseModal from './BaseModal.vue'
 defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
+const { t } = useI18n()
 const { last } = useBulkFetchResult()
 
 const failedCount = computed(() => last.value?.results.filter((r) => !r.success).length ?? 0)
@@ -48,8 +50,8 @@ function fmtTime(ms: number): string {
         <thead class="sticky top-0 bg-card text-muted-foreground">
           <tr>
             <th class="px-2 py-1 text-left font-normal">Repo</th>
-            <th class="px-2 py-1 text-left font-normal w-16">상태</th>
-            <th class="px-2 py-1 text-left font-normal">메시지 / Error</th>
+            <th class="px-2 py-1 text-left font-normal w-16">{{ t('bulkFetch.colStatus') }}</th>
+            <th class="px-2 py-1 text-left font-normal">{{ t('bulkFetch.colMessage') }}</th>
           </tr>
         </thead>
         <tbody>
