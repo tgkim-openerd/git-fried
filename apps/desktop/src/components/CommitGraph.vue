@@ -14,7 +14,6 @@ import { useI18n } from 'vue-i18n'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
 import { useGraphRefVisibility } from '@/composables/useGraphRefVisibility'
-import type { HiddenRefKind } from '@/api/git'
 import { useCommitGraphHeader } from '@/composables/useCommitGraphHeader'
 import { BRANCH_TAG_DEFAULT_WIDTH_PX } from '@/composables/useCommitColumns'
 import { useCommitActions } from '@/composables/useCommitActions'
@@ -24,6 +23,9 @@ import { useGraphSelection } from '@/composables/useGraphSelection'
 import { useGraphCanvasRenderer } from '@/composables/useGraphCanvasRenderer'
 import { useCommitGraphRows } from '@/composables/useCommitGraphRows'
 import { useCommitGraphInteraction } from '@/composables/useCommitGraphInteraction'
+// Sprint c65 — presentation helpers (bodyFirstLine / refPillClass / authorInitial /
+// authorAvatarBg) composable 추출.
+import { useCommitGraphPresentation } from '@/composables/useCommitGraphPresentation'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
 import type { GraphRow } from '@/api/git'
@@ -51,53 +53,11 @@ const { visibleRef, soloRef, toggleSoloRef, hideRefByName, refKindOf } = useGrap
   () => props.repoId,
 )
 
-// Sprint c51 — GitKraken parity Minor:
-//   1) commit body 첫 줄 회색 inline (subject 다음 줄, 80 char trim)
-//   2) ref-pill type-별 (branch/remote/tag/stash) color 분기
-//   3) author column avatar prefix (initial letter mini-circle)
-function bodyFirstLine(body: string | undefined | null): string {
-  if (!body) return ''
-  const first = body.trim().split('\n')[0]?.trim() ?? ''
-  return first.length > 80 ? first.slice(0, 80) + '…' : first
-}
-
-const REF_KIND_CLASS: Record<HiddenRefKind, string> = {
-  branch: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
-  remote: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-  tag: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
-  stash: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-}
-function refPillClass(refName: string): string {
-  return soloRef.value === refName
-    ? 'bg-orange-500/20 text-orange-700 dark:text-orange-500 ring-1 ring-orange-500/40'
-    : REF_KIND_CLASS[refKindOf(refName)]
-}
-
-function authorInitial(name: string | undefined | null): string {
-  if (!name) return '?'
-  const trimmed = name.trim()
-  if (!trimmed) return '?'
-  // plan/30 P3-5 — 한글 첫 2자 (e.g. 김태길 → 김태), 영문 첫 1자 대문자.
-  if (/^[가-힯]/.test(trimmed)) return trimmed.slice(0, 2)
-  return trimmed.charAt(0).toUpperCase()
-}
-// 8 stable color hash — useGraphCanvasRenderer PALETTE 와 동일 시스템.
-const AVATAR_PALETTE = [
-  'bg-emerald-500',
-  'bg-sky-500',
-  'bg-amber-500',
-  'bg-violet-500',
-  'bg-rose-500',
-  'bg-teal-500',
-  'bg-yellow-500',
-  'bg-cyan-500',
-]
-function authorAvatarBg(name: string | undefined | null): string {
-  if (!name) return 'bg-muted'
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0
-  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length]
-}
+// Sprint c51 — GitKraken parity Minor (body 첫 줄 / ref-pill 색 / avatar) — c65 useCommitGraphPresentation 위임.
+const { bodyFirstLine, refPillClass, authorInitial, authorAvatarBg } = useCommitGraphPresentation({
+  soloRef,
+  refKindOf,
+})
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
