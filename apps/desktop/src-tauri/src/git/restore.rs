@@ -73,6 +73,16 @@ pub async fn restore_paths(repo: &Path, paths: &[String], opts: &RestoreOpts) ->
             "restore: --worktree / --staged 중 최소 하나는 true 여야 합니다.",
         ));
     }
+    let started = std::time::Instant::now();
+    tracing::debug!(
+        target: "git_fried_lib::restore",
+        repo = %repo.display(),
+        path_count = paths.len(),
+        worktree = opts.worktree,
+        staged = opts.staged,
+        has_source = opts.source.is_some(),
+        "restore_paths 시작"
+    );
 
     // args 빌드 — `git restore [--worktree] [--staged] [--source=<rev>] -- <paths...>`.
     // 동적 String 을 args 에 섞어야 하므로 Vec<String> 으로 빌드.
@@ -96,9 +106,19 @@ pub async fn restore_paths(repo: &Path, paths: &[String], opts: &RestoreOpts) ->
     }
 
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
-    git_run(repo, &arg_refs, &GitRunOpts::default())
+    let result = git_run(repo, &arg_refs, &GitRunOpts::default())
         .await?
-        .into_ok()?;
+        .into_ok();
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    match &result {
+        Ok(_) => {
+            tracing::info!(target: "git_fried_lib::restore", repo = %repo.display(), path_count = paths.len(), elapsed_ms, "restore_paths 완료")
+        }
+        Err(e) => {
+            tracing::warn!(target: "git_fried_lib::restore", repo = %repo.display(), path_count = paths.len(), elapsed_ms, error = %e, "restore_paths 실패")
+        }
+    }
+    result?;
     Ok(())
 }
 

@@ -24,9 +24,30 @@ pub async fn reset(path: &Path, mode: ResetMode, target: &str) -> AppResult<()> 
     if target.trim().is_empty() {
         return Err(AppError::validation("reset 대상이 비었습니다."));
     }
-    git_run(path, &["reset", mode_arg, target], &GitRunOpts::default())
+    let started = std::time::Instant::now();
+    // hard reset 은 destructive — info 레벨로 명시 기록.
+    let danger = matches!(mode, ResetMode::Hard);
+    tracing::info!(
+        target: "git_fried_lib::reset",
+        repo = %path.display(),
+        mode = mode_arg,
+        target,
+        danger,
+        "reset 시작"
+    );
+    let result = git_run(path, &["reset", mode_arg, target], &GitRunOpts::default())
         .await?
-        .into_ok()?;
+        .into_ok();
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    match &result {
+        Ok(_) => {
+            tracing::info!(target: "git_fried_lib::reset", repo = %path.display(), mode = mode_arg, elapsed_ms, "reset 완료")
+        }
+        Err(e) => {
+            tracing::warn!(target: "git_fried_lib::reset", repo = %path.display(), mode = mode_arg, elapsed_ms, error = %e, "reset 실패")
+        }
+    }
+    result?;
     Ok(())
 }
 

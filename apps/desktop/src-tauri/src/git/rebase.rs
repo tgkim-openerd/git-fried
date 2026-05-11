@@ -257,7 +257,9 @@ pub fn status(repo: &Path) -> AppResult<RebaseStatus> {
 }
 
 pub async fn rebase_continue(repo: &Path) -> AppResult<GitOutput> {
-    git_run(
+    let started = std::time::Instant::now();
+    tracing::debug!(target: "git_fried_lib::rebase", repo = %repo.display(), action = "continue", "rebase_continue 시작");
+    let out = git_run(
         repo,
         &["rebase", "--continue"],
         &GitRunOpts {
@@ -265,10 +267,24 @@ pub async fn rebase_continue(repo: &Path) -> AppResult<GitOutput> {
             ..Default::default()
         },
     )
-    .await
+    .await;
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    match &out {
+        Ok(o) if o.exit_code == Some(0) => {
+            tracing::info!(target: "git_fried_lib::rebase", repo = %repo.display(), action = "continue", elapsed_ms, "rebase_continue 완료")
+        }
+        Ok(o) => {
+            tracing::warn!(target: "git_fried_lib::rebase", repo = %repo.display(), action = "continue", exit_code = ?o.exit_code, elapsed_ms, "rebase_continue 비정상 종료 (conflict 가능)")
+        }
+        Err(e) => {
+            tracing::warn!(target: "git_fried_lib::rebase", repo = %repo.display(), action = "continue", elapsed_ms, error = %e, "rebase_continue 실패")
+        }
+    }
+    out
 }
 
 pub async fn rebase_abort(repo: &Path) -> AppResult<()> {
+    tracing::info!(target: "git_fried_lib::rebase", repo = %repo.display(), action = "abort", "rebase_abort");
     git_run(repo, &["rebase", "--abort"], &GitRunOpts::default())
         .await?
         .into_ok()?;
@@ -276,6 +292,7 @@ pub async fn rebase_abort(repo: &Path) -> AppResult<()> {
 }
 
 pub async fn rebase_skip(repo: &Path) -> AppResult<GitOutput> {
+    tracing::info!(target: "git_fried_lib::rebase", repo = %repo.display(), action = "skip", "rebase_skip");
     git_run(
         repo,
         &["rebase", "--skip"],

@@ -37,6 +37,17 @@ pub async fn bulk_cherry_pick(
     strategy: CherryPickStrategy,
     no_commit: bool,
 ) -> AppResult<Vec<CherryPickResult>> {
+    let started = std::time::Instant::now();
+    let total = repo_ids.len();
+    let sha_short = &sha[..7.min(sha.len())];
+    tracing::info!(
+        target: "git_fried_lib::cherry_pick",
+        sha = sha_short,
+        total,
+        strategy = ?strategy,
+        no_commit,
+        "bulk_cherry_pick 시작"
+    );
     let mut handles = Vec::with_capacity(repo_ids.len());
     for id in repo_ids {
         let r = match db.get_repo(*id).await {
@@ -66,6 +77,20 @@ pub async fn bulk_cherry_pick(
             }),
         }
     }
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+    let succeeded = out.iter().filter(|r| r.success).count();
+    let conflicted = out.iter().filter(|r| r.conflicted).count();
+    let failed = total - succeeded;
+    tracing::info!(
+        target: "git_fried_lib::cherry_pick",
+        sha = sha_short,
+        total,
+        succeeded,
+        failed,
+        conflicted,
+        elapsed_ms,
+        "bulk_cherry_pick 완료"
+    );
     Ok(out)
 }
 
