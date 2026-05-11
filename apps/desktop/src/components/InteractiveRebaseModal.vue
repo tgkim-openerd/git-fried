@@ -7,159 +7,39 @@
 //   3. running     : run 호출 후 결과/충돌 표시
 //
 // 트리거: `window.gitFriedOpenRebase()` (CommandPalette 등에서 호출).
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+//
+// Sprint c63-B — flow state + 5 mutation + handlers 모두 useInteractiveRebaseFlow
+// composable 위임. SFC 는 store→repoId 연결 + aiComposer 위임 + template 만.
+import { computed, onMounted, onUnmounted } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
-import { useMutation } from '@tanstack/vue-query'
-import {
-  rebasePrepareTodo,
-  rebaseRun,
-  rebaseAbort,
-  rebaseContinue,
-  rebaseSkip,
-  getRebaseStatus,
-  type RebaseAction,
-  type RebaseTodoEntry,
-  type RebaseStatus,
-  type RebaseRunResult,
-} from '@/api/git'
-import { describeError } from '@/api/errors'
-import { useToast } from '@/composables/useToast'
+import type { RebaseAction } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
-import { useInvalidateRepoQueries } from '@/composables/useStatus'
 // Sprint c34 god comp 14/N — AI Commit Composer 영역 분리.
 import { useAiComposer } from '@/composables/useAiComposer'
+// Sprint c63-B — IRR flow state + 5 mutation + handlers composable 위임.
+import { useInteractiveRebaseFlow } from '@/composables/useInteractiveRebaseFlow'
 import BaseModal from './BaseModal.vue'
-import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n()
-
-type Step = 'setup' | 'edit' | 'running' | 'result'
 
 const store = useReposStore()
-const toast = useToast()
-const invalidate = useInvalidateRepoQueries()
-
-const open = ref(false)
-const step = ref<Step>('setup')
-const count = ref(5)
-const todo = ref<RebaseTodoEntry[]>([])
-const lastResult = ref<RebaseRunResult | null>(null)
-const status = ref<RebaseStatus | null>(null)
-
 const repoId = computed(() => store.activeRepoId)
 
-function close() {
-  open.value = false
-  step.value = 'setup'
-  todo.value = []
-  lastResult.value = null
-  status.value = null
-}
-
-async function refreshStatus() {
-  if (repoId.value == null) return
-  try {
-    status.value = await getRebaseStatus(repoId.value)
-  } catch {
-    /* ignore */
-  }
-}
-
-const prepareMut = useMutation({
-  mutationFn: () => {
-    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
-    return rebasePrepareTodo(repoId.value, count.value)
-  },
-  onSuccess: (entries) => {
-    todo.value = entries
-    step.value = 'edit'
-  },
-  onError: (e) => toast.error(t('interactiveRebase.toastTodoFailed'), describeError(e)),
-})
-
-const runMut = useMutation({
-  mutationFn: () => {
-    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
-    const base = `HEAD~${todo.value.length}`
-    return rebaseRun(repoId.value, base, todo.value)
-  },
-  onSuccess: (res) => {
-    lastResult.value = res
-    status.value = res.status
-    step.value = 'result'
-    invalidate(repoId.value)
-    if (res.success) {
-      toast.success(
-        t('interactiveRebase.toastSuccess'),
-        t('interactiveRebase.toastSuccessBody', { n: todo.value.length }),
-      )
-    } else if (res.status.conflict) {
-      toast.error(
-        t('interactiveRebase.toastConflict'),
-        t('interactiveRebase.toastConflictBody', {
-          current: res.status.currentStep,
-          total: res.status.totalSteps,
-        }),
-      )
-    } else {
-      toast.error(t('interactiveRebase.toastFailed'), res.stderr.slice(0, 200))
-    }
-  },
-  onError: (e) => {
-    toast.error(t('interactiveRebase.toastRunFailed'), describeError(e))
-    step.value = 'edit'
-  },
-})
-
-const continueMut = useMutation({
-  mutationFn: () => {
-    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
-    return rebaseContinue(repoId.value)
-  },
-  onSuccess: (res) => {
-    lastResult.value = res
-    status.value = res.status
-    invalidate(repoId.value)
-    if (res.success) toast.success(t('interactiveRebase.toastContinueSuccess'))
-  },
-  onError: (e) => toast.error(t('interactiveRebase.toastContinueFailed'), describeError(e)),
-})
-
-const skipMut = useMutation({
-  mutationFn: () => {
-    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
-    return rebaseSkip(repoId.value)
-  },
-  onSuccess: (res) => {
-    lastResult.value = res
-    status.value = res.status
-    invalidate(repoId.value)
-  },
-  onError: (e) => toast.error(t('interactiveRebase.toastSkipFailed'), describeError(e)),
-})
-
-const abortMut = useMutation({
-  mutationFn: () => {
-    if (repoId.value == null) throw new Error(t('interactiveRebase.errNoRepo'))
-    return rebaseAbort(repoId.value)
-  },
-  onSuccess: () => {
-    invalidate(repoId.value)
-    toast.success(t('interactiveRebase.toastAbortSuccess'))
-    close()
-  },
-  onError: (e) => toast.error(t('interactiveRebase.toastAbortFailed'), describeError(e)),
-})
-
-function setAction(idx: number, action: RebaseAction) {
-  const e = todo.value[idx]
-  if (!e) return
-  todo.value[idx] = {
-    ...e,
-    action,
-    newMessage: action === 'reword' ? (e.newMessage ?? e.subject) : null,
-  }
-}
+const {
+  open,
+  step,
+  count,
+  todo,
+  lastResult,
+  status,
+  prepareMut,
+  runMut,
+  continueMut,
+  skipMut,
+  abortMut,
+  close,
+  setAction,
+  canRun,
+  externalOpen,
+} = useInteractiveRebaseFlow({ repoId: () => repoId.value })
 
 // === Sprint c34 god 14/N — AI Commit Composer composable 위임 ===
 const aiComp = useAiComposer({
@@ -168,39 +48,6 @@ const aiComp = useAiComposer({
 })
 const ai = { available: aiComp.availableCli }
 const composerMut = aiComp.generate
-
-const canRun = computed(() => {
-  if (todo.value.length === 0) return false
-  // reword 는 newMessage 비어있지 않아야 함.
-  for (const e of todo.value) {
-    if (e.action === 'reword' && !(e.newMessage ?? '').trim()) return false
-  }
-  return true
-})
-
-// 외부 트리거 (CommandPalette).
-function externalOpen() {
-  if (repoId.value == null) {
-    toast.error(t('interactiveRebase.errNoRepo'), t('interactiveRebase.errNoRepoBody'))
-    return
-  }
-  open.value = true
-  step.value = 'setup'
-  count.value = 5
-  refreshStatus().then(() => {
-    if (status.value?.inProgress) {
-      // 이미 진행 중이면 result/conflict 화면으로 점프.
-      step.value = 'result'
-      lastResult.value = {
-        success: false,
-        exitCode: null,
-        stdout: '',
-        stderr: '',
-        status: status.value,
-      }
-    }
-  })
-}
 
 onMounted(() => {
   window.gitFriedOpenRebase = externalOpen
