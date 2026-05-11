@@ -925,6 +925,18 @@
   "mergeEditor": {
     "entirelyToOneSide": "Entire file to one side:"
   },
+  "identityCard": {
+    "title": "Differentiators",
+    "koreanSafe": "Korean-safe"
+  },
+  "gitkrakenImport": {
+    "pin": "Pin",
+    "activeTab": "Active tab",
+    "success": "✅ Complete",
+    "failure": "❌ Failed",
+    "skip": "Skipped",
+    "tabRestore": "Tab restore attempt"
+  },
   "commitDetail": {
     "errNoRepoCommit": "Repo/commit not selected",
     "errNoCli": "Claude/Codex CLI not installed",

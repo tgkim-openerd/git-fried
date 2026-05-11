@@ -925,6 +925,18 @@
   "mergeEditor": {
     "entirelyToOneSide": "전체 파일을 한 쪽으로:"
   },
+  "identityCard": {
+    "title": "차별점",
+    "koreanSafe": "한글 안전"
+  },
+  "gitkrakenImport": {
+    "pin": "즐겨찾기 (Pin)",
+    "activeTab": "활성 탭",
+    "success": "✅ 완료",
+    "failure": "❌ 실패",
+    "skip": "스킵",
+    "tabRestore": "탭 복원 시도"
+  },
   "commitDetail": {
     "errNoRepoCommit": "레포/commit 미확정",
     "errNoCli": "Claude/Codex CLI 미설치",

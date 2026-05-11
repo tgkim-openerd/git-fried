@@ -168,13 +168,13 @@ watch(
             <div class="text-lg font-semibold">{{ plan.reposToAdd }}</div>
           </div>
           <div class="rounded border border-border bg-muted/20 p-2">
-            <div class="text-muted-foreground">즐겨찾기 (Pin)</div>
+            <div class="text-muted-foreground">{{ t('gitkrakenImport.pin') }}</div>
             <div class="text-lg font-semibold">
               {{ plan.reposToPin.length }}
             </div>
           </div>
           <div class="rounded border border-border bg-muted/20 p-2">
-            <div class="text-muted-foreground">활성 탭</div>
+            <div class="text-muted-foreground">{{ t('gitkrakenImport.activeTab') }}</div>
             <div class="text-lg font-semibold">
               {{ plan.tabsToOpen.length }}
             </div>
@@ -215,13 +215,19 @@ watch(
 
       <!-- done -->
       <div v-else-if="phase === 'done' && result">
-        <p class="mb-3 text-sm font-semibold text-diff-add">✅ 완료</p>
+        <p class="mb-3 text-sm font-semibold text-diff-add">
+          {{ t('gitkrakenImport.success') }}
+        </p>
         <ul class="ml-4 list-disc text-xs">
           <li>Workspace 생성: {{ result.workspacesCreated }}</li>
           <li>Repo 추가: {{ result.reposAdded }}</li>
-          <li>즐겨찾기 (Pin): {{ result.reposPinned }}</li>
-          <li v-if="result.skippedPaths.length">스킵: {{ result.skippedPaths.length }}</li>
-          <li v-if="result.tabsToOpen.length">탭 복원 시도: {{ result.tabsToOpen.length }}</li>
+          <li>{{ t('gitkrakenImport.pin') }}: {{ result.reposPinned }}</li>
+          <li v-if="result.skippedPaths.length">
+            {{ t('gitkrakenImport.skip') }}: {{ result.skippedPaths.length }}
+          </li>
+          <li v-if="result.tabsToOpen.length">
+            {{ t('gitkrakenImport.tabRestore') }}: {{ result.tabsToOpen.length }}
+          </li>
         </ul>
         <details v-if="result.warnings.length" class="mt-3">
           <summary class="cursor-pointer text-xs text-warning-amber">
@@ -235,7 +241,7 @@ watch(
 
       <!-- error -->
       <div v-else-if="phase === 'error'" class="text-sm text-danger-rose">
-        <p class="mb-2 font-semibold">❌ 실패</p>
+        <p class="mb-2 font-semibold">{{ t('gitkrakenImport.failure') }}</p>
         <pre class="whitespace-pre-wrap text-xs">{{ errorMessage }}</pre>
       </div>
     </div>

@@ -9,12 +9,14 @@
 //   - Gitea: 등록된 Gitea forge 계정 수 (vs GitHub)
 //   - AI CLI: Claude / Codex 설치 감지 결과 + 사용 횟수 (localStorage 카운터)
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
 import { aiDetectClis, countHangulCommits, forgeListAccounts } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
 import { useReposStore } from '@/stores/repos'
 import { aiCallCountRef } from '@/composables/useAiCli'
 
+const { t } = useI18n()
 const reposStore = useReposStore()
 
 const { data: aiProbes } = useQuery({
@@ -70,7 +72,7 @@ const hangulRatioPct = computed(() => {
 <template>
   <section class="rounded-md border border-border bg-card p-4">
     <header class="mb-3 flex items-center gap-2">
-      <span class="text-base font-semibold">차별점</span>
+      <span class="text-base font-semibold">{{ t('identityCard.title') }}</span>
       <span class="text-[10px] text-muted-foreground">(plan/26 — 3 constraints 정체성)</span>
     </header>
 
@@ -78,7 +80,7 @@ const hangulRatioPct = computed(() => {
       <!-- 한글 안전 -->
       <li class="rounded border border-border bg-muted/20 p-3">
         <div class="mb-1 text-2xl">🇰🇷</div>
-        <div class="text-sm font-semibold">한글 안전</div>
+        <div class="text-sm font-semibold">{{ t('identityCard.koreanSafe') }}</div>
         <div class="mt-1 text-[11px] text-muted-foreground">
           UTF-8 강제 + NFC normalize + file-based commit body
         </div>
