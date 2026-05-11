@@ -24,12 +24,13 @@ import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 // Sprint c33 — 프로젝트 그룹화 + drag-drop 모델 분리.
 import { useTabGroups, type ProjectGroup } from '@/composables/useTabGroups'
-import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
+// Sprint c64-B — 2 ContextMenu builder + moveTab + confirm composable 위임.
+import { useRepoTabContextMenu } from '@/composables/useRepoTabContextMenu'
 // Sprint c31 — BaseTooltip primitive (kbd hint 노출).
 import BaseTooltip from './BaseTooltip.vue'
 import { visualWidth } from '@/utils/visualWidth'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
 
 const { t } = useI18n()
 
@@ -100,15 +101,10 @@ function onMiddleClick(id: number, e: MouseEvent) {
 
 const tabCtxMenu = useTemplateRef<ContextMenuExpose>('tabCtxMenu')
 
-function moveTab(id: number, delta: -1 | 1) {
-  const idx = store.tabs.indexOf(id)
-  if (idx < 0) return
-  const target = idx + delta
-  if (target < 0 || target >= store.tabs.length) return
-  const next = [...store.tabs]
-  ;[next[idx], next[target]] = [next[target], next[idx]]
-  store.reorderTabs(next)
-}
+// Sprint c64-B — 2 ContextMenu builder + moveTab + confirm 위임.
+const { onTabContextMenu, onProjectContextMenu } = useRepoTabContextMenu({
+  openMenu: (ev, items) => tabCtxMenu.value?.openAt(ev, items),
+})
 
 const tabContainerRef = useTemplateRef<HTMLElement>('tabContainerRef')
 const isOverflow = computed(() => store.tabs.length > OVERFLOW_THRESHOLD)
@@ -127,80 +123,6 @@ watch(
     }
   },
 )
-
-function onTabContextMenu(ev: MouseEvent, id: number) {
-  ev.preventDefault()
-  ev.stopPropagation()
-  const idx = store.tabs.indexOf(id)
-  const total = store.tabs.length
-  const items: ContextMenuItem[] = [
-    { label: 'Close', icon: '✕', shortcut: 'Mid', action: () => store.closeTab(id) },
-    {
-      label: 'Close others',
-      icon: '⊘',
-      disabled: total <= 1,
-      action: () => store.closeOthers(id),
-    },
-    {
-      label: 'Close all',
-      icon: '✕✕',
-      destructive: true,
-      action: () => {
-        void (async () => {
-          const ok = await confirmDialog({
-            title: t('confirm.closeAllTabsTitle'),
-            message: t('confirm.closeAllTabsMessage', { n: total }),
-            danger: true,
-          })
-          if (ok) store.closeAll()
-        })()
-      },
-    },
-    { divider: true },
-    {
-      label: 'Move left',
-      icon: '←',
-      disabled: idx <= 0,
-      action: () => moveTab(id, -1),
-    },
-    {
-      label: 'Move right',
-      icon: '→',
-      disabled: idx < 0 || idx >= total - 1,
-      action: () => moveTab(id, 1),
-    },
-  ]
-  tabCtxMenu.value?.openAt(ev, items)
-}
-
-function onProjectContextMenu(ev: MouseEvent, g: ProjectGroup) {
-  ev.preventDefault()
-  ev.stopPropagation()
-  const items: ContextMenuItem[] = [
-    {
-      label: `Close all in '${g.label}' (${g.tabIds.length})`,
-      icon: '✕',
-      destructive: g.tabIds.length > 1,
-      action: () => {
-        void (async () => {
-          if (g.tabIds.length > 1) {
-            const ok = await confirmDialog({
-              title: t('confirm.closeGroupTabsTitle'),
-              message: t('confirm.closeGroupTabsMessage', {
-                n: g.tabIds.length,
-                label: g.label,
-              }),
-              danger: true,
-            })
-            if (!ok) return
-          }
-          for (const id of g.tabIds) store.closeTab(id)
-        })()
-      },
-    },
-  ]
-  tabCtxMenu.value?.openAt(ev, items)
-}
 </script>
 
 <template>
