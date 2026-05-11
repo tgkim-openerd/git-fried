@@ -6,6 +6,41 @@
 
 export type PatchFileChange = 'modified' | 'added' | 'deleted' | 'renamed'
 
+/**
+ * c67-C: CommitDetailSidebar 에서 사용하던 changeIcon helper 이동.
+ * file change 종류별 단일 character icon (added=+ / deleted=- / renamed=↔ / modified=·).
+ */
+export function changeIcon(c: PatchFileChange): string {
+  switch (c) {
+    case 'added':
+      return '＋'
+    case 'deleted':
+      return '−'
+    case 'renamed':
+      return '↔'
+    case 'modified':
+    default:
+      return '·'
+  }
+}
+
+/**
+ * c67-C: file change 종류별 Tailwind text-* 클래스 (semantic colors, plan/28 옵션 C).
+ */
+export function changeColor(c: PatchFileChange): string {
+  switch (c) {
+    case 'added':
+      return 'text-diff-add'
+    case 'deleted':
+      return 'text-diff-delete'
+    case 'renamed':
+      return 'text-diff-rename'
+    case 'modified':
+    default:
+      return 'text-warning-amber'
+  }
+}
+
 export interface PatchFile {
   path: string
   /** rename 시 from path. 그 외엔 null. */

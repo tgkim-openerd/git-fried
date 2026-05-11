@@ -1,5 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import { parsePatchStats } from './patchStats'
+import { parsePatchStats, changeIcon, changeColor } from './patchStats'
+
+describe('changeIcon', () => {
+  it('added → ＋', () => {
+    expect(changeIcon('added')).toBe('＋')
+  })
+  it('deleted → −', () => {
+    expect(changeIcon('deleted')).toBe('−')
+  })
+  it('renamed → ↔', () => {
+    expect(changeIcon('renamed')).toBe('↔')
+  })
+  it('modified → ·', () => {
+    expect(changeIcon('modified')).toBe('·')
+  })
+})
+
+describe('changeColor', () => {
+  it('added → text-diff-add', () => {
+    expect(changeColor('added')).toBe('text-diff-add')
+  })
+  it('deleted → text-diff-delete', () => {
+    expect(changeColor('deleted')).toBe('text-diff-delete')
+  })
+  it('renamed → text-diff-rename', () => {
+    expect(changeColor('renamed')).toBe('text-diff-rename')
+  })
+  it('modified → text-warning-amber (default)', () => {
+    expect(changeColor('modified')).toBe('text-warning-amber')
+  })
+})
 
 describe('parsePatchStats', () => {
   it('null / undefined / 빈 string → 0 stats', () => {

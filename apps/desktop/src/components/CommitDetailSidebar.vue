@@ -10,7 +10,6 @@
 // - file stats + paths: useCommitDiff 의 patch 파싱 (patchStats)
 
 import { computed, ref } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
 import { useGraph } from '@/composables/useGraph'
 import { useCommitDiff } from '@/composables/useCommitDiff'
 import {
@@ -20,16 +19,18 @@ import {
 } from '@/composables/useUserSettings'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
-import { parsePatchStats, type PatchFile, type PatchFileChange } from '@/utils/patchStats'
+import { parsePatchStats, changeIcon, changeColor, type PatchFile } from '@/utils/patchStats'
 import { buildPathTree } from '@/utils/pathTree'
 import { flattenTree, type FlatTreeRow } from '@/composables/useStatusTreeView'
-import { aiExplainCommit } from '@/api/git'
-import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
 import AiResultModal from './AiResultModal.vue'
 // Sprint c54 — Issue 2 — file changes 영역 첫 fetch 시 skeleton placeholder.
 import SkeletonBlock from './SkeletonBlock.vue'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff.
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
+// Sprint c65 — author initial 헬퍼 재사용.
+import { authorInitial as computeAuthorInitial } from '@/composables/useCommitGraphPresentation'
+// Sprint c67 — explain commit mutation + dialog state 추출.
+import { useCommitExplain } from '@/composables/useCommitExplain'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -58,13 +59,8 @@ const fileStats = computed(() => {
   return parsePatchStats(patch)
 })
 
-// plan/30 P3-5 — 한글 첫 2자 (e.g. 김태길 → 김태), 영문 첫 1자 대문자.
-const authorInitial = computed(() => {
-  const name = commit.value?.authorName?.trim()
-  if (!name) return '?'
-  if (/^[가-힯]/.test(name)) return name.slice(0, 2)
-  return name.charAt(0).toUpperCase()
-})
+// plan/30 P3-5 — 한글 첫 2자 / 영문 첫 1자 — c65 useCommitGraphPresentation 재사용.
+const authorInitial = computed(() => computeAuthorInitial(commit.value?.authorName))
 
 // c58 — UiSettings.commitTimeFormat 통합 (plan/30 P3-3 후속).
 const ui = useUiSettingsStore()
@@ -126,34 +122,7 @@ const fileTreeRows = computed<FlatTreeRow<PatchFile>[]>(() => {
   return flattenTree(tree, collapsedDirs.value)
 })
 
-function changeIcon(c: PatchFileChange): string {
-  switch (c) {
-    case 'added':
-      return '＋'
-    case 'deleted':
-      return '−'
-    case 'renamed':
-      return '↔'
-    case 'modified':
-    default:
-      return '·'
-  }
-}
-
-function changeColor(c: PatchFileChange): string {
-  // Sprint c36 plan/28 옵션 C — diff 의미는 semantic colors 사용.
-  switch (c) {
-    case 'added':
-      return 'text-diff-add'
-    case 'deleted':
-      return 'text-diff-delete'
-    case 'renamed':
-      return 'text-diff-rename'
-    case 'modified':
-    default:
-      return 'text-warning-amber'
-  }
-}
+// c67 — changeIcon / changeColor 는 utils/patchStats 로 이동 (top import).
 
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 → fullscreen diff (commit context).
 const fsDiff = useFullscreenDiff()
@@ -162,55 +131,9 @@ function openFullscreen(path: string) {
   fsDiff.openCommit(props.sha, path)
 }
 
-// Phase 13-2 (GitKraken parity) — Explain commit (✨ AI) 버튼 (헤더 우상단).
-//   기존: StatusBar 의 좌측 inline diff toolbar 의 ✨ AI (충돌 분석 전용)
-//   여기 추가: 선택 commit 의 변경 내용을 AI 가 자연어로 설명.
-const ai = useAiCli()
-const explainOpen = ref(false)
-const explainContent = ref('')
-const explainError = ref<string | null>(null)
-const explainMut = useMutation({
-  mutationFn: async () => {
-    if (props.repoId == null || !props.sha) {
-      throw new Error(t('commitDetail.errNoRepoCommit'))
-    }
-    if (ai.available.value == null) {
-      throw new Error(t('commitDetail.errNoCli'))
-    }
-    if (!(await confirmAiSend())) throw new Error('cancelled')
-    return aiExplainCommit(props.repoId, ai.available.value, props.sha, true)
-  },
-  onSuccess: (out) => {
-    if (out.success) {
-      explainContent.value = out.text
-      explainError.value = null
-      notifyAiDone(t('commitDetail.toastAiCli'), props.sha?.slice(0, 7) ?? '')
-    } else {
-      explainContent.value = ''
-      explainError.value = out.stderr || out.text || t('commitDetail.errEmptyResponse')
-    }
-  },
-  onError: (e) => {
-    const m = describeError(e)
-    if (m.includes('cancelled')) {
-      explainOpen.value = false
-      return
-    }
-    explainContent.value = ''
-    explainError.value = m
-  },
-})
-function onExplainCommit() {
-  if (!props.sha) return
-  if (ai.available.value == null) {
-    toast.warning(t('commitDetail.toastAiUnavailable'), t('commitDetail.toastAiUnavailableBody'))
-    return
-  }
-  explainOpen.value = true
-  explainContent.value = ''
-  explainError.value = null
-  explainMut.mutate()
-}
+// Phase 13-2 (GitKraken parity) — Explain commit (✨ AI) — c67 useCommitExplain 위임.
+const { ai, explainOpen, explainContent, explainError, explainMut, onExplainCommit } =
+  useCommitExplain({ repoId: () => props.repoId, sha: () => props.sha })
 </script>
 
 <template>
