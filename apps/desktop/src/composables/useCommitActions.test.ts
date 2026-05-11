@@ -108,7 +108,12 @@ describe('useCommitActions — cherryPick', () => {
 
   it('confirm OK + IPC 성공 → toast.success + invalidate', async () => {
     confirmMock.mockResolvedValueOnce(true)
-    vi.mocked(cherryPickSha).mockResolvedValueOnce(undefined)
+    vi.mocked(cherryPickSha).mockResolvedValueOnce({
+      success: true,
+      conflicted: false,
+      stdout: '',
+      stderr: '',
+    })
     const m = useCommitActions(() => 7)
     await m.cherryPick(SHA)
     expect(cherryPickSha).toHaveBeenCalledWith(7, SHA)
@@ -192,27 +197,21 @@ describe('useCommitActions — buildItems 구조', () => {
 
   it('callback 미주입 시 Show diff / Compare / Explain AI / Open in forge 4개 disabled', () => {
     const m = useCommitActions(() => 1)
-    const items = m.buildItems(SHA)
-    const labeled = items.filter((i): i is Extract<typeof i, { label: string }> => 'label' in i)
-    const showDiff = labeled.find((i) => i.label === 'Show diff')
-    const compare = labeled.find((i) => i.label === 'Compare with...')
-    const explainAi = labeled.find((i) => i.label === 'Explain (AI)')
-    const openForge = labeled.find((i) => i.label === 'Open in forge')
-    expect(showDiff?.disabled).toBe(true)
-    expect(compare?.disabled).toBe(true)
-    expect(explainAi?.disabled).toBe(true)
-    expect(openForge?.disabled).toBe(true)
+    // ContextMenuItem 은 divider | label/submenu union — test 편의상 Record<string, unknown>.
+    const items = m.buildItems(SHA) as Array<Record<string, unknown>>
+    const find = (label: string) => items.find((i) => i.label === label)
+    expect(find('Show diff')?.disabled).toBe(true)
+    expect(find('Compare with...')?.disabled).toBe(true)
+    expect(find('Explain (AI)')?.disabled).toBe(true)
+    expect(find('Open in forge')?.disabled).toBe(true)
   })
 
   it('Reset submenu 3 옵션 — soft/mixed/hard(destructive)', () => {
     const m = useCommitActions(() => 1)
-    const items = m.buildItems(SHA)
-    const reset = items.find(
-      (i): i is Extract<typeof i, { label: string; submenu?: unknown[] }> =>
-        'label' in i && i.label === 'Reset',
-    )
-    expect(reset?.submenu?.length).toBe(3)
+    const items = m.buildItems(SHA) as Array<Record<string, unknown>>
+    const reset = items.find((i) => i.label === 'Reset')
     const submenu = reset?.submenu as Array<{ label: string; destructive?: boolean }>
+    expect(submenu.length).toBe(3)
     expect(submenu[0].label).toContain('--soft')
     expect(submenu[1].label).toContain('--mixed')
     expect(submenu[2].destructive).toBe(true)
@@ -226,9 +225,8 @@ describe('useCommitActions — buildItems 구조', () => {
       onExplainAi: vi.fn(),
       onOpenInForge: vi.fn(),
     }
-    const items = m.buildItems(SHA, cb)
-    const labeled = items.filter((i): i is Extract<typeof i, { label: string }> => 'label' in i)
-    const showDiff = labeled.find((i) => i.label === 'Show diff')
+    const items = m.buildItems(SHA, cb) as Array<Record<string, unknown>>
+    const showDiff = items.find((i) => i.label === 'Show diff')
     expect(showDiff?.disabled).toBe(false)
   })
 })
