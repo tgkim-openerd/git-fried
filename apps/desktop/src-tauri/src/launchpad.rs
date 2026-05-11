@@ -198,7 +198,15 @@ pub async fn cleanup_defaults(db: &Db) -> AppResult<u64> {
     .execute(&db.pool)
     .await
     .map_err(AppError::Db)?;
-    Ok(r.rows_affected())
+    let affected = r.rows_affected();
+    if affected > 0 {
+        tracing::info!(
+            target: "git_fried_lib::launchpad",
+            affected,
+            "cleanup_defaults — pr_meta rows 정리"
+        );
+    }
+    Ok(affected)
 }
 
 // ====== Saved Views ======

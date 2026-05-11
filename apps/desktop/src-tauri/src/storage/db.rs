@@ -50,6 +50,12 @@ impl Db {
     }
 
     pub async fn open(path: &Path) -> AppResult<Self> {
+        let started = std::time::Instant::now();
+        tracing::info!(
+            target: "git_fried_lib::storage",
+            path = %path.display(),
+            "Db::open 시작"
+        );
         let url = format!("sqlite://{}?mode=rwc", path.to_string_lossy());
         let opts = SqliteConnectOptions::from_str(&url)
             .map_err(|e| AppError::Internal(format!("DB URL parse: {e}")))?
@@ -69,6 +75,14 @@ impl Db {
             .run(&pool)
             .await
             .map_err(AppError::Migrate)?;
+
+        let elapsed_ms = started.elapsed().as_millis() as u64;
+        tracing::info!(
+            target: "git_fried_lib::storage",
+            path = %path.display(),
+            elapsed_ms,
+            "Db::open 완료 (migrations 적용)"
+        );
 
         Ok(Self { pool })
     }
