@@ -26,7 +26,7 @@ export interface SplitDiffData {
   isMissing: boolean // base 없음 (untracked 또는 root commit)
 }
 
-interface SplitArgs {
+export interface SplitArgs {
   repoId: number
   path: string
   baseRev: string | null
@@ -36,61 +36,77 @@ interface SplitArgs {
   isUntracked: boolean
 }
 
+/**
+ * c66-B: splitArgs state machine pure 함수 export.
+ *
+ * - current=null 또는 repoId=null → null
+ * - wip + untracked path 포함 → isUntracked=true (base 빈, current readFile)
+ * - wip + staged → baseRev=HEAD / currentStaged=true
+ * - wip + unstaged → baseStaged=true / currentRev=null (working dir)
+ * - commit → baseRev=`${sha}~` / currentRev=sha
+ */
+export function computeSplitArgs(
+  current: { source: 'wip' | 'commit'; path: string; isStaged?: boolean; sha?: string } | null,
+  repoId: number | null,
+  untrackedPaths: readonly string[],
+): SplitArgs | null {
+  if (!current || repoId == null) return null
+
+  if (current.source === 'wip') {
+    const isUntracked = !current.isStaged && untrackedPaths.includes(current.path)
+    if (isUntracked) {
+      return {
+        repoId,
+        path: current.path,
+        baseRev: null,
+        baseStaged: false,
+        currentRev: null,
+        currentStaged: false,
+        isUntracked: true,
+      }
+    }
+    if (current.isStaged) {
+      // staged: a=HEAD / b=index (staged 버전)
+      return {
+        repoId,
+        path: current.path,
+        baseRev: 'HEAD',
+        baseStaged: false,
+        currentRev: null,
+        currentStaged: true,
+        isUntracked: false,
+      }
+    }
+    // unstaged: a=index / b=working dir
+    return {
+      repoId,
+      path: current.path,
+      baseRev: null,
+      baseStaged: true,
+      currentRev: null,
+      currentStaged: false,
+      isUntracked: false,
+    }
+  }
+  // commit: a=parent (sha~) / b=commit (sha). root commit 은 baseRev=null fallback.
+  return {
+    repoId,
+    path: current.path,
+    baseRev: `${current.sha}~`,
+    baseStaged: false,
+    currentRev: current.sha ?? null,
+    currentStaged: false,
+    isUntracked: false,
+  }
+}
+
 export function useFullscreenDiffSplitQuery(repoId: () => number | null, enabled: () => boolean) {
   const fs = useFullscreenDiff()
   const { data: status } = useStatus(repoId)
 
   const splitArgs = computed<SplitArgs | null>(() => {
-    const cur = fs.current.value
-    const id = repoId()
-    if (!cur || id == null) return null
-
-    if (cur.source === 'wip') {
-      const isUntracked = !cur.isStaged && (status.value?.untracked.includes(cur.path) ?? false)
-      if (isUntracked) {
-        return {
-          repoId: id,
-          path: cur.path,
-          baseRev: null,
-          baseStaged: false,
-          currentRev: null,
-          currentStaged: false,
-          isUntracked: true,
-        }
-      }
-      if (cur.isStaged) {
-        // staged: a=HEAD / b=index (staged 버전)
-        return {
-          repoId: id,
-          path: cur.path,
-          baseRev: 'HEAD',
-          baseStaged: false,
-          currentRev: null,
-          currentStaged: true,
-          isUntracked: false,
-        }
-      }
-      // unstaged: a=index / b=working dir
-      return {
-        repoId: id,
-        path: cur.path,
-        baseRev: null,
-        baseStaged: true,
-        currentRev: null,
-        currentStaged: false,
-        isUntracked: false,
-      }
-    }
-    // commit: a=parent (sha~) / b=commit (sha). root commit 은 baseRev=null fallback.
-    return {
-      repoId: id,
-      path: cur.path,
-      baseRev: `${cur.sha}~`,
-      baseStaged: false,
-      currentRev: cur.sha,
-      currentStaged: false,
-      isUntracked: false,
-    }
+    // c66-B: pure 함수 computeSplitArgs 위임 — fs.current + status.untracked 만 추출.
+    return computeSplitArgs(fs.current.value ?? null, repoId(), status.value?.untracked ?? [])
   })
 
   const splitQuery = useQuery({
