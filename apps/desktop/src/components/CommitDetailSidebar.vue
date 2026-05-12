@@ -185,13 +185,18 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
       그래프에서 commit 을 선택하세요.
     </div>
 
-    <div v-else class="flex-1 space-y-3 overflow-auto px-3 py-3">
+    <!-- Sprint c77-C — 2단 layout: meta (subject/author/parents/stats) sticky, file list 만 scroll.
+         이전엔 외곽 단일 overflow-auto 라 file list scroll 시 commit subject/author 모두 위로
+         사라져 context 잃음. GitKraken parity. -->
+    <div v-else class="shrink-0 space-y-3 border-b border-border px-3 py-3">
       <!-- subject + body (헤더 바로 아래 가장 prominent — GitKraken 동일) -->
       <div>
         <h3 class="text-sm font-semibold leading-snug">{{ commit.subject }}</h3>
-        <pre v-if="commit.body" class="mt-1.5 whitespace-pre-wrap text-xs text-muted-foreground">{{
-          commit.body
-        }}</pre>
+        <pre
+          v-if="commit.body"
+          class="mt-1.5 max-h-32 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground"
+          >{{ commit.body }}</pre
+        >
       </div>
 
       <!-- author + committer (GitKraken 처럼 분리 표시) -->
@@ -269,7 +274,10 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
         <span class="text-diff-delete">−{{ fileStats.dels }}</span>
         <span class="text-muted-foreground">({{ fileStats.files }} files)</span>
       </div>
+    </div>
 
+    <!-- Sprint c77-C — 2단 layout 의 scrollable 영역: file list (Path/Tree toggle + ul). -->
+    <div v-if="commit" class="flex-1 space-y-3 overflow-auto px-3 py-3">
       <!-- Sprint c30 / GitKraken UX — 파일 목록 (Path / Tree 토글) -->
       <div v-if="fileStats && fileStats.paths.length > 0" data-testid="commit-detail-files">
         <div class="mb-1 flex items-center justify-between">
