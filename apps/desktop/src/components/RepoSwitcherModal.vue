@@ -6,24 +6,20 @@
 //   - 결과를 useSidebarGroups (directory/org/forge) 로 그룹핑해서 헤더 + 자식 행 표시.
 //   - 폴더 행도 keyboard navigable. Enter/Click → 그룹 모든 레포 openTab + 첫 활성 + close.
 //   - 단독 그룹 (isSolo) 은 폴더 헤더 숨김 — 평면처럼 표시.
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import { nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { listRepos } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
-import type { Repo } from '@/types/git'
-import { useReposStore } from '@/stores/repos'
+// Sprint c80-4 — fuzzy filter + 정렬 + 그룹화 + flat row + pick handlers 통합 composable 위임.
+import { useRepoSwitcherList } from '@/composables/useRepoSwitcherList'
 import { useRepoAliases } from '@/composables/useRepoAliases'
-import { useSidebarGroups, type RepoGroup } from '@/composables/useSidebarGroups'
-import { useNavigateHome } from '@/composables/useNavigateHome'
 import BaseModal from './BaseModal.vue'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 
 const { t } = useI18n()
-const goHome = useNavigateHome()
-const store = useReposStore()
 const filter = ref('')
 const selected = ref(0)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -36,72 +32,14 @@ const { data: repos } = useQuery({
   staleTime: STALE_TIME.NORMAL,
 })
 
+const { rows, firstRepoIdx, pickRow, pickRepo, pickGroup } = useRepoSwitcherList({
+  filter,
+  selected,
+  repos,
+  onClose: () => emit('close'),
+})
+// template 의 alias.resolveLocal 직접 사용 — 같은 createGlobalState singleton 이라 reactive 일치.
 const aliases = useRepoAliases()
-
-function aliasOrName(r: Repo): string {
-  return aliases.resolveLocal(r.id, r.name).display
-}
-
-// 1단계: filter 매칭 (검색어 적용 후 정렬). 그룹화는 다음 단계.
-const filteredRepos = computed<Repo[]>(() => {
-  const q = filter.value.trim().toLowerCase()
-  const list = repos.value ?? []
-  if (!q) {
-    return [...list].sort((a, b) => {
-      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
-      return aliasOrName(a).localeCompare(aliasOrName(b))
-    })
-  }
-  return list
-    .filter((r) => {
-      const display = aliasOrName(r).toLowerCase()
-      return (
-        display.includes(q) ||
-        r.name.toLowerCase().includes(q) ||
-        r.localPath.toLowerCase().includes(q) ||
-        (r.forgeOwner ?? '').toLowerCase().includes(q)
-      )
-    })
-    .sort((a, b) => {
-      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
-      const aStart = aliasOrName(a).toLowerCase().startsWith(q)
-      const bStart = aliasOrName(b).toLowerCase().startsWith(q)
-      if (aStart !== bStart) return aStart ? -1 : 1
-      return aliasOrName(a).localeCompare(aliasOrName(b))
-    })
-})
-
-// 2단계: 그룹화 (Repository Management 와 동일한 useSidebarGroups — localStorage 공유).
-const { groups } = useSidebarGroups(filteredRepos)
-
-// 3단계: 평면 row 시퀀스 — keyboard 네비게이션과 v-for 양쪽에서 사용.
-type FlatRow =
-  | { kind: 'group'; key: string; group: RepoGroup }
-  | { kind: 'repo'; key: string; group: RepoGroup; repo: Repo }
-
-const rows = computed<FlatRow[]>(() => {
-  const out: FlatRow[] = []
-  for (const g of groups.value) {
-    // isSolo (label=null) 그룹은 헤더 안 그림 — 평면처럼.
-    if (g.label) out.push({ kind: 'group', key: `g:${g.key}`, group: g })
-    for (const r of g.repos) out.push({ kind: 'repo', key: `r:${r.id}`, group: g, repo: r })
-  }
-  return out
-})
-
-// 초기 selection 은 첫 repo row — 그룹 헤더에서 우연히 Enter 로 multi-add 되는 사고 방지.
-function firstRepoIdx(): number {
-  const idx = rows.value.findIndex((r) => r.kind === 'repo')
-  return idx >= 0 ? idx : 0
-}
-
-// rows 가 변경되면(query 완료 / filter 변경) 가드:
-//  ① out-of-range 거나 ② 현재 selected 가 group 헤더면 → 첫 repo row 로 복귀.
-// 빈 검색 + query 완료 직후 첫 행이 group 인 race 시 사고 방지 (architecture review ARCH-007).
-watch(rows, () => {
-  const r = rows.value[selected.value]
-  if (!r || r.kind === 'group') selected.value = firstRepoIdx()
-})
 
 watch(
   () => props.open,
@@ -123,37 +61,6 @@ watch(selected, () => {
     }
   })
 })
-
-function pickRepo(r: Repo) {
-  if (r.workspaceId !== store.activeWorkspaceId) {
-    store.setActiveWorkspace(r.workspaceId ?? null)
-  }
-  store.setActiveRepo(r.id)
-  goHome()
-  emit('close')
-}
-
-// 폴더 헤더 행 선택 — 그룹의 모든 레포를 탭에 추가하고 첫 레포 활성.
-// Sprint c50 — Pattern 9 (caller-decision): caller 가 정렬한 list 를 store.openRepoGroup 에 위임.
-// pinned 우선, 그 다음 alias/이름 알파벳 (filteredRepos 정렬과 동일 로직).
-function pickGroup(g: RepoGroup) {
-  const sorted = [...g.repos].sort((a, b) => {
-    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
-    return aliasOrName(a).localeCompare(aliasOrName(b))
-  })
-  const first = store.openRepoGroup(sorted)
-  if (!first) return
-  if (first.workspaceId !== store.activeWorkspaceId) {
-    store.setActiveWorkspace(first.workspaceId ?? null)
-  }
-  goHome()
-  emit('close')
-}
-
-function pickRow(row: FlatRow) {
-  if (row.kind === 'repo') pickRepo(row.repo)
-  else pickGroup(row.group)
-}
 
 function onKeydown(e: KeyboardEvent) {
   if (!props.open) return
