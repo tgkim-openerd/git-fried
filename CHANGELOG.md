@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c74 — GitKraken parity wave + scrollbar layout chain (2026-05-11~12, 5 commits `2d9be61..0d4507b`)** — c73 후속 자율 진행 (/analyze Recommendations 자율 실행):
+  - **C1 chore(repo)**: `.gitignore` 에 `**/vite.config.{d.ts,js,timestamp-*}` + `.claude/settings.local.json` 패턴 추가 / `lefthook.yml` 에 `i18n-symmetry` pre-commit hook 신설 (ko/en 비대칭 시 exit 1)
+  - **C2 chore(deps)**: `pretendard ^1.3.9` 제거 → `@fontsource-variable/roboto-flex ^5.2.0` + `@fontsource/noto-sans-kr ^5.2.0` (variable font + 한글 fallback)
+  - **C3 feat(ui)**: GitKraken parity wave — BranchPanel 트리화(`BranchTreeView` slot) + Stash GitKraken parity S-1~S-5+S-9 (`useStashInteraction` 신규) + Submodule parity M-1/2/4/5 (`useSubmoduleInteraction` 신규) + ContextMenu native webview 메뉴 차단 (input/textarea/contenteditable 예외) + visual 강화 (220px / text-sm / py-1.5 / ›) + Toast 투명도 fix (border-l-4 accent)
+  - **C4 feat(scroll)**: CommitGraph 무한 스크롤 (STEP 500 / CAP 5000 / 끝 50% 감지) + scrollbar layout chain 5단 fix (html/body/#app + Sidebar h-full + pages/index min-h-0 + RouterView min-h-0 final) + 테마 통합 scrollbar (webkit + 표준 동시, width 12px / min-height 40px / alpha 0.4~0.75) + font @import 통합
+  - **C5 feat(i18n)**: c74 batch +49 keys (1201 → **1250** ko/en 대칭) — stash/submodule/scrollbar parity 영역, `confirm.dropStashTitle` / `dropStashMessage` 등 신규
+  - **신규 composable 2건**: `useStashInteraction` (97 LOC) + `useSubmoduleInteraction` (175 LOC) — **Pattern 9 sister small +2, 누계 7**
+  - **god comp 회귀 잠복 3건** (c75 추출 후보): `pages/index.vue` script **269 LOC** / `App.vue` **220 LOC** / `CommitGraph.vue` **217 LOC` (c67 마일스톤이 사실상 components/ 한정, pages/ + App.vue 누락 + c74 +48 LOC graph 회귀)
+  - **vitest 83/884 PASS** (회귀 0) / typecheck 0 / lefthook pre-push i18n-symmetry 가드 정착
+  - **window.gitFried* +1**: `gitFriedSelectCommit(sha): boolean` (Mini list 클릭 → CommitGraph jump + select 진입점, c74 신규)
+
 - **Sprint c59~c73 — 자율 진행 15 sprint 누적 (2026-05-10~11, 30 commits `07b4069..c6d14ad` + toolkit `f3db168`)** — `/analyze` Recommendations + `/code-review` High 자율 fix 반복 패턴. **God comp 0 마일스톤 달성** (모든 .vue script <200 LOC, c52~c67 누적 6 컴포넌트 추출):
   - **vitest 71/735 → 83/884** (+12 files / +149 tests)
   - **i18n ko/en 1102 → 1201 leaf-keys** (+99: Settings 5 sub-pages + commitTable/commitGraph/cloneModal/bulkFetch/commitInputExtra/identityCard/gitkrakenImport/pr/interactiveRebase/lfs/mergeEditor 등)
