@@ -23,6 +23,11 @@ auto-imports.d.ts
 components.d.ts
 typed-router.d.ts
 
+# vite config build cache (vue-tsc -b → .d.ts + esbuild → .js)
+**/vite.config.d.ts
+**/vite.config.js
+**/vite.config.timestamp-*
+
 # editor
 .vscode/*
 !.vscode/extensions.json
@@ -73,4 +78,5 @@ audit-*.yml
 git-fried-*.png
 snapshot-*.md
 .claude/agent-memory/
+.claude/settings.local.json
 checkpoint.md

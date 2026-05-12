@@ -24,6 +24,10 @@ pre-commit:
     cargo-fmt-check:
       glob: "apps/desktop/src-tauri/src/**/*.rs"
       run: cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml -- --check
+    i18n-symmetry:
+      # ko/en 대칭 SoT (drift 시 exit 1). c74+ 자동 보장.
+      glob: "apps/desktop/src/locales/*.json"
+      run: node scripts/i18n-leaf-count.mjs
 
 pre-push:
   parallel: true
