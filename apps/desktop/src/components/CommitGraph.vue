@@ -84,16 +84,10 @@ const {
   cleanup: cleanupGraphWidth,
 } = useGraphWidth(maxLane)
 
-// Sprint c48 Wave B-2 — WIP + virtualizer + commitRowAt/Tooltip 분리. c76 wipRowCount SOT 추가.
-const {
-  wipActive,
-  wipRowCount,
-  wipChangeCount,
-  virtualItems,
-  totalHeight,
-  commitRowAt,
-  commitTooltip,
-} = useCommitGraphRows({ repoId: () => props.repoId, rows, containerRef })
+// c48 Wave B-2 — WIP/virtualizer/commitRowAt/Tooltip + c76 wipRowCount SOT.
+const cgRows = useCommitGraphRows({ repoId: () => props.repoId, rows, containerRef })
+const { wipActive, wipRowCount, wipChangeCount, virtualItems, totalHeight } = cgRows
+const { commitRowAt, commitTooltip } = cgRows
 
 // Sprint c31 — 검색 composable. drawGraph 는 hoisting 으로 callback 안전.
 const {
@@ -137,7 +131,7 @@ const { selectedSha, selectRow, selectWipRow, moveSelection } = useGraphSelectio
   rowHeight: ROW_H,
 })
 
-// Sprint 22-2/22-3 — row 우클릭 / 더블클릭. Sprint c48 Wave B-2 분리.
+// 22-2/22-3 row 우클릭 / 더블클릭. c48 Wave B-2 분리. moveSelection unused void.
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
 const commitActions = useCommitActions(() => props.repoId)
 const { onRowDblClick, onRowContextMenu, formatDate } = useCommitGraphInteraction({
@@ -146,7 +140,6 @@ const { onRowDblClick, onRowContextMenu, formatDate } = useCommitGraphInteractio
   commitActions,
   emit,
 })
-// moveSelection 은 useGraphSelection 에서 노출 — 사용 안 한 변수 lint 회피용.
 void moveSelection
 
 // Sprint c75-A — sha 로 jump + select (Sidebar MiniStashList 등 외부 진입점).
@@ -166,14 +159,11 @@ onMounted(() => {
   window.gitFriedSelectCommit = selectAndScrollToSha
 })
 watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
-// Sprint c76 — repo 전환 시 scrollTop reset. virtualizer 의 scroll offset 캐시는
-// scrollElement.scrollTop reactive 라 직접 변경 안전.
-watch(
-  () => props.repoId,
-  () => {
-    if (containerRef.value) containerRef.value.scrollTop = 0
-  },
-)
+// Sprint c76 — repo 전환 시 scrollTop reset (virtualizer scroll cache reactive).
+function resetScrollTop() {
+  if (containerRef.value) containerRef.value.scrollTop = 0
+}
+watch(() => props.repoId, resetScrollTop)
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
   cleanupGraphWidth()
