@@ -15,7 +15,7 @@ interface UseCommitGraphLifecycleArgs {
   draw: () => void
   onKeydown: (ev: KeyboardEvent) => void
   cleanup: () => void
-  selectAndScrollToSha: (sha: string) => boolean | void
+  selectAndScrollToSha: (sha: string) => boolean
 }
 
 export function useCommitGraphLifecycle(args: UseCommitGraphLifecycleArgs): void {

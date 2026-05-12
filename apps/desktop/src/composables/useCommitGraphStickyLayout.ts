@@ -16,7 +16,7 @@ export const INNER_DIVIDER_LEFT = (HANDLE_WIDTH - INNER_DIVIDER_WIDTH) / 2 // = 
 
 interface ColumnLike {
   id: string
-  widthPx?: number
+  widthPx?: number | null
 }
 
 interface UseCommitGraphStickyLayoutArgs {
@@ -31,11 +31,10 @@ export function useCommitGraphStickyLayout(args: UseCommitGraphStickyLayoutArgs)
   const graphWidth = toRef(args.graphWidth)
   const allColumns = toRef(args.allColumns)
 
-  const branchChipStickyWidth = computed(
-    () =>
-      allColumns.value.find((c) => c.id === 'branchTag')?.widthPx ??
-      BRANCH_TAG_DEFAULT_WIDTH_PX,
-  )
+  const branchChipStickyWidth = computed(() => {
+    const w = allColumns.value.find((c) => c.id === 'branchTag')?.widthPx
+    return w ?? BRANCH_TAG_DEFAULT_WIDTH_PX
+  })
   const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
 
   return { branchChipStickyWidth, branchChipStickyLeft }
