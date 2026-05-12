@@ -2,14 +2,12 @@
 // 브랜치 패널 — 로컬/원격 트리 + switch / create / delete + Hide / Solo (Sprint A1).
 // HEAD 표시, ahead/behind 카운터 포함.
 import { computed, ref, useTemplateRef } from 'vue'
-import { useMutation } from '@tanstack/vue-query'
 import { useBranches } from '@/composables/useBranches'
-import { useInvalidateRepoQueries } from '@/composables/useStatus'
-import { createBranch, deleteBranch, switchBranch } from '@/api/git'
-import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 // Sprint c44 W4 — Hide/Solo 통합 composable 위임 (50 LOC 축약).
 import { useBranchVisibilityActions } from '@/composables/useBranchVisibilityActions'
+// Sprint c79-B — switch/create/delete mutation + handler 통합 composable 위임.
+import { useBranchPanelMutations, localName } from '@/composables/useBranchPanelMutations'
 import { useAiCli, confirmAiSend } from '@/composables/useAiCli'
 // Sprint c32 god comp 분리 9/N — Explain branch (modal state + IPC) composable.
 import { useExplainBranch } from '@/composables/useExplainBranch'
@@ -19,7 +17,7 @@ import AiResultModal from './AiResultModal.vue'
 import RemoteManageModal from './RemoteManageModal.vue'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog, promptDialog } from '@/composables/useConfirm'
+import { promptDialog } from '@/composables/useConfirm'
 import { useBranchActions, localBranchName } from '@/composables/useBranchActions'
 import SkeletonBlock from './SkeletonBlock.vue'
 import EmptyState from './EmptyState.vue'
@@ -33,7 +31,6 @@ const { t } = useI18n()
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: branches, isFetching: branchesFetching } = useBranches(() => props.repoId)
-const invalidate = useInvalidateRepoQueries()
 
 const newBranchName = ref('')
 const filterKind = ref<'all' | 'local' | 'remote'>('local')
@@ -61,60 +58,11 @@ const tree = computed(() => {
 })
 const isSearching = computed(() => filterQuery.value.trim().length > 0)
 
-const switchMut = useMutation({
-  mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name, false),
-  onSuccess: () => invalidate(props.repoId),
-  onError: (e) => toast.error(t('branch.toastSwitchFailed'), describeError(e)),
+// c79-B — switch/create/delete mutation + handler 통합 composable 위임.
+const { onSwitch, onCreate, onDelete, switchAsync, createMut } = useBranchPanelMutations({
+  repoId: () => props.repoId,
+  newBranchName,
 })
-
-const createMut = useMutation({
-  mutationFn: ({ id, name }: { id: number; name: string }) => createBranch(id, name),
-  onSuccess: () => {
-    newBranchName.value = ''
-    invalidate(props.repoId)
-  },
-  onError: (e) => toast.error(t('branch.toastCreateFailed'), describeError(e)),
-})
-
-const deleteMut = useMutation({
-  mutationFn: ({ id, name, force }: { id: number; name: string; force: boolean }) =>
-    deleteBranch(id, name, force),
-  onSuccess: () => invalidate(props.repoId),
-  onError: (e) => toast.error(t('branch.toastDeleteFailed'), describeError(e)),
-})
-
-function onSwitch(b: BranchInfo) {
-  if (props.repoId == null) return
-  if (b.isHead) return
-  switchMut.mutate({ id: props.repoId, name: localName(b.name) })
-}
-
-function onCreate() {
-  if (props.repoId == null) return
-  if (!newBranchName.value.trim()) return
-  createMut.mutate({ id: props.repoId, name: newBranchName.value.trim() })
-}
-
-async function onDelete(b: BranchInfo) {
-  if (props.repoId == null) return
-  const force = b.ahead > 0
-  const ok = await confirmDialog({
-    title: t('confirm.deleteBranchTitle'),
-    message:
-      t('confirm.deleteBranchMessage', { name: b.name }) +
-      (force ? '\n⚠ ' + t('confirm.deleteBranchForceHint') : ''),
-    danger: true,
-  })
-  if (!ok) return
-  deleteMut.mutate({ id: props.repoId, name: localName(b.name), force })
-}
-
-// "origin/foo" → "foo" (remote 브랜치 작업 시)
-function localName(name: string): string {
-  const parts = name.split('/')
-  if (parts.length > 1) return parts.slice(1).join('/')
-  return name
-}
 
 // === Sprint 22-9 V-7 — hover preview tooltip ===
 // title attribute 로 latest commit subject + ahead/behind 풀어쓰기.
@@ -145,13 +93,9 @@ const {
   close: closeExplainBranch,
 } = useExplainBranch()
 
-// === Sprint B8 → c40 — drag-drop composable 위임 ===
+// === Sprint B8 → c40 — drag-drop composable 위임. c79-B: switchAsync 는 mutations composable 에서 노출. ===
 const { dragOverIdx, onDragStartBranch, onDragOverRow, onDragLeaveRow, onDropOnBranch } =
-  useBranchDragDrop({
-    repoId: () => props.repoId,
-    localName,
-    switchAsync: (id, name) => switchMut.mutateAsync({ id, name }),
-  })
+  useBranchDragDrop({ repoId: () => props.repoId, localName, switchAsync })
 
 // === Sprint 22-3 — CM-5 우클릭 ContextMenu (11 액션) ===
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
