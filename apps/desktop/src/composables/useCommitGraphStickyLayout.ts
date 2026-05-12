@@ -12,7 +12,8 @@ import { BRANCH_TAG_DEFAULT_WIDTH_PX } from '@/composables/useCommitColumns'
 
 export const HANDLE_WIDTH = 12
 export const INNER_DIVIDER_WIDTH = 2
-export const INNER_DIVIDER_LEFT = (HANDLE_WIDTH - INNER_DIVIDER_WIDTH) / 2 // = 5
+// 산식: (HANDLE_WIDTH - INNER_DIVIDER_WIDTH) / 2 — currently 5. 두 magic 변경 시 자동 derive.
+export const INNER_DIVIDER_LEFT = (HANDLE_WIDTH - INNER_DIVIDER_WIDTH) / 2
 
 interface ColumnLike {
   id: string

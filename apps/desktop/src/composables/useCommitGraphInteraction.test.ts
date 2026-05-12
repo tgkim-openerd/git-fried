@@ -10,7 +10,8 @@ import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { mount } from '@vue/test-utils'
 import { useCommitGraphInteraction } from './useCommitGraphInteraction'
 import type { GraphRow } from '@/api/git'
-import type { ContextMenuExpose, ContextMenuItem } from '@/composables/useContextMenu'
+// c79 ARCH-006 — sister test 5 family ContextMenuExpose import path 통일 (component re-export).
+import type { ContextMenuExpose, ContextMenuItem } from '@/components/ContextMenu.vue'
 
 function setup<T>(fn: () => T): T {
   const i18n = createI18n({

@@ -35,7 +35,10 @@ import {
   INNER_DIVIDER_WIDTH,
   INNER_DIVIDER_LEFT,
 } from '@/composables/useCommitGraphStickyLayout'
-import { useCommitGraphLifecycle } from '@/composables/useCommitGraphLifecycle'
+import {
+  useCommitGraphLifecycle,
+  useGlobalCommitJumpHook,
+} from '@/composables/useCommitGraphLifecycle'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
 import type { GraphRow } from '@/api/git'
@@ -149,8 +152,7 @@ const { onRowDblClick, onRowContextMenu, formatDate } = useCommitGraphInteractio
 })
 void moveSelection
 
-// Sprint c75-A — sha 로 jump + select (Sidebar MiniStashList 등 외부 진입점).
-// c76 — wipActive → wipRowCount (Pattern 13 sister: virtualizer count 와 동일 SOT).
+// c75-A: sha jump (외부 진입점). c76: wipRowCount SOT (Pattern 13 sister).
 const { selectAndScrollToSha } = useCommitGraphSelection({
   rows,
   containerRef,
@@ -160,15 +162,16 @@ const { selectAndScrollToSha } = useCommitGraphSelection({
   onScrollComplete: () => drawGraph(),
 })
 
-// Sprint c78-A — lifecycle (mount + watch repoId scrollTop reset + unmount) composable 분리.
+// c78-A lifecycle (mount/watch repoId/unmount). c79 ARCH-002: MaybeRefOrGetter family.
 useCommitGraphLifecycle({
   containerRef,
   repoIdRef: () => props.repoId,
   draw: drawGraph,
   onKeydown,
   cleanup: cleanupGraphWidth,
-  selectAndScrollToSha,
 })
+// c79 ARCH-003 — window.gitFriedSelectCommit 등록 단일책임 분리.
+useGlobalCommitJumpHook(selectAndScrollToSha)
 watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
 
 // Sprint A3 / c40 review ARCH-004 — 컬럼 토글 / 재정렬 + header menu.
@@ -188,8 +191,7 @@ const {
 // headerMenuRef 는 template ref 로 사용 (자동 매핑) — script 직접 참조 없으나 v-bind 필요.
 void headerMenuRef
 
-// Sprint c52 / c51 보류 #5 — branch chip sticky overlay 좌표.
-// Sprint c78-A — useCommitGraphStickyLayout composable (Pattern 13 SOT 위임).
+// c52/c51 #5 + c78-A: branch chip sticky overlay 좌표 (useCommitGraphStickyLayout SOT 위임).
 const { branchChipStickyWidth, branchChipStickyLeft } = useCommitGraphStickyLayout({
   graphWidth,
   allColumns: () => cols.allColumns,

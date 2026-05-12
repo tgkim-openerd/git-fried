@@ -5,10 +5,28 @@
 // window 이 hidden (visibilitychange) 일 때는 skip — 사용자 unblock 시점에 한 번 실행.
 
 import { onMounted, onUnmounted, watch } from 'vue'
-import { useQueryClient } from '@tanstack/vue-query'
+import { useQueryClient, type QueryClient } from '@tanstack/vue-query'
 import { bulkFetch } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { useGeneralSettings } from '@/composables/useUserSettings'
+
+// Sprint c79 ARCH-005 — bulk-fetch 후 invalidate 할 query prefix SOT.
+// vue-query 의 prefix match 로 `['status', repoId]` 등 모든 repo-suffix 키도 함께 stale.
+// 신규 prefix 추가 시 본 배열 1줄 추가 = 새 invalidate 호출 자동 적용.
+// 회귀 위험 (active repo 만 refetch 시 다른 repo stale 노출) 방어 위해 prefix-only 의도 명시.
+const REPO_PREFIXES_TO_INVALIDATE = [
+  'status',
+  'log',
+  'graph',
+  'branches',
+  'conflict-prediction',
+] as const
+
+function invalidateAllRepoPrefixes(qc: QueryClient): void {
+  for (const prefix of REPO_PREFIXES_TO_INVALIDATE) {
+    qc.invalidateQueries({ queryKey: [prefix] })
+  }
+}
 
 export function useAutoFetch() {
   const general = useGeneralSettings()
@@ -26,16 +44,7 @@ export function useAutoFetch() {
     try {
       const results = await bulkFetch(store.activeWorkspaceId)
       lastRun = Date.now()
-      // single-segment key invalidate — vue-query 의 prefix match 로 모든 repo
-      // (`['status', repoId]`, `['log', repoId]` 등) 를 한 번에 stale 처리.
-      // bulkFetch 는 모든 repo 를 fetch 하므로 active repo 한정 invalidate 가 아니라
-      // 전체 prefix invalidate 가 의도된 동작 (회귀 시 active 만 refetch 되어 다른 repo 의
-      // 데이터가 stale 한 채 노출됨).
-      qc.invalidateQueries({ queryKey: ['status'] })
-      qc.invalidateQueries({ queryKey: ['log'] })
-      qc.invalidateQueries({ queryKey: ['graph'] })
-      qc.invalidateQueries({ queryKey: ['branches'] })
-      qc.invalidateQueries({ queryKey: ['conflict-prediction'] })
+      invalidateAllRepoPrefixes(qc)
       // 결과는 silent — Sidebar 의 수동 bulkFetch 가 toast/notify 담당.
       void results
     } catch {

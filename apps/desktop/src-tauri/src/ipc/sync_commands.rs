@@ -37,7 +37,14 @@ pub struct PullArgs {
 }
 
 #[tauri::command]
-#[tracing::instrument(target = "git_fried_lib::ipc::sync", skip(state), err)]
+// Sprint c79 SEC-002 — skip_all + safe fields (clone_repo 와 일관, args.branch 의 사용자
+// 입력값에 PAT inline 가능성 사전 차단).
+#[tracing::instrument(
+    target = "git_fried_lib::ipc::sync",
+    skip_all,
+    fields(repo_id = args.repo_id, rebase = args.rebase, ff_only = args.ff_only),
+    err
+)]
 pub async fn pull(
     args: PullArgs,
     state: tauri::State<'_, Arc<AppState>>,
@@ -66,7 +73,19 @@ pub struct PushArgs {
 }
 
 #[tauri::command]
-#[tracing::instrument(target = "git_fried_lib::ipc::sync", skip(state), err)]
+// Sprint c79 SEC-002 — skip_all + safe fields (push flag 만 record, remote/branch 사용자
+// 입력값은 skip).
+#[tracing::instrument(
+    target = "git_fried_lib::ipc::sync",
+    skip_all,
+    fields(
+        repo_id = args.repo_id,
+        force_with_lease = args.force_with_lease,
+        set_upstream = args.set_upstream,
+        tags = args.tags,
+    ),
+    err
+)]
 pub async fn push(
     args: PushArgs,
     state: tauri::State<'_, Arc<AppState>>,
