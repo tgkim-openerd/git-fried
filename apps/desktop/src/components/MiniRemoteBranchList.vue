@@ -72,7 +72,8 @@ const tree = computed(() => {
           :title="`${data.name} (remote tracking)`"
           @contextmenu="onBranchContextMenu($event, data)"
         >
-          <span class="shrink-0 w-3 text-center text-[9px]">⟶</span>
+          <!-- marker 자리 유지 (LOCAL ● 정렬 align). GitKraken parity — leaf prefix 화살표 제거. -->
+          <span class="shrink-0 w-3" aria-hidden="true" />
           <span class="flex-1 truncate font-mono">
             {{ data.name.split('/').pop() }}
           </span>

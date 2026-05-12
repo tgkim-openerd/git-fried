@@ -6,16 +6,18 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const { toasts, dismiss } = useToast()
 
+// Sprint c74 — bg-{color}/10 alpha 가 base bg-card 를 override 해서 토스트가 거의 투명하게 보이는
+// 버그 (Tailwind class merge 순서) 해소. kind 구분은 border-color + text-color + icon 만으로 유지.
 function kindClass(kind: ToastKind): string {
   switch (kind) {
     case 'success':
-      return 'border-emerald-500/40 bg-emerald-500/10 text-diff-add'
+      return 'border-l-4 border-l-emerald-500 border-emerald-500/40 text-diff-add'
     case 'info':
-      return 'border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-500'
+      return 'border-l-4 border-l-sky-500 border-sky-500/40 text-sky-700 dark:text-sky-500'
     case 'warning':
-      return 'border-amber-500/40 bg-amber-500/10 text-warning-amber'
+      return 'border-l-4 border-l-amber-500 border-amber-500/40 text-warning-amber'
     case 'error':
-      return 'border-rose-500/40 bg-rose-500/10 text-danger-rose'
+      return 'border-l-4 border-l-rose-500 border-rose-500/40 text-danger-rose'
   }
 }
 

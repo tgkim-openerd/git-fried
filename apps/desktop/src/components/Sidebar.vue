@@ -69,7 +69,7 @@ useShortcut('filterRepos', focusSidebarSearch)
 <template>
   <aside
     data-testid="sidebar"
-    class="flex h-screen flex-col border-r border-border bg-card text-card-foreground"
+    class="flex h-full min-h-0 flex-col border-r border-border bg-card text-card-foreground select-none"
   >
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <span class="font-mono text-sm font-semibold tracking-tight">git-fried</span>

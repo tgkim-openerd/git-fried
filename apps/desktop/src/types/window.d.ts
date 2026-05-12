@@ -34,5 +34,10 @@ declare global {
     gitFriedOpenCommandPalette?: () => void
     /** Sidebar → 네이티브 메뉴 'File > Reload Repositories' (Phase 10-6). */
     gitFriedReloadRepos?: () => void
+    /**
+     * Sprint c74 — CommitGraph 에 sha 로 jump + select (사이드바 Mini*List 클릭 진입점).
+     * 반환: true = rows 에서 발견 + select + scroll 완료, false = rows 에 없음 (caller 가 fallback 처리).
+     */
+    gitFriedSelectCommit?: (sha: string) => boolean
   }
 }

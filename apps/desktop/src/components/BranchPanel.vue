@@ -23,6 +23,9 @@ import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 import { useBranchActions, localBranchName } from '@/composables/useBranchActions'
 import SkeletonBlock from './SkeletonBlock.vue'
 import EmptyState from './EmptyState.vue'
+// GitKraken parity — prefix `/` 트리화 (MiniBranchList 와 동일 helper 재사용).
+import { buildBranchTree, filterTree } from '@/composables/useBranchTree'
+import BranchTreeView from './BranchTreeView.vue'
 import type { BranchInfo, HiddenRefKind } from '@/api/git'
 
 const toast = useToast()
@@ -35,6 +38,8 @@ const invalidate = useInvalidateRepoQueries()
 const newBranchName = ref('')
 const filterKind = ref<'all' | 'local' | 'remote'>('local')
 const remoteManageOpen = ref(false)
+// GitKraken Filter input — leaf 이름 substring 매칭 + 자동 expand all.
+const filterQuery = ref('')
 
 // Hide/Solo state — useBranchVisibilityActions composable 위임 (Sprint c44 W4).
 const { hiddenSet, soloRef, isHidden, toggleHide, toggleSolo, setSolo, bulkHideKind, unhideAll } =
@@ -48,6 +53,13 @@ const filtered = computed(() => {
   if (filterKind.value === 'all') return branches.value
   return branches.value.filter((b) => b.kind === filterKind.value)
 })
+
+// prefix `/` trie + Filter query 적용. autoExpand 는 filterQuery 비어있지 않을 때.
+const tree = computed(() => {
+  const built = buildBranchTree<BranchInfo>(filtered.value, { getName: (b) => b.name })
+  return filterTree(built, filterQuery.value.trim(), (b) => b.name)
+})
+const isSearching = computed(() => filterQuery.value.trim().length > 0)
 
 const switchMut = useMutation({
   mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name, false),
@@ -284,6 +296,17 @@ async function onExplainBranch(b: BranchInfo) {
       </button>
     </div>
 
+    <!-- GitKraken Filter input — leaf name substring 매칭. 비우면 트리 원본 + 사용자 expand 상태 복원. -->
+    <div class="border-b border-border px-3 py-1.5">
+      <input
+        v-model="filterQuery"
+        type="search"
+        :placeholder="t('branch.filterTreePlaceholder')"
+        class="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+        :aria-label="t('branch.filterTreePlaceholder')"
+      />
+    </div>
+
     <AiResultModal
       :open="explainOpen"
       :title="explainTitle"
@@ -311,83 +334,91 @@ async function onExplainBranch(b: BranchInfo) {
         "
         size="sm"
       />
-      <ul v-else>
-        <li
-          v-for="(b, idx) in filtered"
-          :key="`${b.kind}-${b.name}`"
-          class="group flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent/40"
-          :class="[
-            b.isHead ? 'bg-accent/60 font-semibold' : '',
-            isHidden(b.name) ? 'opacity-40 line-through' : '',
-            soloRef === b.name ? 'bg-orange-500/10 ring-1 ring-orange-500/40' : '',
-            dragOverIdx === idx ? 'ring-2 ring-primary/60 bg-primary/10' : '',
-          ]"
-          draggable="true"
-          :title="branchHoverTitle(b)"
-          @dblclick="onSwitch(b)"
-          @contextmenu="onBranchContextMenu($event, b)"
-          @dragstart="onDragStartBranch(b, $event)"
-          @dragover="onDragOverRow(idx, $event)"
-          @dragleave="onDragLeaveRow(idx)"
-          @drop="onDropOnBranch(b, $event)"
-        >
-          <span class="w-3 text-[10px]">{{ b.isHead ? '●' : '' }}</span>
-          <span class="flex-1 truncate font-mono text-xs">{{ b.name }}</span>
-          <span v-if="b.ahead || b.behind" class="text-[10px]">
-            <span v-if="b.ahead" class="text-diff-add">↑{{ b.ahead }}</span>
-            <span v-if="b.behind" class="ml-0.5 text-danger-rose">↓{{ b.behind }}</span>
-          </span>
-          <!-- Hide 토글 (eye icon) — 항상 보이되 hidden 일 때 닫힌 눈 -->
-          <button
-            type="button"
-            class="text-[11px] opacity-30 group-hover:opacity-100"
-            :class="isHidden(b.name) ? 'opacity-100 text-muted-foreground' : ''"
-            :title="isHidden(b.name) ? '숨김 해제' : '그래프에서 숨김'"
-            :aria-label="isHidden(b.name) ? `'${b.name}' 숨김 해제` : `'${b.name}' 그래프에서 숨김`"
-            @click.stop="toggleHide(b)"
+      <BranchTreeView
+        v-else
+        :nodes="tree"
+        storage-key="branch-panel.tree"
+        :auto-expand="isSearching"
+      >
+        <template #default="{ data: b, index: idx }: { data: BranchInfo; index: number }">
+          <div
+            :key="`${b.kind}-${b.name}`"
+            class="group flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent/40"
+            :class="[
+              b.isHead ? 'bg-accent/60 font-semibold' : '',
+              isHidden(b.name) ? 'opacity-40 line-through' : '',
+              soloRef === b.name ? 'bg-orange-500/10 ring-1 ring-orange-500/40' : '',
+              dragOverIdx === idx ? 'ring-2 ring-primary/60 bg-primary/10' : '',
+            ]"
+            draggable="true"
+            :title="branchHoverTitle(b)"
+            @dblclick="onSwitch(b)"
+            @contextmenu="onBranchContextMenu($event, b)"
+            @dragstart="onDragStartBranch(b, $event)"
+            @dragover="onDragOverRow(idx, $event)"
+            @dragleave="onDragLeaveRow(idx)"
+            @drop="onDropOnBranch(b, $event)"
           >
-            {{ isHidden(b.name) ? '🙈' : '👁' }}
-          </button>
-          <!-- Solo 토글 -->
-          <button
-            type="button"
-            class="text-[10px] opacity-0 group-hover:opacity-100"
-            :class="
-              soloRef === b.name
-                ? 'opacity-100 text-orange-700 dark:text-orange-500'
-                : 'text-muted-foreground'
-            "
-            :title="soloRef === b.name ? 'Solo 해제' : '이 브랜치만 표시'"
-            :aria-label="
-              soloRef === b.name ? `'${b.name}' Solo 해제` : `'${b.name}' 만 그래프에 표시`
-            "
-            @click.stop="toggleSolo(b)"
-          >
-            ◉
-          </button>
-          <!-- AI Explain (Sprint B7) -->
-          <button
-            v-if="ai.available.value"
-            type="button"
-            class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
-            :title="`✨ ${ai.available.value} 로 브랜치 설명`"
-            :aria-label="`'${b.name}' AI 설명 (${ai.available.value})`"
-            @click.stop="onExplainBranch(b)"
-          >
-            ✨
-          </button>
-          <button
-            v-if="!b.isHead && b.kind === 'local'"
-            type="button"
-            class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-destructive"
-            title="삭제"
-            :aria-label="`로컬 브랜치 '${b.name}' 삭제`"
-            @click.stop="onDelete(b)"
-          >
-            ×
-          </button>
-        </li>
-      </ul>
+            <span class="w-3 text-[10px]">{{ b.isHead ? '●' : '' }}</span>
+            <span class="flex-1 truncate font-mono text-xs">{{ b.name.split('/').pop() }}</span>
+            <span v-if="b.ahead || b.behind" class="text-[10px]">
+              <span v-if="b.ahead" class="text-diff-add">↑{{ b.ahead }}</span>
+              <span v-if="b.behind" class="ml-0.5 text-danger-rose">↓{{ b.behind }}</span>
+            </span>
+            <!-- Hide 토글 (eye icon) — 항상 보이되 hidden 일 때 닫힌 눈 -->
+            <button
+              type="button"
+              class="text-[11px] opacity-30 group-hover:opacity-100"
+              :class="isHidden(b.name) ? 'opacity-100 text-muted-foreground' : ''"
+              :title="isHidden(b.name) ? '숨김 해제' : '그래프에서 숨김'"
+              :aria-label="
+                isHidden(b.name) ? `'${b.name}' 숨김 해제` : `'${b.name}' 그래프에서 숨김`
+              "
+              @click.stop="toggleHide(b)"
+            >
+              {{ isHidden(b.name) ? '🙈' : '👁' }}
+            </button>
+            <!-- Solo 토글 -->
+            <button
+              type="button"
+              class="text-[10px] opacity-0 group-hover:opacity-100"
+              :class="
+                soloRef === b.name
+                  ? 'opacity-100 text-orange-700 dark:text-orange-500'
+                  : 'text-muted-foreground'
+              "
+              :title="soloRef === b.name ? 'Solo 해제' : '이 브랜치만 표시'"
+              :aria-label="
+                soloRef === b.name ? `'${b.name}' Solo 해제` : `'${b.name}' 만 그래프에 표시`
+              "
+              @click.stop="toggleSolo(b)"
+            >
+              ◉
+            </button>
+            <!-- AI Explain (Sprint B7) -->
+            <button
+              v-if="ai.available.value"
+              type="button"
+              class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
+              :title="`✨ ${ai.available.value} 로 브랜치 설명`"
+              :aria-label="`'${b.name}' AI 설명 (${ai.available.value})`"
+              @click.stop="onExplainBranch(b)"
+            >
+              ✨
+            </button>
+            <button
+              v-if="!b.isHead && b.kind === 'local'"
+              type="button"
+              class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-destructive"
+              title="삭제"
+              :aria-label="`로컬 브랜치 '${b.name}' 삭제`"
+              @click.stop="onDelete(b)"
+            >
+              ×
+            </button>
+          </div>
+        </template>
+      </BranchTreeView>
     </div>
 
     <ContextMenu ref="ctxMenu" />

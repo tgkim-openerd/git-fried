@@ -8,7 +8,8 @@
 //   - autoExpand: 모든 폴더 강제 펼침 (검색 모드 시 true)
 //
 // Slots:
-//   - leaf (default): { node, data } — 한 행 렌더 (사용처가 brand-specific UI)
+//   - leaf (default): { node, data, index } — 한 행 렌더 (사용처가 brand-specific UI).
+//     index 는 leaf 순서 (drag-drop hover 식별용, folder 는 카운트 제외).
 
 import { computed } from 'vue'
 import {
@@ -33,6 +34,16 @@ function isExpanded(path: string): boolean {
 }
 
 const visible = computed(() => flattenVisible(props.nodes, isExpanded))
+
+// visible 안에서 leaf 만 골라 path → leaf-index 매핑 (drag-drop hover ring 식별용).
+const leafIndexMap = computed<Map<string, number>>(() => {
+  const m = new Map<string, number>()
+  let i = 0
+  for (const n of visible.value) {
+    if (n.kind === 'leaf') m.set(n.fullName, i++)
+  }
+  return m
+})
 
 function indent(node: BranchTreeNode<T>): string {
   // depth 기반 padding-left (12px 단위).
@@ -75,7 +86,7 @@ function onToggle(n: BranchTreeFolder<T>) {
         <span class="rounded bg-muted px-1 text-[9px]">{{ n.leafCount }}</span>
       </button>
       <div v-else-if="isLeaf(n)" class="rounded" :style="{ paddingLeft: indent(n) }">
-        <slot :node="n" :data="n.data" />
+        <slot :node="n" :data="n.data" :index="leafIndexMap.get(n.fullName) ?? -1" />
       </div>
     </li>
   </ul>

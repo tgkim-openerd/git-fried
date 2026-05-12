@@ -14,6 +14,29 @@ import { i18n } from './i18n'
 import { registerGlobalErrorHandler } from './utils/registerGlobalErrorHandler'
 import './styles/main.css'
 
+// Sprint c74 — webview default contextmenu (뒤로/새로 고침/검사 등) 차단.
+// GitKraken parity — OS 브라우저 메뉴 노출 차단. 자체 ContextMenu 컴포넌트는 @contextmenu 핸들러에서
+// e.preventDefault() 호출하여 자기 메뉴 띄움 — 이 글로벌 핸들러도 동일 preventDefault 호출 (중복 OK).
+// DEV/PROD 모두 차단. DevTools 접근은 F12 / Ctrl+Shift+I 단축키 또는 Tauri tray 메뉴.
+// `<input>` `<textarea>` `[contenteditable]` 같은 편집 가능 영역은 통과 — OS native edit menu 보존.
+window.addEventListener(
+  'contextmenu',
+  (e) => {
+    const t = e.target as HTMLElement | null
+    if (
+      t &&
+      (t.tagName === 'INPUT' ||
+        t.tagName === 'TEXTAREA' ||
+        t.isContentEditable ||
+        t.closest('[contenteditable="true"]'))
+    ) {
+      return
+    }
+    e.preventDefault()
+  },
+  { capture: true },
+)
+
 // Tauri 데스크탑 앱은 SPA 모드로만 동작 (SSR / hydration 없음).
 // 라우터는 webHistory + 자동 routes 생성 (unplugin-vue-router).
 const router = createRouter({

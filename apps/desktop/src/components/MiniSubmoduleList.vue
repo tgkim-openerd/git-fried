@@ -1,20 +1,25 @@
 <script setup lang="ts">
 // Phase 12-3 — Sidebar SUBMODULES 카테고리 (GitKraken parity).
-// listSubmodules IPC. 평면 list (path 기반, slash 분리해도 일반적으로 짧음).
+// Sprint c74 — click → open as repo (new tab) + 우클릭 ContextMenu 7 액션 + scrollable.
 
-import { computed } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { computed, useTemplateRef } from 'vue'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { listSubmodules, type SubmoduleEntry } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
 import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut } from '@/composables/useShortcuts'
 import { useSidebarSearch } from '@/composables/useSidebarSearch'
+import { useSubmoduleInteraction } from '@/composables/useSubmoduleInteraction'
 import MiniSection from './MiniSection.vue'
+import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 // Sprint c54 — Issue 2 — sidebar skeleton placeholder.
 import SkeletonBlock from './SkeletonBlock.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const store = useReposStore()
 const search = useSidebarSearch()
+const qc = useQueryClient()
 
 const { data: submodules, isFetching } = useQuery({
   queryKey: computed(() => ['submodules', store.activeRepoId]),
@@ -33,10 +38,14 @@ const filtered = computed<SubmoduleEntry[]>(() => {
   return list.filter((s) => s.path.toLowerCase().includes(q))
 })
 
-// Sprint c54+ ARCH-c54-005 — sister 와 length 형식 통일 (Mini*Branch/Stash 와 동일 패턴).
 const submoduleCount = computed(() => submodules.value?.length ?? 0)
-const miniSubmodules = computed(() => filtered.value.slice(0, 5))
-const moreCount = computed(() => Math.max(0, filtered.value.length - miniSubmodules.value.length))
+
+// M-2: 우클릭 + click 액션. caller-decision — queryClient invalidate 만 콜백.
+const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
+const { openAsRepo, onSubmoduleContextMenu } = useSubmoduleInteraction({
+  ctxMenu,
+  onInvalidate: () => qc.invalidateQueries({ queryKey: ['submodules', store.activeRepoId] }),
+})
 
 function statusIcon(s: SubmoduleEntry): string {
   switch (s.status) {
@@ -72,7 +81,7 @@ function statusColor(s: SubmoduleEntry): string {
     title="SUBMODULES"
     :count="submoduleCount"
     storage-key="active-repo-quick.submodules"
-    full-tooltip="전체 Submodule 패널 (⌘4)"
+    :full-tooltip="t('submoduleList.fullTooltip')"
     @full="dispatchShortcut('tab4')"
   >
     <SkeletonBlock
@@ -81,21 +90,32 @@ function statusColor(s: SubmoduleEntry): string {
       height="sm"
       data-testid="mini-submodule-skeleton"
     />
-    <ul v-else class="space-y-0.5">
+    <!-- M-4: slice 제거 + max-h scrollable -->
+    <ul v-else class="max-h-48 space-y-0.5 overflow-y-auto">
       <li
-        v-for="s in miniSubmodules"
+        v-for="s in filtered"
         :key="`ms-${s.path}`"
-        class="group flex items-center gap-1 rounded px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40"
-        :title="`${s.path} (${s.status})${s.sha ? ' · ' + s.sha.slice(0, 7) : ''}`"
+        class="group flex items-center gap-1 rounded px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40 hover:text-foreground cursor-pointer"
+        :title="
+          t('submoduleList.itemTitle', {
+            path: s.path,
+            status: s.status,
+            sha: s.sha ? s.sha.slice(0, 7) : '—',
+          })
+        "
+        @dblclick="openAsRepo(s)"
+        @contextmenu="onSubmoduleContextMenu($event, s)"
       >
         <span class="shrink-0 w-3 text-center text-[10px]" :class="statusColor(s)">
           {{ statusIcon(s) }}
         </span>
         <span class="flex-1 truncate font-mono">{{ s.path }}</span>
-      </li>
-      <li v-if="moreCount > 0" class="px-1 py-0.5 text-[10px] text-muted-foreground">
-        ⋯ +{{ moreCount }}개 더 (전체 → 클릭)
+        <!-- M-5: sha inline (7 char) — 동기화 상태 즉시 확인 -->
+        <span v-if="s.sha" class="shrink-0 font-mono text-[9px] text-muted-foreground/60">
+          {{ s.sha.slice(0, 7) }}
+        </span>
       </li>
     </ul>
+    <ContextMenu ref="ctxMenu" />
   </MiniSection>
 </template>

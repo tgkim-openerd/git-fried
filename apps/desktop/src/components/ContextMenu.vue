@@ -45,7 +45,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
     <div
       v-if="cm.open.value"
       ref="rootRef"
-      class="fixed z-50 min-w-[180px] rounded-md border border-border bg-popover py-1 text-xs shadow-lg"
+      class="fixed z-50 min-w-[220px] rounded-md border border-border bg-popover py-1 text-sm shadow-lg"
       :style="{ left: `${cm.x.value}px`, top: `${cm.y.value}px` }"
       role="menu"
       aria-orientation="vertical"
@@ -64,7 +64,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
               ? cm.submenuOpen.value && cm.submenuParentIndex.value === rawIdx
               : undefined
           "
-          class="flex w-full items-center justify-between gap-3 px-3 py-1 text-left hover:bg-accent disabled:opacity-50"
+          class="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left hover:bg-accent disabled:opacity-50"
           :class="[
             cm.visibleIndexFromRaw(rawIdx) === cm.focusedIndex.value && !cm.submenuOpen.value
               ? 'bg-accent text-accent-foreground'
@@ -80,10 +80,10 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
             <span>{{ item.label }}</span>
           </span>
           <span class="flex items-center gap-2">
-            <span v-if="item.shortcut" class="font-mono text-[10px] text-muted-foreground">
+            <span v-if="item.shortcut" class="font-mono text-[11px] text-muted-foreground">
               {{ item.shortcut }}
             </span>
-            <span v-if="item.submenu" class="text-muted-foreground">▸</span>
+            <span v-if="item.submenu" class="text-muted-foreground">›</span>
           </span>
         </button>
       </template>
@@ -93,7 +93,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
     <div
       v-if="cm.submenuOpen.value && cm.submenuParentIndex.value >= 0"
       ref="submenuRef"
-      class="fixed z-50 min-w-[160px] rounded-md border border-border bg-popover py-1 text-xs shadow-lg"
+      class="fixed z-50 min-w-[200px] rounded-md border border-border bg-popover py-1 text-sm shadow-lg"
       :style="{ left: `${cm.submenuX.value}px`, top: `${cm.submenuY.value}px` }"
       role="menu"
       aria-orientation="vertical"
@@ -109,7 +109,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
           type="button"
           data-ctx-sub-item
           role="menuitem"
-          class="flex w-full items-center justify-between gap-3 px-3 py-1 text-left hover:bg-accent disabled:opacity-50"
+          class="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left hover:bg-accent disabled:opacity-50"
           :class="[
             subRawIdx === cm.submenuFocusedIndex.value ? 'bg-accent text-accent-foreground' : '',
             sub.destructive ? 'text-destructive hover:text-destructive' : '',
@@ -122,7 +122,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
             <span v-if="sub.icon" class="w-4 text-center">{{ sub.icon }}</span>
             <span>{{ sub.label }}</span>
           </span>
-          <span v-if="sub.shortcut" class="font-mono text-[10px] text-muted-foreground">
+          <span v-if="sub.shortcut" class="font-mono text-[11px] text-muted-foreground">
             {{ sub.shortcut }}
           </span>
         </button>
