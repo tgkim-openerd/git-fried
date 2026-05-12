@@ -20,7 +20,6 @@ import ConfirmDialog from './components/ConfirmDialog.vue'
 import PromptDialog from './components/PromptDialog.vue'
 import StatusBar from './components/StatusBar.vue'
 import { useTheme } from '@/composables/useTheme'
-import { useShortcut } from '@/composables/useShortcuts'
 import { useUiState } from '@/composables/useUiState'
 import { useDeepLink } from '@/composables/useDeepLink'
 import { useMenuListener } from '@/composables/useMenuListener'
@@ -29,13 +28,12 @@ import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
 import { useAppModals } from '@/composables/useAppModals'
 import { useAppWindowHooks } from '@/composables/useAppWindowHooks'
 import { useOnboardingDetect } from '@/composables/useOnboardingDetect'
+// Sprint c80-3 — 14 useShortcut + ⌘⇧P/F window keydown + onReflogShowDiff 통합.
+import { useAppShortcuts } from '@/composables/useAppShortcuts'
 import { useI18n } from 'vue-i18n'
 import { useUiSettingsStore } from '@/composables/useUserSettings'
 import { useAutoFetch } from '@/composables/useAutoFetch'
 import { useReposStore } from '@/stores/repos'
-import { openInExplorer } from '@/api/git'
-import { useToast } from '@/composables/useToast'
-import { describeError } from '@/api/errors'
 import { RouterLink, useRouter } from 'vue-router'
 
 const { theme, toggle } = useTheme()
@@ -66,95 +64,18 @@ const {
   closeAllModals,
 } = useAppModals()
 
-// ⌘⇧P 빠른 레포 전환 단축키 (Command Palette ⌘P 와 다름).
-// ⌘⇧F Commit message 검색 modal (Sprint F-P5).
-function onKeydown(e: KeyboardEvent) {
-  const meta = e.metaKey || e.ctrlKey
-  if (meta && e.shiftKey && e.key.toLowerCase() === 'p') {
-    e.preventDefault()
-    repoSwitcherOpen.value = !repoSwitcherOpen.value
-  } else if (meta && e.shiftKey && e.key.toLowerCase() === 'f') {
-    e.preventDefault()
-    commitSearchOpen.value = !commitSearchOpen.value
-  }
-}
-window.addEventListener('keydown', onKeydown)
-
-// 추가 단축키
-useShortcut('newPr', () => {
-  if (reposStore.activeRepoId != null) createPrOpen.value = true
-})
-useShortcut('help', () => (helpOpen.value = true))
-
-// Sprint B5 — UI 단축키
-useShortcut('zoomIn', ui.zoomIn)
-useShortcut('zoomOut', ui.zoomOut)
-useShortcut('zoomReset', ui.zoomReset)
-useShortcut('toggleSidebar', ui.toggleSidebar)
-useShortcut('newTab', () => {
-  // ⌘T = Repo Switcher (⌘⇧P alias)
-  repoSwitcherOpen.value = !repoSwitcherOpen.value
-})
-
-// Sprint c75-B — closeAllModals 는 useAppModals 에서 노출.
-useShortcut('closeModal', closeAllModals)
-
-// Sprint F4 — ⌥O OS 파일 매니저로 활성 레포 열기.
-const toast = useToast()
-useShortcut('openInExplorer', () => {
-  if (reposStore.activeRepoId == null) {
-    toast.warning(t('errors.noRepo'), t('errors.noRepoBody'))
-    return
-  }
-  void openInExplorer(reposStore.activeRepoId).catch((e) => {
-    toast.error(t('errors.fileMgrOpenFailed'), describeError(e))
-  })
-})
-
-// Sprint G — Tab 시스템 단축키.
-useShortcut('nextTab', reposStore.nextTab)
-useShortcut('prevTab', reposStore.prevTab)
-useShortcut('closeTab', () => {
-  if (reposStore.activeRepoId != null) {
-    reposStore.closeTab(reposStore.activeRepoId)
-  }
+// c80-3 — 14 useShortcut + ⌘⇧P/F window keydown + onReflogShowDiff 통합.
+const { onReflogShowDiff } = useAppShortcuts({
+  repoSwitcherOpen,
+  commitSearchOpen,
+  createPrOpen,
+  helpOpen,
+  reflogOpen,
+  closeAllModals,
 })
 
 // Sprint c75-B — Onboarding GitKrakenImport detect 는 useOnboardingDetect 에 분리.
 useOnboardingDetect()
-
-// Sprint 22-4 V-6 보강: ReflogModal 의 showDiff emit → CommitDiffModal 트리거.
-// pages/index.vue 가 onMounted 시 window.gitFriedShowDiff 등록.
-function onReflogShowDiff(sha: string) {
-  reflogOpen.value = false
-  window.gitFriedShowDiff?.(sha)
-}
-
-// Sprint I — Sidebar 가 숨겨져 있을 때도 ⌘⌥F 동작하도록 wrap.
-useShortcut('filterRepos', () => {
-  if (!ui.sidebarVisible.value) {
-    ui.sidebarVisible.value = true
-    // 다음 tick 후 Sidebar mount 완료 대기.
-    setTimeout(() => {
-      window.gitFriedFocusRepoFilter?.()
-    }, 80)
-  }
-  // visible 일 때는 Sidebar 가 자체적으로 focusRepoFilter 처리.
-})
-
-// Sprint F5 — F11 / ⌃⌘F Fullscreen 토글.
-useShortcut('toggleFullscreen', () => {
-  void (async () => {
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window')
-      const w = getCurrentWindow()
-      const next = !(await w.isFullscreen())
-      await w.setFullscreen(next)
-    } catch (e) {
-      toast.error(t('errors.fullscreenToggleFailed'), describeError(e))
-    }
-  })()
-})
 
 // Sprint c75-B — Window 트리거 등록 5건을 useAppWindowHooks (lifecycle 포함) 로 분리.
 useAppWindowHooks({
