@@ -48,7 +48,12 @@ const emit = defineEmits<{
   openInForge: [sha: string]
 }>()
 
-const { data: graph, isFetching } = useGraph(() => props.repoId, 500)
+// Sprint c74 — 무한 스크롤 (dynamic limit). 초기 500 → scroll 끝 근접 시 +500 씩 증가 (cap 5000).
+// Rust IPC 가 skip 미지원 → 매번 처음부터 limit 만큼 fetch (vue-query cache 가 throttle).
+const GRAPH_LIMIT_STEP = 500
+const GRAPH_LIMIT_CAP = 5000
+const graphLimit = ref(GRAPH_LIMIT_STEP)
+const { data: graph, isFetching } = useGraph(() => props.repoId, graphLimit)
 const { visibleRef, soloRef, toggleSoloRef, hideRefByName, refKindOf } = useGraphRefVisibility(
   () => props.repoId,
 )
@@ -109,15 +114,56 @@ const { drawGraph, isWipIdx } = useGraphCanvasRenderer({
 onMounted(() => {
   nextTick(() => drawGraph())
   window.addEventListener('keydown', onKeydown)
+  // Sprint c74 — Sidebar MiniStashList 등 외부에서 sha 로 jump + select 진입점.
+  window.gitFriedSelectCommit = selectAndScrollToSha
 })
 watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
   cleanupGraphWidth()
+  delete window.gitFriedSelectCommit
 })
+
+/**
+ * Sprint c74 — sha 로 row 찾기 → selectRow + virtualizer 가시 영역으로 스크롤.
+ * rows 에 없으면 false 반환 (caller 가 toast 안내 등 fallback 처리).
+ *
+ * 스크롤 전략: 가운데 정렬 (target row 가 viewport 의 1/3 지점에 오도록).
+ * wipActive 시 virtualizer idx 0 이 WIP row 라 +1 offset 보정.
+ */
+function selectAndScrollToSha(sha: string): boolean {
+  const list = rows.value
+  if (!list || list.length === 0) return false
+  const rowIdx = list.findIndex((r) => r.commit.sha === sha)
+  if (rowIdx < 0) return false
+  const row = list[rowIdx]
+  selectRow(row)
+  // virtualizer 의 표시 idx: wipActive 시 +1 offset.
+  const virtIdx = (wipActive.value ? 1 : 0) + rowIdx
+  const ct = containerRef.value
+  if (ct) {
+    const targetTop = virtIdx * ROW_H
+    // 가운데(viewport 1/3 지점) — 충분히 잘 보이도록.
+    const centeredScroll = Math.max(0, targetTop - ct.clientHeight / 3)
+    ct.scrollTop = centeredScroll
+    nextTick(() => drawGraph())
+  }
+  return true
+}
 
 function onScroll() {
   drawGraph()
+  // Sprint c74 — 무한 스크롤: scroll 끝 근처 (마지막 viewport 의 50% 안) + 아직 cap 미도달 +
+  // 현재 rows 가 limit 에 거의 도달 (마지막 fetch 가 full batch 라 더 있을 가능성) → limit 증가.
+  // isFetching 중에는 중복 트리거 방지.
+  const ct = containerRef.value
+  if (!ct || isFetching.value) return
+  if (graphLimit.value >= GRAPH_LIMIT_CAP) return
+  if (rows.value.length < graphLimit.value - 10) return // backend 가 limit 보다 적게 반환 = 모든 commit fetch 완료
+  const nearEnd = ct.scrollTop + ct.clientHeight >= ct.scrollHeight - ct.clientHeight * 0.5
+  if (nearEnd) {
+    graphLimit.value = Math.min(GRAPH_LIMIT_CAP, graphLimit.value + GRAPH_LIMIT_STEP)
+  }
 }
 
 // Sprint c37 god 19/N — selectedSha + moveSelection (vim J/K) + selectWip.

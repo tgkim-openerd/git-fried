@@ -1,8 +1,11 @@
-/* Pretendard self-host — Q1 결정 (plan/24 Sprint A-1).
- * pretendard npm 패키지의 woff2 + @font-face. OS 미설치 환경 fallback 차단.
- * Variable 버전 (단일 파일, ~150KB) — font-display: swap 으로 FOUT 허용.
+/* Roboto Flex (라틴) + Noto Sans KR (한글 fallback) self-host — plan/24 Sprint A-1 self-host 정책 유지.
+ * Roboto Flex variable: opsz/wght/wdth axes, font-display: swap.
+ * Noto Sans KR: 본문 용도 400/700 만 import (전체 weight import 시 수 MB 부담).
+ * font-family chain 으로 라틴은 Roboto, 한글은 Noto Sans KR 자동 매칭.
  */
-@import 'pretendard/dist/web/variable/pretendardvariable.css';
+@import '@fontsource-variable/roboto-flex';
+@import '@fontsource/noto-sans-kr/400.css';
+@import '@fontsource/noto-sans-kr/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -144,15 +147,25 @@
   * {
     @apply border-border;
   }
+  /* Sprint c74 — Tauri 데스크탑 앱 viewport 고정.
+   * html/body/#app 에 height + overflow:hidden 미설정 시 body-level scrollbar 가 viewport 전체 우측
+   * edge 에 그려져 panel(commit graph 등) boundary 를 침범. GitKraken 처럼 각 panel 안에서만
+   * scroll 되도록 viewport 고정 — 콘텐츠 overflow 는 panel 자체의 overflow:auto 가 담당.
+   */
+  html,
+  body,
+  #app {
+    height: 100%;
+    overflow: hidden;
+  }
   body {
     @apply bg-background text-foreground;
-    /* Phase 11-2 — 가독성 개선:
-     * - opsz: 32 (display) → 14 (body 표준) — Pretendard 변형은 8~32, 14 가 최적 본문 사이즈
-     * - line-height: 기본(1.2) → 1.55 (한글/영문 mixed line spacing 충분 확보)
+    /* 가독성 — Roboto Flex variable axes 활용:
+     * - opsz: 14 (Roboto Flex 8~144 범위 중 본문 최적)
+     * - line-height: 1.55 (한글 fallback 폰트와의 mixed line spacing 충분 확보)
      * - letter-spacing: -0.003em (tabular numbers + Hangul 균형)
-     * - font-smoothing: Windows webview 에서 Pretendard 가 얇게 렌더되는 문제 보정
+     * - font-smoothing: Windows webview 렌더링 보정
      */
-    font-feature-settings: 'cv11', 'ss01';
     font-variation-settings: 'opsz' 14;
     line-height: 1.55;
     letter-spacing: -0.003em;
@@ -193,6 +206,60 @@
   *:focus:not(:focus-visible) {
     outline: none;
     box-shadow: none;
+  }
+
+  /* Sprint c74 — 테마 통합 scrollbar (GitKraken parity).
+   * Webview default scrollbar 가 OS 시스템 색(Windows 회색 등) 으로 떠 다크/라이트 테마와 충돌.
+   * Webkit (Chromium/WebView2) + 표준 (`scrollbar-width`/`scrollbar-color`) 두 syntax 동시 적용.
+   *
+   * 디자인 토큰:
+   *   - thumb: muted-foreground 의 30% alpha (idle), 50% (hover), 60% (active)
+   *   - track: transparent — bg-card / bg-background 그대로 비치도록
+   *   - corner: transparent (X+Y 교차 영역)
+   *   - width: 10px (편안한 클릭 hit area, GitKraken 비슷)
+   *   - 둥근 모서리 (border-radius 5px) — 모던 UX
+   *   - thumb 안쪽 border 2px transparent — 시각상 thumb 가 약간 좁아 보임 (floating 효과)
+   */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.4);
+    border-radius: 6px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    /* Sprint c74-3 — 가상화된 대규모 리스트(CommitGraph: rows × ROW_H 가 100k+px)에서
+     * (viewport/content) 비율 thumb 가 3px 미만으로 줄어 잡기 어려운 문제 해결. min-height 로 가시성·
+     * 클릭 hit area 보장 (GitKraken / VSCode 표준 정책). */
+    min-height: 40px;
+    transition: background-color var(--transition-fast) var(--ease-out);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.6);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--muted-foreground) / 0.75);
+  }
+  /* 가로 scrollbar 도 동일 min-width 보장. */
+  ::-webkit-scrollbar-thumb:horizontal {
+    min-width: 40px;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  /* 편집 가능 영역 (textarea / contenteditable) — 더 얇게 (가독성 우선). */
+  textarea::-webkit-scrollbar,
+  [contenteditable='true']::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
   }
 
   /* Sprint 22-12 Q-5 — prefers-reduced-motion 폴백 (WCAG 2.3.3 + design 04 §1-3).

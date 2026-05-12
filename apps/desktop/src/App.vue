@@ -282,7 +282,7 @@ useMenuListener()
           </div>
         </template>
       </RepoTabBar>
-      <RouterView class="flex-1 overflow-hidden" />
+      <RouterView class="flex-1 min-h-0 overflow-hidden" />
       <StatusBar />
     </main>
     <CommandPalette />

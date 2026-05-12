@@ -329,8 +329,8 @@ onUnmounted(() => {
           </button>
         </nav>
 
-        <!-- mainView 별 panel -->
-        <div class="overflow-hidden">
+        <!-- mainView 별 panel — min-h-0 + h-full 로 grid 1fr 정확 stretch (c74 — viewport 끝까지 graph 늘리기). -->
+        <div class="h-full min-h-0 overflow-hidden">
           <!-- Sprint c30 / GitKraken UX (Phase 8a) — graph view: CommitGraph 가 WIP row 직접 통합.
                (별도 WipRow mount 제거 — CommitGraph 의 virtualizer idx=0 + dirty 시 WIP row.) -->
           <!-- Phase 14-1 (GitKraken parity 강화) — 커밋 선택 시 diff 가 dominant content.
