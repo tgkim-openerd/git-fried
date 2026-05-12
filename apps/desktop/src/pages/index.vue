@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 메인 페이지 — GitKrakenToolbar + 좌측(로그/그래프) + 우측 탭 패널 + 하단(commit input + 통합 터미널).
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
 import { useGraph } from '@/composables/useGraph'
@@ -28,6 +28,9 @@ import CommitDetailSidebar from '@/components/CommitDetailSidebar.vue'
 // Sprint c30 / GitKraken UX (Phase 3) — 파일 더블클릭 fullscreen.
 import FullscreenDiffView from '@/components/FullscreenDiffView.vue'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
+// Sprint c75-C — god comp 회귀 해소 (inline diff 영속화 + commit selection 분리).
+import { useInlineDiffPersist } from '@/composables/useInlineDiffPersist'
+import { useCommitSelection, WIP_SHA } from '@/composables/useCommitSelection'
 // Phase 13-1 — WipBanner 제거 (GitKraken parity / vertical 공간 절약).
 //   useWipNote 은 StashPanel 의 new stash message prefill 에서 계속 사용 (clearWipNote 도 stash push 후 자동).
 //   WIP note 자체 입력은 stash 모드 진입 시 noteworthy.
@@ -84,44 +87,14 @@ function toggleFocusMode() {
   focusMode.value = !focusMode.value
 }
 
-// Sprint B5 — ⌘D = 선택 commit 의 diff modal.
-// Sprint 22-3 V-1 — row dblclick 도 동일 액션 트리거.
-// Sprint c30 / GitKraken UX (Phase 2a) — '__WIP__' sentinel = working tree pseudo-row.
-//   selectedSha === WIP_SHA 이면 graph 의 WipRow 가 활성 + 우측 staging (status tab).
-const WIP_SHA = '__WIP__'
-const selectedSha = ref<string | null>(null)
-const diffModalOpen = ref(false)
-// Sprint c30 / GitKraken UX (Phase 1) — auto-default 와 명시 선택 구분.
-//   user 가 한 번이라도 row click / ESC 했으면 true → 이후 auto-default 비활성.
-//   repo 변경 시 false 로 reset (새 repo 의 latest 로 default 적용).
-const userChoseSha = ref(false)
-// Sprint c30 / GitKraken UX — commit row 단일 클릭 시 우측 패널 자동 전환:
-//   1. 같은 sha 재선택: 선택 해제 (toggle, 우측 status 복귀)
-//   2. 다른 sha: selectedSha set + tab='commit' 즉시 전환 (GitKraken 동작)
-//      현재 어느 tab 이든 (Branches/PR/...) commit detail 로 즉시 전환됨.
-// Sprint c30 / GitKraken UX (Phase 5) — commit row click.
-//   selectedSha 만 변경 — 우측 sidebar 가 자동 commit detail 로 분기.
-//   tab 자동 변경 안 함 — 사용자가 'pr' / 'branches' 보고 있을 때 graph 로 강제 전환 안 함.
-function onSelectCommit(sha: string) {
-  userChoseSha.value = true
-  if (selectedSha.value === sha) {
-    selectedSha.value = null
-    return
-  }
-  selectedSha.value = sha
-}
-
-// Sprint c30 / GitKraken UX (Phase 5) — WipRow click 핸들러.
-//   selectedSha=WIP_SHA → 우측 sidebar = staging UI (StatusPanel + CommitMessageInput).
-//   mainView 변경 안 함 (graph 보고 있으면 graph 유지, 다른 panel 이면 그것 유지).
-function onSelectWip() {
-  userChoseSha.value = true
-  if (selectedSha.value === WIP_SHA) {
-    selectedSha.value = null
-    return
-  }
-  selectedSha.value = WIP_SHA
-}
+// Sprint c75-C — commit selection state + handlers + auto-default watch + ESC + window.gitFriedShowDiff
+// 모두 useCommitSelection 으로 분리. WIP_SHA sentinel 은 named re-export.
+const { data: graphData } = useGraph(() => store.activeRepoId, 500)
+const { selectedSha, diffModalOpen, onSelectCommit, onSelectWip, onShowDiff } = useCommitSelection({
+  status,
+  graphData,
+  activeRepoId: () => store.activeRepoId,
+})
 
 // Sprint c30 / GitKraken UX (Phase 8a) — WIP pseudo-row 는 CommitGraph 에 통합.
 //   wipChangeCount / showWipRow state 도 CommitGraph 내부에서 useStatus 로 계산.
@@ -151,122 +124,33 @@ function mainViewLabel(v: MainView): string {
   }
 }
 
-// Sprint c30 / GitKraken UX — ESC 키 = commit 선택 해제 (모달 없을 때만).
-//   useShortcuts 가 ESC 를 cover 하지 않아 직접 window listener 등록.
-//   modal/CommandPalette 가 자체 ESC 처리하면 그쪽이 stopPropagation 하므로 안전.
-function onEscKey(e: KeyboardEvent) {
-  if (e.key !== 'Escape') return
-  // 모달 / palette 등이 열려있으면 (active element 가 input/dialog 안) skip
-  const ae = document.activeElement
-  if (
-    ae &&
-    (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.closest('[role="dialog"]'))
-  ) {
-    return
-  }
-  if (selectedSha.value != null) {
-    userChoseSha.value = true // 명시적 deselect — auto-default 재적용 차단
-    selectedSha.value = null
-  }
-}
-onMounted(() => {
-  window.addEventListener('keydown', onEscKey)
-})
-onUnmounted(() => {
-  window.removeEventListener('keydown', onEscKey)
-})
-
-// Phase 1 (Sprint c29-5) — activeRepoId 변경 시 selectedSha reset (graph 가 바뀌어 의미 잃음).
-// Sprint c30 / GitKraken UX — userChoseSha 도 reset → 새 repo 의 latest 로 auto-default 재적용.
-watch(
-  () => store.activeRepoId,
-  () => {
-    selectedSha.value = null
-    userChoseSha.value = false
-  },
-)
-
-// Sprint c30 / GitKraken UX (Phase 1 + 2a) — auto-default selectedSha.
-//   GitKraken UX 우선순위:
-//     working dir dirty 면 WIP_SHA → 우측 staging UI 즉시
-//     clean 이면 graph latest commit → 우측 commit detail 즉시
-//   user 가 명시 선택 (row click / ESC) 했으면 auto 재적용 안 함.
-//   status / graph 둘 다 도착 후 결정 — race condition 회피.
-const { data: graphData } = useGraph(() => store.activeRepoId, 500)
-watch(
-  [status, graphData],
-  ([s, g]) => {
-    if (userChoseSha.value || selectedSha.value != null) return
-    if (!s || !g) return
-    if (!s.isClean) {
-      selectedSha.value = WIP_SHA
-    } else if (g.rows.length > 0) {
-      selectedSha.value = g.rows[0].commit.sha
-    }
-  },
-  { immediate: true },
-)
-function onShowDiff(sha: string) {
-  if (sha === WIP_SHA) return // sentinel — commit diff modal 대상 아님
-  selectedSha.value = sha
-  diffModalOpen.value = true
-}
+// Sprint c75-C — ESC / auto-default watch / activeRepoId reset / window.gitFriedShowDiff
+// register 모두 useCommitSelection 내부에서 처리. caller 는 shortcut binding 만 책임.
 useShortcut('showDiff', () => {
   // Sprint c30 — WIP_SHA 는 commit diff 대상 아님 (working dir 은 status panel 에서 보기).
   if (selectedSha.value && selectedSha.value !== WIP_SHA) diffModalOpen.value = true
 })
+// onShowDiff 는 template (CommitDiffModal @close) 에서 호출 — lint 회피용 void 참조.
+void onShowDiff
 
 // Sprint c25-4.5 — ⌘⇧D = inline diff panel 토글.
 // (⌘D 는 모달, ⌘⇧D 는 inline — 사용자 선택권)
 useShortcut('toggleInlineDiff', () => setInlineDiff(!inlineDiffVisible.value))
 
-// Sprint c25-4.5 — Inline diff panel (좌측 영역 vertical split).
-// row 단일 클릭으로 selectedSha set → inline diff 자동 노출. ⌘D 모달은 그대로 유지.
-// localStorage 'git-fried.inline-diff.visible' 영속 — 사용자가 ✕ 닫으면 다음 세션도 닫힘.
-const INLINE_DIFF_KEY = 'git-fried.inline-diff.visible'
-function loadInlineDiff(): boolean {
-  if (typeof localStorage === 'undefined') return true
-  return localStorage.getItem(INLINE_DIFF_KEY) !== '0'
-}
-const inlineDiffVisible = ref(loadInlineDiff())
-function setInlineDiff(visible: boolean) {
-  inlineDiffVisible.value = visible
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(INLINE_DIFF_KEY, visible ? '1' : '0')
-  }
-}
-// Sprint c30 — WIP_SHA 는 inline diff 대상 아님 (sentinel). status panel 에서 working dir 변경 보기.
+// Sprint c75-C — Inline diff panel 영속화 useInlineDiffPersist 로 분리.
+// Sprint c30 — WIP_SHA 는 inline diff 대상 아님 (sentinel) — inlineDiffActive 만 caller 결합.
+const { inlineDiffVisible, setInlineDiff, inlineDiffMaximized, toggleInlineDiffMaximize } =
+  useInlineDiffPersist()
 const inlineDiffActive = computed(
   () => inlineDiffVisible.value && selectedSha.value != null && selectedSha.value !== WIP_SHA,
 )
 
-// Phase 14-1 — inline diff "maximize" (graph 완전 hide, diff fullscreen 가까움).
-// localStorage 'git-fried.inline-diff.maximized' 영속.
-const INLINE_DIFF_MAX_KEY = 'git-fried.inline-diff.maximized'
-function loadInlineDiffMax(): boolean {
-  if (typeof localStorage === 'undefined') return false
-  return localStorage.getItem(INLINE_DIFF_MAX_KEY) === '1'
-}
-const inlineDiffMaximized = ref(loadInlineDiffMax())
-function toggleInlineDiffMaximize() {
-  inlineDiffMaximized.value = !inlineDiffMaximized.value
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(INLINE_DIFF_MAX_KEY, inlineDiffMaximized.value ? '1' : '0')
-  }
-}
-
-// CommandPalette 에서 호출되는 외부 트리거.
-function externalToggleTerminal() {
-  terminalOpen.value = !terminalOpen.value
-}
+// CommandPalette 에서 호출되는 terminal 토글. window.gitFriedShowDiff 는 useCommitSelection 이 관리.
 onMounted(() => {
-  window.gitFriedToggleTerminal = externalToggleTerminal
-  // Sprint 22-4 V-6 보강: ReflogModal / 외부 트리거 → CommitDiffModal 진입.
-  window.gitFriedShowDiff = onShowDiff
+  window.gitFriedToggleTerminal = () => (terminalOpen.value = !terminalOpen.value)
 })
 onUnmounted(() => {
   delete window.gitFriedToggleTerminal
-  delete window.gitFriedShowDiff
 })
 </script>
 
