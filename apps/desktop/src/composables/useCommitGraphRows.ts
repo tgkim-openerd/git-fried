@@ -35,15 +35,18 @@ export function useCommitGraphRows({ repoId, rows, containerRef }: UseCommitGrap
   // c76-extra (/code-review ARCH-001 후속): 내부도 wipRowCount.value 로 통합 — 진정한 단일 SOT.
   const wipRowCount = computed(() => (wipActive.value ? 1 : 0))
 
-  // Sprint c45 PERF-2 — overscan 동적: 5000+ commits 시 stutter 감소 (12 → 최대 24).
-  //   기준: 1000 미만 12 / 1000~3000 16 / 3000~5000 20 / 5000+ 24.
-  //   소규모 repo 는 메모리 경량, 대규모는 스크롤 평탄화.
+  // Sprint c45 PERF-2 — overscan 동적: 5000+ commits 시 stutter 감소.
+  // Sprint c77-B — viewport-aware 추가: 작은 viewport (focusMode 200px) 에서 overscan 12 가
+  // visible 7 rows 의 171% 비대 + 빠른 wheel 못 따라감. visibleCount × 0.5 baseline 으로
+  // viewport 크기 적응 + rows 개수 임계 max 와 결합.
   const dynamicOverscan = computed(() => {
     const n = rows.value.length
-    if (n < 1000) return 12
-    if (n < 3000) return 16
-    if (n < 5000) return 20
-    return 24
+    const viewportH = containerRef.value?.clientHeight ?? 500
+    const visibleCount = Math.ceil(viewportH / ROW_H)
+    const viewportBased = Math.max(12, Math.ceil(visibleCount * 0.5))
+    // rows 개수 기준 상한 — 큰 repo 는 더 많은 overscan 으로 평탄화.
+    const rowsBased = n < 1000 ? 12 : n < 3000 ? 16 : n < 5000 ? 20 : 24
+    return Math.max(viewportBased, rowsBased)
   })
 
   const virtualizer = useVirtualizer(

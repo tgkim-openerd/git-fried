@@ -10,6 +10,9 @@ import type { GraphRow } from '@/api/git'
 
 export const GRAPH_LIMIT_STEP = 500
 export const GRAPH_LIMIT_CAP = 5000
+/** Sprint c77-B — graphLimit 변경 직후 cool-down. 빠른 wheel 시 race 방지 (vue-query
+ * isFetching reactive 가 다음 tick 에 true 되어 중복 trigger 가능). */
+const COOLDOWN_MS = 100
 
 /**
  * useGraph(graphLimit) 가 외부에서 호출되어야 하므로 graphLimit 은 caller 가 ref 로 만들어
@@ -23,6 +26,8 @@ export function useGraphInfiniteScroll(opts: {
   /** scroll 이벤트마다 호출 — Canvas 재그리기 등. */
   onScrollSideEffect?: () => void
 }) {
+  let cooldownUntil = 0
+
   function onScroll() {
     opts.onScrollSideEffect?.()
     const ct = opts.containerRef.value
@@ -30,9 +35,14 @@ export function useGraphInfiniteScroll(opts: {
     if (opts.graphLimit.value >= GRAPH_LIMIT_CAP) return
     // backend 가 limit 보다 적게 반환 = 모든 commit fetch 완료.
     if (opts.rows.value.length < opts.graphLimit.value - 10) return
+    // Sprint c77-B — cool-down: vue-query isFetching 이 true 되기 전 microtask gap 동안
+    // 중복 trigger 차단 (작은 viewport + 빠른 wheel race).
+    const now = Date.now()
+    if (now < cooldownUntil) return
     const nearEnd = ct.scrollTop + ct.clientHeight >= ct.scrollHeight - ct.clientHeight * 0.5
     if (nearEnd) {
       opts.graphLimit.value = Math.min(GRAPH_LIMIT_CAP, opts.graphLimit.value + GRAPH_LIMIT_STEP)
+      cooldownUntil = now + COOLDOWN_MS
     }
   }
 
