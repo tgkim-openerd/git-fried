@@ -91,7 +91,7 @@ function statusColor(s: SubmoduleEntry): string {
       data-testid="mini-submodule-skeleton"
     />
     <!-- M-4: slice 제거 + max-h scrollable -->
-    <ul v-else class="max-h-48 space-y-0.5 overflow-y-auto">
+    <ul v-else class="mini-list-scroll max-h-48 space-y-0.5 overflow-y-auto">
       <li
         v-for="s in filtered"
         :key="`ms-${s.path}`"

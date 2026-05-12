@@ -209,44 +209,44 @@
   }
 
   /* Sprint c74 — 테마 통합 scrollbar (GitKraken parity).
-   * Webview default scrollbar 가 OS 시스템 색(Windows 회색 등) 으로 떠 다크/라이트 테마와 충돌.
-   * Webkit (Chromium/WebView2) + 표준 (`scrollbar-width`/`scrollbar-color`) 두 syntax 동시 적용.
+   * Sprint c77-A — 7 폴리시: border 3→2px (HiDPI 친화) / alpha 0.4→0.5 (가시성)
+   * track 0→0.04 (page-up/down affordance) / button display:none (WebKitGTK)
+   * scrollbar-gutter stable (layout shift 회피) / 작은 영역 8px 차별화 / scrollbar-color sync.
    *
-   * 디자인 토큰:
-   *   - thumb: muted-foreground 의 30% alpha (idle), 50% (hover), 60% (active)
-   *   - track: transparent — bg-card / bg-background 그대로 비치도록
-   *   - corner: transparent (X+Y 교차 영역)
-   *   - width: 10px (편안한 클릭 hit area, GitKraken 비슷)
-   *   - 둥근 모서리 (border-radius 5px) — 모던 UX
-   *   - thumb 안쪽 border 2px transparent — 시각상 thumb 가 약간 좁아 보임 (floating 효과)
+   * 디자인 토큰 (c77):
+   *   - thumb: muted-foreground 의 0.5 (idle), 0.7 (hover), 0.85 (active)
+   *   - track: 0.04 alpha (매우 옅음 — hit area affordance)
+   *   - width: 12px (큰 container) / 8px (textarea, .repo-tab-strip, .mini-list-scroll)
+   *   - border: 2px transparent + background-clip padding-box (floating 효과 + HiDPI 짝수 alignment)
+   *   - min-height: 40px (대규모 가상화 list 의 thumb 가시성 보장)
    */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.5) transparent;
   }
   ::-webkit-scrollbar {
     width: 12px;
     height: 12px;
   }
   ::-webkit-scrollbar-track {
-    background: transparent;
+    /* Sprint c77-A — 매우 옅은 alpha 로 track hit area 시각화 (page-up/down 클릭 affordance). */
+    background: hsl(var(--muted-foreground) / 0.04);
   }
   ::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted-foreground) / 0.4);
+    background-color: hsl(var(--muted-foreground) / 0.5);
     border-radius: 6px;
-    border: 3px solid transparent;
+    /* Sprint c77-A — border 3→2 (HiDPI DPR 1.25/1.5 짝수 alignment + visual width 6→8px). */
+    border: 2px solid transparent;
     background-clip: padding-box;
-    /* Sprint c74-3 — 가상화된 대규모 리스트(CommitGraph: rows × ROW_H 가 100k+px)에서
-     * (viewport/content) 비율 thumb 가 3px 미만으로 줄어 잡기 어려운 문제 해결. min-height 로 가시성·
-     * 클릭 hit area 보장 (GitKraken / VSCode 표준 정책). */
+    /* Sprint c74-3 — 가상화된 대규모 리스트의 thumb 가 3px 미만으로 줄어드는 문제 해결. */
     min-height: 40px;
     transition: background-color var(--transition-fast) var(--ease-out);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground) / 0.6);
+    background-color: hsl(var(--muted-foreground) / 0.7);
   }
   ::-webkit-scrollbar-thumb:active {
-    background-color: hsl(var(--muted-foreground) / 0.75);
+    background-color: hsl(var(--muted-foreground) / 0.85);
   }
   /* 가로 scrollbar 도 동일 min-width 보장. */
   ::-webkit-scrollbar-thumb:horizontal {
@@ -255,9 +255,16 @@
   ::-webkit-scrollbar-corner {
     background: transparent;
   }
-  /* 편집 가능 영역 (textarea / contenteditable) — 더 얇게 (가독성 우선). */
+  /* Sprint c77-A — WebKitGTK Linux 의 default up/down 화살표 button 잔존 차단 (cross-platform 안전). */
+  ::-webkit-scrollbar-button {
+    display: none;
+  }
+  /* Sprint c77-A — 작은 영역 (편집 / 가로 tab strip / Mini list / ContextMenu) 은 8px 로 차별화.
+   * 12px 가 작은 viewport 의 16-21% 차지하던 sliding 정확도 저하 회피. */
   textarea::-webkit-scrollbar,
-  [contenteditable='true']::-webkit-scrollbar {
+  [contenteditable='true']::-webkit-scrollbar,
+  .repo-tab-strip ::-webkit-scrollbar,
+  .mini-list-scroll::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
