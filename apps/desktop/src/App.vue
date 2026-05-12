@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 최상위 레이아웃: 사이드바(좌) + 본문(우, file-routing 페이지) + 헤더 (Profiles / Theme / Settings).
-import { onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 import RepoTabBar from './components/RepoTabBar.vue'
 import CommandPalette from './components/CommandPalette.vue'
@@ -25,12 +25,15 @@ import { useUiState } from '@/composables/useUiState'
 import { useDeepLink } from '@/composables/useDeepLink'
 import { useMenuListener } from '@/composables/useMenuListener'
 import { useFullscreenDiff } from '@/composables/useFullscreenDiff'
-import { computed } from 'vue'
+// Sprint c75-B — god comp 회귀 해소 (modal state + window hooks + onboarding detect).
+import { useAppModals } from '@/composables/useAppModals'
+import { useAppWindowHooks } from '@/composables/useAppWindowHooks'
+import { useOnboardingDetect } from '@/composables/useOnboardingDetect'
 import { useI18n } from 'vue-i18n'
 import { useUiSettingsStore } from '@/composables/useUserSettings'
 import { useAutoFetch } from '@/composables/useAutoFetch'
 import { useReposStore } from '@/stores/repos'
-import { importGitKrakenDetect, openInExplorer } from '@/api/git'
+import { openInExplorer } from '@/api/git'
 import { useToast } from '@/composables/useToast'
 import { describeError } from '@/api/errors'
 import { RouterLink, useRouter } from 'vue-router'
@@ -44,35 +47,24 @@ const router = useRouter()
 useDeepLink(router)
 useAutoFetch()
 
-// Sync-template Modal — Command Palette / 추후 우클릭 메뉴에서 trigger.
-const syncTemplateOpen = ref(false)
-const syncTemplateInitialSha = ref<string | null>(null)
-function openSyncTemplate(sha?: string) {
-  syncTemplateInitialSha.value = sha ?? null
-  syncTemplateOpen.value = true
-}
-const bisectOpen = ref(false)
-const reflogOpen = ref(false)
-const repoSwitcherOpen = ref(false)
-const createPrOpen = ref(false)
-const helpOpen = ref(false)
-// Sprint F-P5 — Commit message 검색 modal (`git log --grep` 동등). ⌘⇧F 단축키.
-const commitSearchOpen = ref(false)
-// Sprint C3 — Compare modal + Sprint c38 fix MED-3 — initial mode (diff / range).
-const compareOpen = ref(false)
-const compareInitialRef1 = ref<string | null>(null)
-const compareInitialRef2 = ref<string | null>(null)
-const compareInitialMode = ref<'diff' | 'range'>('diff')
-function openCompare(
-  ref1?: string | null,
-  ref2?: string | null,
-  mode: 'diff' | 'range' = 'diff',
-) {
-  compareInitialRef1.value = ref1 ?? null
-  compareInitialRef2.value = ref2 ?? null
-  compareInitialMode.value = mode
-  compareOpen.value = true
-}
+// Sprint c75-B — modal 9개 state + open helper + closeAllModals 를 useAppModals 로 분리.
+const {
+  syncTemplateOpen,
+  syncTemplateInitialSha,
+  openSyncTemplate,
+  bisectOpen,
+  reflogOpen,
+  repoSwitcherOpen,
+  createPrOpen,
+  helpOpen,
+  commitSearchOpen,
+  compareOpen,
+  compareInitialRef1,
+  compareInitialRef2,
+  compareInitialMode,
+  openCompare,
+  closeAllModals,
+} = useAppModals()
 
 // ⌘⇧P 빠른 레포 전환 단축키 (Command Palette ⌘P 와 다름).
 // ⌘⇧F Commit message 검색 modal (Sprint F-P5).
@@ -104,18 +96,7 @@ useShortcut('newTab', () => {
   repoSwitcherOpen.value = !repoSwitcherOpen.value
 })
 
-// 활성 모달들 — ⌘W 로 일괄 닫기.
-function closeAllModals() {
-  syncTemplateOpen.value = false
-  bisectOpen.value = false
-  reflogOpen.value = false
-  repoSwitcherOpen.value = false
-  createPrOpen.value = false
-  helpOpen.value = false
-  commitSearchOpen.value = false
-  // 외부 등록된 modal trigger 들도 close — 각자 자체 ESC 핸들링.
-  // 여기서는 우리가 관리하는 7개만 처리.
-}
+// Sprint c75-B — closeAllModals 는 useAppModals 에서 노출.
 useShortcut('closeModal', closeAllModals)
 
 // Sprint F4 — ⌥O OS 파일 매니저로 활성 레포 열기.
@@ -139,37 +120,8 @@ useShortcut('closeTab', () => {
   }
 })
 
-// Sprint 22-20 — Onboarding GitKrakenImport detect (design §8-7 hard constraint).
-//
-// 첫 실행 시 GitKraken 데이터 자동 감지 → toast.info 안내 (Settings → Plugin 카테고리는 placeholder, 마이그레이션 카테고리에서 실 작업).
-// localStorage 'git-fried.onboarded.v1' 부재 시에만 한 번 표시. 사용자 friction 최소화를 위해 modal 자동 open 은 안 함.
-// 실 import 는 사용자가 Settings → 시작·마이그레이션 → GitKraken 가져오기 버튼으로 명시 트리거.
-const ONBOARDED_KEY = 'git-fried.onboarded.v1'
-onMounted(async () => {
-  if (typeof localStorage === 'undefined') return
-  if (localStorage.getItem(ONBOARDED_KEY)) return
-  try {
-    const result = await importGitKrakenDetect()
-    if (result && result.repoCount > 0) {
-      toast.info(
-        `GitKraken 데이터 발견 — ${result.repoCount} 레포`,
-        `워크스페이스 ${result.workspaceCount}개 / 즐겨찾기 ${result.favoriteCount}개 / 탭 ${result.tabCount}개\n` +
-          'Settings → 시작·마이그레이션 → GitKraken 가져오기 에서 진행',
-        12_000,
-      )
-    } else {
-      // Sprint c46 UX-1 — repo 0개 시 명시 toast (사용자 인지: detect 동작했으나 데이터 없음)
-      toast.info(
-        '환영합니다',
-        'Sidebar 의 ➕ 버튼 또는 ⌘⇧P (Repo Switcher) 로 첫 레포를 추가하세요.\nGitKraken 사용 중이라면 Settings → 시작·마이그레이션 에서 가져올 수 있습니다.',
-        10_000,
-      )
-    }
-    localStorage.setItem(ONBOARDED_KEY, String(Date.now()))
-  } catch {
-    // detect 실패는 silent — 다음 실행에서 재시도. localStorage 마킹 안 함.
-  }
-})
+// Sprint c75-B — Onboarding GitKrakenImport detect 는 useOnboardingDetect 에 분리.
+useOnboardingDetect()
 
 // Sprint 22-4 V-6 보강: ReflogModal 의 showDiff emit → CommitDiffModal 트리거.
 // pages/index.vue 가 onMounted 시 window.gitFriedShowDiff 등록.
@@ -204,11 +156,14 @@ useShortcut('toggleFullscreen', () => {
   })()
 })
 
-// Window 트리거 등록 — `src/types/window.d.ts` 의 augmentation 으로 타입 안전.
-window.gitFriedOpenSyncTemplate = openSyncTemplate
-window.gitFriedOpenBisect = () => (bisectOpen.value = true)
-window.gitFriedOpenReflog = () => (reflogOpen.value = true)
-window.gitFriedOpenCompare = openCompare
+// Sprint c75-B — Window 트리거 등록 5건을 useAppWindowHooks (lifecycle 포함) 로 분리.
+useAppWindowHooks({
+  openSyncTemplate,
+  openBisect: () => (bisectOpen.value = true),
+  openReflog: () => (reflogOpen.value = true),
+  openCompare,
+  toggleTheme: toggle,
+})
 
 // Phase 14-3 — fullscreen diff 진입 시 좌측 sidebar 자동 hide (GitKraken Diff View 동등).
 //   ui.sidebarVisible localStorage 는 보존 — grid-cols 조건에 fullscreenActive 직접 결합.
@@ -216,8 +171,7 @@ const fsDiff = useFullscreenDiff()
 const fullscreenActive = computed(() => fsDiff.current.value != null)
 const sidebarShown = computed(() => ui.sidebarVisible.value && !fullscreenActive.value)
 
-// Phase 10-6 — 네이티브 메뉴 (Tauri menu) bridge.
-window.gitFriedToggleTheme = toggle
+// Phase 10-6 — 네이티브 메뉴 (Tauri menu) bridge. toggleTheme 은 useAppWindowHooks 가 등록.
 useMenuListener()
 </script>
 

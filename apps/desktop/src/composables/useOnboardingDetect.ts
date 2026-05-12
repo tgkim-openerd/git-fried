@@ -1,0 +1,44 @@
+/**
+ * Sprint c75-B — App.vue onboarding detect 분리.
+ *
+ * Sprint 22-20 design §8-7 hard constraint — 첫 실행 시 GitKraken 데이터 자동 감지 →
+ * toast.info 안내. localStorage 'git-fried.onboarded.v1' 부재 시 한 번만. detect 실패
+ * silent (다음 실행 재시도, localStorage 마킹 안 함).
+ *
+ * 사용자 friction 최소화 — modal 자동 open 안 함. 실 import 는 Settings → 시작·마이그레이션 →
+ * GitKraken 가져오기 버튼 명시 트리거.
+ */
+import { onMounted } from 'vue'
+import { importGitKrakenDetect } from '@/api/git'
+import { useToast } from '@/composables/useToast'
+
+const ONBOARDED_KEY = 'git-fried.onboarded.v1'
+
+export function useOnboardingDetect() {
+  const toast = useToast()
+  onMounted(async () => {
+    if (typeof localStorage === 'undefined') return
+    if (localStorage.getItem(ONBOARDED_KEY)) return
+    try {
+      const result = await importGitKrakenDetect()
+      if (result && result.repoCount > 0) {
+        toast.info(
+          `GitKraken 데이터 발견 — ${result.repoCount} 레포`,
+          `워크스페이스 ${result.workspaceCount}개 / 즐겨찾기 ${result.favoriteCount}개 / 탭 ${result.tabCount}개\n` +
+            'Settings → 시작·마이그레이션 → GitKraken 가져오기 에서 진행',
+          12_000,
+        )
+      } else {
+        // Sprint c46 UX-1 — repo 0개 시 명시 toast (사용자 인지: detect 동작했으나 데이터 없음)
+        toast.info(
+          '환영합니다',
+          'Sidebar 의 ➕ 버튼 또는 ⌘⇧P (Repo Switcher) 로 첫 레포를 추가하세요.\nGitKraken 사용 중이라면 Settings → 시작·마이그레이션 에서 가져올 수 있습니다.',
+          10_000,
+        )
+      }
+      localStorage.setItem(ONBOARDED_KEY, String(Date.now()))
+    } catch {
+      // detect 실패는 silent — 다음 실행에서 재시도. localStorage 마킹 안 함.
+    }
+  })
+}
