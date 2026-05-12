@@ -97,13 +97,13 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Pretendard Variable',
-          'Pretendard',
+          '"Roboto Flex Variable"',
+          'Roboto',
+          '"Noto Sans KR"',
           'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',
-          'Roboto',
           'sans-serif',
         ],
         mono: [
