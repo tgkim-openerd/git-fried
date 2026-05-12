@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c76 — scroll polish (2026-05-12, 2 commits `3c36143..0688302`)** — c75 추가 탐색에서 발견한 회귀 잠재 2건 자율 해소:
+  - **Finding F** — repo 전환 시 scrollTop 잔존 회귀 해소. `CommitGraph.vue` 에 `watch(() => props.repoId, resetScrollTop)` 추가. vue-virtual 의 count 변경은 scrollElement.scrollTop 자동 보정 안 함.
+  - **Finding G** — `wipActive ? 1 : 0` hardcoded 2곳 → SOT 통합. `useCommitGraphRows.wipRowCount` computed export, `useCommitGraphSelection` opts 시그니처 `wipActive` → `wipRowCount: Readonly<Ref<number>>` 변경. **Pattern 13 sister** (SOT derive fallback drift 회피) 적용 4번째 사례.
+  - **prettier multi-line 회귀**: 첫 commit (`3c36143`) 후 prettier 자동 포맷으로 destructure 7 항목 + watch callback inline 이 multi-line 변환 → script 197→210 LOC 회귀. 압축 fix (`0688302`): named helper + destructure split + 인자 한 줄 → **197 LOC 회복**.
+  - vitest 83/884 PASS / typecheck 0 / god comp ≥200 = **0 유지** / WIP offset SOT grep 1곳만
+  - 보류 (c77+): Finding D (Sidebar overscroll-behavior contain — UX 측정 후), scrollTop 저장/복원, RAF throttle, prettier 회귀 회피 toolkit /teach
+
 - **Sprint c75 — god comp 회귀 3건 추출 (2026-05-12, 3 commits `7cbf4ee..a570920`)** — c74 doc-sync 후 `/analyze` HIGH-2 자율 진행. **god comp ≥200 LOC 다시 0 달성**:
   - **c75-A CommitGraph 217→197 LOC** (-20, -9%) — `useGraphInfiniteScroll` (graphLimit + onScroll, caller-decision API) + `useCommitGraphSelection` (selectAndScrollToSha sha→row idx + virtualizer 가운데 정렬)
   - **c75-B App.vue 220→174 LOC** (-46, -21%) — `useAppModals` (9 modal ref + open helper + closeAllModals) + `useAppWindowHooks` (window.gitFriedOpen* 5건 + ToggleTheme register/dispose lifecycle) + `useOnboardingDetect` (첫 실행 GitKraken detect)
