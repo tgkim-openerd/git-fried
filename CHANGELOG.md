@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c77 — scroll system 자율 fix wave (이미지 + 코덱스 review, 2026-05-12, 3 commits `811f207..953ef7a`)** — 사용자 실제 스크린샷 + 코덱스 second opinion (codex:rescue) 결합으로 발견한 22 의심점 중 즉시 fix 가능 9건 자율 진행:
+  - **c77-A main.css scrollbar 7 폴리시** (`811f207`): border 3→2px (HiDPI 짝수 + visual 6→8px) / thumb alpha 0.4→0.5 idle / 0.6→0.7 hover / 0.75→0.85 active / track transparent→alpha 0.04 (page-up/down 클릭 affordance) / `::-webkit-scrollbar-button { display: none }` (WebKitGTK 잔존 차단) / 작은 영역 8px 차별화 (`.repo-tab-strip` / `.mini-list-scroll` selector hook).
+  - **c77-B virtualizer overscan viewport-aware + 무한 스크롤 cool-down** (`ee207b7`): overscan = `max(viewportBased, rowsBased)` (작은 viewport 171% 비대 해소) + `COOLDOWN_MS 100` (vue-query isFetching microtask gap 동안 중복 STEP +500 trigger 차단).
+  - **c77-C Detail panel 2단 layout** (`953ef7a`): 기존 외곽 단일 overflow-auto → sticky meta (subject/author/parents/stats `shrink-0`) + scrollable file list (`flex-1 overflow-auto`) 분리. body pre 자체 scroll (max-h-32). GitKraken parity 결함 해소.
+  - 보류 13건 (c78+): #15 CodeMirror nested wheel capture / #13 estimateSize 실 row 누적 오차 / #18 BaseModal nested 4-layer / #21 graphLimit scrollOffset 보존 — 모두 Playwright 측정 sprint 후보. 사용자 결정 필요: Sidebar overscroll-behavior / CommandPalette max-h cap.
+  - vitest 83/884 PASS / typecheck 0 / 회귀 0
+  - 학습 5건: 이미지+코덱스 review 결합 / border-padding-box HiDPI 함정 / viewport-aware overscan / vue-query microtask race cool-down / 2단 layout sticky+scroll
+
 - **Sprint c76 — scroll polish (2026-05-12, 2 commits `3c36143..0688302`)** — c75 추가 탐색에서 발견한 회귀 잠재 2건 자율 해소:
   - **Finding F** — repo 전환 시 scrollTop 잔존 회귀 해소. `CommitGraph.vue` 에 `watch(() => props.repoId, resetScrollTop)` 추가. vue-virtual 의 count 변경은 scrollElement.scrollTop 자동 보정 안 함.
   - **Finding G** — `wipActive ? 1 : 0` hardcoded 2곳 → SOT 통합. `useCommitGraphRows.wipRowCount` computed export, `useCommitGraphSelection` opts 시그니처 `wipActive` → `wipRowCount: Readonly<Ref<number>>` 변경. **Pattern 13 sister** (SOT derive fallback drift 회피) 적용 4번째 사례.
