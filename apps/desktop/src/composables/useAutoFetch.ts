@@ -26,6 +26,11 @@ export function useAutoFetch() {
     try {
       const results = await bulkFetch(store.activeWorkspaceId)
       lastRun = Date.now()
+      // single-segment key invalidate — vue-query 의 prefix match 로 모든 repo
+      // (`['status', repoId]`, `['log', repoId]` 등) 를 한 번에 stale 처리.
+      // bulkFetch 는 모든 repo 를 fetch 하므로 active repo 한정 invalidate 가 아니라
+      // 전체 prefix invalidate 가 의도된 동작 (회귀 시 active 만 refetch 되어 다른 repo 의
+      // 데이터가 stale 한 채 노출됨).
       qc.invalidateQueries({ queryKey: ['status'] })
       qc.invalidateQueries({ queryKey: ['log'] })
       qc.invalidateQueries({ queryKey: ['graph'] })

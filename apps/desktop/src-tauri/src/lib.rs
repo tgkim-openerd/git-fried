@@ -56,6 +56,32 @@ pub fn run() {
         )
         .init();
 
+    // Sprint c78 — panic hook. unwrap() 366 + RwLock poison 등 비복구 panic 시 default
+    // hook 은 stderr 로 출력 후 abort — Tauri webview 에서는 사용자 가시성 0.
+    // 모든 panic 을 tracing::error! 로 흘려 RUST_LOG / tauri-plugin-log 에 통합 캡처.
+    // 기존 default hook 도 보존 (debug 시 stderr backtrace 유지).
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let location = info
+            .location()
+            .map(|l| format!("{}:{}:{}", l.file(), l.line(), l.column()))
+            .unwrap_or_else(|| "unknown".to_string());
+        let payload = if let Some(s) = info.payload().downcast_ref::<&'static str>() {
+            (*s).to_string()
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "<non-string panic payload>".to_string()
+        };
+        tracing::error!(
+            target: "git_fried_lib::panic",
+            location = %location,
+            payload = %payload,
+            "panic — process abort 직전",
+        );
+        default_hook(info);
+    }));
+
     // tokio runtime 으로 AppState 비동기 초기화 후 Tauri 빌더에 inject.
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()

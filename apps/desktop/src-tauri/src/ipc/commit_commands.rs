@@ -32,6 +32,18 @@ pub struct CommitArgs {
 }
 
 #[tauri::command]
+// Sprint c78 — message 는 길 수 있어 length 만 record.
+#[tracing::instrument(
+    target = "git_fried_lib::ipc::commit",
+    skip_all,
+    fields(
+        repo_id = args.repo_id,
+        message_len = args.message.len(),
+        amend = args.amend,
+        no_verify = args.no_verify,
+    ),
+    err
+)]
 pub async fn commit(
     args: CommitArgs,
     state: tauri::State<'_, Arc<AppState>>,

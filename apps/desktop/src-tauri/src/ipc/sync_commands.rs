@@ -12,6 +12,7 @@ use std::sync::Arc;
 // ====== Sync (push / pull / fetch) ======
 
 #[tauri::command]
+#[tracing::instrument(target = "git_fried_lib::ipc::sync", skip(state), err)]
 pub async fn fetch_all(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
@@ -36,6 +37,7 @@ pub struct PullArgs {
 }
 
 #[tauri::command]
+#[tracing::instrument(target = "git_fried_lib::ipc::sync", skip(state), err)]
 pub async fn pull(
     args: PullArgs,
     state: tauri::State<'_, Arc<AppState>>,
@@ -64,6 +66,7 @@ pub struct PushArgs {
 }
 
 #[tauri::command]
+#[tracing::instrument(target = "git_fried_lib::ipc::sync", skip(state), err)]
 pub async fn push(
     args: PushArgs,
     state: tauri::State<'_, Arc<AppState>>,
@@ -85,6 +88,7 @@ pub async fn push(
 // ====== Bulk (multi-repo) ======
 
 #[tauri::command]
+#[tracing::instrument(target = "git_fried_lib::ipc::sync", skip(state), err)]
 pub async fn bulk_fetch(
     workspace_id: Option<i64>,
     state: tauri::State<'_, Arc<AppState>>,

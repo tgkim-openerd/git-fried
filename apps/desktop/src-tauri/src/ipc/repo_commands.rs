@@ -114,6 +114,13 @@ pub struct CloneRepoResult {
 }
 
 #[tauri::command]
+// Sprint c78 — args.url 은 PAT inline (https://oauth:TOKEN@...) 가능성 있어 skip_all + 안전 필드만 record.
+#[tracing::instrument(
+    target = "git_fried_lib::ipc::repo",
+    skip_all,
+    fields(target = %args.target_path, auto_register = args.auto_register),
+    err
+)]
 pub async fn clone_repo(
     args: CloneRepoArgs,
     state: tauri::State<'_, Arc<AppState>>,

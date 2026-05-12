@@ -9,13 +9,12 @@
 //  - 8개 stable color (브랜치 hash)
 // Sprint c48 Wave B-2 — script 227 LOC → ~110 LOC. WIP+virtualizer 와 row interaction 을
 // useCommitGraphRows / useCommitGraphInteraction 으로 분리.
-import { computed, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
 import { useGraphRefVisibility } from '@/composables/useGraphRefVisibility'
 import { useCommitGraphHeader } from '@/composables/useCommitGraphHeader'
-import { BRANCH_TAG_DEFAULT_WIDTH_PX } from '@/composables/useCommitColumns'
 import { useCommitActions } from '@/composables/useCommitActions'
 import { useGraphSearch } from '@/composables/useGraphSearch'
 import { useGraphWidth, ROW_H } from '@/composables/useGraphWidth'
@@ -29,6 +28,14 @@ import { useCommitGraphPresentation } from '@/composables/useCommitGraphPresenta
 // Sprint c75-A — god comp 회귀 해소 (c74 +48 LOC 영역 분리).
 import { useGraphInfiniteScroll, GRAPH_LIMIT_STEP } from '@/composables/useGraphInfiniteScroll'
 import { useCommitGraphSelection } from '@/composables/useCommitGraphSelection'
+// Sprint c78-A — c76 +5 LOC 회귀 해소 (sticky overlay 좌표 + lifecycle 분리).
+import {
+  useCommitGraphStickyLayout,
+  HANDLE_WIDTH,
+  INNER_DIVIDER_WIDTH,
+  INNER_DIVIDER_LEFT,
+} from '@/composables/useCommitGraphStickyLayout'
+import { useCommitGraphLifecycle } from '@/composables/useCommitGraphLifecycle'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
 import type { GraphRow } from '@/api/git'
@@ -153,22 +160,16 @@ const { selectAndScrollToSha } = useCommitGraphSelection({
   onScrollComplete: () => drawGraph(),
 })
 
-onMounted(() => {
-  nextTick(() => drawGraph())
-  window.addEventListener('keydown', onKeydown)
-  window.gitFriedSelectCommit = selectAndScrollToSha
+// Sprint c78-A — lifecycle (mount + watch repoId scrollTop reset + unmount) composable 분리.
+useCommitGraphLifecycle({
+  containerRef,
+  repoIdRef: () => props.repoId,
+  draw: drawGraph,
+  onKeydown,
+  cleanup: cleanupGraphWidth,
+  selectAndScrollToSha,
 })
 watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
-// Sprint c76 — repo 전환 시 scrollTop reset (virtualizer scroll cache reactive).
-function resetScrollTop() {
-  if (containerRef.value) containerRef.value.scrollTop = 0
-}
-watch(() => props.repoId, resetScrollTop)
-onUnmounted(() => {
-  window.removeEventListener('keydown', onKeydown)
-  cleanupGraphWidth()
-  delete window.gitFriedSelectCommit
-})
 
 // Sprint A3 / c40 review ARCH-004 — 컬럼 토글 / 재정렬 + header menu.
 // Sprint c52 — branchTagSticky (branchTag visible + 첫 위치) 활성 시 sticky overlay column 노출.
@@ -188,17 +189,11 @@ const {
 void headerMenuRef
 
 // Sprint c52 / c51 보류 #5 — branch chip sticky overlay 좌표.
-// Sprint c52 후속 (ARCH-002): widthPx SOT 통합 — useCommitColumns.ALL_COLUMNS 의 branchTag
-// widthPx 단일 출처에서 derive. drag handle 폭 (12px) 도 inline style 과 단일 상수 공유.
-// Sprint c52 후속 (ARCH-008): fallback `?? 128` 도 BRANCH_TAG_DEFAULT_WIDTH_PX SOT 에서.
-// Sprint c52 후속 (ARCH-009): inner ghost divider 매직넘버 통합 — Pattern 13 SOT derive.
-const HANDLE_WIDTH = 12
-const INNER_DIVIDER_WIDTH = 2
-const INNER_DIVIDER_LEFT = (HANDLE_WIDTH - INNER_DIVIDER_WIDTH) / 2 // = 5
-const branchChipStickyWidth = computed(
-  () => cols.allColumns.find((c) => c.id === 'branchTag')?.widthPx ?? BRANCH_TAG_DEFAULT_WIDTH_PX,
-)
-const branchChipStickyLeft = computed(() => graphWidth.value + HANDLE_WIDTH)
+// Sprint c78-A — useCommitGraphStickyLayout composable (Pattern 13 SOT 위임).
+const { branchChipStickyWidth, branchChipStickyLeft } = useCommitGraphStickyLayout({
+  graphWidth,
+  allColumns: () => cols.allColumns,
+})
 </script>
 
 <template>

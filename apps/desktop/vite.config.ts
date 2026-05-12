@@ -123,8 +123,9 @@ export default defineConfig({
         'src/router/**',
       ],
       // Threshold 전략 — global 베이스라인 보호.
-      // 진행도: 3% → 5% → 6% → 7% → 7.5% → 8% → 8.5% → 9% → 9.5% → 9.9% → 11% → 11.3% (Sprint c29-10, 실측 11.35% lines / 77.03% branches / 36.09% functions, 38 test files / 368 tests).
-      // functions / branches 는 margin 작음 (각각 0.09, 0.03) — bump 보류. lines/statements 만 +0.3.
+      // 진행도: 3% → 5% → 6% → 7% → 7.5% → 8% → 8.5% → 9% → 9.5% → 9.9% → 11% → 11.3% (Sprint c29-10).
+      // 현재 (c77 시점): 83 test files / 884 tests — threshold 자체는 c29-10 baseline 그대로 유지 중.
+      // functions / branches 는 margin 작음 — bump 보류. lines/statements 만 +0.3 누적 가능 시 검토.
       thresholds: {
         lines: 11.3,
         statements: 11.3,
