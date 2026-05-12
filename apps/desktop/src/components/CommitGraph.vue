@@ -84,9 +84,16 @@ const {
   cleanup: cleanupGraphWidth,
 } = useGraphWidth(maxLane)
 
-// Sprint c48 Wave B-2 — WIP + virtualizer + commitRowAt/Tooltip 분리.
-const { wipActive, wipChangeCount, virtualItems, totalHeight, commitRowAt, commitTooltip } =
-  useCommitGraphRows({ repoId: () => props.repoId, rows, containerRef })
+// Sprint c48 Wave B-2 — WIP + virtualizer + commitRowAt/Tooltip 분리. c76 wipRowCount SOT 추가.
+const {
+  wipActive,
+  wipRowCount,
+  wipChangeCount,
+  virtualItems,
+  totalHeight,
+  commitRowAt,
+  commitTooltip,
+} = useCommitGraphRows({ repoId: () => props.repoId, rows, containerRef })
 
 // Sprint c31 — 검색 composable. drawGraph 는 hoisting 으로 callback 안전.
 const {
@@ -143,10 +150,11 @@ const { onRowDblClick, onRowContextMenu, formatDate } = useCommitGraphInteractio
 void moveSelection
 
 // Sprint c75-A — sha 로 jump + select (Sidebar MiniStashList 등 외부 진입점).
+// c76 — wipActive → wipRowCount (Pattern 13 sister: virtualizer count 와 동일 SOT).
 const { selectAndScrollToSha } = useCommitGraphSelection({
   rows,
   containerRef,
-  wipActive,
+  wipRowCount,
   rowHeight: ROW_H,
   selectRow,
   onScrollComplete: () => drawGraph(),
@@ -158,6 +166,14 @@ onMounted(() => {
   window.gitFriedSelectCommit = selectAndScrollToSha
 })
 watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
+// Sprint c76 — repo 전환 시 scrollTop reset. virtualizer 의 scroll offset 캐시는
+// scrollElement.scrollTop reactive 라 직접 변경 안전.
+watch(
+  () => props.repoId,
+  () => {
+    if (containerRef.value) containerRef.value.scrollTop = 0
+  },
+)
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
   cleanupGraphWidth()

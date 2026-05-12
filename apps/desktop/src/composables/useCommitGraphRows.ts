@@ -70,8 +70,14 @@ export function useCommitGraphRows({ repoId, rows, containerRef }: UseCommitGrap
     return body ? `${subject}\n\n${body}` : subject
   }
 
+  // Sprint c76 — virtualizer count 계산 (`rows.length + (wipActive ? 1 : 0)`) 의 +1 offset 을
+  // SOT 로 export. selectAndScrollToSha 등이 동일 offset 으로 virtualizer idx 계산.
+  // Pattern 13 sister (SOT derive fallback drift 회피).
+  const wipRowCount = computed(() => (wipActive.value ? 1 : 0))
+
   return {
     wipActive,
+    wipRowCount,
     wipChangeCount,
     virtualItems,
     totalHeight,

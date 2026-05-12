@@ -13,7 +13,8 @@ import type { GraphRow } from '@/api/git'
 export function useCommitGraphSelection(opts: {
   rows: ComputedRef<GraphRow[]>
   containerRef: Ref<HTMLElement | null>
-  wipActive: Readonly<Ref<boolean>>
+  /** virtualizer idx offset (WIP active 시 1, 그 외 0). c76 — useCommitGraphRows.wipRowCount SOT. */
+  wipRowCount: Readonly<Ref<number>>
   rowHeight: number
   selectRow: (row: GraphRow) => void
   /** scroll 후 호출 — Canvas 재그리기 등. */
@@ -26,8 +27,8 @@ export function useCommitGraphSelection(opts: {
     if (rowIdx < 0) return false
     const row = list[rowIdx]
     opts.selectRow(row)
-    // virtualizer 표시 idx — wipActive 시 +1 offset.
-    const virtIdx = (opts.wipActive.value ? 1 : 0) + rowIdx
+    // virtualizer 표시 idx — wipRowCount (SOT, useCommitGraphRows.virtualizer count 와 동일 식).
+    const virtIdx = opts.wipRowCount.value + rowIdx
     const ct = opts.containerRef.value
     if (ct) {
       const targetTop = virtIdx * opts.rowHeight
