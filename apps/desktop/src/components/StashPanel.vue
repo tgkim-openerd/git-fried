@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Stash 매니저 — list / push / apply / pop / drop / show diff.
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 import { useStash } from '@/composables/useStash'
@@ -10,25 +10,12 @@ import { useSectionCollapse } from '@/composables/useSectionCollapse'
 
 const collapsedNew = useSectionCollapse('stash.new')
 const { t } = useI18n()
-import {
-  aiStashMessage,
-  applyStash,
-  applyStashFile,
-  dropStash,
-  editStashMessage,
-  popStash,
-  pushStash,
-  pushStashStaged,
-  showStash,
-  stashToBranch,
-} from '@/api/git'
+import { pushStash, pushStashStaged } from '@/api/git'
 import { parseDiffWithHunks } from '@/utils/parseDiff'
-import { computed } from 'vue'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
-import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
-// Sprint c38 fix MED-1 — promptDialog 추가 import (window.prompt 2곳 마이그).
-import { confirmDialog, promptDialog } from '@/composables/useConfirm'
+// Sprint c79-D — 6 simple action + AI stash mutation 통합 composable 위임.
+import { useStashPanelActions } from '@/composables/useStashPanelActions'
 import { formatDateLocalized } from '@/composables/useUserSettings'
 import DiffViewer from './DiffViewer.vue'
 import EmptyState from './EmptyState.vue'
@@ -77,113 +64,19 @@ const pushMut = useMutation({
   onError: (e) => toast.error(t('stash.pushFailed'), describeError(e)),
 })
 
-// Sprint c38 / plan/29 E3 — stash → 새 브랜치 (`git stash branch <name> stash@{n}`).
-// Sprint c38 fix MED-1 — promptDialog (a11y + 한글 IME).
-async function onStashToBranch(idx: number) {
-  if (props.repoId == null) return
-  const name = await promptDialog({
-    title: t('stash.branchPromptTitle'),
-    message: t('stash.branchPromptMessage'),
-    defaultValue: `stash-${idx}-recover`,
+// c79-D — 6 simple action + AI stash mutation composable 위임.
+const { ai, aiMut, onApply, onPop, onDrop, onShow, onStashToBranch, onEditMessage, onApplyFile } =
+  useStashPanelActions({
+    repoId: () => props.repoId,
+    previewText,
+    previewIndex,
+    newMessage,
+    includeUntracked,
   })
-  if (name === null) return
-  const trimmed = name.trim()
-  if (!trimmed) return
-  await stashToBranch(props.repoId, idx, trimmed)
-    .then(() => {
-      toast.success(t('stash.branchSuccess'), trimmed)
-      invalidate(props.repoId)
-    })
-    .catch((e) => toast.error(t('stash.branchFailed'), describeError(e)))
-}
 
-async function onApply(idx: number) {
-  if (props.repoId == null) return
-  await applyStash(props.repoId, idx).catch((e) => toast.error('Apply 실패', describeError(e)))
-  invalidate(props.repoId)
-}
-async function onPop(idx: number) {
-  if (props.repoId == null) return
-  await popStash(props.repoId, idx).catch((e) => toast.error('Pop 실패', describeError(e)))
-  invalidate(props.repoId)
-}
-async function onDrop(idx: number) {
-  if (props.repoId == null) return
-  const ok = await confirmDialog({
-    title: t('confirm.deleteStashTitle'),
-    message: t('confirm.deleteStashMessage', { idx }),
-    danger: true,
-  })
-  if (!ok) return
-  await dropStash(props.repoId, idx).catch((e) => toast.error('Drop 실패', describeError(e)))
-  invalidate(props.repoId)
-}
-async function onShow(idx: number) {
-  if (props.repoId == null) return
-  previewIndex.value = idx
-  previewText.value = await showStash(props.repoId, idx).catch((e) => describeError(e))
-}
-
-// === Sprint C14 D2 (`docs/plan/14 §5 D2`) — stash 메시지 수정 ===
-// Sprint c38 fix MED-1 — window.prompt → promptDialog + i18n.
-async function onEditMessage(idx: number, current: string) {
-  if (props.repoId == null) return
-  const next = await promptDialog({
-    title: t('stash.editMessageTitle', { idx }),
-    message: t('stash.editMessageMessage'),
-    defaultValue: current,
-  })
-  if (next === null) return
-  const trimmed = next.trim()
-  if (!trimmed || trimmed === current) return
-  await editStashMessage(props.repoId, idx, trimmed)
-    .then(() => {
-      toast.success(t('stash.editMessageSuccess'), t('stash.editMessageSuccessDetail'))
-      invalidate(props.repoId)
-    })
-    .catch((e) => toast.error(t('stash.editMessageFailed'), describeError(e)))
-}
-
-// === Sprint C2 (`docs/plan/14 §5 D1`) — stash 안 단일 파일만 apply ===
-const previewFiles = computed(() => {
-  if (previewText.value == null) return []
-  return parseDiffWithHunks(previewText.value)
-})
-async function onApplyFile(path: string) {
-  if (props.repoId == null || previewIndex.value == null) return
-  await applyStashFile(props.repoId, previewIndex.value, path)
-    .then(() => {
-      toast.success(t('toast.fileApply'), `${path} 만 working tree 에 적용됨`)
-      invalidate(props.repoId)
-    })
-    .catch((e) => toast.error(t('errors.fileApplyFailed'), describeError(e)))
-}
-
-// === AI stash message (Sprint B7) ===
-const ai = useAiCli()
-const aiMut = useMutation({
-  mutationFn: async () => {
-    if (props.repoId == null || ai.available.value == null) {
-      throw new Error('AI 사용 불가 — Claude/Codex CLI 미설치')
-    }
-    if (!(await confirmAiSend())) throw new Error('cancelled')
-    return aiStashMessage(props.repoId, ai.available.value, includeUntracked.value, true)
-  },
-  onSuccess: (out) => {
-    if (out.success) {
-      // 첫 줄만 사용 (한 줄 prompt 응답).
-      newMessage.value = out.text.trim().split(/\r?\n/)[0] ?? ''
-      notifyAiDone('AI stash 메시지', newMessage.value)
-    } else {
-      toast.error('AI 응답 실패', out.stderr || out.text)
-    }
-  },
-  onError: (e) => {
-    const m = describeError(e)
-    if (m.includes('cancelled')) return
-    toast.error('AI 호출 실패', m)
-  },
-})
+const previewFiles = computed(() =>
+  previewText.value == null ? [] : parseDiffWithHunks(previewText.value),
+)
 </script>
 
 <template>
