@@ -10,17 +10,10 @@
 // Sidebar.vue 와 동일 데이터 소스 (listRepos + useSidebarGroups) — single source.
 
 import { computed, ref } from 'vue'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
-import {
-  addRepo,
-  bulkFetch,
-  listRepos,
-  listWorkspaces,
-  openInExplorer,
-  setRepoPinned,
-} from '@/api/git'
+import { listRepos, listWorkspaces, openInExplorer } from '@/api/git'
 import { useReposStore } from '@/stores/repos'
 import { useRepoAliases } from '@/composables/useRepoAliases'
 import { useSidebarGroups, type GroupMode, type RepoGroup } from '@/composables/useSidebarGroups'
@@ -28,9 +21,11 @@ import { useGroupCollapse } from '@/composables/useGroupCollapse'
 import { useNavigateHome } from '@/composables/useNavigateHome'
 import { useBulkQuickStatus } from '@/composables/useBulkQuickStatus'
 import { useToast } from '@/composables/useToast'
-import { describeError, humanizeGitError } from '@/api/errors'
+import { describeError } from '@/api/errors'
 import { useI18n } from 'vue-i18n'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
+// Sprint c80-1 — 3 mutation 통합 composable 위임.
+import { useRepoManagementMutations } from '@/composables/useRepoManagementMutations'
 import CloneRepoModal from '@/components/CloneRepoModal.vue'
 import BulkFetchResultModal from '@/components/BulkFetchResultModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -42,7 +37,6 @@ const goHome = useNavigateHome()
 const store = useReposStore()
 const aliases = useRepoAliases()
 const toast = useToast()
-const qc = useQueryClient()
 const { t } = useI18n()
 
 const cloneOpen = ref(false)
@@ -108,45 +102,8 @@ const openTabRepos = computed<Repo[]>(() => {
 })
 const favoriteRepos = computed<Repo[]>(() => (allRepos.value ?? []).filter((r) => r.isPinned))
 
-// === Mutations ===
-const addRepoMut = useMutation({
-  mutationFn: addRepo,
-  onSuccess: () => qc.invalidateQueries({ queryKey: ['repos-all-for-management'] }),
-})
-
-const pinMut = useMutation({
-  mutationFn: ({ id, pinned }: { id: number; pinned: boolean }) => setRepoPinned(id, pinned),
-  onSuccess: () => qc.invalidateQueries({ queryKey: ['repos-all-for-management'] }),
-})
-
-const bulkFetchMut = useMutation({
-  mutationFn: () => bulkFetch(null),
-  onSuccess: (results) => {
-    qc.invalidateQueries({ queryKey: ['status'] })
-    qc.invalidateQueries({ queryKey: ['log'] })
-    qc.invalidateQueries({ queryKey: ['graph'] })
-    qc.invalidateQueries({ queryKey: ['branches'] })
-    bulkResultStore.set(results)
-    const failed = results.filter((r) => !r.success)
-    const ok = results.length - failed.length
-    if (failed.length > 0) {
-      const PREVIEW = 5
-      const lines = failed
-        .slice(0, PREVIEW)
-        .map((f) => `- ${f.repoName}: ${humanizeGitError((f.error || '').split('\n')[0] || '')}`)
-      if (failed.length > PREVIEW) {
-        lines.push(t('repos.bulkResultMore', { n: failed.length - PREVIEW }))
-      }
-      toast.warning(
-        t('repos.bulkFetchResult', { ok, total: results.length, failed: failed.length }),
-        lines.join('\n'),
-      )
-    } else if (results.length > 0) {
-      toast.success(t('repos.bulkFetchSuccess', { n: ok }))
-    }
-  },
-  onError: (e) => toast.error(t('errors.bulkFetchFailed'), describeError(e)),
-})
+// c80-1 — 3 mutation (addRepo/pin/bulkFetch + bulk 결과 toast) composable 위임.
+const { addRepoMut, pinMut, bulkFetchMut } = useRepoManagementMutations({ bulkResultStore })
 
 // === Actions ===
 async function browseAndAdd() {
