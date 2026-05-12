@@ -4,33 +4,23 @@
 // AI 에이전트 자동 worktree (`worktree-agent-*`) 식별 가능.
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useWorktrees } from '@/composables/useWorktrees'
-import {
-  addWorktree,
-  lockWorktree,
-  openPathInExplorer,
-  pruneWorktrees,
-  removeWorktree,
-  unlockWorktree,
-} from '@/api/git'
+import { openPathInExplorer } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import ContextMenu, { type ContextMenuExpose, type ContextMenuItem } from './ContextMenu.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
 import EmptyState from './EmptyState.vue'
-// Sprint c38 / plan/29 E5 — window.prompt → promptDialog (a11y + 한글 IME).
-import { confirmDialog, promptDialog } from '@/composables/useConfirm'
+// Sprint c80-2 — 5 mutation + 3 handler 통합 composable 위임.
+import { useWorktreePanelActions } from '@/composables/useWorktreePanelActions'
 
 const reposStore = useReposStore()
 const { t } = useI18n()
-
 const toast = useToast()
 
 const props = defineProps<{ repoId: number | null }>()
 const { data: trees, isFetching: treesFetching } = useWorktrees(() => props.repoId)
-const qc = useQueryClient()
 
 const newPath = ref('')
 const newBranch = ref('')
@@ -39,40 +29,8 @@ const newBranch = ref('')
 // (현재 worktree 별 repo_id 가 별도가 아니므로 active worktree 추적 무의미 — 시각 highlight 만 유지)
 const selectedPath = ref<string | null>(null)
 
-function onWorktreeDblClick(wt: { path: string; isMain: boolean }) {
-  if (wt.isMain) return
-  if (props.repoId == null) return
-  reposStore.setActiveRepo(props.repoId)
-  toast.success(t('toast.activate'), wt.path)
-}
-
-const addMut = useMutation({
-  mutationFn: () => {
-    if (props.repoId == null || !newPath.value) return Promise.reject(new Error('no path'))
-    return addWorktree({
-      repoId: props.repoId,
-      path: newPath.value,
-      createBranch: newBranch.value || undefined,
-    })
-  },
-  onSuccess: () => {
-    newPath.value = ''
-    newBranch.value = ''
-    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] })
-  },
-  onError: (e) => toast.error('Worktree add 실패', describeError(e)),
-})
-
-const removeMut = useMutation({
-  mutationFn: ({ p, force }: { p: string; force: boolean }) =>
-    removeWorktree(props.repoId!, p, force),
-  onSuccess: () => qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] }),
-})
-
-const pruneMut = useMutation({
-  mutationFn: () => pruneWorktrees(props.repoId!),
-  onSuccess: () => qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] }),
-})
+const { addMut, pruneMut, lockMut, unlockMut, confirmRemove, onLock, onUnlock, onWorktreeDblClick } =
+  useWorktreePanelActions({ repoId: () => props.repoId, newPath, newBranch })
 
 function fmtSize(bytes: number | null): string {
   if (bytes == null) return '?'
@@ -84,55 +42,6 @@ function fmtSize(bytes: number | null): string {
 
 function isAiAgent(branch: string | null): boolean {
   return !!branch && /worktree-agent-/i.test(branch)
-}
-
-async function confirmRemove(path: string) {
-  const ok = await confirmDialog({
-    title: t('confirm.removeWorktreeTitle'),
-    message: t('confirm.removeWorktreeMessage', { path }),
-    danger: true,
-  })
-  if (ok) {
-    removeMut.mutate({ p: path, force: false })
-  }
-}
-
-// === Sprint C1 — Lock / Unlock ===
-const lockMut = useMutation({
-  mutationFn: ({ p, reason }: { p: string; reason: string | null }) =>
-    lockWorktree(props.repoId!, p, reason),
-  onSuccess: () => {
-    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] })
-    toast.success('Worktree 잠금', '')
-  },
-  onError: (e) => toast.error('Lock 실패', describeError(e)),
-})
-
-const unlockMut = useMutation({
-  mutationFn: (p: string) => unlockWorktree(props.repoId!, p),
-  onSuccess: () => {
-    qc.invalidateQueries({ queryKey: ['worktrees', props.repoId] })
-    toast.success('Worktree 잠금 해제', '')
-  },
-  onError: (e) => toast.error('Unlock 실패', describeError(e)),
-})
-
-async function onLock(path: string) {
-  if (props.repoId == null) return
-  // Sprint c38 / plan/29 E5 — window.prompt → promptDialog.
-  const reason = await promptDialog({
-    title: t('worktree.lockPromptTitle'),
-    message: t('worktree.lockPromptMessage', { path }),
-    placeholder: t('worktree.lockPromptPlaceholder'),
-    defaultValue: '',
-  })
-  if (reason === null) return
-  lockMut.mutate({ p: path, reason: reason.trim() || null })
-}
-
-function onUnlock(path: string) {
-  if (props.repoId == null) return
-  unlockMut.mutate(path)
 }
 
 // === Sprint 22-4 CM-11: worktree row 우클릭 (5 액션) ===
