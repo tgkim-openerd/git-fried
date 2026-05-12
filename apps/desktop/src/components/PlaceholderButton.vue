@@ -62,11 +62,7 @@ function onClick() {
   <button
     type="button"
     class="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border text-muted-foreground/70 cursor-not-allowed select-none"
-    :class="
-      size === 'md'
-        ? 'px-3 py-1.5 text-sm'
-        : 'px-2 py-1 text-xs'
-    "
+    :class="size === 'md' ? 'px-3 py-1.5 text-sm' : 'px-2 py-1 text-xs'"
     :title="tooltip"
     :aria-label="`${label} (${eta} 예정)`"
     @click="onClick"

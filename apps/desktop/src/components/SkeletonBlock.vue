@@ -54,12 +54,7 @@ function widthFor(idx: number): string {
 </script>
 
 <template>
-  <div
-    class="flex flex-col gap-2"
-    role="status"
-    aria-label="로딩 중..."
-    aria-live="polite"
-  >
+  <div class="flex flex-col gap-2" role="status" aria-label="로딩 중..." aria-live="polite">
     <div
       v-for="i in count"
       :key="i"

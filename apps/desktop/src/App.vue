@@ -178,11 +178,7 @@ useMenuListener()
 <template>
   <div
     class="grid h-screen overflow-hidden"
-    :class="
-      sidebarShown
-        ? 'grid-cols-[220px_1fr] xl:grid-cols-[280px_1fr]'
-        : 'grid-cols-[0_1fr]'
-    "
+    :class="sidebarShown ? 'grid-cols-[220px_1fr] xl:grid-cols-[280px_1fr]' : 'grid-cols-[0_1fr]'"
   >
     <Sidebar v-if="sidebarShown" />
     <div v-else />
@@ -246,11 +242,7 @@ useMenuListener()
       @close="syncTemplateOpen = false"
     />
     <BisectModal :open="bisectOpen" @close="bisectOpen = false" />
-    <ReflogModal
-      :open="reflogOpen"
-      @close="reflogOpen = false"
-      @show-diff="onReflogShowDiff"
-    />
+    <ReflogModal :open="reflogOpen" @close="reflogOpen = false" @show-diff="onReflogShowDiff" />
     <CompareModal
       :open="compareOpen"
       :repo-id="reposStore.activeRepoId"
@@ -259,10 +251,7 @@ useMenuListener()
       :initial-mode="compareInitialMode"
       @close="compareOpen = false"
     />
-    <RepoSwitcherModal
-      :open="repoSwitcherOpen"
-      @close="repoSwitcherOpen = false"
-    />
+    <RepoSwitcherModal :open="repoSwitcherOpen" @close="repoSwitcherOpen = false" />
     <CreatePrModal
       :repo-id="reposStore.activeRepoId"
       :open="createPrOpen"

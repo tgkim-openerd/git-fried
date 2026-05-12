@@ -15,8 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToast } from './useToast'
 
 describe('useToast', () => {
-  const { toasts, push, dismiss, clearAll, success, info, warning, error } =
-    useToast()
+  const { toasts, push, dismiss, clearAll, success, info, warning, error } = useToast()
 
   beforeEach(() => {
     vi.useFakeTimers()

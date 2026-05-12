@@ -37,9 +37,7 @@ const labelSizeMap = {
 <template>
   <div
     :class="
-      inline
-        ? 'inline-flex items-center gap-1.5'
-        : 'flex items-center justify-center gap-2 p-2'
+      inline ? 'inline-flex items-center gap-1.5' : 'flex items-center justify-center gap-2 p-2'
     "
     role="status"
     :aria-label="label || '로딩 중'"
@@ -48,11 +46,7 @@ const labelSizeMap = {
       class="inline-block animate-spin rounded-full border-muted-foreground/30 border-t-primary"
       :class="sizeClassMap[size]"
     />
-    <span
-      v-if="label"
-      class="text-muted-foreground"
-      :class="labelSizeMap[size]"
-    >
+    <span v-if="label" class="text-muted-foreground" :class="labelSizeMap[size]">
       {{ label }}
     </span>
   </div>

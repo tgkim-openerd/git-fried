@@ -41,9 +41,7 @@ describe('useSubmoduleInteraction', () => {
       close: vi.fn(),
     } as unknown as ContextMenuExpose)
 
-    const result = setup(() =>
-      useSubmoduleInteraction({ ctxMenu, onInvalidate: vi.fn() }),
-    )
+    const result = setup(() => useSubmoduleInteraction({ ctxMenu, onInvalidate: vi.fn() }))
     expect(typeof result.openAsRepo).toBe('function')
     expect(typeof result.initOne).toBe('function')
     expect(typeof result.copyPath).toBe('function')

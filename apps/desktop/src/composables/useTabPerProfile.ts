@@ -9,10 +9,7 @@
 import { computed, watch, type Ref } from 'vue'
 import { useProfiles } from '@/composables/useProfiles'
 
-export function useTabPerProfile<T extends string>(
-  tab: Ref<T>,
-  defaultTab: T,
-) {
+export function useTabPerProfile<T extends string>(tab: Ref<T>, defaultTab: T) {
   const { active: activeProfile } = useProfiles()
   const activeKey = computed(() =>
     activeProfile.value

@@ -90,13 +90,8 @@ export function useLaunchpadMeta() {
   })
 
   const snoozeMut = useMutation({
-    mutationFn: ({
-      pr,
-      snoozedUntil,
-    }: {
-      pr: PullRequest
-      snoozedUntil: number | null
-    }) => launchpadSetSnooze(prIdFromPr(pr), snoozedUntil),
+    mutationFn: ({ pr, snoozedUntil }: { pr: PullRequest; snoozedUntil: number | null }) =>
+      launchpadSetSnooze(prIdFromPr(pr), snoozedUntil),
     onSuccess: () => invalidate(),
     onError: (e) => toast.error('Snooze 설정 실패', describeError(e)),
   })
@@ -139,11 +134,7 @@ export function useSavedViews(viewKind: string) {
   }
 
   const saveMut = useMutation({
-    mutationFn: (args: {
-      name: string
-      filterJson: string
-      sortJson?: string | null
-    }) =>
+    mutationFn: (args: { name: string; filterJson: string; sortJson?: string | null }) =>
       launchpadSaveView({
         viewKind,
         name: args.name,

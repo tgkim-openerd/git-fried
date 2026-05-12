@@ -44,10 +44,7 @@ export function useRepoAliases() {
     return map
   })
 
-  function resolveLocal(
-    repoId: number,
-    repoName: string,
-  ): { display: string; aliased: boolean } {
+  function resolveLocal(repoId: number, repoName: string): { display: string; aliased: boolean } {
     const inner = byRepo.value.get(repoId)
     if (inner) {
       const pid = activeProfileId.value
@@ -72,11 +69,8 @@ export function useRepoAliases() {
   }
 
   const setMut = useMutation({
-    mutationFn: (args: {
-      repoId: number
-      profileId: number | null
-      alias: string
-    }) => apiSetAlias(args.repoId, args.profileId, args.alias),
+    mutationFn: (args: { repoId: number; profileId: number | null; alias: string }) =>
+      apiSetAlias(args.repoId, args.profileId, args.alias),
     onSuccess: () => invalidate(),
     onError: (e) => toast.error('Alias 저장 실패', describeError(e)),
   })

@@ -13,9 +13,7 @@ describe('pathTree.buildPathTree', () => {
   })
 
   it('단일 디렉토리 체인은 collapse (기본 동작)', () => {
-    const tree = buildPathTree([
-      { path: 'apps/desktop/src/api/git.ts', meta: 1 },
-    ])
+    const tree = buildPathTree([{ path: 'apps/desktop/src/api/git.ts', meta: 1 }])
     expect(tree).toHaveLength(1)
     expect(tree[0]).toMatchObject({
       kind: 'dir',
@@ -29,10 +27,7 @@ describe('pathTree.buildPathTree', () => {
   })
 
   it('collapse=false 시 각 segment 별 디렉토리 노드', () => {
-    const tree = buildPathTree(
-      [{ path: 'a/b/c.ts', meta: 1 }],
-      { collapseSingleChild: false },
-    )
+    const tree = buildPathTree([{ path: 'a/b/c.ts', meta: 1 }], { collapseSingleChild: false })
     expect(tree).toHaveLength(1)
     const a = tree[0]
     if (a.kind !== 'dir') throw new Error()
@@ -76,9 +71,7 @@ describe('pathTree.buildPathTree', () => {
   })
 
   it('meta 보존', () => {
-    const tree = buildPathTree([
-      { path: 'a.ts', meta: { status: 'modified' } },
-    ])
+    const tree = buildPathTree([{ path: 'a.ts', meta: { status: 'modified' } }])
     const leaf = tree[0]
     if (leaf.kind !== 'file') throw new Error()
     expect(leaf.meta).toEqual({ status: 'modified' })

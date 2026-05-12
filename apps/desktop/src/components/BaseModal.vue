@@ -32,18 +32,7 @@
 import { computed, useTemplateRef } from 'vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 
-type MaxWidth =
-  | 'xs'
-  | 'sm'
-  | 'md'
-  | 'lg'
-  | 'xl'
-  | '2xl'
-  | '3xl'
-  | '4xl'
-  | '5xl'
-  | '6xl'
-  | 'full'
+type MaxWidth = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | 'full'
 
 const props = withDefaults(
   defineProps<{
@@ -71,7 +60,10 @@ const props = withDefaults(
 const emit = defineEmits<{ close: [] }>()
 
 const rootRef = useTemplateRef<HTMLElement>('rootRef')
-useFocusTrap(rootRef, computed(() => props.open))
+useFocusTrap(
+  rootRef,
+  computed(() => props.open),
+)
 
 const maxWidthClass = computed<string>(() => {
   // Tailwind 의 max-w-* 매핑 (full 만 별도)
@@ -79,7 +71,9 @@ const maxWidthClass = computed<string>(() => {
   return `max-w-${props.maxWidth}`
 })
 
-const titleId = computed(() => (props.title ? `bm-${Math.random().toString(36).slice(2, 8)}` : undefined))
+const titleId = computed(() =>
+  props.title ? `bm-${Math.random().toString(36).slice(2, 8)}` : undefined,
+)
 
 function onBackdrop() {
   if (props.closeOnBackdrop) emit('close')
@@ -118,41 +112,38 @@ function onKeydown(e: KeyboardEvent) {
             class="flex max-h-[90vh] w-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xl outline-none"
             :class="[maxWidthClass, panelClass]"
           >
-        <!-- 헤더: header slot 우선, 없으면 title prop -->
-        <header
-          v-if="$slots.header || title || showCloseButton"
-          class="flex items-center justify-between gap-2 border-b border-border px-4 py-2"
-        >
-          <div class="min-w-0 flex-1">
-            <slot name="header">
-              <h2 v-if="title" :id="titleId" class="truncate text-sm font-semibold">
-                {{ title }}
-              </h2>
-            </slot>
-          </div>
-          <button
-            v-if="showCloseButton"
-            type="button"
-            class="shrink-0 text-muted-foreground hover:text-foreground"
-            aria-label="닫기"
-            @click="emit('close')"
-          >
-            ✕
-          </button>
-        </header>
+            <!-- 헤더: header slot 우선, 없으면 title prop -->
+            <header
+              v-if="$slots.header || title || showCloseButton"
+              class="flex items-center justify-between gap-2 border-b border-border px-4 py-2"
+            >
+              <div class="min-w-0 flex-1">
+                <slot name="header">
+                  <h2 v-if="title" :id="titleId" class="truncate text-sm font-semibold">
+                    {{ title }}
+                  </h2>
+                </slot>
+              </div>
+              <button
+                v-if="showCloseButton"
+                type="button"
+                class="shrink-0 text-muted-foreground hover:text-foreground"
+                aria-label="닫기"
+                @click="emit('close')"
+              >
+                ✕
+              </button>
+            </header>
 
-        <!-- 본문 -->
-        <div class="flex-1 overflow-auto">
-          <slot />
-        </div>
+            <!-- 본문 -->
+            <div class="flex-1 overflow-auto">
+              <slot />
+            </div>
 
-        <!-- 푸터 (선택) -->
-        <footer
-          v-if="$slots.footer"
-          class="border-t border-border px-4 py-2"
-        >
-          <slot name="footer" />
-        </footer>
+            <!-- 푸터 (선택) -->
+            <footer v-if="$slots.footer" class="border-t border-border px-4 py-2">
+              <slot name="footer" />
+            </footer>
           </div>
         </Transition>
       </div>
@@ -168,8 +159,7 @@ function onKeydown(e: KeyboardEvent) {
  */
 .modal-backdrop-enter-active,
 .modal-backdrop-leave-active {
-  transition:
-    opacity var(--transition-base) var(--ease-out);
+  transition: opacity var(--transition-base) var(--ease-out);
 }
 .modal-backdrop-leave-active {
   transition-duration: 100ms;

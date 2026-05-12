@@ -85,13 +85,7 @@ function installGlobal() {
   installed = true
   window.addEventListener('keydown', (e) => {
     // `?` 단독 키 — 도움말. input focus 안 됐을 때만.
-    if (
-      e.key === '?' &&
-      !e.metaKey &&
-      !e.ctrlKey &&
-      !e.altKey &&
-      !isInputFocused()
-    ) {
+    if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey && !isInputFocused()) {
       const set = bus.handlers.get('help')
       if (set && set.size > 0) {
         e.preventDefault()
@@ -108,13 +102,7 @@ function installGlobal() {
 
     // Vim nav (modifier 없이 단일 키, input focus 시 비활성).
     // J/K/H/L = nav, S/U = stage/unstage current.
-    if (
-      !e.metaKey &&
-      !e.ctrlKey &&
-      !e.altKey &&
-      !e.shiftKey &&
-      !isInputFocused()
-    ) {
+    if (!e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && !isInputFocused()) {
       let vimAction: ShortcutAction | null = null
       switch (e.key) {
         case 'j':
@@ -208,12 +196,7 @@ function installGlobal() {
     }
 
     // ⌘⌥F / Ctrl+Alt+F — Sidebar 레포 필터 focus (Sprint I).
-    if (
-      e.altKey &&
-      (e.metaKey || e.ctrlKey) &&
-      !e.shiftKey &&
-      e.key.toLowerCase() === 'f'
-    ) {
+    if (e.altKey && (e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'f') {
       const set = bus.handlers.get('filterRepos')
       if (set && set.size > 0) {
         e.preventDefault()

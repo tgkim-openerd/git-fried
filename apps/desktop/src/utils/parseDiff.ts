@@ -57,11 +57,7 @@ export function parseDiffAllFiles(patch: string): DiffFile[] {
         k++
         continue
       }
-      if (
-        line.startsWith('+++') ||
-        line.startsWith('---') ||
-        line.startsWith('index ')
-      ) {
+      if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('index ')) {
         k++
         continue
       }

@@ -203,8 +203,7 @@ export function useCustomTheme() {
       }
       if (failures.length > 0) {
         const head = failures.slice(0, 3).join('\n')
-        const tail =
-          failures.length > 3 ? `\n...외 ${failures.length - 3}개 더` : ''
+        const tail = failures.length > 3 ? `\n...외 ${failures.length - 3}개 더` : ''
         return {
           ok: false,
           error: `잘못된 HSL 값 ${failures.length}개:\n${head}${tail}`,

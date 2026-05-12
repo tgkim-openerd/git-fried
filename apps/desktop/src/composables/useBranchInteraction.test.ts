@@ -48,9 +48,7 @@ describe('useBranchInteraction', () => {
       close: vi.fn(),
     } as unknown as ContextMenuExpose)
 
-    const { onBranchContextMenu } = setup(() =>
-      useBranchInteraction({ ctxMenu, repoId: () => 1 }),
-    )
+    const { onBranchContextMenu } = setup(() => useBranchInteraction({ ctxMenu, repoId: () => 1 }))
 
     const ev = {
       preventDefault: vi.fn(),

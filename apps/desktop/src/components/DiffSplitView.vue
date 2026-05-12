@@ -7,14 +7,7 @@
 // 한계 (parseDiffAllFiles 참조):
 //   - hunk 사이 unchanged 영역은 모름 → MergeView 가 hunk 만 비교 가능.
 //   - 정확한 split 은 backend 가 두 blob 직접 fetch 해야 (별 endpoint).
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  useTemplateRef,
-  watch,
-} from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { MergeView } from '@codemirror/merge'
 import { EditorView, lineNumbers } from '@codemirror/view'
 import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
@@ -34,9 +27,7 @@ const baseTheme = EditorView.baseTheme({
   '.cm-mergeView': { height: '100%' },
 })
 
-const activeFile = computed<DiffFile | null>(
-  () => files.value[activeIdx.value] ?? null,
-)
+const activeFile = computed<DiffFile | null>(() => files.value[activeIdx.value] ?? null)
 
 function destroy() {
   if (mergeView) {
@@ -99,11 +90,7 @@ onBeforeUnmount(() => destroy())
         :key="`${idx}:${f.fileName}`"
         type="button"
         class="shrink-0 rounded border border-border px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent/40"
-        :class="
-          idx === activeIdx
-            ? 'bg-accent text-accent-foreground'
-            : 'text-muted-foreground'
-        "
+        :class="idx === activeIdx ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
         :title="f.fileName"
         @click="activeIdx = idx"
       >

@@ -30,17 +30,10 @@ withDefaults(
     :class="size === 'sm' ? 'gap-1 p-4' : 'gap-2 p-8'"
     role="status"
   >
-    <div
-      v-if="icon"
-      :class="size === 'sm' ? 'text-2xl' : 'text-4xl opacity-60'"
-      aria-hidden="true"
-    >
+    <div v-if="icon" :class="size === 'sm' ? 'text-2xl' : 'text-4xl opacity-60'" aria-hidden="true">
       {{ icon }}
     </div>
-    <p
-      class="font-semibold text-foreground"
-      :class="size === 'sm' ? 'text-xs' : 'text-sm'"
-    >
+    <p class="font-semibold text-foreground" :class="size === 'sm' ? 'text-xs' : 'text-sm'">
       {{ title }}
     </p>
     <p

@@ -72,15 +72,9 @@ export function buildPathTree<T>(
   return materialize(root, 0, collapse)
 }
 
-function materialize<T>(
-  raw: RawDir<T>,
-  depth: number,
-  collapse: boolean,
-): TreeNode<T>[] {
+function materialize<T>(raw: RawDir<T>, depth: number, collapse: boolean): TreeNode<T>[] {
   // 디렉토리 자식 — 정렬 (알파벳).
-  const dirEntries = Array.from(raw.children.entries()).sort((a, b) =>
-    a[0].localeCompare(b[0]),
-  )
+  const dirEntries = Array.from(raw.children.entries()).sort((a, b) => a[0].localeCompare(b[0]))
   const fileEntries = [...raw.files].sort((a, b) => a.name.localeCompare(b.name))
 
   const out: TreeNode<T>[] = []
@@ -91,10 +85,7 @@ function materialize<T>(
       let cur = child
       let displayName = segName
       let displayPath = cur.segments.join('/')
-      while (
-        cur.children.size === 1 &&
-        cur.files.length === 0
-      ) {
+      while (cur.children.size === 1 && cur.files.length === 0) {
         // TYPE-002 fix — Map.entries().next() 의 IteratorResult 가 narrowing 어려움.
         // 명시적 array 변환으로 [string, RawDir<T>] | undefined 안전 추출.
         const onlyEntry = [...cur.children.entries()][0]

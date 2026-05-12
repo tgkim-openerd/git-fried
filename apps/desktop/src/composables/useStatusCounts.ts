@@ -21,9 +21,7 @@ export interface UseStatusCountsResult {
   isClean: ComputedRef<boolean>
 }
 
-export function useStatusCounts(
-  repoIdRef: MaybeRefOrGetter<number | null>,
-): UseStatusCountsResult {
+export function useStatusCounts(repoIdRef: MaybeRefOrGetter<number | null>): UseStatusCountsResult {
   const { data: status } = useStatus(repoIdRef)
 
   const counts = computed<StatusCounts>(() => {

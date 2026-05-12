@@ -17,12 +17,7 @@ const STORAGE_KEY = 'git-fried.diff-mode.v1'
 function loadInitial(): DiffMode {
   if (typeof localStorage === 'undefined') return 'default'
   const v = localStorage.getItem(STORAGE_KEY)
-  if (
-    v === 'compact' ||
-    v === 'default' ||
-    v === 'context' ||
-    v === 'split'
-  ) {
+  if (v === 'compact' || v === 'default' || v === 'context' || v === 'split') {
     return v
   }
   return 'default'
