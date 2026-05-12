@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c75 — god comp 회귀 3건 추출 (2026-05-12, 3 commits `7cbf4ee..a570920`)** — c74 doc-sync 후 `/analyze` HIGH-2 자율 진행. **god comp ≥200 LOC 다시 0 달성**:
+  - **c75-A CommitGraph 217→197 LOC** (-20, -9%) — `useGraphInfiniteScroll` (graphLimit + onScroll, caller-decision API) + `useCommitGraphSelection` (selectAndScrollToSha sha→row idx + virtualizer 가운데 정렬)
+  - **c75-B App.vue 220→174 LOC** (-46, -21%) — `useAppModals` (9 modal ref + open helper + closeAllModals) + `useAppWindowHooks` (window.gitFriedOpen* 5건 + ToggleTheme register/dispose lifecycle) + `useOnboardingDetect` (첫 실행 GitKraken detect)
+  - **c75-C pages/index.vue 269→153 LOC** (-116, -43%) — `useCommitSelection` (WIP_SHA + selectedSha/diffModalOpen/userChoseSha + handlers + ESC listener + window.gitFriedShowDiff + auto-default watch) + `useInlineDiffPersist` (visible + maximized localStorage 영속)
+  - **신규 composable 7건**: useGraphInfiniteScroll / useCommitGraphSelection / useAppModals / useAppWindowHooks / useOnboardingDetect / useCommitSelection / useInlineDiffPersist
+  - vitest 83/884 PASS (회귀 0) / typecheck 0
+  - **c67 components/ god comp 0 마일스톤이 사실상 components/ 한정** → c75 로 App.vue + pages/index 까지 포함한 **전체 god comp 0 도달**
+
 - **Sprint c74 — GitKraken parity wave + scrollbar layout chain (2026-05-11~12, 5 commits `2d9be61..0d4507b`)** — c73 후속 자율 진행 (/analyze Recommendations 자율 실행):
   - **C1 chore(repo)**: `.gitignore` 에 `**/vite.config.{d.ts,js,timestamp-*}` + `.claude/settings.local.json` 패턴 추가 / `lefthook.yml` 에 `i18n-symmetry` pre-commit hook 신설 (ko/en 비대칭 시 exit 1)
   - **C2 chore(deps)**: `pretendard ^1.3.9` 제거 → `@fontsource-variable/roboto-flex ^5.2.0` + `@fontsource/noto-sans-kr ^5.2.0` (variable font + 한글 fallback)
