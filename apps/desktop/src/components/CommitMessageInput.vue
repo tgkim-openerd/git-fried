@@ -4,8 +4,8 @@
 //   - feat / fix / chore / refactor / docs / perf / test / ci 80%+ 일관 사용
 //   - 한글 메시지 55~72%
 // → 디폴트 빌더 모드, 자유 입력 토글 가능.
-import { computed, ref, watch } from 'vue'
-import { lastCommitMessage, stageAll as apiStageAll } from '@/api/git'
+import { computed, ref } from 'vue'
+import { stageAll as apiStageAll } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useShortcut } from '@/composables/useShortcuts'
@@ -15,14 +15,14 @@ import ConventionalCommitBuilder from './ConventionalCommitBuilder.vue'
 import { useAiCommitMessage } from '@/composables/useAiCommitMessage'
 // Sprint c33 god comp 분리 10/N — commit mutation + lastResult panel 영역 분리.
 import { useCommitMutation, hookKind } from '@/composables/useCommitMutation'
+// Sprint c79-C — Amend 토글 ON 시 마지막 commit prefill 영역 (50 LOC) 분리.
+import { useAmendPrefill } from '@/composables/useAmendPrefill'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
 
 const { t } = useI18n()
 
 const toast = useToast()
-import { buildConventional, isConventionalType, type ConventionalType } from '@/types/git'
-// useInvalidateRepoQueries — useCommitMutation 내부에서 invalidate 처리.
+import { buildConventional, type ConventionalType } from '@/types/git'
 
 const props = defineProps<{ repoId: number | null; ahead: number; behind: number }>()
 const emit = defineEmits<{
@@ -43,57 +43,19 @@ const noVerify = ref(false)
 const amend = ref(false)
 const invalidate = useInvalidateRepoQueries()
 
-// Amend ON 시 마지막 commit 메시지를 빈 입력에 prefill.
-// 이미 입력 중이면 덮어쓰지 않음 (사용자 입력 보호).
-watch(
-  [amend, () => props.repoId],
-  async ([on, id]) => {
-    if (!on || id == null) return
-    // SEC-006 fix — 이미 push 된 commit 의 amend 는 force-push 필요 (history rewrite).
-    // ahead === 0 && upstream 존재 = 마지막 commit 이 원격에도 있음 → 강제 confirm.
-    if (props.ahead === 0) {
-      const ok = await confirmDialog({
-        title: t('confirm.amendPushedTitle'),
-        message: t('confirm.amendPushedMessage'),
-        danger: true,
-      })
-      if (!ok) {
-        amend.value = false
-        return
-      }
-    }
-    const hasInput =
-      mode.value === 'free' ? freeMessage.value.trim().length > 0 : subject.value.trim().length > 0
-    if (hasInput) return
-    try {
-      const last = await lastCommitMessage(id)
-      if (!last) return
-      // 첫 줄 + 본문 분리 후 conventional 패턴 매칭 시도.
-      const lines = last.split(/\r?\n/)
-      const m = lines[0].match(/^(\w+)(?:\(([^)]+)\))?(!?):\s*(.+)$/)
-      if (m && isConventionalType(m[1])) {
-        type.value = m[1]
-        scope.value = m[2] || ''
-        breaking.value = m[3] === '!'
-        subject.value = m[4]
-        const bodyStart = lines.findIndex((l, i) => i > 0 && l.trim() === '')
-        if (bodyStart > 0) {
-          body.value = lines
-            .slice(bodyStart + 1)
-            .join('\n')
-            .trim()
-        }
-        mode.value = 'conventional'
-      } else {
-        mode.value = 'free'
-        freeMessage.value = last
-      }
-    } catch (e) {
-      toast.error(t('commitInput.errFetchLastFailed'), describeError(e))
-    }
-  },
-  { immediate: false },
-)
+// c79-C — Amend ON 시 prefill (SEC-006 push confirm + Conventional 매칭) 영역 composable 위임.
+useAmendPrefill({
+  amend,
+  repoId: () => props.repoId,
+  ahead: () => props.ahead,
+  mode,
+  type,
+  scope,
+  breaking,
+  subject,
+  body,
+  freeMessage,
+})
 
 const finalMessage = computed(() => {
   if (mode.value === 'free') return freeMessage.value
