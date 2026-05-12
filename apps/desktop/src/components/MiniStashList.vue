@@ -105,7 +105,7 @@ const { onStashContextMenu } = useStashInteraction({
       data-testid="mini-stash-skeleton"
     />
     <!-- S-2: slice 제거 + max-h scrollable (전체 stash 즉시 접근). 32 LOC line-height 기준 ~10 행. -->
-    <ul v-else class="mini-list-scroll max-h-64 space-y-0.5 overflow-y-auto">
+    <ul v-else class="mini-list-scroll max-h-[40vh] space-y-0.5 overflow-y-auto">
       <li
         v-for="s in stashes ?? []"
         :key="`ms-${s.index}`"
