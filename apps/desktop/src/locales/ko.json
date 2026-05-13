@@ -197,6 +197,40 @@
     "history": "히스토리",
     "help": "도움말"
   },
+  "wizard": {
+    "step1": { "title": "환영합니다 — git-fried 의 차별점" },
+    "step2": { "title": "테마 선택" },
+    "step3": { "title": "시작하기" },
+    "welcome": {
+      "intro": "GitKraken / Tower / Fork 대체 — Tauri ~30MB native + 한글 안전 + AI 무료. 다음 단계로 진행해 환경을 설정하세요.",
+      "h1Title": "Tauri ~30MB",
+      "h1Body": "Electron 200MB+ 대비 native-light. Rust 백엔드 + WebView.",
+      "h2Title": "한글 safety 10/10",
+      "h2Body": "Conventional Commits visual width (한글=2) / commit encoding 12+ field override.",
+      "h3Title": "AI 무료",
+      "h3Body": "Claude / Codex CLI 위임 — GitKraken $7/mo 대비 무료. 6 composable (commit/PR/explain/resolve/review).",
+      "h4Title": "Gitea 1급 + Forge 자유",
+      "h4Body": "회사 Gitea + 개인 GitHub PAT 분리. v0.4 — 저장소별 forge_account override.",
+      "h5Title": "WCAG 2.2 AA + Doherty 400ms",
+      "h5Body": "Focus Not Obscured / Target Size 24×24 / prefers-reduced-motion / aria-* 115."
+    },
+    "theme": {
+      "intro": "OS 설정에 따라 자동 동기화됩니다. 명시 선택도 가능.",
+      "light": "Light",
+      "dark": "Dark",
+      "systemHint": "Settings → UI Customization 에서 system follow / custom theme JSON 도 가능."
+    },
+    "quickstart": {
+      "intro": "첫 레포를 추가하거나 GitKraken 마이그레이션을 시작하세요.",
+      "addRepo": "+ 첫 레포 추가 (Repo Switcher)",
+      "importGk": "GitKraken 데이터 가져오기 (Settings)",
+      "skip": "건너뛰기"
+    },
+    "skipForever": "다시 보지 않기",
+    "prev": "이전",
+    "next": "다음",
+    "done": "완료"
+  },
   "toast": {
     "success": "성공",
     "error": "오류",
@@ -289,6 +323,13 @@
     "workspaceUpdateFailed": "워크스페이스 수정 실패",
     "workspaceDeleteFailed": "워크스페이스 삭제 실패",
     "themeImportFailed": "테마 import 실패"
+  },
+  "ai": {
+    "cooldown": {
+      "title": "AI quota 한도 도달",
+      "message": "Claude / Codex CLI 가 quota / rate limit 에 도달했습니다. 약 {sec}초 후 다시 시도하세요. (cooldown 진행 중)",
+      "dismiss": "확인"
+    }
   },
   "confirm": {
     "title": "확인",
@@ -448,6 +489,18 @@
       "fontSizeRow": "· 폰트 크기: ⌘=/-/0 (Zoom) — 현재 {n}px",
       "diffModeRow": "· Diff 모드: CommitDiffModal 의 Hunk / Inline / Context 토글",
       "terminalRow": "· Terminal: ⌘` 토글, pwsh.exe / bash 자동 감지",
+      "external": {
+        "legend": "외부 Editor 통합 (v0.4 #6)",
+        "label": "외부 Editor",
+        "hint": "선택 시 우클릭 메뉴 / 단축키 (v0.5+) 로 활성 레포를 외부 Editor 에서 열기. URI scheme 사용 — OS handler 미등록 시 동작 안 함.",
+        "none": "사용 안 함",
+        "vscode": "VSCode (vscode://)",
+        "vscodeInsiders": "VSCode Insiders (vscode-insiders://)",
+        "cursor": "Cursor (cursor://)",
+        "sublime": "Sublime Text (file://)",
+        "intellij": "IntelliJ IDEA (idea://)",
+        "webstorm": "WebStorm (webstorm://)"
+      },
       "futureNote": "v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정."
     },
     "maintenanceSection": {
@@ -750,6 +803,18 @@
     "dirtyLabel": "변경됨",
     "resetButton": "되돌리기",
     "saveButton": "저장"
+  },
+  "repoIdentity": {
+    "legend": "저장소별 계정 (회사/개인 분리)",
+    "forgeAccount": {
+      "label": "Forge 계정",
+      "hint": "비우면 활성 Profile 의 기본값 사용",
+      "useProfileDefault": "Profile 기본값 사용",
+      "overrideActive": "이 저장소는 활성 Profile 의 기본값을 override 합니다",
+      "savedTitle": "Forge 계정 변경됨",
+      "savedBody": "이 저장소에 사용할 Forge 계정이 적용되었습니다.",
+      "errorTitle": "Forge 계정 변경 실패"
+    }
   },
   "submodule": {
     "title": "Submodule",

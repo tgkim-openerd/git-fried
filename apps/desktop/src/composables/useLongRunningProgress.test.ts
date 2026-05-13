@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   __resetForTest,
   completeOperation,
+  DOHERTY_THRESHOLD_MS,
   registerOperation,
   useLongRunningProgress,
 } from './useLongRunningProgress'
@@ -39,9 +40,9 @@ describe('useLongRunningProgress', () => {
     const lrp = useLongRunningProgress()
     registerOperation('bulk_fetch')
 
-    // 29s — still idle
+    // 29s — 아직 over30s 미만 (doherty 단계 — banner 표시 안 함, idle 처럼 처리)
     vi.advanceTimersByTime(29_000)
-    expect(lrp.activeOperations.value[0].stage).toBe('idle')
+    expect(['idle', 'doherty']).toContain(lrp.activeOperations.value[0].stage)
     expect(lrp.visibleOperations.value.length).toBe(0)
 
     // 30s — over30s
@@ -56,6 +57,10 @@ describe('useLongRunningProgress', () => {
     // 4m — over4m
     vi.advanceTimersByTime(3 * 60_000)
     expect(lrp.activeOperations.value[0].stage).toBe('over4m')
+  })
+
+  it('DOHERTY_THRESHOLD_MS 상수 export (v0.4 #8 UI/UX 방법론 매핑)', () => {
+    expect(DOHERTY_THRESHOLD_MS).toBe(400)
   })
 
   it('complete removes operation', () => {

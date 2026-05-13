@@ -133,7 +133,11 @@ pub async fn forge_delete_account(
 // ====== Forge client 생성 헬퍼 ======
 
 /// repo_id 로부터 적절한 ForgeClient 만든다.
-/// 매칭 우선순위: forge_owner+forge_repo → forge_accounts 의 base_url 추측 → 토큰 조회.
+///
+/// v0.4 #1 (UltraPlan plan/31) — Resolution chain:
+///   1. repos.forge_account_id (per-repo 명시 override)
+///   2. profiles.default_forge_account_id (active Profile)
+///   3. forge_kind first-match (fallback, 기존 호환)
 async fn forge_client_for_repo(
     state: &Arc<AppState>,
     repo_id: i64,
@@ -149,8 +153,108 @@ async fn forge_client_for_repo(
         .clone()
         .ok_or_else(|| AppError::validation("이 레포는 forge repo 가 없습니다."))?;
 
-    let (client, _account) = build_client(state, &kind, &owner, &repo).await?;
+    // Resolution chain — 1: per-repo override → 2: active Profile default → 3: kind 매칭
+    let explicit_account_id = match r.forge_account_id {
+        Some(id) => Some(id),
+        None => active_profile_default_account_id(state).await?,
+    };
+
+    let (client, _account) = if let Some(id) = explicit_account_id {
+        build_client_by_id(state, id).await?
+    } else {
+        build_client(state, &kind, &owner, &repo).await?
+    };
     Ok((client, owner, repo))
+}
+
+/// active Profile 의 default_forge_account_id 조회.
+/// None → no active profile / 또는 active profile 에 default 미설정.
+async fn active_profile_default_account_id(state: &Arc<AppState>) -> AppResult<Option<i64>> {
+    let row =
+        sqlx::query("SELECT default_forge_account_id FROM profiles WHERE is_active = 1 LIMIT 1")
+            .fetch_optional(&state.db.pool)
+            .await
+            .map_err(AppError::Db)?;
+    Ok(row.and_then(|r| {
+        r.try_get::<Option<i64>, _>("default_forge_account_id")
+            .ok()
+            .flatten()
+    }))
+}
+
+/// 명시 account_id 로 ForgeClient 생성. v0.4 #1 — per-repo / Profile 의 명시 계정 사용 경로.
+async fn build_client_by_id(
+    state: &Arc<AppState>,
+    account_id: i64,
+) -> AppResult<(Box<dyn ForgeClient>, ForgeAccount)> {
+    let row = sqlx::query(
+        "SELECT id, forge_kind, base_url, username, keychain_ref FROM forge_accounts WHERE id = ?",
+    )
+    .bind(account_id)
+    .fetch_optional(&state.db.pool)
+    .await
+    .map_err(AppError::Db)?
+    .ok_or_else(|| {
+        AppError::validation(format!(
+            "지정된 forge_account_id={account_id} 가 forge_accounts 에 없습니다 (삭제됨?). \
+             Settings → Profile / 저장소 별 설정 에서 다시 선택하세요."
+        ))
+    })?;
+
+    let account = ForgeAccount {
+        id: row.try_get("id")?,
+        forge_kind: row.try_get("forge_kind")?,
+        base_url: row.try_get("base_url")?,
+        username: row.try_get("username")?,
+        keychain_ref: row.try_get("keychain_ref")?,
+    };
+
+    let token = auth::load_token(&account.keychain_ref)?
+        .ok_or_else(|| AppError::validation("keychain 에 토큰이 없습니다. 다시 등록하세요."))?;
+
+    let client: Box<dyn ForgeClient> = match account.forge_kind.as_str() {
+        "gitea" => Box::new(GiteaClient::new(&account.base_url, &token)?),
+        "github" => Box::new(GithubClient::new(Some(&account.base_url), &token)?),
+        other => {
+            return Err(AppError::validation(format!(
+                "지원하지 않는 forge: {other}"
+            )))
+        }
+    };
+    Ok((client, account))
+}
+
+// ====== v0.4 #1 — per-repo forge account override IPC ======
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetRepoForgeAccountArgs {
+    pub repo_id: i64,
+    /// None → fallback chain (active Profile default → forge_kind 매칭) 사용.
+    /// Some(id) → 본 저장소만 명시 계정 사용 (Profile 토글에 영향 받지 않음).
+    pub account_id: Option<i64>,
+}
+
+/// v0.4 #1 — 저장소 별 forge account 명시 지정 / 해제.
+///
+/// UI: Settings → Repository-Specific Form 의 "Forge 계정" 드롭다운.
+/// Cascade 정책 (UltraPlan §9 Q2): Profile 변경 시 본 override 보존
+/// (사용자 명시 결정이 silent 변경되지 않도록 Error Prevention).
+#[tauri::command]
+pub async fn set_repo_forge_account(
+    args: SetRepoForgeAccountArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<crate::storage::Repo> {
+    tracing::info!(
+        target: "git_fried_lib::ipc",
+        repo_id = args.repo_id,
+        account_id = ?args.account_id,
+        "set_repo_forge_account"
+    );
+    state
+        .db
+        .set_repo_forge_account(args.repo_id, args.account_id)
+        .await
 }
 
 async fn build_client(

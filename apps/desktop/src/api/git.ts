@@ -986,6 +986,17 @@ export const forgeListAccounts = (): Promise<ForgeAccount[]> => invoke('forge_li
 export const forgeDeleteAccount = (id: number): Promise<void> =>
   invoke('forge_delete_account', { id })
 
+/**
+ * v0.4 #1 (UltraPlan plan/31) — per-repo forge account override.
+ *
+ * accountId=null → fallback chain (active Profile default → forge_kind 매칭) 사용.
+ * accountId=number → 본 저장소만 명시 계정 사용 (Profile 토글 영향 X, cascade 보존 §9 Q2).
+ *
+ * 호출 후 invalidate: ['repos'] / ['repos', repoId] 권장.
+ */
+export const setRepoForgeAccount = (repoId: number, accountId: number | null): Promise<Repo> =>
+  invoke('set_repo_forge_account', { args: { repoId, accountId } })
+
 export const forgeWhoami = (
   forgeKind: 'gitea' | 'github',
   baseUrl: string,

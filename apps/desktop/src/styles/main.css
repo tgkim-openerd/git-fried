@@ -201,6 +201,12 @@
     outline: none;
     box-shadow: 0 0 0 2px hsl(var(--ring));
     border-radius: 2px;
+    /* v0.4 #4 (UltraPlan plan/31) — WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum) AA.
+     * sticky TopBar / RepoTabBar (~3.5rem) 와 StatusBar footer (~1rem) 가
+     * focused element 가리는 케이스 회피. scroll-into-view 시 자동 적용.
+     */
+    scroll-margin-top: 4rem;
+    scroll-margin-bottom: 1.5rem;
   }
   /* mouse click 후엔 ring 제거 (WCAG 2.4.7 spec: keyboard focus 만 visible 필요) */
   *:focus:not(:focus-visible) {

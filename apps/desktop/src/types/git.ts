@@ -15,6 +15,12 @@ export interface Repo {
   forgeRepo: string | null
   lastFetchedAt: number | null
   isPinned: boolean
+  /**
+   * v0.4 #1 (UltraPlan plan/31) — per-repo forge account override.
+   * null → fallback chain (active Profile default → forge_kind 매칭).
+   * number → 본 저장소만 명시 forge_accounts.id 사용.
+   */
+  forgeAccountId: number | null
 }
 
 export interface Workspace {

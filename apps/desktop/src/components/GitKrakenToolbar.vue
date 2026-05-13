@@ -12,8 +12,6 @@
 // - Terminal: terminal 토글 (dispatchShortcut('terminal'))
 
 import { computed, onMounted, onUnmounted } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
-import { listRepos } from '@/api/git'
 // Sprint c36 god 17/N — undo/redo mutation 영역 분리.
 import { useUndoRedo } from '@/composables/useUndoRedo'
 // Sprint c37 god 21/N — stash/pop mutation + handler 분리.
@@ -25,8 +23,8 @@ import { useStash } from '@/composables/useStash'
 import { useStatusCounts } from '@/composables/useStatusCounts'
 import { useToast } from '@/composables/useToast'
 import { useShortcut, dispatchShortcut } from '@/composables/useShortcuts'
-import { useReposStore } from '@/stores/repos'
-import { useRepoAliases } from '@/composables/useRepoAliases'
+// v0.4 #5 (UltraPlan plan/31) god wave A — breadcrumb 21 LOC 분리.
+import { useActiveRepoBreadcrumb } from '@/composables/useActiveRepoBreadcrumb'
 import { onMenuAction } from '@/composables/useMenuListener'
 // Sprint c31 — BaseTooltip primitive (kbd hint + viewport edge 회피 + a11y).
 import BaseTooltip from './BaseTooltip.vue'
@@ -50,29 +48,8 @@ const { data: stashList } = useStash(repoIdRef)
 // ARCH-006 fix — useStatusCounts 단일 진실원천.
 const { hasChanges } = useStatusCounts(repoIdRef)
 
-// Phase 10-5 — 활성 레포 breadcrumb (alias 우선 → forge owner / 레포명).
-// store 가 repos 캐시를 보유하지 않으므로 listRepos query 를 직접 사용 (Sidebar 와 동일 캐시 공유).
-const store = useReposStore()
-const aliases = useRepoAliases()
-const { data: reposData } = useQuery({
-  queryKey: computed(() => ['repos', store.activeWorkspaceId]),
-  queryFn: () => listRepos(store.activeWorkspaceId),
-})
-const activeRepo = computed(() => {
-  if (props.repoId == null) return null
-  return reposData.value?.find((r) => r.id === props.repoId) ?? null
-})
-const repoBreadcrumb = computed(() => {
-  const r = activeRepo.value
-  if (!r) return null
-  const resolved = aliases.resolveLocal(r.id, r.name)
-  return {
-    owner: r.forgeOwner,
-    name: resolved.display,
-    original: r.name,
-    aliased: resolved.aliased,
-  }
-})
+// Phase 10-5 — 활성 레포 breadcrumb. v0.4 #5 god wave A 분리 (Sidebar 캐시 공유).
+const repoBreadcrumb = useActiveRepoBreadcrumb(() => props.repoId)
 
 const stashCount = computed(() => stashList.value?.length ?? 0)
 

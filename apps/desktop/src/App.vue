@@ -16,6 +16,8 @@ import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
 import CompareModal from './components/CompareModal.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
+// v0.4 #2 (UltraPlan plan/31 §9 Q1 절충) — First-run 3-step wizard.
+import FirstRunWizard from './components/FirstRunWizard.vue'
 // Sprint c38 / plan/29 E5 — window.prompt 대체 (a11y + 한글 IME 안전).
 import PromptDialog from './components/PromptDialog.vue'
 import StatusBar from './components/StatusBar.vue'
@@ -185,5 +187,7 @@ useMenuListener()
     <CommitSearchModal :open="commitSearchOpen" @close="commitSearchOpen = false" />
     <ConfirmDialog />
     <PromptDialog />
+    <!-- v0.4 #2 (UltraPlan plan/31 §9 Q1 절충) — First-run 3-step wizard. -->
+    <FirstRunWizard />
   </div>
 </template>

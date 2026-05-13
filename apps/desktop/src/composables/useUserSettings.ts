@@ -20,6 +20,16 @@ export interface GeneralSettings {
   conflictDetection: boolean
 }
 
+/** v0.4 #6 (UltraPlan plan/31) — 외부 editor URI scheme launcher 식별자. */
+export type ExternalEditorKind =
+  | 'none'
+  | 'vscode'
+  | 'vscode-insiders'
+  | 'cursor'
+  | 'sublime'
+  | 'intellij'
+  | 'webstorm'
+
 export interface UiSettings {
   dateLocale: 'auto' | 'ko-KR' | 'en-US'
   hideLaunchpad: boolean
@@ -36,6 +46,11 @@ export interface UiSettings {
     pr: boolean
     tag: boolean
   }
+  /**
+   * v0.4 #6 (UltraPlan plan/31) — 외부 editor 통합 선택.
+   * 'none' = 비활성 / 그 외 = URI scheme 으로 shell.open (OS handler 가 launch).
+   */
+  externalEditor: ExternalEditorKind
 }
 
 const GENERAL_KEY = 'git-fried.general.v1'
@@ -67,6 +82,7 @@ function defaultUi(): UiSettings {
       pr: true,
       tag: true,
     },
+    externalEditor: 'none',
   }
 }
 

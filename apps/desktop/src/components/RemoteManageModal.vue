@@ -5,33 +5,25 @@
 // 변경 후 ['branches', repoId] + ['remotes', repoId] invalidate.
 // Sprint 22-10 CM-12: 우클릭 메뉴 (Fetch (전체) / Rename / Set URL / Remove).
 //   단일 remote fetch IPC 미존재 → fetchAll 매핑 + label "(전체)" 명시.
-import { computed, ref, useTemplateRef } from 'vue'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import {
-  addRemote,
-  fetchAll,
-  listRemotes,
-  removeRemote,
-  renameRemote,
-  setRemoteUrl,
-  type RemoteInfo,
-} from '@/api/git'
-import { describeError } from '@/api/errors'
+//
+// v0.4 #5 (UltraPlan plan/31) god comp wave A — 5 mutation + form state
+// useRemoteMutations 분리 (168→<150 LOC).
+import { computed, useTemplateRef } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { listRemotes, type RemoteInfo } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
-import { useToast } from '@/composables/useToast'
 import BaseModal from './BaseModal.vue'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useI18n } from 'vue-i18n'
 // Sprint c53 — /analyze HIGH-1 — context menu + remove confirm 흡수 (Pattern 9 caller-decision).
 import { useRemoteInteraction } from '@/composables/useRemoteInteraction'
+// v0.4 #5 — 5 mutation + form state 추출.
+import { useRemoteMutations } from '@/composables/useRemoteMutations'
 
 const { t } = useI18n()
 
 const props = defineProps<{ open: boolean; repoId: number | null }>()
 const emit = defineEmits<{ close: [] }>()
-
-const toast = useToast()
-const qc = useQueryClient()
 
 const repoIdRef = computed(() => props.repoId)
 
@@ -45,96 +37,25 @@ const remotesQuery = useQuery({
   staleTime: STALE_TIME.NORMAL,
 })
 
-function invalidate() {
-  if (repoIdRef.value == null) return
-  qc.invalidateQueries({ queryKey: ['remotes', repoIdRef.value] })
-  qc.invalidateQueries({ queryKey: ['branches', repoIdRef.value] })
-}
-
-// === add ===
-const addName = ref('')
-const addUrl = ref('')
-const addMut = useMutation({
-  mutationFn: () => {
-    if (repoIdRef.value == null) throw new Error(t('remote.errRepoNotSelected'))
-    return addRemote(repoIdRef.value, addName.value.trim(), addUrl.value.trim())
-  },
-  onSuccess: () => {
-    toast.success(t('remote.addedTitle'), addName.value)
-    addName.value = ''
-    addUrl.value = ''
-    invalidate()
-  },
-  onError: (e) => toast.error(t('remote.addFailed'), describeError(e)),
-})
-
-// === remove ===
-const removeMut = useMutation({
-  mutationFn: (name: string) => {
-    if (repoIdRef.value == null) throw new Error(t('remote.errRepoNotSelected'))
-    return removeRemote(repoIdRef.value, name)
-  },
-  onSuccess: (_v, name) => {
-    toast.success(t('remote.removedTitle'), name)
-    invalidate()
-  },
-  onError: (e) => toast.error(t('remote.removeFailed'), describeError(e)),
-})
-
-// === rename ===
-const renameTarget = ref<string | null>(null)
-const renameNew = ref('')
-const renameMut = useMutation({
-  mutationFn: () => {
-    if (repoIdRef.value == null || !renameTarget.value)
-      throw new Error(t('remote.errTargetNotSelected'))
-    return renameRemote(repoIdRef.value, renameTarget.value, renameNew.value.trim())
-  },
-  onSuccess: () => {
-    toast.success(
-      t('remote.renamedTitle'),
-      t('remote.renamedMessage', { from: renameTarget.value ?? '', to: renameNew.value }),
-    )
-    renameTarget.value = null
-    renameNew.value = ''
-    invalidate()
-  },
-  onError: (e) => toast.error(t('remote.renameFailed'), describeError(e)),
-})
-
-function startRename(name: string) {
-  renameTarget.value = name
-  renameNew.value = name
-}
-
-// === set URL ===
-const urlTarget = ref<string | null>(null)
-const urlNew = ref('')
-const urlMut = useMutation({
-  mutationFn: () => {
-    if (repoIdRef.value == null || !urlTarget.value)
-      throw new Error(t('remote.errTargetNotSelected'))
-    return setRemoteUrl(repoIdRef.value, urlTarget.value, urlNew.value.trim())
-  },
-  onSuccess: () => {
-    toast.success(t('remote.urlChangedTitle'), urlTarget.value ?? '')
-    urlTarget.value = null
-    urlNew.value = ''
-    invalidate()
-  },
-  onError: (e) => toast.error(t('remote.urlChangeFailed'), describeError(e)),
-})
-
-function startUrlChange(r: RemoteInfo) {
-  urlTarget.value = r.name
-  urlNew.value = r.fetchUrl ?? r.pushUrl ?? ''
-}
+const {
+  addName,
+  addUrl,
+  renameTarget,
+  renameNew,
+  urlTarget,
+  urlNew,
+  addMut,
+  removeMut,
+  renameMut,
+  urlMut,
+  fetchAllMut,
+  startRename,
+  startUrlChange,
+  resetFormState,
+} = useRemoteMutations({ repoId: () => props.repoId })
 
 function close() {
-  renameTarget.value = null
-  renameNew.value = ''
-  urlTarget.value = null
-  urlNew.value = ''
+  resetFormState()
   emit('close')
 }
 
@@ -142,23 +63,6 @@ function close() {
 // composable: ContextMenu items 빌드 + confirmDialog 흡수
 // caller: 5 mutations + form state 보유, mutate fn 만 콜백으로 노출
 const ctxMenu = useTemplateRef<ContextMenuExpose>('ctxMenu')
-
-const fetchAllMut = useMutation({
-  mutationFn: () => {
-    if (repoIdRef.value == null) throw new Error(t('remote.errRepoNotSelected'))
-    return fetchAll(repoIdRef.value)
-  },
-  onSuccess: () => {
-    toast.success(t('remote.fetchAllSuccess'), t('remote.fetchAllSuccessMessage'))
-    invalidate()
-    if (repoIdRef.value != null) {
-      qc.invalidateQueries({ queryKey: ['status', repoIdRef.value] })
-      qc.invalidateQueries({ queryKey: ['log', repoIdRef.value] })
-      qc.invalidateQueries({ queryKey: ['graph', repoIdRef.value] })
-    }
-  },
-  onError: (e) => toast.error(t('remote.fetchAllFailed'), describeError(e)),
-})
 
 const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
   ctxMenu,

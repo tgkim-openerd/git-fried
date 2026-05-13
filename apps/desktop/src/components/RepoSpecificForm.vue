@@ -3,17 +3,88 @@
 //
 // 활성 레포의 .git/config 키 read → reactive form → save 버튼으로 일괄 apply.
 // dirty 추적 + 빈 input 은 unset 으로 매핑.
+//
+// v0.4 #1 (UltraPlan plan/31) — per-repo forge account override 추가:
+//   .git/config form 과 별개로 repos.forge_account_id (DB 컬럼) 직접 mutation.
+//   변경 즉시 적용 (RepoConfig save 버튼 흐름과 분리).
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useReposStore } from '@/stores/repos'
 import { useRepoConfig, EMPTY_REPO_CONFIG } from '@/composables/useRepoConfig'
-import type { RepoConfigSnapshot } from '@/api/git'
+import {
+  forgeListAccounts,
+  listRepos,
+  setRepoForgeAccount,
+  type RepoConfigSnapshot,
+} from '@/api/git'
+import { STALE_TIME } from '@/api/queryClient'
+import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 
 const { t } = useI18n()
 const reposStore = useReposStore()
 const repoIdRef = computed(() => reposStore.activeRepoId)
+const qc = useQueryClient()
+const toast = useToast()
 
 const { query, applyMut } = useRepoConfig(repoIdRef)
+
+// v0.4 #1 — forge_accounts list (per-repo override 선택지) + 현재 repo 의 forgeAccountId.
+const forgeAccountsQuery = useQuery({
+  queryKey: ['forge-accounts'],
+  queryFn: forgeListAccounts,
+  staleTime: STALE_TIME.STATIC,
+})
+const accounts = computed(() => forgeAccountsQuery.data.value ?? [])
+
+// 활성 workspace 의 repos. 모든 workspace 검색 시 null 전달.
+const reposQuery = useQuery({
+  queryKey: computed(() => ['repos', reposStore.activeWorkspaceId]),
+  queryFn: () => listRepos(reposStore.activeWorkspaceId),
+  staleTime: STALE_TIME.STATIC,
+})
+const activeRepo = computed(() => {
+  const id = repoIdRef.value
+  if (id == null) return null
+  return reposQuery.data.value?.find((r) => r.id === id) ?? null
+})
+
+// dropdown 의 v-model — 변경 시 즉시 mutation. .git/config form 과 다르게 별도 mutation.
+const forgeAccountId = ref<number | null>(null)
+watch(
+  () => activeRepo.value?.forgeAccountId ?? null,
+  (id) => {
+    forgeAccountId.value = id
+  },
+  { immediate: true },
+)
+
+const setRepoForgeAccountMut = useMutation({
+  mutationFn: (accountId: number | null) => {
+    const id = repoIdRef.value
+    if (id == null) return Promise.reject(new Error('no active repo'))
+    return setRepoForgeAccount(id, accountId)
+  },
+  onSuccess: () => {
+    qc.invalidateQueries({ queryKey: ['repos'] })
+    toast.success(
+      t('repoIdentity.forgeAccount.savedTitle'),
+      t('repoIdentity.forgeAccount.savedBody'),
+    )
+  },
+  onError: (e) => {
+    toast.error(t('repoIdentity.forgeAccount.errorTitle'), describeError(e))
+  },
+})
+
+function onForgeAccountChange() {
+  setRepoForgeAccountMut.mutate(forgeAccountId.value)
+}
+
+// effective banner: 본 repo override 가 active Profile default 와 다른지 안내 (Recognition over Recall).
+// active Profile default 조회는 별도 IPC 필요해서 일단 단순화: override 가 설정되어 있으면 표시.
+const effectiveOverrideBanner = computed(() => activeRepo.value?.forgeAccountId != null)
 
 // reactive form 모델 (서버 값 → form 동기화)
 const form = ref<RepoConfigSnapshot>({ ...EMPTY_REPO_CONFIG })
@@ -186,8 +257,41 @@ const gpgsignBool = computed({
 
       <!-- per-repo identity (자주 쓰는 항목) -->
       <fieldset class="rounded border border-border p-3">
-        <legend class="px-1 text-xs font-semibold">Per-repo identity (회사/개인 분리)</legend>
-        <label class="mt-1 flex items-center justify-between gap-3 text-xs">
+        <legend class="px-1 text-xs font-semibold">
+          {{ t('repoIdentity.identity.legend') }}
+        </legend>
+
+        <!-- v0.4 #1 (UltraPlan plan/31) — per-repo forge account override.
+             .git/config form 과 별개로 repos.forge_account_id (DB 컬럼) 즉시 mutation. -->
+        <label class="mt-1 flex items-start justify-between gap-3 text-xs">
+          <div class="flex flex-col gap-0.5">
+            <span class="font-medium">{{ t('repoIdentity.forgeAccount.label') }}</span>
+            <span class="text-[10px] text-muted-foreground">
+              {{ t('repoIdentity.forgeAccount.hint') }}
+            </span>
+          </div>
+          <select
+            v-model="forgeAccountId"
+            :disabled="setRepoForgeAccountMut.isPending.value"
+            :aria-label="t('repoIdentity.forgeAccount.label')"
+            class="w-72 rounded border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
+            @change="onForgeAccountChange"
+          >
+            <option :value="null">{{ t('repoIdentity.forgeAccount.useProfileDefault') }}</option>
+            <option v-for="a in accounts" :key="a.id" :value="a.id">
+              {{ a.forgeKind }} — {{ a.username || '?' }} ({{ a.baseUrl }})
+            </option>
+          </select>
+        </label>
+        <p
+          v-if="effectiveOverrideBanner"
+          class="mt-2 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400"
+          role="status"
+        >
+          ⚠ {{ t('repoIdentity.forgeAccount.overrideActive') }}
+        </p>
+
+        <label class="mt-2 flex items-center justify-between gap-3 text-xs">
           <span class="font-medium">user.name</span>
           <input
             v-model="form.userName"

@@ -5,17 +5,30 @@
  * toast.info 안내. localStorage 'git-fried.onboarded.v1' 부재 시 한 번만. detect 실패
  * silent (다음 실행 재시도, localStorage 마킹 안 함).
  *
- * 사용자 friction 최소화 — modal 자동 open 안 함. 실 import 는 Settings → 시작·마이그레이션 →
- * GitKraken 가져오기 버튼 명시 트리거.
+ * v0.4 #2 (UltraPlan plan/31 §9 Q1 옵션 c 절충): toast 1회 + 7s 후 자동 wizard.
+ * 사용자 dismiss 가능 — FirstRunWizard 의 localStorage
+ * 'git-fried.firstRunWizard.completed.v1' 마킹.
  */
 import { onMounted } from 'vue'
 import { importGitKrakenDetect } from '@/api/git'
 import { useToast } from '@/composables/useToast'
+import { useFirstRunWizard } from '@/composables/useFirstRunWizard'
 
 const ONBOARDED_KEY = 'git-fried.onboarded.v1'
+/** v0.4 #2 — toast 후 wizard modal 자동 open 까지 delay (Q1 옵션 c). */
+const WIZARD_AUTO_OPEN_DELAY_MS = 7_000
 
 export function useOnboardingDetect() {
   const toast = useToast()
+  const wizard = useFirstRunWizard()
+
+  function scheduleWizardOpen(): void {
+    setTimeout(() => {
+      // wizard.open() 내부에서 hasCompleted() 체크 — 이미 완료 시 noop.
+      wizard.open(1)
+    }, WIZARD_AUTO_OPEN_DELAY_MS)
+  }
+
   onMounted(async () => {
     if (typeof localStorage === 'undefined') return
     if (localStorage.getItem(ONBOARDED_KEY)) return
@@ -37,6 +50,8 @@ export function useOnboardingDetect() {
         )
       }
       localStorage.setItem(ONBOARDED_KEY, String(Date.now()))
+      // v0.4 #2 — Q1 옵션 c 절충: toast 표시 + 7s 후 wizard 자동 open.
+      scheduleWizardOpen()
     } catch {
       // detect 실패는 silent — 다음 실행에서 재시도. localStorage 마킹 안 함.
     }

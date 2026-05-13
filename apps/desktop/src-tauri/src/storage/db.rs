@@ -32,6 +32,10 @@ pub struct Repo {
     pub forge_repo: Option<String>,
     pub last_fetched_at: Option<i64>,
     pub is_pinned: bool,
+    /// v0.4 #1 (UltraPlan plan/31 §2) — per-repo forge account override.
+    /// None → active Profile 의 default_forge_account_id 사용 (fallback chain).
+    /// Some(id) → 본 저장소 명시 계정 사용 (회사 PAT vs 개인 PAT 분리 등).
+    pub forge_account_id: Option<i64>,
 }
 
 #[derive(Clone)]
@@ -114,6 +118,8 @@ pub trait DbExt {
     async fn remove_repo(&self, id: i64) -> AppResult<()>;
     async fn get_repo(&self, id: i64) -> AppResult<Repo>;
     async fn set_repo_pinned(&self, id: i64, pinned: bool) -> AppResult<Repo>;
+    /// v0.4 #1 — per-repo forge account override. None → fallback chain.
+    async fn set_repo_forge_account(&self, id: i64, account_id: Option<i64>) -> AppResult<Repo>;
 }
 
 #[async_trait::async_trait]
@@ -236,6 +242,7 @@ impl DbExt for Db {
                 forge_repo: r.try_get("forge_repo")?,
                 last_fetched_at: r.try_get("last_fetched_at")?,
                 is_pinned: r.try_get::<i64, _>("is_pinned")? != 0,
+                forge_account_id: r.try_get("forge_account_id")?,
             });
         }
         Ok(out)
@@ -311,12 +318,23 @@ impl DbExt for Db {
             forge_repo: r.try_get("forge_repo")?,
             last_fetched_at: r.try_get("last_fetched_at")?,
             is_pinned: r.try_get::<i64, _>("is_pinned")? != 0,
+            forge_account_id: r.try_get("forge_account_id")?,
         })
     }
 
     async fn set_repo_pinned(&self, id: i64, pinned: bool) -> AppResult<Repo> {
         sqlx::query("UPDATE repos SET is_pinned = ? WHERE id = ?")
             .bind(if pinned { 1i64 } else { 0i64 })
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::Db)?;
+        self.get_repo(id).await
+    }
+
+    async fn set_repo_forge_account(&self, id: i64, account_id: Option<i64>) -> AppResult<Repo> {
+        sqlx::query("UPDATE repos SET forge_account_id = ? WHERE id = ?")
+            .bind(account_id)
             .bind(id)
             .execute(&self.pool)
             .await

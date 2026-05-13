@@ -197,6 +197,40 @@
     "history": "History",
     "help": "Help"
   },
+  "wizard": {
+    "step1": { "title": "Welcome — git-fried highlights" },
+    "step2": { "title": "Choose a theme" },
+    "step3": { "title": "Quick Start" },
+    "welcome": {
+      "intro": "Alternative to GitKraken / Tower / Fork — Tauri ~30MB native + Korean-safe + free AI. Step through to set up your environment.",
+      "h1Title": "Tauri ~30MB",
+      "h1Body": "Native-light vs Electron 200MB+. Rust backend + WebView.",
+      "h2Title": "Korean safety 10/10",
+      "h2Body": "Conventional Commits visual width (Korean=2) / commit encoding 12+ field overrides.",
+      "h3Title": "Free AI",
+      "h3Body": "Delegates to Claude / Codex CLI — free vs GitKraken $7/mo. 6 composables (commit/PR/explain/resolve/review).",
+      "h4Title": "Gitea first-class + Forge freedom",
+      "h4Body": "Split company Gitea + personal GitHub PAT. v0.4 — per-repo forge_account override.",
+      "h5Title": "WCAG 2.2 AA + Doherty 400ms",
+      "h5Body": "Focus Not Obscured / Target Size 24×24 / prefers-reduced-motion / aria-* 115."
+    },
+    "theme": {
+      "intro": "Auto-syncs with OS settings. Explicit selection also available.",
+      "light": "Light",
+      "dark": "Dark",
+      "systemHint": "Settings → UI Customization for system follow / custom theme JSON."
+    },
+    "quickstart": {
+      "intro": "Add your first repository or start the GitKraken migration.",
+      "addRepo": "+ Add first repo (Repo Switcher)",
+      "importGk": "Import GitKraken data (Settings)",
+      "skip": "Skip"
+    },
+    "skipForever": "Don't show again",
+    "prev": "Back",
+    "next": "Next",
+    "done": "Done"
+  },
   "toast": {
     "success": "Success",
     "error": "Error",
@@ -289,6 +323,13 @@
     "workspaceUpdateFailed": "Workspace update failed",
     "workspaceDeleteFailed": "Workspace delete failed",
     "themeImportFailed": "Theme import failed"
+  },
+  "ai": {
+    "cooldown": {
+      "title": "AI quota limit reached",
+      "message": "Claude / Codex CLI hit a quota / rate limit. Try again in about {sec} seconds. (cooldown in progress)",
+      "dismiss": "OK"
+    }
   },
   "confirm": {
     "title": "Confirm",
@@ -448,6 +489,18 @@
       "fontSizeRow": "· Font size: ⌘=/-/0 (Zoom) — currently {n}px",
       "diffModeRow": "· Diff mode: Hunk / Inline / Context toggle in CommitDiffModal",
       "terminalRow": "· Terminal: ⌘` toggle, auto-detects pwsh.exe / bash",
+      "external": {
+        "legend": "External Editor integration (v0.4 #6)",
+        "label": "External Editor",
+        "hint": "When selected, right-click / shortcut (v0.5+) opens the active repo in the external editor. Uses URI scheme — depends on OS handler being registered.",
+        "none": "Disabled",
+        "vscode": "VSCode (vscode://)",
+        "vscodeInsiders": "VSCode Insiders (vscode-insiders://)",
+        "cursor": "Cursor (cursor://)",
+        "sublime": "Sublime Text (file://)",
+        "intellij": "IntelliJ IDEA (idea://)",
+        "webstorm": "WebStorm (webstorm://)"
+      },
       "futureNote": "v1.x: External diff/merge tool launch, Terminal font/cursor settings."
     },
     "maintenanceSection": {
@@ -750,6 +803,18 @@
     "dirtyLabel": "Modified",
     "resetButton": "Revert",
     "saveButton": "Save"
+  },
+  "repoIdentity": {
+    "legend": "Per-repo identity (Work/Personal split)",
+    "forgeAccount": {
+      "label": "Forge account",
+      "hint": "Leave empty to use active Profile default",
+      "useProfileDefault": "Use Profile default",
+      "overrideActive": "This repository overrides the active Profile default",
+      "savedTitle": "Forge account updated",
+      "savedBody": "Forge account for this repository has been applied.",
+      "errorTitle": "Failed to update forge account"
+    }
   },
   "submodule": {
     "title": "Submodule",

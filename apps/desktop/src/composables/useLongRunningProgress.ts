@@ -13,7 +13,13 @@
 
 import { computed, readonly, ref } from 'vue'
 
-export type ProgressStage = 'idle' | 'over30s' | 'over1m' | 'over4m'
+// v0.4 #8 (UltraPlan plan/31) — Doherty Threshold 400ms 적용.
+// stage 'doherty' = 400ms 초과 (사용자 응답 인지 한계).
+// 큰 banner 는 over30s+ 부터 (Doherty 단계는 micro spinner 영역).
+export type ProgressStage = 'idle' | 'doherty' | 'over30s' | 'over1m' | 'over4m'
+
+/** v0.4 #8 — Doherty Threshold 400ms. UI/UX 방법론 매핑. */
+export const DOHERTY_THRESHOLD_MS = 400
 
 export interface OperationState {
   readonly id: number
@@ -24,6 +30,7 @@ export interface OperationState {
 }
 
 const STAGE_THRESHOLDS = {
+  doherty: DOHERTY_THRESHOLD_MS,
   over30s: 30_000,
   over1m: 60_000,
   over4m: 4 * 60_000,
@@ -33,6 +40,7 @@ function computeStage(elapsedMs: number): ProgressStage {
   if (elapsedMs >= STAGE_THRESHOLDS.over4m) return 'over4m'
   if (elapsedMs >= STAGE_THRESHOLDS.over1m) return 'over1m'
   if (elapsedMs >= STAGE_THRESHOLDS.over30s) return 'over30s'
+  if (elapsedMs >= STAGE_THRESHOLDS.doherty) return 'doherty'
   return 'idle'
 }
 
@@ -48,6 +56,10 @@ const now = ref<number>(Date.now())
 
 let tickHandle: ReturnType<typeof setInterval> | null = null
 
+// v0.4 #8 — tick 1000ms → 100ms 로 정밀도 보장 (400ms Doherty stage 인식).
+// 100ms × 0.1ms 작업 부담 무시 가능 (operations 없으면 stopTick 자동 호출).
+const TICK_INTERVAL_MS = 100
+
 function startTickIfNeeded(): void {
   if (tickHandle != null) return
   tickHandle = setInterval(() => {
@@ -55,7 +67,7 @@ function startTickIfNeeded(): void {
     if (operations.value.size === 0) {
       stopTick()
     }
-  }, 1000)
+  }, TICK_INTERVAL_MS)
 }
 
 function stopTick(): void {
@@ -98,8 +110,10 @@ const activeOperations = computed<readonly OperationState[]>(() => {
     .sort((a, b) => a.startedAt - b.startedAt)
 })
 
+// v0.4 #8 — LongRunningBanner 표시 대상. doherty / idle 은 큰 banner 영역 아님
+// (Doherty 단계는 micro spinner 영역 — banner UI 와 분리).
 const visibleOperations = computed<readonly OperationState[]>(() =>
-  activeOperations.value.filter((op) => op.stage !== 'idle'),
+  activeOperations.value.filter((op) => op.stage !== 'idle' && op.stage !== 'doherty'),
 )
 
 export function useLongRunningProgress() {

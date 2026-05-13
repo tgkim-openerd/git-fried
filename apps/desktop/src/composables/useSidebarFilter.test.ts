@@ -16,6 +16,7 @@ function mkRepo(over: Partial<Repo> = {}): Repo {
     forgeRepo: 'frontend',
     lastFetchedAt: 0,
     isPinned: false,
+    forgeAccountId: null,
     ...over,
   }
 }

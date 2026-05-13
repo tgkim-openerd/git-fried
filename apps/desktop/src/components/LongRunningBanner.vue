@@ -26,6 +26,8 @@ function formatElapsed(ms: number): string {
 
 const stageMessage = computed(() => {
   if (!oldest.value) return ''
+  // v0.4 #8 — doherty / idle stage 는 큰 banner 표시 안 함 (Doherty 단계는 micro spinner 영역).
+  // default 가 doherty/idle 흡수 — case 명시 불필요.
   switch (oldest.value.stage) {
     case 'over30s':
       return '평소보다 오래 걸리고 있습니다'
@@ -56,7 +58,7 @@ const stageClasses = computed(() => {
 <template>
   <Transition name="fade">
     <div
-      v-if="oldest"
+      v-if="oldest && stageMessage"
       role="status"
       aria-live="polite"
       :class="[
