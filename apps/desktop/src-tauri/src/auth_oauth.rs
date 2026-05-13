@@ -22,7 +22,7 @@ pub enum OAuthProvider {
 }
 
 /// OAuth flow 시작 — Tauri 가 외부 브라우저로 authorize URL 열림.
-/// callback URL `gitfried://oauth/callback` 으로 code 수신 → exchange.
+/// callback URL `git-fried://oauth/callback` 으로 code 수신 → exchange.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OAuthStartArgs {
@@ -43,15 +43,36 @@ pub struct OAuthTokenSet {
 }
 
 /// authorize URL 빌더. 실 호출은 v1.0.
+///
+/// **SEC-001 fix (code-review 2026-05-13)**: PKCE code_challenge='PLACEHOLDER'
+/// 가 prod 빌드에 노출되면 PKCE 보호 무력화. runtime panic 가드 — verifier
+/// 가 RFC 7636 §4.1 권장 길이 (43-128 char unreserved) 미만이면 즉시 panic.
+/// 실 base64url(sha256(verifier)) 계산은 sha2 crate 통합 시 (v1.0 release sprint).
 pub fn build_authorize_url(args: &OAuthStartArgs, redirect_uri: &str) -> String {
+    // SEC-001 — PKCE verifier 검증 (RFC 7636 §4.1).
+    let verifier_len = args.pkce_verifier.len();
+    assert!(
+        verifier_len >= 43 && verifier_len <= 128,
+        "PKCE verifier 가 RFC 7636 §4.1 범위 위반 (현재 len={verifier_len}, 권장 43..=128). \
+         실 OAuth flow 진입 전 차단."
+    );
+    assert!(
+        args.pkce_verifier
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '.' | '_' | '~')),
+        "PKCE verifier 가 RFC 7636 §4.1 unreserved char 위반."
+    );
+
     let provider_path = match args.provider {
         OAuthProvider::Github => "/login/oauth/authorize",
         OAuthProvider::Gitea => "/login/oauth/authorize",
     };
-    // PKCE code_challenge = base64url(sha256(verifier)). 본 skeleton 은 placeholder.
+    // SEC-001 — v1.0: base64url(sha256(verifier)) 계산 후 code_challenge 치환.
+    // 본 skeleton 은 verifier 자체를 placeholder 로 사용 (plain method) — assert 가
+    // 길이 검증 통과한 verifier 만 도달. 실 S256 method 활성화는 sha2 통합 시.
     format!(
-        "{}{}?client_id={}&redirect_uri={}&response_type=code&scope=repo&code_challenge=PLACEHOLDER&code_challenge_method=S256",
-        args.base_url, provider_path, args.client_id, redirect_uri
+        "{}{}?client_id={}&redirect_uri={}&response_type=code&scope=repo&code_challenge={}&code_challenge_method=plain",
+        args.base_url, provider_path, args.client_id, redirect_uri, args.pkce_verifier
     )
 }
 
@@ -88,12 +109,13 @@ mod tests {
             provider: OAuthProvider::Github,
             base_url: "https://github.com".to_string(),
             client_id: "client123".to_string(),
-            pkce_verifier: "verifier".to_string(),
+            // SEC-001 — RFC 7636 §4.1: 43-128 char unreserved (A-Z a-z 0-9 -._~)
+pkce_verifier: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG".to_string(),
         };
-        let url = build_authorize_url(&args, "gitfried://oauth/callback");
+        let url = build_authorize_url(&args, "git-fried://oauth/callback");
         assert!(url.contains("github.com/login/oauth/authorize"));
         assert!(url.contains("client_id=client123"));
-        assert!(url.contains("redirect_uri=gitfried://oauth/callback"));
+        assert!(url.contains("redirect_uri=git-fried://oauth/callback"));
         assert!(url.contains("response_type=code"));
     }
 
@@ -103,9 +125,10 @@ mod tests {
             provider: OAuthProvider::Gitea,
             base_url: "https://git.dev.opnd.io".to_string(),
             client_id: "company".to_string(),
-            pkce_verifier: "verifier".to_string(),
+            // SEC-001 — RFC 7636 §4.1: 43-128 char unreserved (A-Z a-z 0-9 -._~)
+pkce_verifier: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG".to_string(),
         };
-        let url = build_authorize_url(&args, "gitfried://oauth/callback");
+        let url = build_authorize_url(&args, "git-fried://oauth/callback");
         assert!(url.contains("git.dev.opnd.io/login/oauth/authorize"));
     }
 
