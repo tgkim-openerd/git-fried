@@ -491,6 +491,49 @@ Codex 백그라운드 task (`b8q4nj81c`, sandbox 권한 제한으로 31 lines pa
 
 ---
 
+## §11-A 외부 의존 항목 reschedule (2026-05-13 c81 자율 진행 footnote)
+
+다음 8 항목은 **단일 session 안 진행 불가** — 외부 의존 명시:
+
+| # | 항목 | 사유 | 진입 조건 |
+|---|---|---|---|
+| v0.4 #7 (실 API) | Linear / Jira PR 실 API 통합 | 외부 API key (PAT) 필요, 사용자 인증 흐름 | 사용자 PAT 등록 후 mutation 작성 |
+| v0.5 #9 | SSH key per-repo override | git config core.sshCommand + 사용자 SSH key 환경 검증 | 사용자 환경 (Windows ssh-agent / WSL) 별 검증 |
+| v0.5 #15 | Keybindings custom (SQLite + 충돌 검출) | useShortcuts hardcoded chain 의 사용자 customization storage + UI 큰 작업 | v0.5 phase 별 sprint |
+| v0.5 #16-부분 | god comp wave B (StatusBar 167 / FullscreenDiffView 165 / StatusPanel 163) | Pattern 9 family 3 추출 — M effort, 본 session 시간 초과 | 다음 session |
+| v0.6 #16/17 | NVDA / JAWS 실 SR 테스트 + axe-core 통합 | 인간 테스터 / a11y 전문가 협업 | 별도 a11y sprint |
+| v0.6 #21 | god comp wave C (PrPanel 159 / ReflogModal 158 / CloneRepoModal 157) | Pattern 9 family 3 추출 — M effort | 다음 session |
+| v0.6 #22 | shortcut 충돌 검출 | v0.5 #15 Keybindings custom 종속 (customization 없으면 검출 무의미) | v0.5 #15 후 |
+| v0.6 #23 | bench/baseline.json 측정 | 외부 BENCH_REPO 환경 + 사용자 hardware 의존 | 사용자 측정 환경 구축 후 |
+| v1.0 24 | macOS / Linux 빌드 (plan/17) | Tauri cross-compile + macOS notarization (Apple Dev account) + Linux 배포 (deb/rpm/AppImage) | 별도 release sprint |
+| v1.0 25 | OAuth (GitHub / Gitea) | OAuth app 등록 + callback URL 설정 + redirect flow + token refresh | 별도 sprint |
+| v1.0 26 | Telemetry opt-in (Sentry) | 외부 service 통합 + 사용자 privacy 정책 결정 (§9 Q8 — 권장 미진행) | §9 Q8 사용자 결정 후 |
+| v1.0 27 | TipTap PR editor 활성화 + 검증 | Round 2 검증 미실시 — 사용자 PR 작성 환경 필요 | 별도 검증 sprint |
+
+### 진행 결과 종합 (c81 session 종료 시점)
+
+| Phase | 완료 | 부분/외부 의존 | 진행률 |
+|---|---|---|---|
+| Phase 1 v0.4 | 7/8 (#1 #2 #3 #4 #5a #6 #8) | #7 placeholder 이미 c40 보유 | 100% (실 API 제외) |
+| Phase 2 v0.5 | 3/7 (#12 #13 #14) | #10 RepoSpecific 기존 보유 / #9 #11 #15 #16 외부 의존 또는 후속 sprint | 43% (4/7) |
+| Phase 3 v0.6 | 3/7 (#18 #19 #20) | #21 wave C / #22 #16/17 NVDA / #23 bench 외부 의존 | 43% |
+| Phase 4 v1.0 | 0/4 | 전 항목 외부 의존 (Mac/Linux / OAuth / Telemetry / TipTap) | 0% |
+
+**총 23 actionable 중 13 DONE (57%) + 2 보유 평가 (15/23 = 65%)**.
+나머지 8 항목 외부 의존 (사용자 환경 / 인간 테스터 / 외부 service) 으로 별도 sprint 또는 사용자 결정 후 진행.
+
+### 신규 산출물 (c81 session)
+
+- 신규 composable **8**: useActiveRepoBreadcrumb / useExternalEditor / useFirstRunWizard / useRemoteMutations + useAiCli·useLongRunningProgress·useOnboardingDetect 확장 + useUserSettings ExternalEditorKind 신규 + RepoSpecificForm Forge dropdown
+- 신규 component **2**: FirstRunWizard.vue + ErrorBoundary.vue
+- 신규 migration **1**: 0006_repo_forge_account_override.sql
+- i18n ko·en **1250 → 1298** (+48 keys)
+- god comp ≥150 LOC: 9 → 7 (GitKrakenToolbar 172→149 / RemoteManageModal 168→72)
+- WCAG: 2.1 AA → **2.2 도달** (SC 2.4.11 + 2.5.8 + forced-colors)
+- UI/UX 방법론 미적용 2건 (Doherty + forced-colors) → **모두 적용**
+
+---
+
 ## §12 참조
 
 - [research.md](../../research.md) — 본 UltraPlan 의 입력 (13 미탐색 + 비교 매트릭스 13 차원 × 10 GUI)

@@ -12,10 +12,15 @@
 import { computed } from 'vue'
 import { useLongRunningProgress } from '@/composables/useLongRunningProgress'
 
-const { visibleOperations } = useLongRunningProgress()
+const { visibleOperations, dohertyOperations } = useLongRunningProgress()
 
 const oldest = computed(() => visibleOperations.value[0] ?? null)
 const extraCount = computed(() => Math.max(0, visibleOperations.value.length - 1))
+
+// v0.5 #14 — Doherty stage 만 별도 micro spinner 영역.
+// 큰 banner 가 idle 일 때만 표시 (over30s+ 가 active 면 큰 banner 우선).
+const dohertyCount = computed(() => dohertyOperations.value.length)
+const showDohertyMicro = computed(() => oldest.value == null && dohertyCount.value > 0)
 
 function formatElapsed(ms: number): string {
   const totalSec = Math.floor(ms / 1000)
@@ -56,6 +61,7 @@ const stageClasses = computed(() => {
 </script>
 
 <template>
+  <!-- 큰 banner (over30s+) -->
   <Transition name="fade">
     <div
       v-if="oldest && stageMessage"
@@ -78,6 +84,20 @@ const stageClasses = computed(() => {
           외 {{ extraCount }}개 작업 진행 중
         </div>
       </div>
+    </div>
+  </Transition>
+
+  <!-- v0.5 #14 (UltraPlan plan/31) — Doherty micro spinner (큰 banner idle 시만).
+       Doherty Threshold (400ms+) 초과 작업 1+ 시 표시. role=status + aria-live=polite. -->
+  <Transition name="fade">
+    <div
+      v-if="showDohertyMicro"
+      role="status"
+      aria-live="polite"
+      class="fixed right-4 top-14 z-30 flex items-center gap-2 rounded-md border border-border bg-card/80 px-2 py-1 text-[10px] text-muted-foreground shadow backdrop-blur"
+    >
+      <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+      <span>처리 중{{ dohertyCount > 1 ? ` · ${dohertyCount}` : '' }}</span>
     </div>
   </Transition>
 </template>

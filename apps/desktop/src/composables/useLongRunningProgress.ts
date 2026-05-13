@@ -116,10 +116,17 @@ const visibleOperations = computed<readonly OperationState[]>(() =>
   activeOperations.value.filter((op) => op.stage !== 'idle' && op.stage !== 'doherty'),
 )
 
+// v0.5 #14 — Doherty stage 만 별도 노출 (micro spinner UI 대상).
+// 큰 banner 아래 inline 작은 dot + label 로 표시 (Doherty Threshold UI/UX 매핑).
+const dohertyOperations = computed<readonly OperationState[]>(() =>
+  activeOperations.value.filter((op) => op.stage === 'doherty'),
+)
+
 export function useLongRunningProgress() {
   return {
     activeOperations: readonly(activeOperations),
     visibleOperations: readonly(visibleOperations),
+    dohertyOperations: readonly(dohertyOperations),
     register: registerOperation,
     complete: completeOperation,
   }
