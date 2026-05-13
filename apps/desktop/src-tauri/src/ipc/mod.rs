@@ -39,6 +39,8 @@ pub mod pty_commands;
 pub mod rebase_commands;
 pub mod remote_commands;
 pub mod repo_commands;
+// v0.5 #11 (UltraPlan plan/31) — Unified 검색 skeleton (commit + file + branch + SHA).
+pub mod search_commands;
 pub mod stash_commands;
 pub mod status_commands;
 pub mod submodule_commands;

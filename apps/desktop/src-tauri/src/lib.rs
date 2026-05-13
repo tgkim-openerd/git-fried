@@ -139,6 +139,7 @@ pub fn run() {
             ipc::commit_commands::count_hangul_commits,
             ipc::graph_commands::get_graph,
             ipc::graph_commands::search_commits_by_message,
+            ipc::search_commands::unified_search,
             ipc::submodule_commands::list_submodules,
             ipc::submodule_commands::init_submodules,
             ipc::submodule_commands::update_submodules,
