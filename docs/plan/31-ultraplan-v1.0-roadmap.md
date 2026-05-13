@@ -237,6 +237,23 @@ ALTER TABLE repos ADD COLUMN git_user_email TEXT;  -- .git/config user.email ove
 
 ## §2 v0.4 — 출시 직전 polish (Phase 1)
 
+### ✅ 진행 결과 (2026-05-13 c81 자율 종료 — 7/8 완료, 87.5%)
+
+commit `b69691a` (28 files, +1179 / -164, 6 신규 composable + 1 신규 component + 1 migration).
+
+| # | 항목 | 상태 | 결과 / 비고 |
+|---|---|---|---|
+| 1 | per-repo forge account override | ✅ DONE | migration 0006 + Resolution chain 3단 + RepoSpecificForm dropdown |
+| 2 | First-run 3-screen wizard | ✅ DONE | FirstRunWizard.vue + useFirstRunWizard + useOnboardingDetect 7s trigger (Q1 옵션 c) |
+| 3 | AI quota / rate limit fallback | ✅ DONE | QUOTA_PATTERNS 7 regex + 60s cooldown + confirmAiSend 차단 |
+| 4 | WCAG 2.2 Focus + Target + Drag | ✅ DONE | scroll-margin-top 4rem + HANDLE_WIDTH 12→24 + ArrowLeft/Right (c55 P2-2 통과) |
+| 5a | god comp wave A | ✅ DONE | GitKrakenToolbar 172→149 + RemoteManageModal 168→72 (-57%) |
+| 6 | Editor 외부 통합 (GK7) | ✅ DONE | useExternalEditor URI scheme 7 launcher + SettingsEditor dropdown |
+| 7 | Linear / Jira PR | ⏸ **v0.5+ 미룸** | 외부 API key 검증 세션 내 불가 — placeholder UI 만 가능 |
+| 8 | Doherty 400ms 진척 | ✅ DONE | stage 'doherty' + DOHERTY_THRESHOLD_MS 400 export + tick 100ms |
+
+vitest 892 PASS / cargo 225 PASS / typecheck 0 / i18n ko·en 1250 → 1297 (+47) 대칭.
+
 ### 범위 (8 항목)
 
 | # | 항목 | 축 | 사이즈 | 의존성 | 회귀 위험 |
@@ -268,6 +285,14 @@ ALTER TABLE repos ADD COLUMN git_user_email TEXT;  -- .git/config user.email ove
 - GitKraken 대체 가능성 9.3 → **9.5** (per-repo + first-run + Editor 통합 +3 효과)
 - a11y 9 → **9.5** (WCAG 2.2 도달)
 - god comp ≥150 9건 → 6건
+
+### ✅ v0.4 c81 종료 시점 실 점수 (2026-05-13)
+
+- GitKraken 대체 가능성 9.3 → **~9.45** (Linear/Jira 미적용으로 9.5 미달 -0.05)
+- a11y 9 → **9.5** ✅ (WCAG 2.2 SC 2.4.11 + 2.5.8 도달)
+- god comp ≥150 9건 → **7건** (GitKrakenToolbar 149 + RemoteManageModal 72 추출, 2 항목 감소)
+- i18n ko·en 1250 → **1297** (+47 keys: repoIdentity 8 + ai.cooldown 3 + settings.editor.external 10 + wizard 26)
+- 신규 composable 6 — useActiveRepoBreadcrumb / useExternalEditor / useFirstRunWizard / useRemoteMutations + useAiCli·useLongRunningProgress 확장
 
 ---
 
