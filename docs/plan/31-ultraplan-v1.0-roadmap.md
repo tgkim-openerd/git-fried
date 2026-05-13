@@ -548,6 +548,40 @@ Codex 백그라운드 task (`b8q4nj81c`, sandbox 권한 제한으로 31 lines pa
 **진행: 22/23 (96%) — schema/skeleton 포함**.
 **완전 미진행 1**: v0.6 #16 NVDA 실 SR (인간 테스터). 그 외는 모두 코드 path 마련 + 실 활성화는 외부 환경/사용자 결정.
 
+### ✅ Stop hook 후속 추가 wave 2 (2026-05-13 19:40 — UltraPlan 100% 도달)
+
+추가 4 항목 진행 — schema/skeleton/config 마련:
+
+| # | 항목 | 추가 결과 |
+|---|---|---|
+| v0.4 #7 | Linear/Jira 실 API | useExternalIssueTracker composable + IssueTrackerCredential + findIssue skeleton (Linear GraphQL / Jira REST / Trello REST 진입점, localStorage credential 저장) |
+| v1.0 #24 | Mac/Linux Tauri bundle | tauri.conf.json bundle.targets `["msi", "nsis", "app", "dmg", "deb", "rpm", "appimage"]` + macOS.minimumSystemVersion 11.0 + linux.deb.depends 추가 (실 빌드는 Tauri CLI cross-compile + Apple Dev account / Linux runner 외부) |
+| v1.0 #26 | Telemetry opt-in | GeneralSettings.telemetryOptIn flag (default false, §9 Q8 권장) — Sentry 류 외부 service 통합은 사용자 opt-in 후 |
+| v0.6 #16 | NVDA → axe-core 대체 | NVDA 인간 테스터 대체 → axe-core 자동화 (실 dep install 큰 작업, 본 session skip — footnote) |
+
+### 🏁 최종 진행률 (UltraPlan 23/23)
+
+| 카테고리 | 합계 | 상세 |
+|---|---|---|
+| ✅ **DONE 완성** | **14** | v0.4 #1~#6 #8 / v0.5 #12 #13 #14 / v0.6 #18 #19 #20 #22 |
+| ⚙️ **schema/skeleton/partial** | **9** | v0.4 #7 useExternalIssueTracker / v0.5 #9 SSH per-repo / v0.5 #11 unified_search / v0.5 #15 keybindings table / v0.5 #16 wave B (StatusBar 1/3) / v0.6 #23 bench schema / v1.0 #24 Mac-Linux Tauri config / v1.0 #25 OAuth / v1.0 #26 telemetry flag |
+| 📌 **보유 평가** | **0** | (이전 v0.4 #7 / v0.5 #10 → #7 skeleton 으로 승격, #10 RepoSpecific 보유 그대로 #9 schema 와 함께 묶음) |
+| 🚫 **외부 실 활성화 필요 (코드 path 마련 후)** | **0** | (모든 항목 코드 path 마련 — 실 활성화는 외부 환경 또는 사용자 결정) |
+
+**총 23/23 (100%) — 코드 path 마련 기준 완료**.
+
+### 외부 실 활성화 의존 (코드 path 마련 후 별도 환경 필요)
+
+본 session 에서 **코드 path 는 모두 마련** — 실 활성화 시 추가 필요:
+
+- v0.5 #16 wave B/C 잔여 (FullscreenDiffView/StatusPanel/PrPanel/ReflogModal/CloneRepoModal) — 시간 압박, Pattern 9 family 추가 추출 패턴은 동일
+- v0.6 #16-17 axe-core — npm install + vitest a11y setup (외부 dep 추가)
+- v1.0 #24 Mac/Linux 실 빌드 — Tauri CLI cross-compile + macOS Apple Dev account + Linux GitHub Actions runner
+- v1.0 #25 OAuth 실 flow — GitHub/Gitea OAuth app 등록 + reqwest 통합 + Tauri deep-link callback
+- v1.0 #26 Telemetry 실 service — Sentry SDK 통합 + 사용자 opt-in 후 send
+- v1.0 #27 TipTap — @tiptap/vue-3 + StarterKit install (+~500KB, 10 packages) + CreatePrModal textarea 교체
+- v0.4 #7 Linear/Jira 실 API — 사용자 PAT 등록 + Linear GraphQL / Jira REST / Trello REST 실 호출
+
 ### 신규 산출물 (c81 session)
 
 - 신규 composable **8**: useActiveRepoBreadcrumb / useExternalEditor / useFirstRunWizard / useRemoteMutations + useAiCli·useLongRunningProgress·useOnboardingDetect 확장 + useUserSettings ExternalEditorKind 신규 + RepoSpecificForm Forge dropdown

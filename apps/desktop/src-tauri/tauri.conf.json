@@ -37,7 +37,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi", "nsis"],
+    "targets": ["msi", "nsis", "app", "dmg", "deb", "rpm", "appimage"],
     "category": "DeveloperTool",
     "shortDescription": "Git-fried — GitKraken alternative desktop client",
     "longDescription": "Gitea-first, Korean-safe, Tauri-light desktop git client for managing GitHub personal repos and Gitea company repos side-by-side.",
@@ -54,6 +54,15 @@
       },
       "nsis": {
         "languages": ["Korean", "English"]
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "exceptionDomain": ""
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
       }
     }
   }

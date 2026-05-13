@@ -18,6 +18,13 @@ export interface GeneralSettings {
   autoUpdateSubmodules: boolean
   /** Sprint D4: 백그라운드 Conflict prediction (StatusBar) 활성. */
   conflictDetection: boolean
+  /**
+   * v1.0 #26 (UltraPlan plan/31) — Telemetry opt-in (privacy by default).
+   * §9 Q8 권장: 미진행 (default false). 사용자 명시 opt-in 시만 Sentry 류 전송.
+   * 본 flag false 시 모든 telemetry 비활성 (registerGlobalErrorHandler 도 IPC
+   * tracing 만, 외부 전송 0).
+   */
+  telemetryOptIn: boolean
 }
 
 /** v0.4 #6 (UltraPlan plan/31) — 외부 editor URI scheme launcher 식별자. */
@@ -60,6 +67,8 @@ function defaultGeneral(): GeneralSettings {
   return {
     autoFetchIntervalMin: 0,
     autoPruneOnFetch: false,
+    // v1.0 #26 — default false (privacy by default, §9 Q8 권장).
+    telemetryOptIn: false,
     defaultBranch: 'main',
     rememberTabs: true,
     autoUpdateSubmodules: false,
