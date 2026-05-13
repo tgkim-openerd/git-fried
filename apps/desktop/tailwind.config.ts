@@ -96,10 +96,25 @@ export default {
         '60': '60',
       },
       fontFamily: {
+        // v0.6 #20 (UltraPlan plan/31) — CJK fallback (Noto Sans JP / SC / TC)
+        // system 폰트 chain — 일본어 (Noto Sans CJK JP / Hiragino) / 중국어 간체
+        // (Noto Sans CJK SC / PingFang) / 번체 (Noto Sans CJK TC) fallback.
+        // bundled @fontsource 는 한글만 (수 MB 부담) — CJK 는 OS system 의존.
         sans: [
           '"Roboto Flex Variable"',
           'Roboto',
           '"Noto Sans KR"',
+          '"Noto Sans CJK KR"',
+          '"Noto Sans CJK JP"',
+          '"Hiragino Sans"',
+          '"Yu Gothic"',
+          '"Meiryo"',
+          '"Noto Sans CJK SC"',
+          '"PingFang SC"',
+          '"Microsoft YaHei"',
+          '"Noto Sans CJK TC"',
+          '"PingFang TC"',
+          '"Microsoft JhengHei"',
           'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',

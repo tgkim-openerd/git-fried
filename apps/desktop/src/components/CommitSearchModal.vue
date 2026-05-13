@@ -12,6 +12,9 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import type { CommitSummary } from '@/types/git'
 import { useI18n } from 'vue-i18n'
+// v0.5 #12 (UltraPlan plan/31) — a11y 일관: BaseModal wrap (aria-modal / role=dialog
+// / focus trap / ESC close / prefers-reduced-motion 자동 적용).
+import BaseModal from './BaseModal.vue'
 
 const { t } = useI18n()
 
@@ -115,84 +118,69 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <Transition name="fade">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-20"
-      @click.self="emit('close')"
-    >
-      <div
-        role="dialog"
-        aria-label="Commit message 검색"
-        class="flex w-full max-w-2xl flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-2xl"
-      >
-        <div class="flex items-center justify-between">
-          <h2 class="text-sm font-semibold">Commit message 검색</h2>
-          <label class="flex items-center gap-1 text-[11px] opacity-80">
-            <input v-model="caseInsensitive" type="checkbox" />
-            대소문자 무시
-          </label>
-        </div>
-
-        <input
-          ref="inputRef"
-          v-model="query"
-          type="text"
-          placeholder="검색어 (subject + body — git log --grep 동등)"
-          class="rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-        />
-
-        <div class="min-h-[200px] max-h-[60vh] overflow-y-auto rounded-md border border-border">
-          <div v-if="errorMsg" class="px-3 py-4 text-xs text-red-400">
-            {{ errorMsg }}
-          </div>
-          <div v-else-if="isLoading" class="px-3 py-4 text-xs opacity-60">
-            {{ t('common.searching') }}
-          </div>
-          <div v-else-if="!trimmedQuery" class="px-3 py-4 text-xs opacity-60">
-            검색어를 입력하세요. Enter = SHA 복사, ↑↓ = 선택, Esc = 닫기.
-          </div>
-          <div v-else-if="results.length === 0" class="px-3 py-4 text-xs opacity-60">
-            "{{ trimmedQuery }}" 매칭 commit 없음.
-          </div>
-          <ul v-else class="divide-y divide-border">
-            <li
-              v-for="(r, i) in results"
-              :key="r.sha"
-              :class="[
-                'flex cursor-pointer items-start gap-2 px-3 py-2 text-xs hover:bg-accent/40',
-                selectedIdx === i ? 'bg-accent/60' : '',
-              ]"
-              @click="copySha(r.sha)"
-              @mouseenter="selectedIdx = i"
-            >
-              <span class="font-mono text-[10px] opacity-70">{{ r.shortSha }}</span>
-              <div class="flex-1">
-                <div class="line-clamp-2 leading-snug">{{ r.subject }}</div>
-                <div class="mt-0.5 text-[10px] opacity-60">
-                  {{ r.authorName }} · {{ new Date(r.authorAt * 1000).toLocaleString() }}
-                </div>
-              </div>
-            </li>
-          </ul>
-        </div>
-
-        <div class="flex items-center justify-between text-[10px] opacity-60">
-          <span>{{ results.length }}개 결과 (max 50)</span>
-          <span>Enter = SHA 복사 · Esc = 닫기</span>
-        </div>
-      </div>
+  <!-- v0.5 #12 — BaseModal wrap: aria-modal / role=dialog / focus trap / ESC
+       자동 적용. backdrop click 도 close 통합. align="top" 으로 기존 pt-20 위치 유지. -->
+  <BaseModal
+    :open="open"
+    title="Commit message 검색"
+    max-width="2xl"
+    align="top"
+    @close="emit('close')"
+  >
+    <div class="flex items-center justify-between">
+      <h2 class="sr-only">Commit message 검색</h2>
+      <label class="flex items-center gap-1 text-[11px] opacity-80">
+        <input v-model="caseInsensitive" type="checkbox" />
+        대소문자 무시
+      </label>
     </div>
-  </Transition>
-</template>
 
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
+    <input
+      ref="inputRef"
+      v-model="query"
+      type="text"
+      placeholder="검색어 (subject + body — git log --grep 동등)"
+      class="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+    />
+
+    <div class="mt-3 min-h-[200px] max-h-[60vh] overflow-y-auto rounded-md border border-border">
+      <div v-if="errorMsg" class="px-3 py-4 text-xs text-red-400">
+        {{ errorMsg }}
+      </div>
+      <div v-else-if="isLoading" class="px-3 py-4 text-xs opacity-60">
+        {{ t('common.searching') }}
+      </div>
+      <div v-else-if="!trimmedQuery" class="px-3 py-4 text-xs opacity-60">
+        검색어를 입력하세요. Enter = SHA 복사, ↑↓ = 선택, Esc = 닫기.
+      </div>
+      <div v-else-if="results.length === 0" class="px-3 py-4 text-xs opacity-60">
+        "{{ trimmedQuery }}" 매칭 commit 없음.
+      </div>
+      <ul v-else class="divide-y divide-border">
+        <li
+          v-for="(r, i) in results"
+          :key="r.sha"
+          :class="[
+            'flex cursor-pointer items-start gap-2 px-3 py-2 text-xs hover:bg-accent/40',
+            selectedIdx === i ? 'bg-accent/60' : '',
+          ]"
+          @click="copySha(r.sha)"
+          @mouseenter="selectedIdx = i"
+        >
+          <span class="font-mono text-[10px] opacity-70">{{ r.shortSha }}</span>
+          <div class="flex-1">
+            <div class="line-clamp-2 leading-snug">{{ r.subject }}</div>
+            <div class="mt-0.5 text-[10px] opacity-60">
+              {{ r.authorName }} · {{ new Date(r.authorAt * 1000).toLocaleString() }}
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="mt-2 flex items-center justify-between text-[10px] opacity-60">
+      <span>{{ results.length }}개 결과 (max 50)</span>
+      <span>Enter = SHA 복사 · Esc = 닫기</span>
+    </div>
+  </BaseModal>
+</template>

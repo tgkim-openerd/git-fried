@@ -257,6 +257,7 @@
     "fileRowTitle": "Double-click — fullscreen diff",
     "statusSectionToggle": "Right-click = collapse / expand",
     "toastClose": "Close notification",
+    "toastRegion": "Notifications region",
     "newRepoTab": "Add new repo tab (⌘T)",
     "commandPalettePlaceholder": "Search commands... (name / category / shortcut — ⌘P close)",
     "ccBuilderHint": "Format: type(scope)!: subject (ideal ≤50, limit ≤72)",

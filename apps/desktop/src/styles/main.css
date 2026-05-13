@@ -214,6 +214,33 @@
     box-shadow: none;
   }
 
+  /* v0.6 #18 (UltraPlan plan/31) — Windows High Contrast / forced-colors 지원.
+   * Windows 의 High Contrast 모드 또는 Firefox forced-colors:active 시 시스템 색
+   * (Canvas / CanvasText / Highlight) 강제 적용. 기본 hsl(var(...)) 토큰이 모두
+   * 'transparent' 로 치환되어 invisible 되는 회귀 회피.
+   */
+  @media (forced-colors: active) {
+    *:focus-visible {
+      outline: 2px solid CanvasText;
+      outline-offset: 2px;
+      box-shadow: none;
+    }
+    /* button / input 의 border 가 transparent 처리되는 case 방어 */
+    button,
+    input,
+    select,
+    textarea,
+    [role='button'] {
+      border: 1px solid ButtonText;
+    }
+    /* destructive 등 의미 색은 시스템 색 fallback (color 만) */
+    .text-destructive,
+    .text-warning-amber,
+    .text-danger-rose {
+      forced-color-adjust: auto;
+    }
+  }
+
   /* Sprint c74 — 테마 통합 scrollbar (GitKraken parity).
    * Sprint c77-A — 7 폴리시: border 3→2px (HiDPI 친화) / alpha 0.4→0.5 (가시성)
    * track 0→0.04 (page-up/down affordance) / button display:none (WebKitGTK)

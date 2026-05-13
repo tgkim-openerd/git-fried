@@ -37,8 +37,15 @@ function kindIcon(kind: ToastKind): string {
 
 <template>
   <Teleport to="body">
+    <!-- v0.6 #19 (UltraPlan plan/31) — aria-live region 확장 (Toast SR 알림).
+         polite — 사용자 현 작업 방해 안 함 (error 도 SR 사용자에게 자연 흐름 알림).
+         atomic=false — 새 toast 만 읽음 (이미 읽힌 토스트 재낭독 회피). -->
     <div
       class="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-96 max-w-[90vw] flex-col-reverse gap-2"
+      role="region"
+      aria-live="polite"
+      aria-atomic="false"
+      :aria-label="t('templ.toastRegion')"
     >
       <TransitionGroup name="toast" tag="div" class="flex flex-col-reverse gap-2">
         <div
@@ -46,6 +53,7 @@ function kindIcon(kind: ToastKind): string {
           :key="toast.id"
           class="pointer-events-auto rounded-md border bg-card shadow-lg"
           :class="kindClass(toast.kind)"
+          :role="toast.kind === 'error' ? 'alert' : 'status'"
         >
           <div class="flex items-start gap-2 px-3 py-2">
             <span class="mt-0.5 shrink-0 font-bold">{{ kindIcon(toast.kind) }}</span>

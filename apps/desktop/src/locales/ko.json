@@ -257,6 +257,7 @@
     "fileRowTitle": "더블클릭 — fullscreen diff",
     "statusSectionToggle": "우클릭 = 섹션 접기/펴기",
     "toastClose": "알림 닫기",
+    "toastRegion": "알림 영역",
     "newRepoTab": "새 레포 탭 추가 (⌘T)",
     "commandPalettePlaceholder": "명령 검색... (이름 / 카테고리 / 단축키 — ⌘P 닫기)",
     "ccBuilderHint": "형식: type(scope)!: subject (이상 ≤50, 한계 ≤72)",
