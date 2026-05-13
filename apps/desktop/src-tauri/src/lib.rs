@@ -12,6 +12,8 @@
 pub mod ai;
 pub mod alias;
 pub mod auth;
+// v1.0 #25 (UltraPlan plan/31) — OAuth flow skeleton (GitHub / Gitea). 실 활성화 v1.x.
+pub mod auth_oauth;
 pub mod error;
 pub mod forge;
 pub mod git;

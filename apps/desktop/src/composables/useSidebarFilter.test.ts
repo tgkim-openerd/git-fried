@@ -17,6 +17,7 @@ function mkRepo(over: Partial<Repo> = {}): Repo {
     lastFetchedAt: 0,
     isPinned: false,
     forgeAccountId: null,
+    sshKeyPath: null,
     ...over,
   }
 }

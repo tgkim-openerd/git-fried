@@ -36,6 +36,10 @@ pub struct Repo {
     /// None → active Profile 의 default_forge_account_id 사용 (fallback chain).
     /// Some(id) → 본 저장소 명시 계정 사용 (회사 PAT vs 개인 PAT 분리 등).
     pub forge_account_id: Option<i64>,
+    /// v0.5 #9 (UltraPlan plan/31) — per-repo SSH key path override.
+    /// None → Profile.ssh_key_path fallback. Some(path) → git -c core.sshCommand 적용.
+    /// 실 git operation 통합은 git/runner.rs (별도 sprint).
+    pub ssh_key_path: Option<String>,
 }
 
 #[derive(Clone)]
@@ -120,6 +124,8 @@ pub trait DbExt {
     async fn set_repo_pinned(&self, id: i64, pinned: bool) -> AppResult<Repo>;
     /// v0.4 #1 — per-repo forge account override. None → fallback chain.
     async fn set_repo_forge_account(&self, id: i64, account_id: Option<i64>) -> AppResult<Repo>;
+    /// v0.5 #9 — per-repo SSH key path override. None → Profile fallback.
+    async fn set_repo_ssh_key_path(&self, id: i64, path: Option<&str>) -> AppResult<Repo>;
 }
 
 #[async_trait::async_trait]
@@ -243,6 +249,7 @@ impl DbExt for Db {
                 last_fetched_at: r.try_get("last_fetched_at")?,
                 is_pinned: r.try_get::<i64, _>("is_pinned")? != 0,
                 forge_account_id: r.try_get("forge_account_id")?,
+                ssh_key_path: r.try_get("ssh_key_path")?,
             });
         }
         Ok(out)
@@ -319,6 +326,7 @@ impl DbExt for Db {
             last_fetched_at: r.try_get("last_fetched_at")?,
             is_pinned: r.try_get::<i64, _>("is_pinned")? != 0,
             forge_account_id: r.try_get("forge_account_id")?,
+            ssh_key_path: r.try_get("ssh_key_path")?,
         })
     }
 
@@ -335,6 +343,16 @@ impl DbExt for Db {
     async fn set_repo_forge_account(&self, id: i64, account_id: Option<i64>) -> AppResult<Repo> {
         sqlx::query("UPDATE repos SET forge_account_id = ? WHERE id = ?")
             .bind(account_id)
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::Db)?;
+        self.get_repo(id).await
+    }
+
+    async fn set_repo_ssh_key_path(&self, id: i64, path: Option<&str>) -> AppResult<Repo> {
+        sqlx::query("UPDATE repos SET ssh_key_path = ? WHERE id = ?")
+            .bind(path)
             .bind(id)
             .execute(&self.pool)
             .await

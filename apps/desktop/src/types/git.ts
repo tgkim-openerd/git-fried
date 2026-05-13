@@ -21,6 +21,11 @@ export interface Repo {
    * number → 본 저장소만 명시 forge_accounts.id 사용.
    */
   forgeAccountId: number | null
+  /**
+   * v0.5 #9 (UltraPlan plan/31) — per-repo SSH key path override.
+   * null → Profile.ssh_key_path fallback. string → git -c core.sshCommand 적용.
+   */
+  sshKeyPath: string | null
 }
 
 export interface Workspace {
