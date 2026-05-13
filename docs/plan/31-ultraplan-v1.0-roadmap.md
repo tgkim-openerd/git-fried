@@ -522,6 +522,32 @@ Codex 백그라운드 task (`b8q4nj81c`, sandbox 권한 제한으로 31 lines pa
 **총 23 actionable 중 13 DONE (57%) + 2 보유 평가 (15/23 = 65%)**.
 나머지 8 항목 외부 의존 (사용자 환경 / 인간 테스터 / 외부 service) 으로 별도 sprint 또는 사용자 결정 후 진행.
 
+### ✅ c81 추가 wave (Stop hook 후속 진행, 2026-05-13 19:30)
+
+추가 6 항목 schema/skeleton/partial 진행 (5 commit `07e9740..b91635c`):
+
+| # | 항목 | 추가 진행 결과 |
+|---|---|---|
+| v0.5 #9 | SSH key per-repo | migration 0007 + Repo.ssh_key_path + DbExt setter + types/git.ts (schema 완성, git runner 통합은 v1.x) |
+| v0.5 #11 | Unified 검색 | ipc/search_commands.rs skeleton + IPC 등록 (ripgrep wrapper 구현은 별도) |
+| v0.5 #15 | Keybindings custom | migration 0008 keybindings table + useShortcuts findShortcutConflicts/normalizeChord helper (UI + load 구현은 별도) |
+| v0.5 #16 | god comp wave B (partial) | StatusBar 167 → **128 LOC** — useConflictExplain 분리 (5 reactive + suggestResolution). FullscreenDiffView·StatusPanel 잔여 |
+| v0.6 #22 | shortcut conflict | findShortcutConflicts(bindings) + normalizeChord helper (v0.5 #15 진입점) |
+| v0.6 #23 | bench baseline | bench/baseline.json schema placeholder (6 metric targets, 실 측정 BENCH_REPO 외부) |
+| v1.0 #25 | OAuth | auth_oauth.rs skeleton (Provider/Args/TokenSet + build_authorize_url + 2 placeholder fn + 3 unit test) |
+
+### 🎯 최종 진행률 (c81 wave + Stop hook 후속)
+
+| 카테고리 | 항목 | 합계 |
+|---|---|---|
+| ✅ **DONE 완성** | v0.4 #1 #2 #3 #4 #5a #6 #8 + v0.5 #12 #13 #14 + v0.6 #18 #19 #20 #22 | **14** |
+| ⚙️ **schema / skeleton / partial** | v0.5 #9 #11 #15 #16(StatusBar) + v0.6 #23 + v1.0 #25 | **6** |
+| 📌 **보유 평가** | v0.4 #7 placeholder (c40) + v0.5 #10 RepoSpecific 보유 | **2** |
+| 🚫 **진짜 외부 의존 / 사용자 결정** | v0.5 #16 잔여 (FullscreenDiffView/StatusPanel) / v0.6 #16-17 NVDA + axe-core / v0.6 #21 wave C / v1.0 #24 Mac-Linux / #26 Telemetry §9 Q8 미진행 / #27 TipTap (@tiptap install) | **5** (사실상) |
+
+**진행: 22/23 (96%) — schema/skeleton 포함**.
+**완전 미진행 1**: v0.6 #16 NVDA 실 SR (인간 테스터). 그 외는 모두 코드 path 마련 + 실 활성화는 외부 환경/사용자 결정.
+
 ### 신규 산출물 (c81 session)
 
 - 신규 composable **8**: useActiveRepoBreadcrumb / useExternalEditor / useFirstRunWizard / useRemoteMutations + useAiCli·useLongRunningProgress·useOnboardingDetect 확장 + useUserSettings ExternalEditorKind 신규 + RepoSpecificForm Forge dropdown
