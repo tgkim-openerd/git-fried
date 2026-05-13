@@ -312,3 +312,58 @@ export function dispatchShortcut(action: ShortcutAction): boolean {
   }
   return true
 }
+
+// ====== v0.6 #22 (UltraPlan plan/31) — Keybindings 충돌 검출 ======
+//
+// 사용자 customization (v0.5 #15) 도입 시 같은 키 조합이 2+ action 에 매핑되면
+// 검출. 현재 hardcoded chain 은 implicit 으로 충돌 없음 (단일 if/else if).
+// findShortcutConflicts 는 외부 customization map 받아서 dup key 식별.
+
+export interface ShortcutBinding {
+  /** 정규화된 chord — 'mod+shift+k' 같은 string. */
+  chord: string
+  action: ShortcutAction
+}
+
+export interface ShortcutConflict {
+  chord: string
+  actions: ShortcutAction[]
+}
+
+/**
+ * Customization map 의 충돌 검출. chord 별로 action 그룹화 → 2+ 면 conflict.
+ *
+ * @param bindings — 사용자 정의 binding list (v0.5 #15 SQLite 에서 load).
+ * @returns chord 별 conflict (actions ≥ 2). 빈 배열 = no conflict.
+ */
+export function findShortcutConflicts(bindings: readonly ShortcutBinding[]): ShortcutConflict[] {
+  const map = new Map<string, ShortcutAction[]>()
+  for (const b of bindings) {
+    const arr = map.get(b.chord) ?? []
+    arr.push(b.action)
+    map.set(b.chord, arr)
+  }
+  return Array.from(map.entries())
+    .filter(([, actions]) => actions.length >= 2)
+    .map(([chord, actions]) => ({ chord, actions }))
+}
+
+/** chord 정규화 — 'Ctrl+Shift+K' / 'ctrl+SHIFT+k' → 'mod+shift+k'. macOS Cmd 도 'mod'. */
+export function normalizeChord(input: string): string {
+  const parts = input
+    .split('+')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  const mods: string[] = []
+  const keys: string[] = []
+  for (const p of parts) {
+    if (p === 'cmd' || p === 'meta' || p === 'ctrl' || p === 'control') mods.push('mod')
+    else if (p === 'shift') mods.push('shift')
+    else if (p === 'alt' || p === 'option') mods.push('alt')
+    else keys.push(p)
+  }
+  // mod → shift → alt 순서 (chord 비교 일관).
+  const order = ['mod', 'shift', 'alt']
+  const dedupModsSorted = order.filter((m) => mods.includes(m))
+  return [...dedupModsSorted, ...keys].join('+')
+}

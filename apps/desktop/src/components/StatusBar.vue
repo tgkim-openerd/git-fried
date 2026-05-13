@@ -9,16 +9,17 @@
 //   3. Sync 진행 (별도 SyncBar 가 상단에 있으니 여기는 prediction + Launchpad 만).
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useMutation, useQuery } from '@tanstack/vue-query'
-import { aiExplainBranch, predictTargetConflict } from '@/api/git'
-import { describeError } from '@/api/errors'
+import { useQuery } from '@tanstack/vue-query'
+import { predictTargetConflict } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
 import { useReposStore } from '@/stores/repos'
 import { useLaunchpadMeta } from '@/composables/useLaunchpadMeta'
 import { useGeneralSettings } from '@/composables/useUserSettings'
 import { useNotification } from '@/composables/useNotification'
 import { useStatus } from '@/composables/useStatus'
-import { useAiCli, confirmAiSend, notifyAiDone } from '@/composables/useAiCli'
+import { useAiCli } from '@/composables/useAiCli'
+// v0.5 #16 (UltraPlan plan/31) god wave B — 5 reactive + suggestResolution 추출.
+import { useConflictExplain } from '@/composables/useConflictExplain'
 import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 import AiResultModal from './AiResultModal.vue'
 
@@ -70,54 +71,14 @@ watch(prediction, (next) => {
   lastOk = ok
 })
 
-// Sprint F2 — ⚠ 옆 ✨ 버튼: 충돌 예상 영역 분석 (aiExplainBranch).
-const explainOpen = ref(false)
-const explainContent = ref('')
-const explainError = ref<string | null>(null)
-
-const explainMut = useMutation({
-  mutationFn: async () => {
-    const repoId = store.activeRepoId
-    const head = status.data.value?.branch ?? null
-    const target = prediction.value?.target ?? null
-    if (repoId == null || !head || !target) {
-      throw new Error('레포/브랜치/target 미확정')
-    }
-    if (ai.available.value == null) {
-      throw new Error('Claude/Codex CLI 미설치')
-    }
-    if (!(await confirmAiSend())) throw new Error('cancelled')
-    return aiExplainBranch(repoId, ai.available.value, head, target, true)
-  },
-  onSuccess: (out) => {
-    if (out.success) {
-      explainContent.value = out.text
-      explainError.value = null
-      const head = status.data.value?.branch ?? '?'
-      const target = prediction.value?.target ?? '?'
-      notifyAiDone('AI 충돌 미리보기', `${head} vs ${target}`)
-    } else {
-      explainContent.value = ''
-      explainError.value = out.stderr || out.text || '응답 실패'
-    }
-  },
-  onError: (e) => {
-    const m = describeError(e)
-    if (m.includes('cancelled')) {
-      explainOpen.value = false
-      return
-    }
-    explainContent.value = ''
-    explainError.value = m
-  },
-})
-
-function suggestResolution() {
-  explainOpen.value = true
-  explainContent.value = ''
-  explainError.value = null
-  explainMut.mutate()
-}
+// Sprint F2 — ⚠ 옆 ✨ 버튼: 충돌 예상 영역 분석 (aiExplainBranch). v0.5 #16 분리.
+const { explainOpen, explainContent, explainError, explainMut, suggestResolution } =
+  useConflictExplain({
+    repoId: () => store.activeRepoId,
+    head: () => status.data.value?.branch ?? null,
+    target: () => prediction.value?.target ?? null,
+    aiAvailable: () => ai.available.value,
+  })
 
 // Phase 10-3 — 단축키 contextual hint (footer 중앙).
 // macOS = ⌘, others = Ctrl. SSR-safe (navigator 미존재 → Ctrl).

@@ -1,48 +1,21 @@
 {
-  "_comment": "git-fried perf baseline (`docs/plan/20 §4-1`). 첫 측정 PR 에서 null 을 실제 값으로 채울 것. memory_mb 는 bench/memory.ps1 결과, ipc_ms 는 cargo bench --bench git_perf 결과, ai_seconds 는 사용자 dogfood 측정. 회귀 차단 임계값 = +20%.",
-  "version": "0.3.0",
+  "_comment": "v0.6 #23 (UltraPlan plan/31) — performance baseline. plan/30 §10 metrics 의 placeholder.",
+  "_note": "실 측정은 외부 BENCH_REPO (10k commit repo) 환경에서 bench/start.ps1 / bench/git_perf.rs / bench/memory.ps1 실행 후 갱신. 본 baseline.json 은 schema + null placeholder 만.",
+  "version": "v0.4",
   "measured_at": null,
-  "host": {
+  "environment": {
     "os": null,
     "cpu": null,
-    "ram_gb": null,
-    "git_version": null,
-    "rust_version": null
+    "memory_gb": null,
+    "bench_repo_commits": null
   },
-  "memory_mb": {
-    "idle": null,
-    "1_repo": null,
-    "5_repo": null,
-    "50_repo": null,
-    "graph_50k": null,
-    "8_worktree": null
+  "metrics": {
+    "cold_start_ms": { "target": 1500, "actual": null },
+    "graph_render_1k_ms": { "target": 100, "actual": null, "_note": "c51 측정 95ms 회복 검증" },
+    "file_scroll_fps": { "target": 60, "actual": null },
+    "memory_10_repos_mb": { "target": 100, "actual": null },
+    "ai_compose_roundtrip_ms": { "target": 8000, "actual": null, "_note": "60s timeout 내" },
+    "doherty_threshold_ms": { "target": 400, "actual": null, "_note": "v0.4 #8 — invoke 평균 < 400ms" }
   },
-  "graph_render_ms": {
-    "1k": null,
-    "10k": null,
-    "50k": null,
-    "search_50k": null,
-    "dim_repaint": null
-  },
-  "ipc_ms": {
-    "status_clean": null,
-    "status_200_modified": null,
-    "log_1000": null,
-    "list_branches_50": null,
-    "diff_1mb": null,
-    "diff_10mb": null
-  },
-  "ai_seconds": {
-    "claude_commit_msg": null,
-    "claude_pr_body": null,
-    "claude_conflict": null,
-    "codex_commit_msg": null,
-    "cli_cold_start_overhead": null
-  },
-  "bulk_seconds": {
-    "fetch_50_repo": null,
-    "status_50_repo": null,
-    "list_prs_50_repo": null
-  },
-  "regression_threshold_pct": 20
+  "schema_owner": "docs/plan/30-ux-comprehensive-c55-batch.md §10"
 }
