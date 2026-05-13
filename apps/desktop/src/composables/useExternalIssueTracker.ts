@@ -50,18 +50,33 @@ function writeCreds(creds: IssueTrackerCredential[]): void {
   }
 }
 
-const credsRef = ref<IssueTrackerCredential[]>(readCreds())
+// ARCH-002 fix (code-review 2026-05-13) — lazy localStorage load.
+// 기존: 모듈-스코프 즉시 readCreds() — SSR / pre-hydrate / 시크릿 모드 환경에서
+// localStorage 미준비 시 빈 배열 영구 고정 (사용자 credentials lost). null 초기 +
+// 첫 호출 lazy read 로 회피.
+const credsRef = ref<IssueTrackerCredential[] | null>(null)
+
+function ensureLoaded(): IssueTrackerCredential[] {
+  if (credsRef.value == null) {
+    credsRef.value = readCreds()
+  }
+  return credsRef.value
+}
 
 export function useExternalIssueTracker() {
+  ensureLoaded()
+
   function addCredential(c: IssueTrackerCredential): void {
     // 같은 tracker 중복 시 update.
-    const next = credsRef.value.filter((x) => x.tracker !== c.tracker).concat(c)
+    const current = ensureLoaded()
+    const next = current.filter((x) => x.tracker !== c.tracker).concat(c)
     credsRef.value = next
     writeCreds(next)
   }
 
   function deleteCredential(tracker: IssueTracker): void {
-    const next = credsRef.value.filter((x) => x.tracker !== tracker)
+    const current = ensureLoaded()
+    const next = current.filter((x) => x.tracker !== tracker)
     credsRef.value = next
     writeCreds(next)
   }

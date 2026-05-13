@@ -11,6 +11,7 @@
 //   - Gitea OAuth: https://docs.gitea.com/development/oauth2-provider
 //   - Tauri deep-link: https://v2.tauri.app/plugin/deep-link/
 
+use crate::error::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 
 /// OAuth provider 식별.
@@ -77,6 +78,10 @@ pub fn build_authorize_url(args: &OAuthStartArgs, redirect_uri: &str) -> String 
 }
 
 /// code → token exchange. 실 reqwest 호출은 v1.0.
+///
+/// ARCH-001 fix (code-review 2026-05-13): `Result<_, String>` → AppResult 일관.
+/// 다른 IPC 모듈 (forge_commands / db / search_commands) 와 동일 error type.
+/// v1.0 활성 시 reqwest::Error → AppError #[from] 변환 path 자연.
 pub async fn exchange_code_for_token(
     _provider: OAuthProvider,
     _base_url: &str,
@@ -84,9 +89,11 @@ pub async fn exchange_code_for_token(
     _client_secret: Option<&str>,
     _code: &str,
     _verifier: &str,
-) -> Result<OAuthTokenSet, String> {
+) -> AppResult<OAuthTokenSet> {
     // v1.0 — reqwest::Client POST /login/oauth/access_token
-    Err("OAuth flow v1.0 release sprint 에서 활성화 (skeleton 만).".to_string())
+    Err(AppError::Internal(
+        "OAuth flow v1.0 release sprint 에서 활성화 (skeleton 만).".into(),
+    ))
 }
 
 /// access_token 만료 시 refresh.
@@ -95,8 +102,10 @@ pub async fn refresh_access_token(
     _base_url: &str,
     _client_id: &str,
     _refresh_token: &str,
-) -> Result<OAuthTokenSet, String> {
-    Err("OAuth refresh v1.0 release sprint 에서 활성화.".to_string())
+) -> AppResult<OAuthTokenSet> {
+    Err(AppError::Internal(
+        "OAuth refresh v1.0 release sprint 에서 활성화.".into(),
+    ))
 }
 
 #[cfg(test)]
@@ -110,7 +119,7 @@ mod tests {
             base_url: "https://github.com".to_string(),
             client_id: "client123".to_string(),
             // SEC-001 — RFC 7636 §4.1: 43-128 char unreserved (A-Z a-z 0-9 -._~)
-pkce_verifier: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG".to_string(),
+            pkce_verifier: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG".to_string(),
         };
         let url = build_authorize_url(&args, "git-fried://oauth/callback");
         assert!(url.contains("github.com/login/oauth/authorize"));
@@ -126,7 +135,7 @@ pkce_verifier: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG".to_string(),
             base_url: "https://git.dev.opnd.io".to_string(),
             client_id: "company".to_string(),
             // SEC-001 — RFC 7636 §4.1: 43-128 char unreserved (A-Z a-z 0-9 -._~)
-pkce_verifier: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG".to_string(),
+            pkce_verifier: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG".to_string(),
         };
         let url = build_authorize_url(&args, "git-fried://oauth/callback");
         assert!(url.contains("git.dev.opnd.io/login/oauth/authorize"));
@@ -144,6 +153,8 @@ pkce_verifier: "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG".to_string(),
         )
         .await;
         assert!(r.is_err());
-        assert!(r.unwrap_err().contains("v1.0"));
+        // ARCH-001 fix — AppResult 일관 후 Display 통해 message 확인.
+        let msg = format!("{}", r.unwrap_err());
+        assert!(msg.contains("v1.0"));
     }
 }
