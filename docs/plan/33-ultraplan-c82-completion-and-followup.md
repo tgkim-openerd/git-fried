@@ -188,6 +188,41 @@ node scripts/cargo-rustup.mjs check --manifest-path apps/desktop/src-tauri/Cargo
 node scripts/cargo-rustup.mjs test --manifest-path apps/desktop/src-tauri/Cargo.toml   # PASS
 ```
 
+## 6.5. Codex 권고 (`task-mp554150-376chx`, 2026-05-14)
+
+미완료 7건 (OAuth 제외) 의 Codex 상의 결과. 권고 / 근거 / Effort / Priority 4필드.
+
+| # | 항목 | 권고 | 근거 | Effort | Priority |
+|---|---|---|---|---|---|
+| 1 | **SAF-301** | `panic="abort"` 유지 + unwrap/transaction 명시 처리 우선. `unwind` 전환은 IPC panic boundary 설계가 있을 때만 합당 | Cargo Profiles docs / Rust panic-FFI / sqlx Transaction Drop | S | **P2** |
+| 2 | **PR-A.1** | Vite **6.4.2+** 로 1차 고정 (manualChunks object form 호환 + CVE 패치). Vite 7/8 은 별도 migration — vite 8 = Rolldown 전환으로 manualChunks object 제거 | Vite 6 Rollup build docs / Vite 8 migration / GHSA-4w7w / esbuild GHSA-67mh | M | **P1** |
+| 3 | **PR-A.5** | 본 repo (200+ commit) 는 sanity target only. **synthetic 10k/50k + 실제 large repo 1개** 기준값 채택. dirty/large diff/LFS/worktree 추가 시나리오 | Criterion CLI / Chrome DevTools Performance / MDN Performance API. hypothesis: graph hot path 압박 부족 | M | **P1** |
+| 4 | **SAF-401** | `wait_with_output()` timeout 은 partial. **`stdout/stderr.take()` read task + `child.wait()` + timeout branch `child.kill().await` + reap** refactor | Tokio process / std Child.kill. timeout 배수 (60s) 는 hypothesis 로 유지하되 p95 실측 후 조정 | M | **P1** |
+| 5 | **SAF-201** | **자동 치환 금지**. 분류 순서: user-input parse → path/OsStr → git output indexing → destructive flow → phase 처리 | Clippy unwrap_used / rust-analyzer assists. exact hit `parse::<i64>().unwrap()` 미검출 | L | **P1** |
+| 6 | **SEC-301** | CLI 기반 `core.sshCommand` / `GIT_SSH_COMMAND` 우선. **OpenSSH + agent fallback 보존**, PuTTY/plink 는 별도 user choice 분리 | Git env vars docs / libgit2 auth / ssh agent credential | M | **P1** |
+| 7 | **PR-F** | 순서: **TST-503 bench actual → TST-501 coverage guard → TST-502 real Tauri smoke**. Coverage bump 만으로 품질 ROI 낮고, WebDriver 는 플랫폼 의존 큼 | Vitest thresholds / Vitest 4 migration / Tauri WebDriver | M | **P2** |
+
+### Codex 권장 sprint 순서 + 자율/결정 분류
+
+| Sprint | 항목 | 분류 |
+|---|---|---|
+| **c83** | PR-A.1 (Vite 6.4.2+), SAF-401 (child kill refactor) | **자율 진행 가능** |
+| **c84** | PR-A.5 / TST-503 bench actual, SAF-201 phase 1 (user-input parse) | BENCH_REPO 는 **사용자 결정** |
+| **c85** | SEC-301 (CLI sshCommand + OpenSSH agent) | PuTTY 지원 범위 **사용자 결정** |
+| **c86+** | SAF-301 (panic="abort" 유지 + explicit Drop), TST-501 coverage, TST-502 Tauri WebDriver | TST-502 WebDriver 범위 **사용자 결정** |
+
+### Codex 권고 vs 본 plan 기존 추정 차이
+
+| 항목 | 기존 plan 추정 | Codex 권고 | 변경 |
+|---|---|---|---|
+| SAF-301 | Critical (P0) bin size 측정 후 결정 | **P2 — abort 유지** + explicit Drop 강화 우선 | priority 강등 |
+| PR-A.1 | vite 5→6→7→8 단계 | **6.4.2 first, 7/8 별도 migration** (vite 8 Rolldown 전환 차단) | 단계 분리 명확화 |
+| PR-A.5 | git-fried 자체 측정 가능 | **synthetic + real large repo** 필요 — 본 repo sanity only | 측정 전략 강화 |
+| SAF-401 | 후속 sprint defer | **P1** — partial fix 인정, refactor 즉시 가치 큼 | priority 승격 |
+| SAF-201 | 4 phase 분량 | **자동 치환 금지** + user-input/path/git-output/destructive 카테고리 분류 우선 | 자동화 차단 |
+| SEC-301 | 통합 fix | **CLI sshCommand 우선** + OpenSSH/agent fallback. PuTTY 분리 | 기술 선택 명확 |
+| PR-F | coverage 우선 | **bench → coverage → webdriver** 순서 | 순서 변경 |
+
 ## 6. 다음 단계 제안
 
 | 조건 | 제안 |
