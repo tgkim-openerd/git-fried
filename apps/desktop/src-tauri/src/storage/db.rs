@@ -355,6 +355,11 @@ impl DbExt for Db {
     }
 
     async fn set_repo_ssh_key_path(&self, id: i64, path: Option<&str>) -> AppResult<Repo> {
+        // code-review SEC-002 — validate_ssh_key_path gate (profiles 외 caller 도 동일 검증).
+        // shell meta / control / glob 차단 + bypass 방지 (1-line fix per security review).
+        if let Some(p) = path {
+            crate::profiles::validate_ssh_key_path(p)?;
+        }
         sqlx::query("UPDATE repos SET ssh_key_path = ? WHERE id = ?")
             .bind(path)
             .bind(id)

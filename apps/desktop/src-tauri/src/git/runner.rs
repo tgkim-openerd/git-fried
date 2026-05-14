@@ -109,13 +109,16 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
     // SEC-301 (Codex consultation P1) — active profile 의 SSH key path 가 있으면
     // GIT_SSH_COMMAND env 자동 적용 (OpenSSH only). agent fallback 보존: -o IdentitiesOnly=yes
     // 는 명시한 키만 사용하되 agent 가 forward 한 키도 시도 가능.
+    //
+    // code-review SEC-001 — Windows path backslash 가 POSIX shell parsing 시 escape meta 로
+    // 오인 가능 → forward-slash 로 normalize. OpenSSH (Windows port 포함) 가 `/` path 정상
+    // 처리. caller 책임으로 `crate::profiles::validate_ssh_key_path` 통과한 path 만 전달.
     if let Some(ssh_key) = &opts.ssh_key_path {
         if !ssh_key.is_empty() {
-            // ssh CLI argument 에 path 직접 삽입. caller 가 path validation 책임.
-            // PuTTY/plink 는 사용자가 별도 GIT_SSH 또는 GIT_SSH_COMMAND 로 명시.
+            let normalized = ssh_key.replace('\\', "/");
             cmd.env(
                 "GIT_SSH_COMMAND",
-                format!("ssh -i \"{}\" -o IdentitiesOnly=yes", ssh_key),
+                format!("ssh -i \"{normalized}\" -o IdentitiesOnly=yes"),
             );
         }
     }

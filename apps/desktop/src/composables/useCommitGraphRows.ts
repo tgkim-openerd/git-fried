@@ -60,7 +60,10 @@ export function useCommitGraphRows({ repoId, rows, containerRef }: UseCommitGrap
       // 비용: re-measure 시 +1-3ms/scroll (Codex consultation 권고). DOM resize observer
       // 가 자동 capture — caller 가 row template 에 `:ref="virtualizer.measureElement"`
       // 명시 안 해도 vue-virtual 5.x 내장 ResizeObserver 사용.
-      measureElement: (el) => el?.getBoundingClientRect().height ?? ROW_H,
+      //
+      // code-review TYPE-002: @tanstack/virtual-core 의 TItemElement 는 non-nullable.
+      // 이전 `el?.` 는 dead optional chaining. `||` 로 0 height 도 ROW_H fallback.
+      measureElement: (el) => el.getBoundingClientRect().height || ROW_H,
     })),
   )
   const virtualItems = computed(() => virtualizer.value.getVirtualItems())

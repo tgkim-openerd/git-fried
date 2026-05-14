@@ -39,5 +39,11 @@ declare global {
      * 반환: true = rows 에서 발견 + select + scroll 완료, false = rows 에 없음 (caller 가 fallback 처리).
      */
     gitFriedSelectCommit?: (sha: string) => boolean
+    /**
+     * Sprint c87 (plan v0.9 Phase 3.1) — Performance API marks devtools API.
+     * code-review ARCH-001 — `gitFried*` prefix 정합 (`__gitFriedPerf` outlier 정정).
+     * code-review SEC-003 — DEV / VITE_PERF_DEBUG=1 에서만 install (production 미노출).
+     */
+    gitFriedPerf?: import('@/utils/perfMarks').GitFriedPerfAPI
   }
 }

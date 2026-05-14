@@ -89,8 +89,13 @@ export function fpsCounter(windowMs = 1000): FpsCounter {
 }
 
 /**
- * `window.__gitFriedPerf` 노출 — devtools console 에서 접근.
- * Tauri build / dev / prod 모두 활성.
+ * `window.gitFriedPerf` 노출 — devtools console 에서 접근.
+ *
+ * code-review SEC-003: production 무조건 활성 시 DevTools fingerprinting / privacy 표면.
+ *   → `import.meta.env.DEV` 또는 명시 `VITE_PERF_DEBUG=1` 환경에서만 install.
+ *
+ * code-review ARCH-001: window.gitFried* 기존 prefix 와 일관 (`gitFriedPerf`, `_` 제거).
+ *   window.d.ts 에 정식 등재 — `as unknown as` 캐스트 제거.
  */
 export interface GitFriedPerfAPI {
   coldStartMs: () => number
@@ -100,6 +105,9 @@ export interface GitFriedPerfAPI {
 
 export function installPerfAPI(): void {
   if (typeof window === 'undefined') return
+  // SEC-003 — DEV / explicit opt-in 만. production 무조건 노출 차단.
+  const enabled = import.meta.env?.DEV === true || import.meta.env?.VITE_PERF_DEBUG === '1'
+  if (!enabled) return
   const api: GitFriedPerfAPI = {
     coldStartMs: () => measureSpan('app-start', 'app-mounted'),
     marks: () =>
@@ -107,5 +115,6 @@ export function installPerfAPI(): void {
         ?.map((e) => e.name)
         .filter((n) => n.startsWith('gf:')) ?? [],
   }
-  ;(window as unknown as { __gitFriedPerf?: GitFriedPerfAPI }).__gitFriedPerf = api
+  // ARCH-001 — window.d.ts 정식 등재로 직접 할당 (캐스트 제거).
+  window.gitFriedPerf = api
 }
