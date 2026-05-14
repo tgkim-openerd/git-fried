@@ -113,6 +113,12 @@ pub async fn detect_clis() -> Vec<AiProbe> {
 /// 60s 표준 (AI roundtrip doherty_threshold 8s × 7.5 여유) — p95 실측 후 조정.
 pub const AI_RUN_TIMEOUT_SECS: u64 = 60;
 
+/// SAF-401-FU (plan v0.9) — AI stdout/stderr 최대 누적 바이트.
+///
+/// claude/codex CLI 정상 응답은 보통 < 50KB. 1MB cap 은 정상 사용 100% cover +
+/// runaway/악성 응답 OOM 방지. 초과 시 truncate + AppError::internal.
+pub const AI_RUN_MAX_OUTPUT_BYTES: u64 = 1024 * 1024;
+
 pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
     let start = std::time::Instant::now();
 
@@ -137,15 +143,16 @@ pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
         .ok_or_else(|| AppError::internal("AI subprocess stderr 핸들 take 실패 (이미 닫힘)"))?;
 
     // 별도 task 로 stdout/stderr 비동기 누적 — child.wait 와 race.
+    // SAF-401-FU (plan v0.9) — max 1MB cap. .take(N) 으로 hard limit → OOM 방지.
     let stdout_task = tokio::spawn(async move {
         let mut buf = Vec::new();
-        let mut reader = stdout;
+        let mut reader = stdout.take(AI_RUN_MAX_OUTPUT_BYTES);
         let _ = reader.read_to_end(&mut buf).await;
         buf
     });
     let stderr_task = tokio::spawn(async move {
         let mut buf = Vec::new();
-        let mut reader = stderr;
+        let mut reader = stderr.take(AI_RUN_MAX_OUTPUT_BYTES);
         let _ = reader.read_to_end(&mut buf).await;
         buf
     });

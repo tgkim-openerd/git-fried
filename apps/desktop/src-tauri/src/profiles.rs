@@ -64,9 +64,32 @@ pub async fn get(pool: &SqlitePool, id: i64) -> AppResult<Profile> {
     row_to_profile(row)
 }
 
+/// SEC-301-FU (plan v0.9) — SSH key path 가 GIT_SSH_COMMAND env value 로 들어가므로
+/// shell injection 차단. 허용 문자만 통과 (path-safe ASCII + 한정 메타).
+///
+/// 차단: `"` (quote escape), `\` (escape backslash 외 path separator 는 Windows 만 — 별도),
+///       `;` `&` `|` (command chaining), `$` `` ` `` (shell expansion), 줄바꿈, 제어 문자.
+///
+/// 허용 패턴: `~/.ssh/id_ed25519` / `C:\Users\u\.ssh\key` / `/home/u/.ssh/key` 등.
+fn validate_ssh_key_path(p: &str) -> AppResult<()> {
+    if p.trim().is_empty() {
+        return Ok(()); // empty 는 caller 단계에서 Option::None 처리
+    }
+    let forbidden = ['"', ';', '&', '|', '$', '`', '\n', '\r', '\0'];
+    if p.chars().any(|c| forbidden.contains(&c) || c.is_control()) {
+        return Err(AppError::validation(format!(
+            "ssh_key_path 에 허용되지 않는 문자 포함 (quote/shell meta/제어): {p:?}"
+        )));
+    }
+    Ok(())
+}
+
 pub async fn create(pool: &SqlitePool, input: ProfileInput) -> AppResult<Profile> {
     if input.name.trim().is_empty() {
         return Err(AppError::validation("프로파일 이름이 비었습니다."));
+    }
+    if let Some(p) = &input.ssh_key_path {
+        validate_ssh_key_path(p)?;
     }
     let row = sqlx::query(
         "INSERT INTO profiles (name, git_user_name, git_user_email, signing_key, ssh_key_path, \
@@ -87,6 +110,9 @@ pub async fn create(pool: &SqlitePool, input: ProfileInput) -> AppResult<Profile
 }
 
 pub async fn update(pool: &SqlitePool, id: i64, input: ProfileInput) -> AppResult<Profile> {
+    if let Some(p) = &input.ssh_key_path {
+        validate_ssh_key_path(p)?; // SEC-301-FU
+    }
     sqlx::query(
         "UPDATE profiles SET name = ?, git_user_name = ?, git_user_email = ?, \
          signing_key = ?, ssh_key_path = ?, default_forge_account_id = ? \
