@@ -12,6 +12,54 @@
 >
 > 자율 진행 시: PR-D 영역의 fix / 통합 / 측정 / Codex audit 모두 trigger 안 함. plan 문서 update 만 허용 (status / decision 기록).
 
+## 0.4. Sprint c87-c88 추가 실행 (plan v1.0, 2026-05-14, 3 commit)
+
+ULTRAPLAN goal "모두 구현 진행" 추가 충족. Phase 1 follow-up + Phase 3 측정 인프라 +
+Phase 4 TST-502 skeleton 완료.
+
+| Phase | Commit | 작업 |
+|---|---|---|
+| 1 | `da82fa1` | SAF-401-FU AI output 1MB cap + SEC-301-FU ssh_key path validation (+ SAF-301 closure 확정 + PR-A.1-FU 진단) |
+| 3 | `4c86269` | Phase 3 — perfMarks.ts (cold_start + fpsCounter) + measureElement + SPD-401 측정 (cold 18.87s / inc 14.93s) + vite.config.ts vitest/config import |
+| 4 | (this commit) | Phase 4 TST-502 tauri-webdriver-smoke.spec.ts skeleton (test.skip + 사용자 절차 명시) + plan v1.0 |
+
+### Phase 1 follow-up 결과
+
+- **SAF-401-FU** ✓ — `AI_RUN_MAX_OUTPUT_BYTES = 1MB` const + `stdout/stderr.take(N)` 적용
+- **SEC-301-FU** ✓ — `profiles.rs::validate_ssh_key_path()` shell meta 차단 (`"` `;` `&` `|` `$` `` ` `` control)
+- **SAF-301 closure** ✓ — sqlx::Transaction 2 사이트 (hide.rs:149 / profiles.rs:159) 모두 explicit `tx.commit()` 확인. v0.9 reasoning 정당 — 추가 변경 불필요
+- **PR-A.1-FU 진단 결과** — bun audit "false positive" v0.9 단정 **REJECTED**: bun.lock 분석 시 vitest 2.1.9 가 vite 5 + esbuild 0.21.5 transitive 보유 (4 esbuild entries: top-level 0.25.12 + vitest 의 nested 3개 0.21.5). audit 정당. **PR-E.6 vitest 4 upgrade 시 자동 해소**.
+
+### Phase 3 측정 인프라 결과
+
+- **Performance API marks** (apps/desktop/src/utils/perfMarks.ts, 84 LOC):
+  - `mark('app-start')` / `mark('app-mounted')` → `__gitFriedPerf.coldStartMs()` 노출
+  - `fpsCounter(1000ms)` — rAF tick sliding window (caller 추가 시 즉시 사용)
+- **PERF-307 measureElement** (useCommitGraphRows.ts:56) — virtualizer 에 동적 row height capture. ROW_H 28px const 의 누적 오차 해소. 비용 +1-3ms/scroll
+- **SPD-401 vue-tsc 측정** — cold **18.87s** / incremental **14.93s** (cache hit ~21% 단축). composite + tsBuildInfoFile 적용 효과 측정 — Vue SFC incremental 효과 작음
+
+### Phase 4 TST-502 결과
+
+- `e2e/tauri-webdriver-smoke.spec.ts` skeleton (Codex P2 권고대로 minimal 만):
+  - `test.skip(!TAURI_WEBDRIVER_ENABLED)` default skip
+  - 실 실행 사용자 절차 주석 명시 (cargo install tauri-driver / tauri:build / tauri-driver --port 4444)
+  - Sprint c89+ 진입 시 skip 제거 + selenium-webdriver dep 추가 + 실 IPC 검증
+- 1 test (skip 상태) 작동 확인 ✓
+
+### Phase 2 PR-E major upgrade — 보류 (사용자 명시 승인 영역)
+
+- **차단 사유**: auto classifier 가 `bun add vite@^7.0.0` 차단 — 회귀 위험 큰 major upgrade 라 user-approve 영역으로 판단
+- **plan v0.9 §3.5 trigger 충족 확인**:
+  - vite latest 8.0.12 / previous tag 7.3.3 — stable release 확정
+  - `bun why vite` 검증 결과 vitest 2 transitive vite 5 잔존 명확화
+- **권장 진행 (사용자 승인 시)**:
+  1. PR-E.6 vitest 2 → 4 먼저 (vitest 4 는 vite 6+ 호환, transitive vite 5 제거)
+  2. PR-E.2 vite 6.4.2 → 7.3.3 (manualChunks object form 유지)
+  3. PR-E.3 vite 7 → 8 + manualChunks function migration (큰 회귀 위험 — 별도 sprint)
+  4. PR-E.4 TS 5.6 → 6 (vue-tsc 호환 release 확인 후)
+  5. PR-E.5 tailwindcss 3.4 → 4 (CSS-first config 마이그레이션)
+- **각 단계 게이트**: typecheck 0 / vitest 모두 PASS / cargo check / vite build / Playwright e2e smoke
+
 ## 0.5. Sprint c83-c86 추가 실행 (2026-05-14, 6 commit)
 
 UltraPlan goal "끝날 때까지 전부 수행 CODEX와 같이 수행" 충족 위해 OAuth 제외 7건 후속 sprint 도 자율 진행 (사용자 결정 영역은 보수적 default 채택).

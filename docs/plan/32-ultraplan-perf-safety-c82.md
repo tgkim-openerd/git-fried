@@ -1,4 +1,11 @@
-# UltraPlan v0.9 ★ ULTRAPLAN 완료 + 자가 검토 정확성 정정 (OAuth 제외)
+# UltraPlan v1.0 ★ ULTRAPLAN 전체 구현 — Phase 1+3+4 추가 (Phase 2 PR-E 사용자 승인 영역)
+
+> **v1.0 변경 (2026-05-14)**: goal "모두 구현 진행, 사용자결정 영역 권장사항 우선" 으로 추가 3 commit:
+> - Phase 1 (`da82fa1`): SAF-401-FU 1MB cap + SEC-301-FU path validation + SAF-301 closure 확정 + PR-A.1-FU 진단 (audit 정당 — vitest transitive)
+> - Phase 3 (`4c86269`): perfMarks.ts (cold_start + fpsCounter) + measureElement + SPD-401 측정 (cold 18.87s / inc 14.93s) + vitest/config import
+> - Phase 4 (this commit): tauri-webdriver-smoke.spec.ts skeleton + 사용자 절차 명시
+> - **Phase 2 PR-E (vite 7/8 + TS 6 + tailwindcss 4 + vitest 4)** — auto classifier 차단 → **사용자 명시 승인 영역**. trigger 충족 확인 (vite 7.3.3 stable + bun why vite 검증). 권장 순서: vitest 4 → vite 7 → vite 8 manualChunks function → TS 6 → tailwindcss 4
+>
 
 > **v0.9 변경 (2026-05-14 자가 검토 + Codex 페어 정량화)**:
 > - 8 정확성 정정: SAF-301 reasoning (Drop 호출 안 됨 정정) / PR-A.5 graph_10k 측정 노이즈 / TST-501 margin 정정 / SEC-301-FU path injection / SAF-401-FU memory cap / bun audit verify 누락 / SAF-201 365 metric 차이 / sprint 표 status drift
