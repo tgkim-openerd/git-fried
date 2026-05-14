@@ -46,16 +46,35 @@ export function useAiPrBody(opts: UseAiPrBodyOptions) {
   })
 
   const generate = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const id = opts.repoId()
       const h = opts.head()
       const b = opts.base()
       if (id == null || !h || !b || availableCli.value == null) {
-        return Promise.reject(new Error('AI 사용 불가'))
+        throw new Error('AI 사용 불가')
       }
-      return aiPrBody(id, availableCli.value, h, b, true)
+      // D-AI-001 (Codex R5) — 시작 시점 input snapshot. 응답 도착 시 사용자가 PR branch
+      // (head/base) 바꾸거나 다른 PR 으로 modal 전환 시 stale result 가 새 input 덮어씌우기 방지.
+      const snapshot = { repoId: id, head: h, base: b }
+      const out = await aiPrBody(id, availableCli.value, h, b, true)
+      return { out, snapshot }
     },
-    onSuccess: (out) => {
+    onSuccess: ({ out, snapshot }) => {
+      // D-AI-001 — snapshot mismatch silent drop (사용자가 modal state 바꾼 경우).
+      // dev console.warn 만 — 사용자에게 toast 띄우면 의도치 않은 작업 중단 알림이라 noise.
+      if (
+        opts.repoId() !== snapshot.repoId ||
+        opts.head() !== snapshot.head ||
+        opts.base() !== snapshot.base
+      ) {
+        if (import.meta.env.DEV) {
+          console.warn('[useAiPrBody] snapshot mismatch — silent drop', {
+            snapshot,
+            current: { repoId: opts.repoId(), head: opts.head(), base: opts.base() },
+          })
+        }
+        return
+      }
       if (out.success) {
         const text = out.text.trim()
         opts.onResult(text)

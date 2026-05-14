@@ -9,12 +9,30 @@ vi.mock('./useShortcuts', () => ({
 import { COMMAND_ALIASES, dispatchDeepLink } from './useDeepLink'
 
 describe('COMMAND_ALIASES', () => {
-  it('25 alias 매핑 (Sprint D6)', () => {
-    expect(Object.keys(COMMAND_ALIASES).length).toBeGreaterThanOrEqual(20)
-    expect(COMMAND_ALIASES['fetch']).toBe('fetch')
-    expect(COMMAND_ALIASES['new-pr']).toBe('newPr')
-    expect(COMMAND_ALIASES['stage-and-commit']).toBe('stageAndCommit')
+  it('read-only / navigation alias 만 노출 (SEC-202 — destructive 차단)', () => {
+    // SEC-202 (Codex R1): 외부 deep-link 만으로 destructive 명령 dispatch 못하도록
+    // pull/push/commit/stage-* / new-* / fetch 9개 영구 제거.
     expect(COMMAND_ALIASES['toggle-sidebar']).toBe('toggleSidebar')
+    expect(COMMAND_ALIASES['terminal']).toBe('terminal')
+    expect(COMMAND_ALIASES['help']).toBe('help')
+    expect(COMMAND_ALIASES['show-diff']).toBe('showDiff')
+  })
+
+  it('SEC-202: destructive alias 9개 모두 차단', () => {
+    const destructive = [
+      'fetch',
+      'pull',
+      'push',
+      'commit',
+      'stage-all',
+      'unstage-all',
+      'stage-and-commit',
+      'new-pr',
+      'new-branch',
+    ]
+    for (const a of destructive) {
+      expect(COMMAND_ALIASES[a]).toBeUndefined()
+    }
   })
 })
 
@@ -96,11 +114,23 @@ describe('dispatchDeepLink', () => {
     expect(setActiveRepoSpy).not.toHaveBeenCalled()
   })
 
-  it('git-fried://command/fetch — 50ms 후 dispatchShortcut("fetch")', () => {
-    dispatchDeepLink('git-fried://command/fetch', ctx)
+  it('git-fried://command/toggle-sidebar — 50ms 후 dispatchShortcut (read-only alias)', () => {
+    dispatchDeepLink('git-fried://command/toggle-sidebar', ctx)
     expect(dispatchShortcutSpy).not.toHaveBeenCalled()
     vi.advanceTimersByTime(50)
-    expect(dispatchShortcutSpy).toHaveBeenCalledWith('fetch')
+    expect(dispatchShortcutSpy).toHaveBeenCalledWith('toggleSidebar')
+  })
+
+  it('git-fried://command/push — SEC-202: destructive 차단 (dispatch 안 됨)', () => {
+    dispatchDeepLink('git-fried://command/push', ctx)
+    vi.advanceTimersByTime(100)
+    expect(dispatchShortcutSpy).not.toHaveBeenCalled()
+  })
+
+  it('git-fried://command/pull — SEC-202: destructive 차단', () => {
+    dispatchDeepLink('git-fried://command/pull', ctx)
+    vi.advanceTimersByTime(100)
+    expect(dispatchShortcutSpy).not.toHaveBeenCalled()
   })
 
   it('git-fried://command/unknown-alias → setTimeout 미호출', () => {

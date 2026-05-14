@@ -47,14 +47,17 @@ export function useAiReview(opts: UseAiReviewOptions) {
   })
 
   const generate = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const id = opts.repoId()
       const num = opts.number()
       const d = opts.detail()
       if (id == null || num == null || !d || availableCli.value == null) {
-        return Promise.reject(new Error('AI 사용 불가'))
+        throw new Error('AI 사용 불가')
       }
-      return aiCodeReview({
+      // D-AI-001 (Codex R5) — 시작 시점 PR# snapshot. 응답 도착 시 사용자가 다른 PR detail
+      // modal 로 전환 시 stale review 가 새 PR textarea 덮어씌우기 방지.
+      const snapshot = { repoId: id, number: num }
+      const out = await aiCodeReview({
         repoId: id,
         cli: availableCli.value,
         headBranch: d.headBranch,
@@ -63,12 +66,23 @@ export function useAiReview(opts: UseAiReviewOptions) {
         prBody: d.bodyMd,
         userApproved: true,
       })
+      return { out, snapshot }
     },
-    onSuccess: (out) => {
+    onSuccess: ({ out, snapshot }) => {
+      // D-AI-001 — snapshot mismatch silent drop.
+      if (opts.repoId() !== snapshot.repoId || opts.number() !== snapshot.number) {
+        if (import.meta.env.DEV) {
+          console.warn('[useAiReview] snapshot mismatch — silent drop', {
+            snapshot,
+            current: { repoId: opts.repoId(), number: opts.number() },
+          })
+        }
+        return
+      }
       if (out.success) {
         const text = out.text.trim()
         opts.onResult(text)
-        notifyAiDone('AI 코드 리뷰', `#${opts.number() ?? ''}`)
+        notifyAiDone('AI 코드 리뷰', `#${snapshot.number}`)
       } else {
         opts.onError?.(new Error(out.stderr || out.text || 'AI 응답 실패'))
       }

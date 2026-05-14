@@ -16,19 +16,23 @@ import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut, type ShortcutAction } from '@/composables/useShortcuts'
 
-/** `git-fried://command/<alias>` 의 alias → ShortcutAction 매핑. */
+/**
+ * `git-fried://command/<alias>` 의 alias → ShortcutAction 매핑 (read-only / navigation 만).
+ *
+ * SEC-202 (Codex R1) — destructive alias 영구 제거. 외부 사이트 `<a href="git-fried://command/push">`
+ * 클릭 만으로 사용자 repo 강제 push/pull/commit 가능했던 surface 차단.
+ *
+ * 차단된 alias (9): fetch / pull / push / commit / stage-all / unstage-all /
+ *                  stage-and-commit / new-pr / new-branch
+ * (fetch 도 차단 — 서버 통신 + credential 사용으로 destructive 분류)
+ *
+ * 향후 destructive 명령 deep-link 가 필요하면 별도 alias whitelist + confirm dialog 강제
+ * (예: COMMAND_ALIASES_DESTRUCTIVE 분리 + dispatchShortcut 전 confirmDialog) — 현재 미구현.
+ */
 export const COMMAND_ALIASES: Record<string, ShortcutAction> = {
-  fetch: 'fetch',
-  pull: 'pull',
-  push: 'push',
-  commit: 'commit',
-  'new-pr': 'newPr',
-  'new-branch': 'newBranch',
+  // navigation / view (read-only)
   terminal: 'terminal',
   help: 'help',
-  'stage-all': 'stageAllExplicit',
-  'unstage-all': 'unstageAll',
-  'stage-and-commit': 'stageAndCommit',
   'show-diff': 'showDiff',
   'toggle-sidebar': 'toggleSidebar',
   'toggle-detail': 'toggleDetail',

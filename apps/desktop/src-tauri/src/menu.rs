@@ -173,6 +173,9 @@ pub fn handle_event(app: &AppHandle<Wry>, id: &str) {
     // 시스템 처리 (윈도/앱 레벨)
     if id == "reload-window" {
         if let Some(win) = app.get_webview_window("main") {
+            // SAF-NOTE (Codex R5 eval 정정): static literal 'location.reload()' 만 호출.
+            // 사용자 입력이 절대 들어가지 않으므로 XSS 표면 아님 (R2 Clean "dynamic eval 0" 룰 유지).
+            // 향후 동적 eval 추가 시 별도 review 필수.
             let _ = win.eval("location.reload()");
         }
         return;

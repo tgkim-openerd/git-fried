@@ -44,19 +44,33 @@ export function useAiResolveConflict(opts: UseAiResolveConflictOptions) {
   })
 
   const generate = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const id = opts.repoId()
       const p = opts.path()
       if (id == null || !p || availableCli.value == null) {
-        return Promise.reject(new Error('AI 사용 불가'))
+        throw new Error('AI 사용 불가')
       }
-      return aiResolveConflict(id, availableCli.value, p, true)
+      // D-AI-001 (Codex R5) — 시작 시점 conflict path snapshot. 응답 도착 시 사용자가
+      // 다른 conflict 파일로 전환 시 stale result 가 textarea 덮어씌우기 방지.
+      const snapshot = { repoId: id, path: p }
+      const out = await aiResolveConflict(id, availableCli.value, p, true)
+      return { out, snapshot }
     },
-    onSuccess: (out) => {
+    onSuccess: ({ out, snapshot }) => {
+      // D-AI-001 — snapshot mismatch silent drop.
+      if (opts.repoId() !== snapshot.repoId || opts.path() !== snapshot.path) {
+        if (import.meta.env.DEV) {
+          console.warn('[useAiResolveConflict] snapshot mismatch — silent drop', {
+            snapshot,
+            current: { repoId: opts.repoId(), path: opts.path() },
+          })
+        }
+        return
+      }
       if (out.success) {
         const text = out.text.trim()
         opts.onResult(text)
-        notifyAiDone('AI 충돌 해결 제안', opts.path() ?? undefined)
+        notifyAiDone('AI 충돌 해결 제안', snapshot.path)
       } else {
         opts.onError?.(new Error(out.stderr || out.text || 'AI 응답 실패'))
       }
