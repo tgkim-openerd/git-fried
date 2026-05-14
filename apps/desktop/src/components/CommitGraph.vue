@@ -484,6 +484,9 @@ const { branchChipStickyWidth, branchChipStickyLeft } = useCommitGraphStickyLayo
           </div>
 
           <!-- commit row -->
+          <!-- PR-B.2 보류: v-memo 는 v-for 와 같은 element 에만 가능 (vue/valid-v-memo).
+               virtualizer outer <template v-for> 안의 v-if/v-else 분기 둘 다 v-memo 적용
+               불가. 별도 sprint 에서 outer wrapper div + branch 통합 구조로 재설계 후 적용. -->
           <div
             v-else
             :style="{

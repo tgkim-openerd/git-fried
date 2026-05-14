@@ -11,13 +11,36 @@ import { EditorState, type Extension } from '@codemirror/state'
 import { EditorView, lineNumbers, highlightActiveLine } from '@codemirror/view'
 import { syntaxHighlighting, defaultHighlightStyle, foldGutter } from '@codemirror/language'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { javascript } from '@codemirror/lang-javascript'
-import { vue } from '@codemirror/lang-vue'
-import { rust } from '@codemirror/lang-rust'
-import { css } from '@codemirror/lang-css'
-import { html } from '@codemirror/lang-html'
-import { json } from '@codemirror/lang-json'
-import { markdown } from '@codemirror/lang-markdown'
+
+// PR-B.1 (plan v0.9 Phase 3) — CodeMirror lang-* 7 dynamic import.
+// 기존 7 static import (~200 KB gzip) 가 모두 vendor-cm-langs 청크에 (PR-A.4 commit 47420a5).
+// 본 dynamic import 로 file ext 매핑 lazy load — FileViewer 비활성 사용자에게는 청크
+// 자체 미로드. 첫 file open 시 해당 lang 만 fetch (vite 가 chunk 분리 처리).
+const langLoaders: Record<string, () => Promise<Extension>> = {
+  ts: () => import('@codemirror/lang-javascript').then((m) => m.javascript({ typescript: true })),
+  tsx: () =>
+    import('@codemirror/lang-javascript').then((m) =>
+      m.javascript({ typescript: true, jsx: true }),
+    ),
+  js: () => import('@codemirror/lang-javascript').then((m) => m.javascript({ typescript: false })),
+  mjs: () => import('@codemirror/lang-javascript').then((m) => m.javascript({ typescript: false })),
+  cjs: () => import('@codemirror/lang-javascript').then((m) => m.javascript({ typescript: false })),
+  jsx: () =>
+    import('@codemirror/lang-javascript').then((m) =>
+      m.javascript({ typescript: false, jsx: true }),
+    ),
+  vue: () => import('@codemirror/lang-vue').then((m) => m.vue()),
+  rs: () => import('@codemirror/lang-rust').then((m) => m.rust()),
+  css: () => import('@codemirror/lang-css').then((m) => m.css()),
+  scss: () => import('@codemirror/lang-css').then((m) => m.css()),
+  sass: () => import('@codemirror/lang-css').then((m) => m.css()),
+  html: () => import('@codemirror/lang-html').then((m) => m.html()),
+  htm: () => import('@codemirror/lang-html').then((m) => m.html()),
+  json: () => import('@codemirror/lang-json').then((m) => m.json()),
+  jsonc: () => import('@codemirror/lang-json').then((m) => m.json()),
+  md: () => import('@codemirror/lang-markdown').then((m) => m.markdown()),
+  markdown: () => import('@codemirror/lang-markdown').then((m) => m.markdown()),
+}
 
 const props = defineProps<{
   /** 파일 raw content (UTF-8). */
@@ -29,44 +52,20 @@ const props = defineProps<{
 const containerRef = ref<HTMLDivElement | null>(null)
 let view: EditorView | null = null
 
-function languageExtension(path: string): Extension | null {
+async function loadLanguage(path: string): Promise<Extension | null> {
   const lower = path.toLowerCase()
-  // 확장자 추출 (마지막 . 뒤).
   const dot = lower.lastIndexOf('.')
   const ext = dot >= 0 ? lower.slice(dot + 1) : ''
-  switch (ext) {
-    case 'ts':
-    case 'tsx':
-      return javascript({ typescript: true, jsx: ext === 'tsx' })
-    case 'js':
-    case 'jsx':
-    case 'mjs':
-    case 'cjs':
-      return javascript({ typescript: false, jsx: ext === 'jsx' })
-    case 'vue':
-      return vue()
-    case 'rs':
-      return rust()
-    case 'css':
-    case 'scss':
-    case 'sass':
-      return css()
-    case 'html':
-    case 'htm':
-      return html()
-    case 'json':
-    case 'jsonc':
-      return json()
-    case 'md':
-    case 'markdown':
-      return markdown()
-    default:
-      return null
+  const loader = langLoaders[ext]
+  if (!loader) return null
+  try {
+    return await loader()
+  } catch {
+    return null
   }
 }
 
-function buildState(content: string, path: string): EditorState {
-  const lang = languageExtension(path)
+function buildBaseState(content: string, lang: Extension | null): EditorState {
   const extensions: Extension[] = [
     lineNumbers(),
     foldGutter(),
@@ -84,12 +83,22 @@ function buildState(content: string, path: string): EditorState {
   })
 }
 
+// PR-B.1 — dynamic import 라 EditorView 는 plain text 로 즉시 mount,
+// language extension 도착 후 setState 로 syntax highlight 재적용.
+async function mountWithLang(content: string, path: string) {
+  if (!view) return
+  const lang = await loadLanguage(path)
+  view.setState(buildBaseState(content, lang))
+}
+
 onMounted(() => {
   if (!containerRef.value) return
+  // plain text first (lang 없이) — instant render
   view = new EditorView({
-    state: buildState(props.content, props.path),
+    state: buildBaseState(props.content, null),
     parent: containerRef.value,
   })
+  void mountWithLang(props.content, props.path)
 })
 
 onUnmounted(() => {
@@ -101,7 +110,8 @@ watch(
   () => [props.content, props.path] as const,
   ([content, path]) => {
     if (!view) return
-    view.setState(buildState(content, path))
+    view.setState(buildBaseState(content, null))
+    void mountWithLang(content, path)
   },
 )
 </script>

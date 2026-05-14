@@ -44,8 +44,17 @@ pub fn load_token(key: &str) -> AppResult<Option<String>> {
             Ok(None)
         }
         Err(e) => {
-            tracing::warn!(target: "git_fried_lib::auth", key, error = %e, "load_token 실패");
-            Err(AppError::internal(format!("keyring get: {e}")))
+            // PR-C.2 (plan v0.9) — Linux D-Bus 미가용 (WSL/Docker/headless) 또는 OS keychain
+            // 일시 fault 시 fallback. NoEntry 외 모든 에러를 Ok(None) 으로 변환 → caller 가
+            // "재로그인 필요" UI 진입. 앱 전체 auth 블로킹 방지.
+            // PII 보호: error stderr 만 mask (없음 — keyring crate 자체 메시지).
+            tracing::warn!(
+                target: "git_fried_lib::auth",
+                key,
+                error = %e,
+                "load_token keyring 사용 불가 — Ok(None) fallback (재로그인 prompt)"
+            );
+            Ok(None)
         }
     }
 }
