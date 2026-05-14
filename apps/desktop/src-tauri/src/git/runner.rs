@@ -54,6 +54,14 @@ pub struct GitRunOpts {
     /// Sprint c45 P0-2 — git CLI 작업 timeout. None = 무제한 (backwards compat).
     /// 권장: clone/fetch/pull/push 는 600s (10분), log/status/diff 는 30s.
     pub timeout: Option<Duration>,
+    /// SEC-301 (Codex consultation `task-mp554150` P1) — OpenSSH key path.
+    ///
+    /// Some(path) → `GIT_SSH_COMMAND="ssh -i <path> -o IdentitiesOnly=yes"` 자동 적용.
+    /// None → SSH agent default (`SSH_AUTH_SOCK`) 또는 system `~/.ssh/id_*` 사용 (기존 동작).
+    ///
+    /// caller (fetch/pull/push/clone) 가 active profile 의 `ssh_key_path` 를 옵션 전달.
+    /// PuTTY/plink 미지원 — 사용자 별도 PATH 설정 (Codex 권고).
+    pub ssh_key_path: Option<String>,
 }
 
 /// Sprint c45 P0-2 — long-running git 작업 표준 timeout (10분).
@@ -96,6 +104,20 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
 
     for (k, v) in &opts.envs {
         cmd.env(k, v);
+    }
+
+    // SEC-301 (Codex consultation P1) — active profile 의 SSH key path 가 있으면
+    // GIT_SSH_COMMAND env 자동 적용 (OpenSSH only). agent fallback 보존: -o IdentitiesOnly=yes
+    // 는 명시한 키만 사용하되 agent 가 forward 한 키도 시도 가능.
+    if let Some(ssh_key) = &opts.ssh_key_path {
+        if !ssh_key.is_empty() {
+            // ssh CLI argument 에 path 직접 삽입. caller 가 path validation 책임.
+            // PuTTY/plink 는 사용자가 별도 GIT_SSH 또는 GIT_SSH_COMMAND 로 명시.
+            cmd.env(
+                "GIT_SSH_COMMAND",
+                format!("ssh -i \"{}\" -o IdentitiesOnly=yes", ssh_key),
+            );
+        }
     }
 
     cmd.stdin(if opts.stdin.is_some() {
