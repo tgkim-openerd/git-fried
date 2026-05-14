@@ -1,4 +1,11 @@
-# UltraPlan v0.8 ★ ULTRAPLAN 완료 — Sprint c82~c86 전 항목 수행 (OAuth 제외)
+# UltraPlan v0.9 ★ ULTRAPLAN 완료 + 자가 검토 정확성 정정 (OAuth 제외)
+
+> **v0.9 변경 (2026-05-14 자가 검토 + Codex 페어 정량화)**:
+> - 8 정확성 정정: SAF-301 reasoning (Drop 호출 안 됨 정정) / PR-A.5 graph_10k 측정 노이즈 / TST-501 margin 정정 / SEC-301-FU path injection / SAF-401-FU memory cap / bun audit verify 누락 / SAF-201 365 metric 차이 / sprint 표 status drift
+> - 진입 trigger 신설 (plan/33 § 3.5) — event-based, 시간 라벨 금지
+> - Codex 페어 효과 정량화 (plan/33 § 6.6) — 16 commit 중 9 commit 에서 Codex 직접 기여 (56%), Critical 3건 중 2건 Codex 단독 발견
+> - 후속 follow-up 영역 3건 신설: SEC-301-FU / SAF-401-FU / PR-A.1-FU
+>
 
 > **상태**: ★★ **ULTRAPLAN goal 충족** — 14 commit (`770f1b9..b4202b4..4f175af` + this) on main pushed
 >
