@@ -72,14 +72,17 @@ export function useMaintenanceActions() {
       return lfsInstall(reposStore.activeRepoId)
     },
     onSuccess: () => {
-      maintLabel.value = 'git lfs install'
+      // D-LFS-002 contract (Codex c82 audit) — backend 는 `--local --skip-repo` 로
+      // hook 설치 분리. UI 메시지 "hook 등록" 은 거짓이라 정정. filter clean/smudge
+      // 활성화만 보고.
+      maintLabel.value = 'git lfs install --local --skip-repo'
       maintResult.value = {
         success: true,
-        stdout: 'LFS hooks 등록 완료',
+        stdout: 'LFS filter (clean/smudge) 로컬 활성화 완료',
         stderr: '',
         exitCode: 0,
       }
-      toast.success('LFS 초기화', 'pre-push hook 등록')
+      toast.success('LFS 초기화', 'filter clean/smudge 활성화 (hook 미설치)')
     },
     onError: (e) => toast.error('LFS 초기화 실패', describeError(e)),
   })

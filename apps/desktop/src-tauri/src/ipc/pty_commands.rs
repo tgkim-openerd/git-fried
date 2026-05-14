@@ -33,14 +33,19 @@ pub async fn pty_open(
     let reader = session.lock().take_reader()?;
 
     // reader 는 blocking read — 별도 std::thread 로 분리.
+    // SAF-302 output-side (Codex c82 audit) — stream-stateful OscStripper 로
+    // child stdout 의 OSC escape 도 차단. stateless `sanitize_pty_input` 은 4096 chunk
+    // boundary 에서 OSC split 시 누락 가능 → stream-stateful 채택.
     std::thread::spawn(move || {
         let mut reader = reader;
         let mut buf = [0u8; 4096];
+        let mut stripper = crate::pty::OscStripper::new();
         loop {
             match std::io::Read::read(&mut reader, &mut buf) {
                 Ok(0) => break, // EOF (shell 종료)
                 Ok(n) => {
-                    if on_data.send(buf[..n].to_vec()).is_err() {
+                    let sanitized = stripper.process(&buf[..n]);
+                    if on_data.send(sanitized).is_err() {
                         // frontend 가 channel 을 닫음 → 종료.
                         break;
                     }

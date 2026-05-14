@@ -70,7 +70,91 @@ impl PtySession {
     }
 }
 
-/// SAF-302 (Codex R5) — PTY input 의 OSC escape sequence strip.
+/// SAF-302 (Codex c82 audit) — stream-stateful OSC stripper.
+///
+/// PTY output 처럼 chunk boundary (예: 4096 byte) 에서 OSC sequence 가 split 될 수 있는
+/// stream 에서는 stateless `sanitize_pty_input` 이 누락 가능. `OscStripper` 는 ESC pending
+/// / InOsc state 를 chunk 간 보존해 split escape 도 안전하게 strip.
+///
+/// 사용:
+///   - PTY child stdout reader (`ipc/pty_commands.rs`) 에서 session 당 1 instance.
+///   - 매 chunk 마다 `process()` 호출 → sanitized Vec<u8> 받음.
+///
+/// 차단:
+///   - OSC (Operating System Command): ESC ] ... terminator (BEL / ESC \ ST)
+///   - chunk boundary 에서 ESC 또는 OSC body 가 split 돼도 state 보존
+///
+/// 보존:
+///   - 일반 CSI / SGR / cursor — 정상 ANSI 동작
+#[derive(Default)]
+pub struct OscStripper {
+    state: OscState,
+}
+
+#[derive(Default, Clone, Copy)]
+enum OscState {
+    #[default]
+    Normal,
+    EscPending,
+    InOsc,
+    InOscEscPending,
+}
+
+impl OscStripper {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn process(&mut self, data: &[u8]) -> Vec<u8> {
+        let mut out = Vec::with_capacity(data.len());
+        for &b in data {
+            match self.state {
+                OscState::Normal => {
+                    if b == 0x1b {
+                        self.state = OscState::EscPending;
+                    } else {
+                        out.push(b);
+                    }
+                }
+                OscState::EscPending => {
+                    if b == b']' {
+                        // OSC start — drop ESC (pending) + ]
+                        self.state = OscState::InOsc;
+                    } else {
+                        // 다른 ESC sequence — commit ESC + 현재 byte
+                        out.push(0x1b);
+                        out.push(b);
+                        self.state = OscState::Normal;
+                    }
+                }
+                OscState::InOsc => {
+                    if b == 0x07 {
+                        // BEL terminator
+                        self.state = OscState::Normal;
+                    } else if b == 0x1b {
+                        // ESC — ST 후보 (ESC \)
+                        self.state = OscState::InOscEscPending;
+                    }
+                    // else: drop (OSC body)
+                }
+                OscState::InOscEscPending => {
+                    if b == b'\\' {
+                        // ST (ESC \) terminator
+                        self.state = OscState::Normal;
+                    } else if b == 0x1b {
+                        // 연속 ESC — 여전히 ST 대기
+                    } else {
+                        // false alarm — OSC 안 그대로
+                        self.state = OscState::InOsc;
+                    }
+                }
+            }
+        }
+        out
+    }
+}
+
+/// SAF-302 (Codex R5) — PTY input 의 OSC escape sequence strip (stateless single-chunk).
 ///
 /// 차단:
 ///   - OSC (Operating System Command): `ESC ]` ... terminator (`BEL` 0x07 또는 `ESC \` ST)
@@ -111,7 +195,51 @@ fn sanitize_pty_input(data: &[u8]) -> Vec<u8> {
 
 #[cfg(test)]
 mod sanitize_tests {
-    use super::sanitize_pty_input;
+    use super::{sanitize_pty_input, OscStripper};
+
+    #[test]
+    fn osc_stripper_split_across_chunks() {
+        // chunk 1: 'prefix\x1b]0;par' / chunk 2: 'tial-title\x07suffix'
+        // stream-stateful 이라 split 된 OSC 도 strip
+        let mut s = OscStripper::new();
+        let out1 = s.process(b"prefix\x1b]0;par");
+        let out2 = s.process(b"tial-title\x07suffix");
+        let mut combined = out1;
+        combined.extend(out2);
+        assert_eq!(combined, b"prefixsuffix");
+    }
+
+    #[test]
+    fn osc_stripper_st_terminator_split() {
+        // ESC \ ST 가 chunk boundary 에 걸침
+        let mut s = OscStripper::new();
+        let out1 = s.process(b"a\x1b]8;;url\x1b");
+        let out2 = s.process(b"\\b");
+        let mut combined = out1;
+        combined.extend(out2);
+        assert_eq!(combined, b"ab");
+    }
+
+    #[test]
+    fn osc_stripper_csi_preserved() {
+        let mut s = OscStripper::new();
+        // CSI \x1b[31m red \x1b[0m — 보존
+        let input: &[u8] = b"\x1b[31mred\x1b[0m";
+        assert_eq!(s.process(input), input);
+    }
+
+    #[test]
+    fn osc_stripper_state_persists() {
+        // 첫 chunk 에서 OSC 시작 후 두 번째 chunk 는 OSC body 안 — 모두 drop
+        let mut s = OscStripper::new();
+        let out1 = s.process(b"start\x1b]0");
+        let out2 = s.process(b";still-in-osc");
+        let out3 = s.process(b"\x07end");
+        let mut combined = out1;
+        combined.extend(out2);
+        combined.extend(out3);
+        assert_eq!(combined, b"startend");
+    }
 
     #[test]
     fn passes_plain_text() {

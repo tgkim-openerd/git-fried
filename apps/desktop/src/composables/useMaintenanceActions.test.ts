@@ -167,12 +167,17 @@ describe('useMaintenanceActions — lfsInstallMut.onSuccess', () => {
     vi.clearAllMocks()
   })
 
-  it('LFS install 성공 → maintLabel="git lfs install" + 인공 result', () => {
+  it('LFS install 성공 → maintLabel + 인공 result (D-LFS-002 contract — filter only, hook 미설치)', () => {
     const m = useMaintenanceActions()
     onSuccessFns[2]()
-    expect(m.maintLabel.value).toBe('git lfs install')
+    // D-LFS-002 (Codex c82 audit) — backend --local --skip-repo 라 hook 등록 안 함.
+    // UI 메시지도 filter 활성화만 보고하도록 정정.
+    expect(m.maintLabel.value).toBe('git lfs install --local --skip-repo')
     expect(m.maintResult.value?.success).toBe(true)
     expect(m.maintResult.value?.exitCode).toBe(0)
-    expect(toastSuccess).toHaveBeenCalledWith('LFS 초기화', 'pre-push hook 등록')
+    expect(toastSuccess).toHaveBeenCalledWith(
+      'LFS 초기화',
+      'filter clean/smudge 활성화 (hook 미설치)',
+    )
   })
 })
