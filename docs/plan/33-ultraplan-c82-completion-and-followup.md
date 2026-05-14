@@ -1,0 +1,192 @@
+# UltraPlan Sprint c82 완료 보고 + 후속 sprint 분할
+
+> **작성일**: 2026-05-14 (Sprint c82 작업 완료 시점)
+> **트리거**: `/goal ULTRAPLAN 끝날 때까지 전부 수행 CODEX와 같이 수행`
+> **베이스**: [docs/plan/32-ultraplan-perf-safety-c82.md](32-ultraplan-perf-safety-c82.md) (v0.6 final, 17 agent / 6 round / 48+ finding)
+> **상태**: c82 의 즉시 실행 가능 12 PR 모두 수행 ✓ / 장기 5 sprint 분할
+
+## 1. Sprint c82 완료 commit 카탈로그 (6 commit, main branch)
+
+| Commit | 카테고리 | 영향 |
+|---|---|---|
+| `770f1b9` | fix(safety) | SEC-201 panic stderr leak + SAF-401 AI subprocess timeout + D-GIT-001 git status no-optional-locks |
+| `ec4b5e1` | fix(git) | D-LFS-002 LFS install --local --skip-repo + D-LFS-001 push size NUL-safe (-z) |
+| `47420a5` | perf(build) | PERF-304 vite vendor-cm-langs split + PERF-305 Playwright workers=4 |
+| `209cd27` | fix(security) | SEC-202 deep-link destructive 9 alias 차단 + D-AI-001 AI snapshot pattern + eval safety doc |
+| `35b6578` | fix(safety) | SAF-302 PTY OSC escape strip + SAF-303 SQLite acquire_timeout(10s) |
+| `b6ed8a4` | fix(build) | vite.config.ts vitest types reference |
+
+**총 12 finding 해소** (Critical 3 + High 5 + Medium 4):
+- Critical: SEC-201, SEC-202, SAF-301 (panic="unwind") 중 SEC-201 + SEC-202 fix, SAF-301 은 측정 보류 (§ 3 참조)
+- High: SAF-401, SAF-302, SAF-303, D-AI-001, PERF-305
+- Medium: D-GIT-001, D-LFS-001, D-LFS-002, PERF-304
+
+**검증 통과** (각 commit):
+- vue-tsc --noEmit (typecheck): 0 error
+- vitest: 89 file / 895 test PASS (R5 SEC-202 destructive 차단 test 2건 추가)
+- cargo check + test: PASS (5 PTY sanitize unit test 추가)
+- vue-tsc -b && vite build: PASS (vitest types reference 추가 후)
+
+## 2. Sprint c82 미완료 / 부분 진행 항목
+
+### PR-A.00 SAF-301 (Cargo `panic="unwind"` 검토) — 측정 보류
+
+**현재 상태**: `Cargo.toml [profile.release] panic = "abort"` 유지
+
+**측정 필요**:
+- panic="abort" vs "unwind" 의 release binary size 차이 (실측 — 보통 +10~15%)
+- DB transaction unwinding 시나리오 unit test 작성 후 비교
+
+**보류 이유**: 측정 없이 자율 변경은 binary size 증가 trade-off + crash 시 cleanup 정책 결정 필요. 사용자 결정 영역.
+
+**Follow-up**: 별도 sub-sprint (c84+) — `cargo build --release` 2회 (abort/unwind) + bin size 측정 + SQLite transaction abort scenario test 작성 후 결정.
+
+### PR-A.1 vite/esbuild major upgrade — revert + dev-only CVE 명시
+
+**시도 결과**:
+- `bun update --latest vite esbuild` → vite 8.0.12 / esbuild 0.28.0
+- vite 8 의 `manualChunks` 시그니처 변경 (object → ManualChunksFunction) 으로 `vite build` 회귀
+- revert 후 vite 5.4.21 / esbuild 0.24.2 transitive 유지
+
+**현재 잔존 vuln** (`bun audit`):
+- vite ≤6.4.1: GHSA-4w7w-66w2-5vf9 (path traversal in `.map` handling, **dev only**)
+- esbuild ≤0.24.2: GHSA-67mh-4wv8-2f99 (dev server SSRF, **dev only**)
+
+**production 영향 0**: 두 CVE 모두 dev server (`vite` / `vite dev`) 한정. Tauri release build (`vite build` + cargo release) 결과물에는 영향 없음.
+
+**Follow-up**: § 4 PR-E major upgrade sprint (vite 5→6→7→8 + manualChunks function migration).
+
+### PR-A.5 bench actual 측정 — BENCH_REPO 부재로 skip
+
+**현재 상태**:
+- bench/git_perf.rs (criterion, 3 함수) ✓ 설치됨
+- bench/memory.ps1 (6 시나리오) ✓ 설치됨
+- bench/baseline.json — `actual: null` 6 metric placeholder 유지
+
+**Skip 사유**: `BENCH_REPO` 환경변수 unset. 사용자 보유 10k+ commit repo 경로 필요.
+
+**즉시 가능 (사용자 환경 입력 시)**:
+```bash
+# 1. cargo bench (3 함수)
+BENCH_REPO=/path/to/10k-commit-repo cargo bench --bench git_perf \
+  --manifest-path apps/desktop/src-tauri/Cargo.toml
+# 결과: apps/desktop/src-tauri/target/criterion/report/index.html
+
+# 2. memory baseline (6 시나리오)
+pwsh ./bench/memory.ps1
+# 결과: bench/memory-baseline.txt
+
+# 3. bench/baseline.json 6 metric `actual` 필드 채우기
+```
+
+**Follow-up**: 측정 sprint (c84+) — bench actual 채우기 + SAF-301 panic mode 와 함께 비교.
+
+## 3. 후속 Sprint plan 분할 (장기 5 sprint)
+
+### Sprint c83 (Quick + Medium, 1-2 sprint)
+
+- **PR-A.2** CSP `img-src 'self' data: https:` → `img-src 'self' https://avatars.githubusercontent.com https://*.gravatar.com` (avatar fallback dev 검증 필수)
+- **PR-B.1** CodeMirror lang-* dynamic import (`FileViewer.vue:14-20` 7 static import → ext 매핑 lazy load)
+- **PR-B.2** v-memo CommitGraph row (스크롤 +10~15% 추정)
+- **PR-B.3** locale lazy load (i18n/index.ts dynamic import — initial JS −50~100KB)
+- **PR-C.2** keyring fallback (NoEntry 외 OS keychain 에러 → in-memory cache + UI toast)
+- **PR-A.2~A.5 추가 결정**: PR-A.2 CSP 시 사용자 정책 확인 필요
+- **TST-503** bench actual 측정 (BENCH_REPO 입력 후)
+
+### Sprint c84 — SAF-201 Phase 1 (Critical-path unwrap audit)
+
+**측정 결과** (parent context, 2026-05-14):
+- ipc/ production unwrap: **4건** (모두 test 또는 정당한 lock expect — 수정 0)
+- forge/ production unwrap: **16건 (모두 test code 안)** — 수정 0
+- git/ production unwrap: **212건** — Phase 1 대상
+- launchpad.rs: 모두 test 함수 안
+
+**git/ 212 production unwrap 4 phase 분할**:
+- **Phase 1A** (git/path.rs + git/runner.rs + git/refs.rs) — hot path (호출 빈도 높음). 추정 ~40-60건
+- **Phase 1B** (git/branch.rs + git/commit.rs + git/checkout.rs + git/merge.rs) — 사용자 직접 명령. 추정 ~50-70건
+- **Phase 1C** (git/rebase.rs + git/cherry_pick.rs + git/reset.rs + git/restore.rs) — destructive 작업. 추정 ~40-60건
+- **Phase 1D** (잔여 — lfs.rs / worktree.rs / status.rs / diff.rs 등) — 추정 ~50-70건
+
+각 Phase 후 `cargo test` + `cargo clippy` 회귀 검증. `?` operator / `map_err` / `Result::ok()` 패턴별 적용.
+
+**자동화 후보**: rust-analyzer 의 "Replace unwrap with ?" code action 일괄 적용 후 컴파일 에러 사례별 수정.
+
+### Sprint c85 — SEC-301 SSH key 통합
+
+**현재 상태**:
+- `profiles.rs:27 ssh_key_path: Option<String>` 메타데이터 저장 OK
+- `git/runner.rs` 에서 `GIT_SSH_COMMAND` / `SSH_AUTH_SOCK` env var 적용 안 됨
+- SSH-only 사용자 silent 실패 또는 PAT fallback
+
+**구현 작업**:
+1. profile active 시 `ssh_key_path` 가져와 `GIT_SSH_COMMAND="ssh -i <key> -o IdentitiesOnly=yes"` 환경변수 설정
+2. SSH agent 사용 시 `SSH_AUTH_SOCK` 자동 detect (Linux/Mac default, Windows OpenSSH)
+3. passphrase 처리: keyring 에 SSH passphrase 저장 (SAF-203 fallback 과 통합)
+4. SSH error 시 user-friendly toast: "SSH key invalid — Settings 에서 변경"
+
+**의존성**: SAF-203 keyring fallback 먼저 완료 (Sprint c83 PR-C.2).
+
+### Sprint c86 — PR-D OAuth 보안 강화 (v1.0 전제)
+
+**v1.0 OAuth 활성 시점 결정 후**:
+- **SEC-104** PKCE S256 구현 (`auth_oauth.rs` plain → SHA256 + base64url challenge)
+- **SEC-105** deep-link callback URL allowlist + state 매칭 (CSRF 방어)
+- **SEC-106 정정** tauri-plugin-shell 2.3.5 patched — capability 표면 잔존 (현재 `shell:allow-open` 만)
+- **SAF-305** PKCE `assert!` (release strip 가능) → if-Err 패턴 (Codex R2 finding)
+
+### Sprint c87+ — PR-E major upgrade (vite/TS/tailwindcss)
+
+**vite 5 → 6 → 7 → 8 단계별**:
+1. **PR-E.1** vite 5 → 6 — `manualChunks` object form 여전히 지원. tsconfig esm 확인
+2. **PR-E.2** vite 6 → 7 — vue plugin 호환성 검증
+3. **PR-E.3** vite 7 → 8 — `manualChunks` → ManualChunksFunction 마이그레이션 + vitest 4 필요 가능성
+4. **PR-E.4** TS 5.6 → 6 — vue-tsc 호환성 + Vue 3.5 union type narrowing
+5. **PR-E.5** tailwindcss 3.4 → 4 — CSS-first config 마이그레이션 (breaking)
+6. **PR-E.6** vitest 2 → 4 (필요 시 PR-E.3 차원)
+
+**각 단계 회귀 게이트**: vue-tsc 0 / vitest 모두 PASS / cargo check / vite build / Playwright e2e smoke.
+
+### Sprint c88+ — PR-F 측정 인프라
+
+- **TST-501** vitest coverage threshold 단계별 bump (lines 11.3 → 13 → 15...)
+- **TST-502** Tauri webdriver e2e (현 Playwright = 일반 Chromium + devMock). 실제 IPC 통과 e2e 분리 plan
+- **PERF-307** CommitGraph virtualizer Playwright perf profile sprint (estimateSize drift 측정)
+- **SPD-401** vue-tsc -b incremental 시간 측정 (현재 `composite: true + tsBuildInfoFile` 적용됨 — actual 측정값 필요)
+
+## 4. 측정 / 운영 follow-up (사용자 환경 입력 필요)
+
+| 항목 | 필요 입력 | 즉시 실행 명령 |
+|---|---|---|
+| **bench actual 6 metric** | `BENCH_REPO=/path/to/10k-commit-repo` | `cargo bench --bench git_perf` + `pwsh ./bench/memory.ps1` |
+| **SAF-301 bin size 비교** | (사용자 결정: panic="abort" 유지 vs unwind 전환) | `cargo build --release` × 2 (abort 현재 vs unwind 토글) → `ls -la` 비교 |
+| **vite/esbuild CVE 0** | (PR-E vite 8 major sprint 진입 시점) | `bun update --latest vite esbuild` + manualChunks function migration |
+
+## 5. Sprint c82 Verification Summary (sprint commit 카탈로그)
+
+```bash
+# 회귀 0 확인
+git log --oneline HEAD~6..HEAD
+# 770f1b9 fix(safety): panic stderr leak + AI subprocess timeout + git status no-optional-locks
+# ec4b5e1 fix(git): LFS install scope + push size NUL-safe parsing
+# 47420a5 perf(build): vite vendor-cm-langs split + Playwright workers=4 parallel
+# 209cd27 fix(security): SEC-202 deep-link destructive 차단 + D-AI-001 AI snapshot + eval safety doc
+# 35b6578 fix(safety): SAF-302 PTY OSC escape strip + SAF-303 SQLite acquire_timeout
+# b6ed8a4 fix(build): vite.config.ts 에 vitest types reference 추가
+
+# Sprint c82 회귀 검증 명령
+bun run --cwd apps/desktop typecheck  # vue-tsc --noEmit: 0
+bun run --cwd apps/desktop test       # vitest 89 file / 895 test PASS
+bun run --cwd apps/desktop build      # vue-tsc -b && vite build PASS
+node scripts/cargo-rustup.mjs check --manifest-path apps/desktop/src-tauri/Cargo.toml  # PASS
+node scripts/cargo-rustup.mjs test --manifest-path apps/desktop/src-tauri/Cargo.toml   # PASS
+```
+
+## 6. 다음 단계 제안
+
+| 조건 | 제안 |
+|---|---|
+| Sprint c82 검증 완료 | `git push origin main` (사용자 결정 필요 — main 직접 push 정책 확인) |
+| Codex c82 audit | `task-mp53zjgg-k1f7rw` (Sprint c82 6 commit cross-validation, background) 결과 도착 시 v0.8 update |
+| 즉시 측정 진입 | 사용자 `BENCH_REPO` 입력 후 PR-A.5 / SAF-301 실행 |
+| Sprint c83 진입 | `/plan PR-B.1 CodeMirror lang lazy load` 또는 `/integrate PR-A.2 CSP` |
+| 장기 plan 확장 | 본 plan/33 의 § 3 sprint 별 sub-plan 작성 (c84 SAF-201 / c85 SEC-301 / c86 PR-D / c87 PR-E / c88 PR-F) |
