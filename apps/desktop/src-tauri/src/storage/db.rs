@@ -72,8 +72,12 @@ impl Db {
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
             .synchronous(sqlx::sqlite::SqliteSynchronous::Normal);
 
+        // SAF-303 (R5) — acquire_timeout 명시 (sqlx default 30s 너무 길어 IPC 무응답 유발).
+        // 10s 면 Doherty Threshold (400ms) 를 25배 초과 — UI 가 spinner 후 graceful 에러 toast 가능.
+        // pool size 8 유지 (bulk concurrency 4 로 제한해서 pool 고갈 방지 — bulk.rs follow-up sprint).
         let pool = SqlitePoolOptions::new()
             .max_connections(8)
+            .acquire_timeout(std::time::Duration::from_secs(10))
             .connect_with(opts)
             .await
             .map_err(AppError::Db)?;

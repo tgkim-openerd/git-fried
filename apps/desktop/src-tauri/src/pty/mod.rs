@@ -36,7 +36,11 @@ impl PtySession {
             .writer
             .as_mut()
             .ok_or_else(|| AppError::internal("pty writer 가 close 됨"))?;
-        w.write_all(data).map_err(AppError::Io)?;
+        // SAF-302 (Codex R5) — OSC (Operating System Command) escape strip.
+        // xterm title spoofing (`ESC ] 0 ; <title> BEL`) 같은 terminal hijack 방지.
+        // 일반 CSI (`ESC [ ... m` color, cursor) 는 보존 — 정상 ANSI 색상 입력 허용.
+        let sanitized = sanitize_pty_input(data);
+        w.write_all(&sanitized).map_err(AppError::Io)?;
         w.flush().map_err(AppError::Io)?;
         Ok(())
     }
@@ -63,6 +67,83 @@ impl PtySession {
         let _ = self.child.kill();
         // writer 도 명시적으로 close 해서 reader 가 EOF 받도록.
         self.writer = None;
+    }
+}
+
+/// SAF-302 (Codex R5) — PTY input 의 OSC escape sequence strip.
+///
+/// 차단:
+///   - OSC (Operating System Command): `ESC ]` ... terminator (`BEL` 0x07 또는 `ESC \` ST)
+///     - 가장 흔한 attack: xterm title spoofing (`ESC ] 0 ; fake-prompt BEL`)
+///     - clipboard 조작 (OSC 52), hyperlink (OSC 8) 등 다른 OSC 도 함께 차단 — 보수적 default
+///
+/// 보존:
+///   - 일반 CSI (`ESC [` ... m/etc): SGR color, cursor move 등 정상 ANSI 동작
+///   - DCS / APC / PM (희소 사용) — 별도 강화 필요 시 후속 sprint 추가
+///
+/// 비용: O(n) 단일 패스, sanitize 후 Vec 1회 alloc. 짧은 사용자 입력에 무시 가능.
+fn sanitize_pty_input(data: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(data.len());
+    let mut i = 0;
+    while i < data.len() {
+        // OSC 시작 감지: ESC ]
+        if i + 1 < data.len() && data[i] == 0x1b && data[i + 1] == b']' {
+            i += 2;
+            // terminator 까지 skip (BEL 0x07 또는 ESC\ )
+            while i < data.len() {
+                if data[i] == 0x07 {
+                    i += 1;
+                    break;
+                }
+                if data[i] == 0x1b && i + 1 < data.len() && data[i + 1] == b'\\' {
+                    i += 2;
+                    break;
+                }
+                i += 1;
+            }
+        } else {
+            out.push(data[i]);
+            i += 1;
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod sanitize_tests {
+    use super::sanitize_pty_input;
+
+    #[test]
+    fn passes_plain_text() {
+        assert_eq!(sanitize_pty_input(b"echo hello\n"), b"echo hello\n");
+    }
+
+    #[test]
+    fn passes_csi_color() {
+        // ESC [ 31 m = red color — 보존
+        let input: &[u8] = b"\x1b[31mred\x1b[0m";
+        assert_eq!(sanitize_pty_input(input), input);
+    }
+
+    #[test]
+    fn strips_osc_title_bel() {
+        // ESC ] 0 ; fake BEL — strip
+        let input: &[u8] = b"prefix\x1b]0;fake-prompt\x07suffix";
+        assert_eq!(sanitize_pty_input(input), b"prefixsuffix");
+    }
+
+    #[test]
+    fn strips_osc_st() {
+        // ESC ] 8 ; ; url ESC\ — strip (hyperlink)
+        let input: &[u8] = b"a\x1b]8;;https://x\x1b\\b";
+        assert_eq!(sanitize_pty_input(input), b"ab");
+    }
+
+    #[test]
+    fn strips_osc_at_end_no_terminator() {
+        // unterminated OSC — 끝까지 strip (안전 우선)
+        let input: &[u8] = b"safe\x1b]0;runaway";
+        assert_eq!(sanitize_pty_input(input), b"safe");
     }
 }
 
