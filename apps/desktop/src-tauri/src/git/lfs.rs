@@ -91,12 +91,20 @@ pub async fn status(repo: &Path) -> AppResult<LfsStatus> {
     })
 }
 
-/// `git lfs install` — 신규 레포에 LFS hook 등록 (`docs/plan/14 §2 A5`).
+/// `git lfs install --local --skip-repo` — 신규 레포에 LFS hook 등록 (`docs/plan/14 §2 A5`).
 /// 시스템 git-lfs 가 PATH 에 있어야 함.
+///
+/// D-LFS-002 (Codex R5) — 옵션 없으면 **global clean/smudge filter side effect**.
+/// `--local` 로 repo-local config 만 변경, `--skip-repo` 로 hook 설치 분리 (필요시 별도 IPC 추가).
+/// Source: https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-install.adoc
 pub async fn install(repo: &Path) -> AppResult<()> {
-    git_run(repo, &["lfs", "install"], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    git_run(
+        repo,
+        &["lfs", "install", "--local", "--skip-repo"],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
     Ok(())
 }
 
@@ -200,16 +208,24 @@ pub async fn push_size(repo: &Path) -> AppResult<LfsPushSize> {
     }
 
     // 3. 변경된 파일 목록 (added or modified, deleted 제외).
+    // D-LFS-001 (Codex R5) — `-z` flag 로 NUL 종료. `.lines()` 는 newline 포함 path / quoted path
+    // 에서 잘못 파싱. Source: https://git-scm.com/docs/git-diff `-z` 옵션.
     let changed = git_run(
         repo,
-        &["diff", "--name-only", "--diff-filter=AM", "@{u}..HEAD"],
+        &[
+            "diff",
+            "-z",
+            "--name-only",
+            "--diff-filter=AM",
+            "@{u}..HEAD",
+        ],
         &GitRunOpts::default(),
     )
     .await?
     .into_ok()
     .unwrap_or_default();
     let files: Vec<String> = changed
-        .lines()
+        .split('\0')
         .filter(|s| !s.trim().is_empty())
         .map(|s| s.to_string())
         .collect();
