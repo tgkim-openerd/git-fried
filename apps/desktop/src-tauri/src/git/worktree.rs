@@ -120,9 +120,16 @@ async fn check_dirty(wt_path: &Path) -> Option<bool> {
     if !wt_path.exists() {
         return None;
     }
-    let out = git_run(wt_path, &["status", "--porcelain"], &GitRunOpts::default())
-        .await
-        .ok()?;
+    // Codex R5 D-GIT-001 — background optional lock race 방지 (다른 git 프로세스 동시 access 시
+    // index refresh write lock 충돌). `--no-optional-locks` 는 Git 공식 docs 의 BACKGROUND
+    // REFRESH 권장: https://git-scm.com/docs/git-status.html
+    let out = git_run(
+        wt_path,
+        &["--no-optional-locks", "status", "--porcelain"],
+        &GitRunOpts::default(),
+    )
+    .await
+    .ok()?;
     if out.exit_code != Some(0) {
         return None;
     }

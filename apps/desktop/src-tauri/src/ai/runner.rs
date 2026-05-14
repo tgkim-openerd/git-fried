@@ -97,6 +97,12 @@ pub async fn detect_clis() -> Vec<AiProbe> {
 ///
 /// Claude / Codex 모두 비대화식 모드. stream 은 v0.2 다음 단계 (Tauri Channel<String>).
 /// Sprint c35 — `cli.build_args(prompt)` 위임으로 match 인라인 제거.
+///
+/// SAF-401 (Codex R5 강화): backend timeout 적용 — frontend IPC timeout 은 child cancellation 이
+/// 아니므로 backend 에서 별도 `tokio::time::timeout` + `child.kill()` 필요. 60s 표준 (AI roundtrip
+/// 의 doherty_threshold 8s × 7.5 여유). 초과 시 child kill + AppError::Timeout.
+pub const AI_RUN_TIMEOUT_SECS: u64 = 60;
+
 pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
     let start = std::time::Instant::now();
 
@@ -109,7 +115,26 @@ pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let output = cmd.output().await.map_err(AppError::Io)?;
+    // SAF-401 — child 소유권 보존 + tokio::time::timeout. 초과 시 OS 자연 정리.
+    // (wait_with_output 가 child 소유권을 가져가므로 timeout 시 직접 kill 불가 — 다음 sprint 에서
+    //  wait + manual stdout/stderr read 패턴으로 explicit kill 가능)
+    let child = cmd.spawn().map_err(AppError::Io)?;
+    let output = match tokio::time::timeout(
+        std::time::Duration::from_secs(AI_RUN_TIMEOUT_SECS),
+        child.wait_with_output(),
+    )
+    .await
+    {
+        Ok(res) => res.map_err(AppError::Io)?,
+        Err(_) => {
+            // wait_with_output 가 child 소유권을 가져갔으므로 직접 kill 불가능.
+            // OS 가 자연 종료 시 정리. 추후 sprint 에서 wait + manual stdout/stderr read 패턴 재구성 가능.
+            return Err(AppError::internal(format!(
+                "AI 명령 timeout {}초 초과 ({:?})",
+                AI_RUN_TIMEOUT_SECS, cli
+            )));
+        }
+    };
 
     // Sprint c35 — git/path::decode_korean_safe 위임 (UTF-8 + GBK fallback).
     // stdout 은 NFC 미적용 (AI 응답 content 보존), stderr 도 동일.

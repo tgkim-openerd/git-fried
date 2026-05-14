@@ -126,9 +126,14 @@ pub async fn undo_last_action(path: &Path) -> AppResult<UndoResult> {
     // 3.5. checkout undo 는 working tree clean 검증 (status --porcelain 빈 출력).
     //      dirty 시 자동 checkout 이 변경 손상 가능 → 거부.
     if is_checkout {
-        let status = git_run(path, &["status", "--porcelain"], &GitRunOpts::default())
-            .await?
-            .into_ok()?;
+        // Codex R5 D-GIT-001 — `--no-optional-locks` 로 background lock race 회피.
+        let status = git_run(
+            path,
+            &["--no-optional-locks", "status", "--porcelain"],
+            &GitRunOpts::default(),
+        )
+        .await?
+        .into_ok()?;
         if !status.trim().is_empty() {
             return Ok(UndoResult {
                 action,
@@ -250,9 +255,14 @@ pub async fn redo_last_action(path: &Path) -> AppResult<UndoResult> {
 
     // 3. checkout redo 는 working tree clean 검증.
     if is_checkout {
-        let status = git_run(path, &["status", "--porcelain"], &GitRunOpts::default())
-            .await?
-            .into_ok()?;
+        // Codex R5 D-GIT-001 — `--no-optional-locks` 로 background lock race 회피.
+        let status = git_run(
+            path,
+            &["--no-optional-locks", "status", "--porcelain"],
+            &GitRunOpts::default(),
+        )
+        .await?
+        .into_ok()?;
         if !status.trim().is_empty() {
             return Ok(UndoResult {
                 action,
