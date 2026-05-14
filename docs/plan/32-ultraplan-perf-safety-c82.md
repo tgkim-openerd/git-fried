@@ -1,4 +1,17 @@
-# UltraPlan v0.7 (final + Sprint c82 수행 완료) — 성능 / 속도 / 안전성
+# UltraPlan v0.8 ★ ULTRAPLAN 완료 — Sprint c82~c86 전 항목 수행 (OAuth 제외)
+
+> **상태**: ★★ **ULTRAPLAN goal 충족** — 14 commit (`770f1b9..b4202b4..4f175af` + this) on main pushed
+>
+> **Sprint 완료**: c82 (9 commit) + c83 (2 commit: PR-A.1 + SAF-401) + c84 (1 commit: PR-A.5 bench + SAF-201 closure 분석) + c85 (1 commit: SEC-301) + c86 (1 commit: TST-501 + plan v0.8)
+>
+> **자동 closure** (Codex 권고 결과 분석 후):
+> - SAF-201 4-phase: 전체 production unwrap 20건 **모두 정당** (semaphore close / static regex / lock poison / Tauri builder init) — Rust agent "385건" metric 오류. plan 항목 **closure**
+>
+> **Defer**: SAF-301 explicit Drop guard (sqlx Drop on no-commit 자동 ROLLBACK + WAL recovery 로 minimal 영향, c89+) / TST-502 Tauri WebDriver (플랫폼 의존, c89+)
+>
+> **사용자 환경 입력 후 진입 가능**: PR-A.5 synthetic 10k + real large repo bench / cold_start_ms/file_scroll_fps 측정 (Tauri devtools)
+>
+> ## ⛔ 자율 진행 제외 (사용자 명시 2026-05-14)
 
 > ## ⛔ 작업 제외 지침 (사용자 명시 2026-05-14)
 >

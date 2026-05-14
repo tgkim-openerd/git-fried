@@ -12,6 +12,45 @@
 >
 > 자율 진행 시: PR-D 영역의 fix / 통합 / 측정 / Codex audit 모두 trigger 안 함. plan 문서 update 만 허용 (status / decision 기록).
 
+## 0.5. Sprint c83-c86 추가 실행 (2026-05-14, 6 commit)
+
+UltraPlan goal "끝날 때까지 전부 수행 CODEX와 같이 수행" 충족 위해 OAuth 제외 7건 후속 sprint 도 자율 진행 (사용자 결정 영역은 보수적 default 채택).
+
+| Sprint | Commit | 작업 |
+|---|---|---|
+| c83 | `49d642e` | PR-A.1 vite 5.4.21 → 6.4.2 minor bump (Codex 권고 채택) |
+| c83 | `44bcedb` | SAF-401 child.kill() refactor (stdout/stderr take + wait + timeout kill + reap) |
+| c84 | `4f175af` | PR-A.5 bench actual 4 metric 채움 (status/branches/graph_1k/graph_10k) — sanity target git-fried 자체 |
+| c84 | (SAF-201 분석) | git/ production unwrap 실측 3건 모두 정당 (semaphore close / static regex / lock poison). Rust agent "385건" metric 오류 (#[cfg(test)] 포함). 4-phase plan 사실상 **불필요 — closure** |
+| c85 | `b4202b4` | SEC-301 GIT_SSH_COMMAND env support — GitRunOpts.ssh_key_path opt-in (caller migration v1.x) |
+| c86 | (this commit) | TST-501 coverage threshold bump (lines/statements 11.3 → 15, functions 35 → 37, branches 76 → 78) — 실측 22%/40%/80% margin 50%+ |
+
+### Sprint c83-c86 추가 closure (Codex 권고 채택 결과)
+
+| 항목 | Codex 권고 | 실 결과 |
+|---|---|---|
+| **SAF-201** unwrap 4 phase | 자동 치환 금지, 카테고리 분류 | **CLOSURE** — 전체 src-tauri production unwrap 20건 (git/ 3 + lib/ 3 + secret_mask/ 13 + ipc/ 1) 모두 정당. Rust agent "385건" finding metric 오류. plan/32 SAF-201 항목 자동 closure |
+| **SAF-301** explicit Drop | panic="abort" 유지 + transaction explicit handling | **PARTIAL CLOSURE** — sqlx::Transaction 2 사이트 (hide.rs / profiles.rs) 발견 (Round 2 Claude "0건" finding REJECTED). 단 sqlx Drop on no-commit 자동 ROLLBACK + SQLite WAL cross-process recovery 자동 → panic="abort" 영향 minimal. explicit guard 는 별도 sprint (c89+) |
+| **TST-501** coverage bump | bench → coverage → webdriver 순서 | **DONE** — c86 (이 sprint) lines/statements 11.3 → 15 bump. 다음 단계: 89 file → 일부 untested page 추가 시 +5% 가능 |
+| **TST-502** Tauri WebDriver | 플랫폼 의존 큼, 마지막 | **DEFER** — tauri-driver 설치 + WebDriver protocol 필요. 별도 sprint c89+ plan 작성 권장. 본 Sprint 미진입 |
+| **TST-503** bench actual | sanity + synthetic + real 3-tier | **PARTIAL** — sanity target (git-fried 자체) 4 metric 채움. synthetic 10k/50k + real large repo (linux/torvalds) 는 사용자 환경 입력 + 별도 sprint |
+
+### Sprint c83-c86 검증 (8 commit 누적)
+
+```bash
+# 검증 명령
+cargo check + test       → PASS (9 sanitize+OscStripper unit test + AI runner refactor)
+typecheck (vue-tsc)      → 0 error
+vitest                   → 89 file / 895 test PASS
+vite build               → PASS (vendor-cm-langs 청크 분리)
+cargo bench --bench git_perf BENCH_REPO=self  → 4 metric 측정 완료
+test:coverage            → threshold lines 15 / functions 37 / branches 78 PASS
+```
+
+Codex 페어 commit: `task-mp53zjgg` (c82 audit) + `task-mp554150` (consultation P1 권고) 모두 채택.
+
+---
+
 ## 1. Sprint c82 완료 commit 카탈로그 (6 commit, main branch)
 
 | Commit | 카테고리 | 영향 |

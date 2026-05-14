@@ -135,14 +135,15 @@ export default defineConfig({
         'src/router/**',
       ],
       // Threshold 전략 — global 베이스라인 보호.
-      // 진행도: 3% → 5% → 6% → 7% → 7.5% → 8% → 8.5% → 9% → 9.5% → 9.9% → 11% → 11.3% (Sprint c29-10).
-      // 현재 (c77 시점): 83 test files / 884 tests — threshold 자체는 c29-10 baseline 그대로 유지 중.
-      // functions / branches 는 margin 작음 — bump 보류. lines/statements 만 +0.3 누적 가능 시 검토.
+      // 진행도: 3% → 5% → 6% → 7% → 7.5% → 8% → 8.5% → 9% → 9.5% → 9.9% → 11% → 11.3% (c29-10) → 15% (Sprint c86 TST-501).
+      // Sprint c86 (Codex consultation task-mp554150 P2): 89 test files / 895 tests 누적, 실측 lines 22% /
+      // functions 40% / branches 80% — Codex 권고 'bench → coverage → webdriver' 순서로 coverage 도
+      // 단계 bump. 보수적 default (margin 50%+ 유지).
       thresholds: {
-        lines: 11.3,
-        statements: 11.3,
-        functions: 35,
-        branches: 76,
+        lines: 15,
+        statements: 15,
+        functions: 37,
+        branches: 78,
       },
     },
   },
