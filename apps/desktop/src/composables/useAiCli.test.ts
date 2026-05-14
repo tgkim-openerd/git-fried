@@ -54,6 +54,8 @@ describe('useAiCli', () => {
   beforeEach(() => {
     probesRef.value = undefined
     mockNotify.mockClear()
+    // vitest 4 — mock call count 가 test 간 carry over. 명시 clear 필요.
+    mockConfirmDialog.mockClear()
     __resetAiCallCountForTest()
   })
   afterEach(() => {

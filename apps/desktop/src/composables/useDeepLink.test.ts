@@ -59,7 +59,7 @@ describe('dispatchDeepLink', () => {
           },
         },
       } as unknown as Parameters<typeof dispatchDeepLink>[1]['router'],
-      store: { setActiveRepo: setActiveRepoSpy },
+      store: { setActiveRepo: setActiveRepoSpy as unknown as (id: number) => void },
     }
     dispatchShortcutSpy.mockClear()
     vi.useFakeTimers()

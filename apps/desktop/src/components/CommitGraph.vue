@@ -110,6 +110,9 @@ const {
   closeSearch,
   onKeydown,
 } = useGraphSearch(rows, { onClose: () => drawGraph() })
+// vue-tsc 3 회귀: template `ref="searchInputRef"` 의 사용을 unused 로 오인 (TS 6133).
+// void 로 사용 표시 (런타임 영향 0).
+void searchInputRef
 
 // Sprint c40 — canvas 렌더링 + WIP idx 판정.
 const { drawGraph, isWipIdx } = useGraphCanvasRenderer({
