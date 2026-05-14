@@ -1,21 +1,24 @@
 {
-  "_comment": "v0.6 #23 (UltraPlan plan/31) — performance baseline. plan/30 §10 metrics 의 placeholder.",
-  "_note": "실 측정은 외부 BENCH_REPO (10k commit repo) 환경에서 bench/start.ps1 / bench/git_perf.rs / bench/memory.ps1 실행 후 갱신. 본 baseline.json 은 schema + null placeholder 만.",
+  "_comment": "v0.4+ Sprint c84 (UltraPlan plan/33 PR-A.5) — performance baseline. plan/30 §10 metrics + Codex consultation (task-mp554150) 권고 채택.",
+  "_note": "Sanity target = git-fried 자체 (200+ commit) 측정. Codex 권고대로 추후 synthetic 10k/50k + real large repo (linux/torvalds) bench 추가 필요. cargo bench / memory.ps1 / Tauri devtools 도구 카탈로그는 plan/33 §6.5 #3 참조.",
   "version": "v0.4",
-  "measured_at": null,
+  "measured_at": "2026-05-14T16:30:00Z",
   "environment": {
-    "os": null,
+    "os": "Windows 11 Pro 10.0.26200",
     "cpu": null,
     "memory_gb": null,
-    "bench_repo_commits": null
+    "bench_repo_commits": "200+ (git-fried self, sanity target only)"
   },
   "metrics": {
-    "cold_start_ms": { "target": 1500, "actual": null },
-    "graph_render_1k_ms": { "target": 100, "actual": null, "_note": "c51 측정 95ms 회복 검증" },
-    "file_scroll_fps": { "target": 60, "actual": null },
-    "memory_10_repos_mb": { "target": 100, "actual": null },
-    "ai_compose_roundtrip_ms": { "target": 8000, "actual": null, "_note": "60s timeout 내" },
+    "status_clean_ms": { "target": null, "actual": 17.286, "range_ms": [14.955, 18.968], "_note": "Sprint c84 cargo bench --bench git_perf 측정 (Codex consultation P1)" },
+    "list_branches_ms": { "target": null, "actual": 25.047, "range_ms": [20.847, 27.512], "_note": "Sprint c84 cargo bench" },
+    "graph_render_1k_ms": { "target": 100, "actual": 57.302, "range_ms": [51.846, 68.749], "_note": "Sprint c84 cargo bench compute_graph/limit_1000 PASS (target 100ms)" },
+    "graph_render_10k_ms": { "target": 500, "actual": 52.210, "range_ms": [47.589, 54.988], "_note": "Sprint c84 — sanity target 200+ commit repo 라 1000/10000 사이 walker 변화 없음" },
+    "cold_start_ms": { "target": 1500, "actual": null, "_note": "Tauri devtools 측정 필요 (Codex consultation P1)" },
+    "file_scroll_fps": { "target": 60, "actual": null, "_note": "Chrome DevTools Performance + requestAnimationFrame counter 측정" },
+    "memory_10_repos_mb": { "target": 100, "actual": null, "_note": "pwsh ./bench/memory.ps1 실행 시 fill 가능" },
+    "ai_compose_roundtrip_ms": { "target": 8000, "actual": null, "_note": "60s timeout 내. p95 실측 후 SAF-401 60s 조정 검토" },
     "doherty_threshold_ms": { "target": 400, "actual": null, "_note": "v0.4 #8 — invoke 평균 < 400ms" }
   },
-  "schema_owner": "docs/plan/30-ux-comprehensive-c55-batch.md §10"
+  "schema_owner": "docs/plan/30-ux-comprehensive-c55-batch.md §10 / docs/plan/33 §6.5 #3 (Codex PR-A.5)"
 }
