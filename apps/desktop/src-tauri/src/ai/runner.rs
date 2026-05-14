@@ -13,10 +13,19 @@
 
 use crate::error::{AppError, AppResult};
 use crate::git::path::decode_korean_safe;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
+use tokio::sync::Semaphore;
+
+/// code-review SEC-005 — AI subprocess concurrent spawn cap.
+///
+/// 단일 호출 1MB cap (SAF-401-FU) 외에 동시 호출 수 자체를 제한 — N×1MB 메모리 폭주 + N
+/// concurrent timeout 60s spawn 방지. AI 작업은 사용자가 명시 trigger (commit msg / PR body /
+/// resolve conflict / review) 라 동시 2건 cap 충분. 초과 시 wait (queue) — error 아님.
+static AI_RUN_SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(2));
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -54,6 +63,11 @@ pub struct AiOutput {
     pub text: String,
     pub stderr: String,
     pub took_ms: u64,
+    /// code-review SEC-006 — stdout/stderr 가 `AI_RUN_MAX_OUTPUT_BYTES` 1MB 에 도달해
+    /// 잘렸으면 true. 사용자는 "정상 응답 1MB" 와 "악성/runaway truncated 1MB" 구분 가능.
+    /// frontend 는 toast 표시 시 본 flag 로 "응답 1MB 초과 — 잘렸을 수 있음" warning.
+    #[serde(default)]
+    pub truncated: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,6 +136,13 @@ pub const AI_RUN_MAX_OUTPUT_BYTES: u64 = 1024 * 1024;
 pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
     let start = std::time::Instant::now();
 
+    // code-review SEC-005 — concurrent spawn cap (Semaphore=2). 초과 시 queue 대기.
+    // close() 호출 안 한 정적 Semaphore 라 acquire().await 가 panic 없이 항상 Ok.
+    let _permit = AI_RUN_SEMAPHORE
+        .acquire()
+        .await
+        .map_err(|e| AppError::internal(format!("AI semaphore acquire 실패: {e}")))?;
+
     let mut cmd = Command::new(cli.binary());
     cmd.args(cli.build_args(prompt))
         .env("LANG", "C.UTF-8")
@@ -181,6 +202,22 @@ pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
     let stdout_bytes = stdout_task.await.unwrap_or_default();
     let stderr_bytes = stderr_task.await.unwrap_or_default();
 
+    // code-review SEC-006 + ARCH-006 — truncated marker + tracing::warn.
+    // `.take(N).read_to_end()` 가 정확히 N byte 채웠으면 truncate 가능성 매우 큼 (EOF 와 N 동시 도달
+    // 확률 무시 가능). caller 가 AiOutput.truncated 로 UI warning 표시.
+    let cap = AI_RUN_MAX_OUTPUT_BYTES as usize;
+    let truncated = stdout_bytes.len() == cap || stderr_bytes.len() == cap;
+    if truncated {
+        tracing::warn!(
+            target: "git_fried_lib::ai",
+            cli = ?cli,
+            stdout_len = stdout_bytes.len(),
+            stderr_len = stderr_bytes.len(),
+            cap,
+            "AI subprocess output 1MB cap 도달 — 응답 truncate 가능"
+        );
+    }
+
     // Sprint c35 — git/path::decode_korean_safe 위임 (UTF-8 + GBK fallback).
     // stdout 은 NFC 미적용 (AI 응답 content 보존), stderr 도 동일.
     let stdout_text = decode_korean_safe(&stdout_bytes, false);
@@ -191,6 +228,7 @@ pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
         text: stdout_text,
         stderr: stderr_text,
         took_ms: start.elapsed().as_millis() as u64,
+        truncated,
     })
 }
 

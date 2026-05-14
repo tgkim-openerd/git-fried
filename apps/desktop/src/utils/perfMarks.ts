@@ -16,8 +16,12 @@
 //
 // 결과: 사용자가 devtools console 에서 `__gitFriedPerf` 확인 가능.
 
-const W = typeof window !== 'undefined' ? window : (globalThis as Window & typeof globalThis)
-const PERF = W?.performance
+// code-review TYPE-001 — Tauri 는 항상 browser context (Node SSR 없음). globalThis 캐스트
+// 대신 narrow 한 fallback: performance 만 optional 노출. SSR/test 환경 (Node) 에서도
+// happy-dom 이 performance 제공.
+const W: { performance?: Performance } =
+  typeof window !== 'undefined' ? window : (globalThis as { performance?: Performance })
+const PERF = W.performance
 
 /**
  * Performance.mark wrapper. PerformanceObserver 가 자동 capture.
@@ -103,6 +107,8 @@ export interface GitFriedPerfAPI {
   // 향후 expand: graph_render_ms / ai_compose_ms 등
 }
 
+// code-review ARCH-002 — non-composable: main.ts entry-level 1회 호출. window 등록 후
+// unmount cleanup 없음 (app lifetime 과 동일). lifecycle bind 가 아니라 startup augment.
 export function installPerfAPI(): void {
   if (typeof window === 'undefined') return
   // SEC-003 — DEV / explicit opt-in 만. production 무조건 노출 차단.

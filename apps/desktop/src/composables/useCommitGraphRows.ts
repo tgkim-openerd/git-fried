@@ -63,6 +63,8 @@ export function useCommitGraphRows({ repoId, rows, containerRef }: UseCommitGrap
       //
       // code-review TYPE-002: @tanstack/virtual-core 의 TItemElement 는 non-nullable.
       // 이전 `el?.` 는 dead optional chaining. `||` 로 0 height 도 ROW_H fallback.
+      // code-review ARCH-003: ROW_H 는 useGraphWidth 의 export const — 외부에서 변경 시
+      // estimateSize + measureElement fallback 모두 동시 변경됨 (silent coupling 의도적).
       measureElement: (el) => el.getBoundingClientRect().height || ROW_H,
     })),
   )
