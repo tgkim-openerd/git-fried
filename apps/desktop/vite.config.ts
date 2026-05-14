@@ -100,6 +100,17 @@ export default defineConfig({
             '@codemirror/language',
             '@codemirror/merge',
           ],
+          // PERF-304 (Codex R1) — lang-* 패키지 별도 청크. FileViewer 비활성 사용자에게는
+          // initial bundle 에서 분리 (PR-B.1 dynamic import 와 시너지).
+          'vendor-cm-langs': [
+            '@codemirror/lang-javascript',
+            '@codemirror/lang-vue',
+            '@codemirror/lang-rust',
+            '@codemirror/lang-css',
+            '@codemirror/lang-html',
+            '@codemirror/lang-json',
+            '@codemirror/lang-markdown',
+          ],
         },
       },
     },

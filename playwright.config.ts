@@ -11,10 +11,12 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: false,
+  // PERF-305 (Codex R1 + Build agent agreed) — 병렬 e2e. CI 는 보수적 (2 worker), local 4.
+  // dev server 1 instance reuse (webServer.reuseExistingServer=true) 로 race 회피.
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1,
+  workers: process.env.CI ? 2 : 4,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:1420',
