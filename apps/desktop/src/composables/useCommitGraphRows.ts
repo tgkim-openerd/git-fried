@@ -55,6 +55,12 @@ export function useCommitGraphRows({ repoId, rows, containerRef }: UseCommitGrap
       getScrollElement: () => containerRef.value,
       estimateSize: () => ROW_H,
       overscan: dynamicOverscan.value,
+      // PERF-307 (plan v0.9 Phase 3.2) — measureElement 로 dynamic row height capture.
+      // 멀티라인 commit subject / branch tag wrap 시 28px const estimateSize 오차 보정.
+      // 비용: re-measure 시 +1-3ms/scroll (Codex consultation 권고). DOM resize observer
+      // 가 자동 capture — caller 가 row template 에 `:ref="virtualizer.measureElement"`
+      // 명시 안 해도 vue-virtual 5.x 내장 ResizeObserver 사용.
+      measureElement: (el) => el?.getBoundingClientRect().height ?? ROW_H,
     })),
   )
   const virtualItems = computed(() => virtualizer.value.getVirtualItems())

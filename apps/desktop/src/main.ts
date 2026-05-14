@@ -12,7 +12,12 @@ import { queryClient } from './api/queryClient'
 // Sprint c31 / plan/03 §6 — i18n (한국어 1순위 / 영어 2순위).
 import { i18n } from './i18n'
 import { registerGlobalErrorHandler } from './utils/registerGlobalErrorHandler'
+import { installPerfAPI, mark } from './utils/perfMarks'
 import './styles/main.css'
+
+// Phase 3.1 (plan v0.9 §3.5 c88 cold_start) — main.ts entry mark.
+// app.mount 후 'app-mounted' mark → window.__gitFriedPerf.coldStartMs() 로 측정 가능.
+mark('app-start')
 
 // Sprint c74 — webview default contextmenu (뒤로/새로 고침/검사 등) 차단.
 // GitKraken parity — OS 브라우저 메뉴 노출 차단. 자체 ContextMenu 컴포넌트는 @contextmenu 핸들러에서
@@ -57,3 +62,7 @@ app.use(VueQueryPlugin, { queryClient })
 app.use(i18n)
 
 app.mount('#app')
+
+// Phase 3.1 — cold_start_ms 측정 완료 mark + window.__gitFriedPerf 노출.
+mark('app-mounted')
+installPerfAPI()

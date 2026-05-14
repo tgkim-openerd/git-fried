@@ -1,5 +1,6 @@
-/// <reference types="vitest" />
-import { defineConfig } from 'vite'
+// PR-A.1 후속 — vite 6.4.2 에서 inline `test` config 를 인식하도록 vitest/config 사용.
+// `import { defineConfig } from 'vite'` 는 UserConfig 에 test 없어 vue-tsc 가 reject.
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import VueRouter from 'unplugin-vue-router/vite'
 import { VueRouterAutoImports } from 'unplugin-vue-router'
