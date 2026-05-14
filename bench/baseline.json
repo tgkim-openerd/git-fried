@@ -1,24 +1,76 @@
 {
-  "_comment": "v0.4+ Sprint c84 (UltraPlan plan/33 PR-A.5) — performance baseline. plan/30 §10 metrics + Codex consultation (task-mp554150) 권고 채택.",
-  "_note": "Sanity target = git-fried 자체 (200+ commit) 측정. Codex 권고대로 추후 synthetic 10k/50k + real large repo (linux/torvalds) bench 추가 필요. cargo bench / memory.ps1 / Tauri devtools 도구 카탈로그는 plan/33 §6.5 #3 참조.",
-  "version": "v0.4",
-  "measured_at": "2026-05-14T16:30:00Z",
+  "_comment": "v0.4+ Sprint c87 (UltraPlan plan/33 PR-A.5 + Phase D) — performance baseline. plan/30 §10 metrics + Codex consultation (task-mp554150) 권고 채택.",
+  "_note": "Sprint c87 update: 단위를 µs 로 정정 (이전 c84 측정의 ms 표기는 단위 오기). compute_graph 1k/2k/5k 추가 측정 — 본 repo (200+ commit, sanity target) 라 5k 부근 walker.take 자동 truncate 시 노이즈 가능. plan/33 §3.5 c88 trigger (synthetic 10k+ repo) 충족 시 대체.",
+  "version": "v0.5",
+  "measured_at": "2026-05-14T19:55:00Z",
   "environment": {
     "os": "Windows 11 Pro 10.0.26200",
     "cpu": null,
     "memory_gb": null,
-    "bench_repo_commits": "200+ (git-fried self, sanity target only)"
+    "bench_repo_commits": "200+ (git-fried self, sanity target only)",
+    "build_mode": "release (cargo bench default — opt-level=s + lto + codegen-units=1)"
   },
   "metrics": {
-    "status_clean_ms": { "target": null, "actual": 17.286, "range_ms": [14.955, 18.968], "_note": "Sprint c84 cargo bench --bench git_perf 측정 (Codex consultation P1)" },
-    "list_branches_ms": { "target": null, "actual": 25.047, "range_ms": [20.847, 27.512], "_note": "Sprint c84 cargo bench" },
-    "graph_render_1k_ms": { "target": 100, "actual": 57.302, "range_ms": [51.846, 68.749], "_note": "Sprint c84 cargo bench compute_graph/limit_1000 PASS (target 100ms)" },
-    "graph_render_10k_ms": { "target": 500, "actual": 52.210, "range_ms": [47.589, 54.988], "_note": "Sprint c84 — sanity target 200+ commit repo 라 1000/10000 사이 walker 변화 없음" },
-    "cold_start_ms": { "target": 1500, "actual": null, "_note": "Tauri devtools 측정 필요 (Codex consultation P1)" },
-    "file_scroll_fps": { "target": 60, "actual": null, "_note": "Chrome DevTools Performance + requestAnimationFrame counter 측정" },
-    "memory_10_repos_mb": { "target": 100, "actual": null, "_note": "pwsh ./bench/memory.ps1 실행 시 fill 가능" },
-    "ai_compose_roundtrip_ms": { "target": 8000, "actual": null, "_note": "60s timeout 내. p95 실측 후 SAF-401 60s 조정 검토" },
-    "doherty_threshold_ms": { "target": 400, "actual": null, "_note": "v0.4 #8 — invoke 평균 < 400ms" }
+    "status_clean_us": {
+      "target_us": null,
+      "actual_us": 139.38,
+      "range_us": [134.09, 145.19],
+      "_note": "Sprint c87 cargo bench --bench git_perf — Codex consultation P1"
+    },
+    "list_branches_us": {
+      "target_us": null,
+      "actual_us": 126.05,
+      "range_us": [123.06, 129.57],
+      "_note": "Sprint c87 cargo bench"
+    },
+    "graph_render_1k_us": {
+      "target_us": 100000,
+      "actual_us": 117.35,
+      "range_us": [114.09, 121.00],
+      "_note": "Sprint c87 — target 100ms = 100000µs, actual 117µs (850× margin). 본 repo 200+ commit walker.take 자동 truncate."
+    },
+    "graph_render_2k_us": {
+      "target_us": null,
+      "actual_us": 119.00,
+      "range_us": [116.24, 122.15],
+      "_note": "Sprint c87 — 1k 와 거의 동일 (본 repo 한계 — synthetic 필요)"
+    },
+    "graph_render_5k_us": {
+      "target_us": null,
+      "actual_us": 161.48,
+      "range_us": [153.44, 171.02],
+      "_note": "Sprint c87 — 1k 대비 +37% (walker 범위 확대 시작 — synthetic 10k 측정으로 본 추세 확인)"
+    },
+    "graph_render_10k_us": {
+      "target_us": 500000,
+      "actual_us": null,
+      "_note": "Sprint c87 측정 누락 (출력 truncate) — synthetic 10k+ repo 필요 (plan/33 §3.5 c88 trigger)"
+    },
+    "cold_start_ms": {
+      "target_ms": 1500,
+      "actual_ms": null,
+      "_note": "perfMarks.installPerfAPI() 가 DEV 만 활성 — window.gitFriedPerf.coldStartMs() 측정 가능 (사용자 직접 또는 자동 e2e)"
+    },
+    "file_scroll_fps": {
+      "target_fps": 60,
+      "actual_fps": null,
+      "_note": "perfMarks.fpsCounter() + Playwright e2e (PERF-307 sprint)"
+    },
+    "memory_10_repos_mb": {
+      "target_mb": 100,
+      "actual_mb": null,
+      "_note": "pwsh ./bench/memory.ps1 실행 시 fill 가능 (사용자 환경)"
+    },
+    "ai_compose_roundtrip_ms": {
+      "target_ms": 8000,
+      "actual_ms": null,
+      "_note": "60s timeout 내. p95 실측 후 SAF-401 60s 조정 검토. AI_RUN_MAX_OUTPUT_BYTES 1MB cap + AiOutput.truncated marker 적용 (c87)."
+    },
+    "doherty_threshold_ms": {
+      "target_ms": 400,
+      "actual_ms": null,
+      "_note": "v0.4 #8 — invoke 평균 < 400ms. SAF-303 SQLite acquire_timeout 10s 보장 (Doherty 25× 여유)."
+    }
   },
-  "schema_owner": "docs/plan/30-ux-comprehensive-c55-batch.md §10 / docs/plan/33 §6.5 #3 (Codex PR-A.5)"
+  "schema_owner": "docs/plan/30-ux-comprehensive-c55-batch.md §10 / docs/plan/33 §6.5 #3 (Codex PR-A.5) / Phase D Sprint c87"
 }

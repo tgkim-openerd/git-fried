@@ -49,7 +49,10 @@ fn bench_graph(c: &mut Criterion) {
     let repo = bench_repo();
 
     let mut group = c.benchmark_group("compute_graph");
-    for limit in [1_000usize, 10_000usize].iter() {
+    // Sprint c87 PR-E follow-up — limit 2_000 / 5_000 추가. 본 repo (200+ commit) 의
+    // walker.take(limit) 가 limit > commits 시 자동 truncate — 측정 노이즈 가능성. plan/33
+    // §3.5 c88 trigger (synthetic 10k+ repo) 충족 시 대체.
+    for limit in [1_000usize, 2_000usize, 5_000usize, 10_000usize].iter() {
         group.bench_with_input(format!("limit_{}", limit), limit, |b, &lim| {
             b.iter(|| {
                 let _ = git::graph::compute_graph(&repo, lim);
