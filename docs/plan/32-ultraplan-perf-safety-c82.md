@@ -1,5 +1,11 @@
 # UltraPlan v0.7 (final + Sprint c82 수행 완료) — 성능 / 속도 / 안전성
 
+> ## ⛔ 작업 제외 지침 (사용자 명시 2026-05-14)
+>
+> **PR-D OAuth (SEC-104 PKCE S256 + SEC-105 deep-link callback allowlist + SAF-305 PKCE assert)** 는 본 UltraPlan 후속 sprint 자율 진행 **제외**.
+> 자율 진행 시: PR-D 영역의 fix / 통합 / 측정 / Codex audit 모두 trigger 안 함. plan 문서 update (status / decision 기록) 만 허용.
+> v1.0 OAuth 활성 시점 별도 사용자 결정 후 진입.
+
 > **생성일**: 2026-05-14 13:09 (v0.1 R1 Claude 5) → 13:35 (v0.2 R1 Codex 통합) → 14:05 (v0.3 R2 Claude 3) → 14:30 (v0.4 R3+R4 Claude 4) → 14:55 (v0.5 R5 Claude 3) → 15:05 (v0.6 R5 Codex D) → **v0.7**: 16:00 (Sprint c82 실행 완료 — 8 commit + Codex c82 audit `task-mp53zjgg` follow-up)
 
 ## ★ Sprint c82 실행 완료 (8 commit, main branch pushed)

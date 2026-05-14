@@ -4,6 +4,13 @@
 > **트리거**: `/goal ULTRAPLAN 끝날 때까지 전부 수행 CODEX와 같이 수행`
 > **베이스**: [docs/plan/32-ultraplan-perf-safety-c82.md](32-ultraplan-perf-safety-c82.md) (v0.6 final, 17 agent / 6 round / 48+ finding)
 > **상태**: c82 의 즉시 실행 가능 12 PR 모두 수행 ✓ / 장기 5 sprint 분할
+>
+> ## ⛔ 작업 제외 지침 (사용자 명시 2026-05-14)
+>
+> **PR-D OAuth (SEC-104 PKCE S256 + SEC-105 deep-link callback allowlist + SAF-305 PKCE assert)** 는 본 UltraPlan 후속 sprint 자율 진행 **제외**.
+> Sprint c86 항목 (§ 3) 도 자율 수행 대상 아님 — v1.0 OAuth 활성 시점 별도 사용자 결정 후 진입.
+>
+> 자율 진행 시: PR-D 영역의 fix / 통합 / 측정 / Codex audit 모두 trigger 안 함. plan 문서 update 만 허용 (status / decision 기록).
 
 ## 1. Sprint c82 완료 commit 카탈로그 (6 commit, main branch)
 
