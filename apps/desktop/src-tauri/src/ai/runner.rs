@@ -15,6 +15,7 @@ use crate::error::{AppError, AppResult};
 use crate::git::path::decode_korean_safe;
 use serde::{Deserialize, Serialize};
 use std::process::Stdio;
+use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -98,9 +99,18 @@ pub async fn detect_clis() -> Vec<AiProbe> {
 /// Claude / Codex 모두 비대화식 모드. stream 은 v0.2 다음 단계 (Tauri Channel<String>).
 /// Sprint c35 — `cli.build_args(prompt)` 위임으로 match 인라인 제거.
 ///
-/// SAF-401 (Codex R5 강화): backend timeout 적용 — frontend IPC timeout 은 child cancellation 이
-/// 아니므로 backend 에서 별도 `tokio::time::timeout` + `child.kill()` 필요. 60s 표준 (AI roundtrip
-/// 의 doherty_threshold 8s × 7.5 여유). 초과 시 child kill + AppError::Timeout.
+/// SAF-401 (Codex c82 audit + consultation P1): backend timeout + explicit child.kill().
+///
+/// 기존 (commit 770f1b9): `child.wait_with_output()` 가 child 소유권 가져가서 timeout 시
+/// kill 불가 → OS 자연 종료 대기 (orphan). Codex audit `task-mp53zjgg` 가 HOLD 로 보고.
+///
+/// 본 refactor (Codex consultation `task-mp554150` P1):
+///   1. `child.stdout.take()` + `child.stderr.take()` → 별도 spawn read tasks
+///   2. `child.wait()` 를 timeout 으로 감쌈 — child 소유권 보존
+///   3. timeout 시 `child.kill().await` + reap (`child.wait().await`)
+///   4. accumulated stdout/stderr 는 timeout 시에도 부분 capture 가능
+///
+/// 60s 표준 (AI roundtrip doherty_threshold 8s × 7.5 여유) — p95 실측 후 조정.
 pub const AI_RUN_TIMEOUT_SECS: u64 = 60;
 
 pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
@@ -115,36 +125,64 @@ pub async fn ai_run(cli: AiCli, prompt: &str) -> AppResult<AiOutput> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    // SAF-401 — child 소유권 보존 + tokio::time::timeout. 초과 시 OS 자연 정리.
-    // (wait_with_output 가 child 소유권을 가져가므로 timeout 시 직접 kill 불가 — 다음 sprint 에서
-    //  wait + manual stdout/stderr read 패턴으로 explicit kill 가능)
-    let child = cmd.spawn().map_err(AppError::Io)?;
-    let output = match tokio::time::timeout(
+    // SAF-401 — child 소유권 보존 + explicit stdout/stderr take + child.wait + timeout kill.
+    let mut child = cmd.spawn().map_err(AppError::Io)?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| AppError::internal("AI subprocess stdout 핸들 take 실패 (이미 닫힘)"))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| AppError::internal("AI subprocess stderr 핸들 take 실패 (이미 닫힘)"))?;
+
+    // 별도 task 로 stdout/stderr 비동기 누적 — child.wait 와 race.
+    let stdout_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        let mut reader = stdout;
+        let _ = reader.read_to_end(&mut buf).await;
+        buf
+    });
+    let stderr_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        let mut reader = stderr;
+        let _ = reader.read_to_end(&mut buf).await;
+        buf
+    });
+
+    let status = match tokio::time::timeout(
         std::time::Duration::from_secs(AI_RUN_TIMEOUT_SECS),
-        child.wait_with_output(),
+        child.wait(),
     )
     .await
     {
         Ok(res) => res.map_err(AppError::Io)?,
         Err(_) => {
-            // wait_with_output 가 child 소유권을 가져갔으므로 직접 kill 불가능.
-            // OS 가 자연 종료 시 정리. 추후 sprint 에서 wait + manual stdout/stderr read 패턴 재구성 가능.
+            // timeout — child kill + reap. orphan 방지.
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            // read task abort (이미 EOF 가까이 갔거나 partial).
+            stdout_task.abort();
+            stderr_task.abort();
             return Err(AppError::internal(format!(
-                "AI 명령 timeout {}초 초과 ({:?})",
+                "AI 명령 timeout {}초 초과 ({:?}) — child killed",
                 AI_RUN_TIMEOUT_SECS, cli
             )));
         }
     };
 
+    let stdout_bytes = stdout_task.await.unwrap_or_default();
+    let stderr_bytes = stderr_task.await.unwrap_or_default();
+
     // Sprint c35 — git/path::decode_korean_safe 위임 (UTF-8 + GBK fallback).
     // stdout 은 NFC 미적용 (AI 응답 content 보존), stderr 도 동일.
-    let stdout = decode_korean_safe(&output.stdout, false);
-    let stderr = decode_korean_safe(&output.stderr, false);
+    let stdout_text = decode_korean_safe(&stdout_bytes, false);
+    let stderr_text = decode_korean_safe(&stderr_bytes, false);
 
     Ok(AiOutput {
-        success: output.status.code() == Some(0),
-        text: stdout,
-        stderr,
+        success: status.code() == Some(0),
+        text: stdout_text,
+        stderr: stderr_text,
         took_ms: start.elapsed().as_millis() as u64,
     })
 }
