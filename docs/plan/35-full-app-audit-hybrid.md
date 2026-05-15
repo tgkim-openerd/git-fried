@@ -174,21 +174,61 @@ bun run tauri:dev    # Tauri 실 webview + Rust backend
 # 사용자가 직접 조작 + Claude 가 console / stderr / tracing 로그 share
 ```
 
-### 2.2 검증 영역 (Phase A 에서 mock 으로 가려졌던 것)
+### 2.2 검증 영역 — IPC command family × error class 매트릭스 (Codex c89-B audit 권고)
 
-- [ ] **git 실 연산**: clone / fetch / pull / push / merge / rebase / cherry-pick / reset / restore / stash / lfs
-- [ ] **Forge API**: GitHub PAT / Gitea token / PR CRUD / Issue / Release
-- [ ] **SQLite migration**: 8 migrations 순차 실행 / corruption recovery
-- [ ] **PTY 내장 터미널**: pty_open / 한글 입력 / OSC escape strip / size resize
-- [ ] **AI CLI**: Claude API call / Codex CLI spawn / 1MB cap / timeout
-- [ ] **keyring**: token save/load/delete / Windows Credential Manager / fallback Ok(None)
-- [ ] **deep-link**: `git-fried://` URL handler / destructive 차단 (SEC-202)
-- [ ] **panic_hook**: Rust panic → process exit → SQLite WAL recovery 시나리오 (수동 trigger)
+> v0.2 — Codex audit (`task-mp6agi61`) Finding B/C 반영: "8 영역" 으로 축약하면 171
+> commands 의 family/error class coverage 증명 안 됨. 아래는 family × happy/error
+> matrix. 각 cell 은 `[ ] handler family > 대표 cmd > happy / error path / UI caller`
+> 단위로 trigger.
+
+**Family rows (Rust 측 `#[tauri::command]` 11 cluster)**:
+
+- [ ] **git core** — clone / fetch / pull / push / merge / rebase / cherry-pick / reset / restore (각 happy + conflict)
+- [ ] **stash** — list_stashes / save / pop / drop / apply_partial / edit_stash_message
+- [ ] **worktree** — list / add / remove / **lock** / **unlock** / **prune** / locked path / stale path / disk usage (Finding A — git-fried 제품 근거 1급)
+- [ ] **lfs** — install scope / track / push size NUL-safe / fetch + checkout
+- [ ] **status/diff** — get_status / get_log / get_graph (1k/10k/50k rows perf — Finding I)
+- [ ] **branch/ref** — checkout / delete / hide / unhide / rename / search
+- [ ] **tag** — create / delete / push / delete_remote
+- [ ] **forge** — list_pr / get_pull_request / create_pr / submit_review / merge_pr / close / reopen
+- [ ] **profile / workspace / repo** — apply_repo_config / activate_profile / set_repo_ssh_key_path / per-repo forge override
+- [ ] **importer** — import_gitkraken_dry_run / import_gitkraken_apply (Finding A 자매)
+- [ ] **AI / search** — ai_commit_message / ai_resolve_conflict / search_commits_by_message / count_hangul_commits
+
+**Error class columns**:
+
+| Class | Trigger pattern | Expected UX |
+|---|---|---|
+| `happy` | 정상 입력 + 권한 OK | success toast 또는 UI 상태 갱신 |
+| `429 rate_limit` | Forge API 빠른 연속 호출 | `humanizeGitError` rate-limit 패턴 toast + retry-after 안내 |
+| `auth_expired` | PAT 만료 / 401 | `humanizeGitError` 401 패턴 + Settings 재발급 안내 |
+| `keyring_locked` | OS keychain 잠금 / NoEntry 외 에러 | `auth.rs` Ok(None) fallback (PR-C.2) + UI toast |
+| `db_timeout` | sqlx acquire_timeout(10s) 초과 / full disk | `AppError::Db` + 사용자 anguish 명시 |
+| `git_cli_fail` | git2 vendored 실패 / conflict / dirty / non-fast-forward | `humanizeGitError` 11 패턴별 한글 |
+| `fs_lock` | repo .git/index 잠금 / sibling process | retry 1회 + 실패 시 사용자 안내 |
+| `network_flap` | mid-fetch DNS / timeout / connection reset | retry policy + cancel 가능성 |
+| `cancel` | 사용자 명시 취소 (timeout / esc / unmount) | `AppError::Internal("cancelled")` |
+| `permission_denied` | Tauri capability 거부 / dialog cancel | silent fail vs explicit toast 분리 (Finding E) |
+
+**Tauri shell lifecycle row** (Finding D — 별도 B-0 cluster):
+
+- [ ] reload-window — Vue state / query cache / localStorage / pinia store 복구 + dirty form 상태
+- [ ] minimize / restore — repo polling 재개 / WIP 변화 detect
+- [ ] fullscreen toggle / devtools toggle — keybinding 충돌
+- [ ] tray / single-instance (있을 경우 N/A row)
+- [ ] updater (있을 경우 N/A row)
+
+**Capability silent-fail matrix** (Finding E):
+
+- [ ] notification permission denied → `useNotification` silent fail → toast fallback OK?
+- [ ] dialog cancel → caller catch + 사용자 의도 무시 회피
+- [ ] shell open failure (URL handler 미등록) → `errors.browserOpenFailed` toast (Sprint c46 SEC-202)
+- [ ] deep-link 미등록 OS → 무한 wait 회피
 
 ### 2.3 Codex cross-audit 분담
 
-- Phase A bug list → Codex 가 해당 Vue/TS 파일 read + 회귀 위험 평가
-- Phase B IPC bug → Codex 가 해당 Rust 파일 read + 패치 제안
+- Phase A bug list → Codex 가 해당 Vue/TS 파일 read + 회귀 위험 평가 (✓ 수행 — task-mp6agi61)
+- Phase B IPC bug → Codex 가 해당 Rust 파일 read + 패치 제안 + regression spec 후보 enumerate
 
 ## 3. 진행 절차
 
@@ -216,26 +256,134 @@ bun run tauri:dev    # Tauri 실 webview + Rust backend
 - 단일 session 으로 모두 진행 어려울 시 wave 단위 commit + next_session_entry.md 에 진행 상태 기록
 - 사용자 redirect / stop 가능 — `/loop dynamic` 으로 자율 진행 가능
 
-## 4. Codex 페어 호출 정책
+## 4. Codex 페어 호출 정책 — wave-end inline checkpoint (v0.2)
 
-- Phase A 종료 시 **1회** Codex audit 호출 (`/codex:rescue --wait`):
-  - prompt: "Phase A bug list + 코드 cross-audit. 회귀 위험 + missed scenario 검출."
-  - Result 통합 후 Phase B 진입
-- Phase B 종료 시 **1회** Codex audit 호출:
-  - prompt: "Phase B IPC bug + Rust 측 패치 제안 + regression test 추가 우선순위"
-- 동일 fan-out group 안의 추가 Codex 호출은 `trigger_cap_applied` skip
+> v0.2 — Codex audit Finding J 반영. Phase-end 2회만으로 약함. c82 데이터 = Codex
+> 가 round 중간 catch 했을 때 Critical 2건 (SEC-201/SEC-202) 발견. inline checkpoint
+> 가 ROI 큼.
 
-## 5. Done criteria
+### 4.1 Inline checkpoint trigger (wave-end)
 
-Phase A 완료:
+| Wave | Codex 호출 prompt | Skip 조건 |
+|---|---|---|
+| **A-1 종료** (index page) | "Index page audit 결과 + CommitGraph virtual scroll 1k/10k/50k perf 시나리오 missed scenario" | bug 0 + screenshot 정상 시 skip |
+| **A-3 종료** (repositories) | "Repositories audit + per-repo forge override + clone error path missed" | bug 0 시 skip |
+| **A-4 종료** (settings 9 sub) | "Settings 9 sub audit + capability silent fail (notification/dialog/shell) cross-check" | bug 0 시 skip |
+| **B-risk 종료** (IPC fault matrix) | "IPC fault-injection 결과 + 한글 인코딩 + worktree lock/unlock + reload-window state 복구" | trigger_cap_applied 적용 |
+| **Phase 종합** (A 또는 B 전체 종료) | "전체 bug list + regression spec 후보 enumerate + 다음 sprint 우선순위" | 마지막 1회만 |
+
+### 4.2 Inline checkpoint vs Phase-end 종합 비용 분리
+
+- Inline = 작은 prompt (≤2K char) + bug 1-3건 + 1 wave 영역만 — `effort: medium`, `--wait`
+- Phase 종합 = 큰 prompt (≥4K char) + bug list 전체 + Rust regression spec — `effort: high`, background OK
+
+### 4.3 동일 fan-out group cap
+
+- 같은 sprint 안의 동일 영역 (예: A-1 inline + A-1 종합) 은 1회만 — 두번째는 `trigger_cap_applied` skip
+- 다른 wave (A-1 inline → A-3 inline) 는 별 fan-out — cap 적용 안 함
+
+## 5. Done criteria — v0.2 regression spec 의무 (Codex Finding K)
+
+### 5.1 Severity → Required evidence/test 매트릭스 (BLOCKING)
+
+> Codex audit Finding K + blind spot 5 반영. "fix commit 만" 산출은 다음 sprint
+> 휘발 risk. severity 별 evidence/spec/gate 의무화.
+
+| Severity | Required evidence | Regression spec 의무 | Native gate |
+|---|---|---|---|
+| **Critical** | Repro 명확 + 시각 또는 로그 evidence | **e2e spec OR Tauri webdriver spec 추가** OR "untestable" 사유 (Tauri only API / OS env / external API 등) 명시 | typecheck 0 + vitest PASS + cargo check + cargo test + lefthook pre-push |
+| **High** | Repro + axis (panel/i18n/dev-mode/IPC/perf) | **unit/e2e spec 추가** OR untestable 사유 | typecheck 0 + vitest PASS + cargo check + (Tauri-side 변경 시 cargo test) |
+| **Medium** | Repro 가능한 step | spec **권장** (시간 cap 시 skip OK + backlog 기록) | typecheck 0 + vitest PASS |
+| **Low** | 관찰만 | spec 면제 | typecheck 0 |
+
+### 5.2 Phase A 완료 (v0.2)
+
 - [ ] 4 pages 모두 navigate + snapshot 1회 이상
 - [ ] 9 god components 모두 panel-by-panel touch
-- [ ] 7 edge axes 전 panel 적용
+- [ ] 7 edge axes 전 panel 적용 (+ § 8 backlog 의 app zoom / system DPI 후보 sweep)
 - [ ] phase-a-bugs.md 작성 (≥1 entry 또는 "0 bug 발견" 명시)
-- [ ] Codex 1차 audit 결과 통합
+- [ ] Codex inline checkpoint (A-1/A-3/A-4 별) + Phase 종합 1회 결과 통합
+- [ ] **Critical/High bug 모두 § 5.1 evidence/test/gate 완료**
+- [ ] phase-a-bugs.md 의 각 entry 에 `regression-spec: <path or "untestable: <reason>">` 필드 명시
 
-Phase B 완료:
-- [ ] 8 IPC 영역 모두 사용자 직접 trigger 시도
-- [ ] phase-b-bugs.md 작성
-- [ ] Codex 2차 audit 결과 통합
-- [ ] Critical/High bug 모두 fix commit
+### 5.3 Phase B 완료 (v0.2)
+
+- [ ] § 2.2 IPC family × error class 매트릭스 cell ≥80% trigger (worktree / 한글 / lifecycle / capability 4 cluster 100%)
+- [ ] phase-b-bugs.md 작성 + 각 entry 의 `regression-spec` 필드
+- [ ] Codex B-risk inline checkpoint + Phase 종합 결과 통합
+- [ ] **Critical/High bug 모두 § 5.1 evidence/test/gate 완료**
+- [ ] tauri-webdriver smoke (TST-502) 가 enable 가능한 환경이면 1 case 추가
+
+### 5.4 Branch / commit policy (Codex Finding L)
+
+- **Audit docs / bug log / screenshot** — main 직접 commit OK (개인 프로젝트 + 가시 회귀 없음)
+- **Fix commit** — main 직접 OK, 단 다음 조건은 POC branch 권고:
+  - visual surface 큰 변경 (tailwindcss/vite major) — [plan/34](34-poc-vite8-tailwindcss4.md) 정책 적용
+  - 15+ 파일 변경 시 (CLAUDE.md)
+  - Critical/High 시 자동 rollback 가능한 단일 commit 권장
+- **Rollback gate**: 각 commit pre-push hook (typecheck + test-web) 통과 필수. fail 시 즉시 revert + audit doc 에 사유 기록.
+
+## 6. Backlog (Codex audit `task-mp6agi61` 잔여 finding)
+
+본 plan v0.2 에 직접 반영 안 된 finding 의 후속 sprint 매핑.
+
+### 6.1 P0 critical path smoke (Finding G)
+
+> wave 순서 — page taxonomy 가 아닌 사용자 critical path 우선
+
+Phase A-1 진입 전 P0 smoke:
+- [ ] repo 등록 → status / stage / hunk / commit → fetch / pull / push → conflict / recovery → PR detail
+- [ ] keyring / token / per-repo forge override 선행 검증
+- 별도 sprint 신설 또는 § 1.3 앞에 추가 — 본 plan 후속 patch 영역
+
+### 6.2 Automation boundary table (Finding H)
+
+> Playwright 로 볼 수 있는 것 vs tauri:dev 만 가능한 것 vs 확인 불가
+
+- IME composition / native dialog / context menu suppression / drag modifier / clipboard / openDialog — Phase B 전용
+- 별도 §1.2 patch 후속
+
+### 6.3 Edge axis 정의 통합 (Finding F)
+
+> § 0.2 의 7 axis 와 §1.3 A-6 sweep 의 7 axis 정의 불일치
+
+- HC vs forced-colors 분리 (Windows High Contrast 는 forced-colors 의 superset)
+- app zoom / system DPI 추가 (`useUiState.ts` 의 zoomPx state 존재)
+- prefers-reduced-motion 은 reduce-motion axis 로 별도
+- A-6 일괄 sweep → 각 wave inline 으로 분산 권고
+
+### 6.4 Virtual scroll perf threshold (Finding I)
+
+> A-1 CommitGraph 의 "rows 가상 스크롤" 검증 데이터 크기 부재
+
+- 1k / 10k / 50k synthetic fixture (devMock 확장)
+- fast wheel burst FPS threshold (≥30fps 권고)
+- canvas pixel non-blank check
+- jump-to-SHA latency (≤100ms)
+
+### 6.5 Worktree 1급 workflow (Finding A)
+
+> git-fried 제품 근거인데 plan v0.1 에 명시 X (§ 2.2 v0.2 매트릭스에 cluster 추가 완료)
+
+- WorktreePanel 의 list / add / remove / lock / unlock / prune UI flow
+- locked worktree + stale path + disk usage 표시
+- GitButler virtual branches 비교 축
+
+### 6.6 Self-blind spot 5 patterns (Codex blind spot section)
+
+향후 audit plan 작성 시 의식적 회피:
+
+1. devMock + Playwright 로 "화면 대부분" 본다는 가정 — Tauri shell / capability / keyring / WebView2 가 더 위험
+2. "7 edge axes" 충분조건 가정 — app zoom / system DPI / wheel burst / OS permission / reload-restore / large-repo perf 추가
+3. Phase-end Codex 2회 충분 가정 — inline checkpoint ROI 큼 (§ 4.1 v0.2)
+4. god component LOC 를 risk proxy — 사용자 빈도 + 데이터 손실 가능성이 우선
+5. bug doc + fix commit 산출 — regression spec gate 필수 (§ 5.1 v0.2)
+
+## 7. Codex audit raw 결과
+
+- 파일: [docs/code-review/2026-05-15-full-audit/codex-audit-task-mp6agi61.md](../code-review/2026-05-15-full-audit/codex-audit-task-mp6agi61.md)
+- Session ID: `019e296e-0ae4-7da0-918e-3f3146735d0c`
+- Resume: `codex resume 019e296e-0ae4-7da0-918e-3f3146735d0c`
+- Duration: 6m 7s
+- Verdict: 12 finding + 5 blind spot + 3 immediate recommendation
+- Top 3 권고 모두 본 plan v0.2 반영 완료 (§ 2.2 / § 4 / § 5)
