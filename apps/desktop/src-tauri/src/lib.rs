@@ -260,3 +260,12 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+// Sprint c89-B Phase 2 (plan/36 §3 Option B) — Tauri test feature MockRuntime POC.
+//
+// POC 결과: Windows 환경에서 `tauri = { features = ["test"] }` dev-dep 활성 시
+// cargo test 자체가 `STATUS_ENTRYPOINT_NOT_FOUND` (0xc0000139) 으로 차단.
+// Tauri MockRuntime 가 WebView2 native DLL 에 의존하기 때문.
+//
+// 본 POC 코드 + dev-dep 모두 제거 — plan/36 v0.3 에 결과 documented.
+// Linux/macOS 또는 Tauri 후속 release 에서 재시도 시 별도 trigger.

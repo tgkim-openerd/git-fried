@@ -89,6 +89,10 @@ pretty_assertions = "1.4"
 # Sprint c89-B Phase 1.2 (plan/36 §2.1.2) — Forge API 401/403/429 fault injection.
 # dev-only HTTP mock server. reqwest 호출 가로채 status / header 검증.
 httpmock = "0.7"
+# Sprint c89-B Phase 2 (plan/36 §3 Option B POC, 2026-05-15) — Tauri test feature
+# `tauri = { features = ["test"] }` 시도 결과 Windows 환경 STATUS_ENTRYPOINT_NOT_FOUND
+# (WebView2 DLL 의존). 본 dev-dep 제거 — plan/36 v0.3 결과 documented + Linux/macOS
+# 또는 Tauri 후속 release 에서 재시도.
 # perf benchmark (`docs/plan/20 §3-1`)
 criterion = { version = "0.5", features = ["html_reports"] }
 
