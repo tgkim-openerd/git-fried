@@ -33,6 +33,7 @@ import { open as openShell } from '@tauri-apps/plugin-shell'
 import { useRouter } from 'vue-router'
 import { dispatchShortcut } from './useShortcuts'
 import { useToast } from './useToast'
+import { isMockEnabled } from '@/api/devMock'
 import { i18n } from '@/i18n'
 
 const t = i18n.global.t
@@ -107,6 +108,10 @@ export function useMenuListener(): MenuPump {
   ] as const
 
   async function attach() {
+    // Sprint c89-B Phase A bug — vite dev (Chromium) 에서 Tauri IPC stub 없어
+    // listen() 호출 시 `Cannot read properties of undefined (reading 'transformCallback')`.
+    // mock 환경에서는 native menu 자체가 없으므로 listen 등록 skip.
+    if (isMockEnabled()) return
     const promises = ids.map(async (id) => {
       const event = `menu://${id}`
       return listen(event, () => routeAction(id))
