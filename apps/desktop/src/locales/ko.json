@@ -548,7 +548,7 @@
       "btnResetTheme": "기본값 복원",
       "btnCopy": "복사",
       "btnImport": "Import / 적용",
-      "importPlaceholder": "커스텀 테마 JSON 붙여넣기 — { \"name\": \"...\", \"mode\": \"dark\"|\"light\", \"vars\": { \"--background\": \"240 10% 3.9%\", ... } }"
+      "importPlaceholder": "커스텀 테마 JSON 붙여넣기 — {'{ \"name\": \"...\", \"mode\": \"dark\"|\"light\", \"vars\": { \"--background\": \"240 10% 3.9%\", ... } }'}"
     },
     "pluginIntegration": {
       "title": "Plugin / Integration",

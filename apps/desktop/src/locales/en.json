@@ -548,7 +548,7 @@
       "btnResetTheme": "Restore default",
       "btnCopy": "Copy",
       "btnImport": "Import / Apply",
-      "importPlaceholder": "Paste custom theme JSON — { \"name\": \"...\", \"mode\": \"dark\"|\"light\", \"vars\": { \"--background\": \"240 10% 3.9%\", ... } }"
+      "importPlaceholder": "Paste custom theme JSON — {'{ \"name\": \"...\", \"mode\": \"dark\"|\"light\", \"vars\": { \"--background\": \"240 10% 3.9%\", ... } }'}"
     },
     "pluginIntegration": {
       "title": "Plugin / Integration",

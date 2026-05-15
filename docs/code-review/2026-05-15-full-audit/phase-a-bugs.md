@@ -60,3 +60,48 @@ console error 0, console warning 0, 시각 정상, 한글 표시 OK, 3-panel 레
 스크린샷:
 - `screenshots/A2-01-launchpad.png`
 - `screenshots/A3-01-repositories.png`
+
+### BUG-A4-002 — UiCustomization 테마 JSON placeholder vue-i18n `{...}` 충돌
+
+- **Severity**: HIGH
+- **Axis**: i18n
+- **Panel**: settings > UI Customization sub
+- **Repro**: settings 진입 → UI Customization sub 클릭 → 콘솔 에러
+  > `SyntaxError: Invalid token in placeholder: '"name":'`
+- **Root cause**: locale 의 `themeImport.importPlaceholder` 값에 raw JSON sample 포함 — `{ "name": "...", "mode": "dark"|"light", "vars": { ... } }`. vue-i18n parser 가 `{...}` 를 placeholder syntax 로 해석 → `"name":` 에서 invalid token.
+- **Fix**: single-quote literal escape — 전체 JSON sample 을 `{'...'}` 으로 wrap. ko/en 양쪽.
+- **Files**: `apps/desktop/src/locales/{ko,en}.json` line 551
+- **Status**: ✅ **FIXED**
+
+### BUG-A4-003 — `repoIdentity.identity.legend` 키 호출 오타 (실제 key: `repoIdentity.legend`)
+
+- **Severity**: MEDIUM
+- **Axis**: i18n
+- **Panel**: settings > Repository-Specific sub (RepoSpecificForm.vue 의 per-repo identity fieldset)
+- **Repro**: Repository-Specific sub 클릭 → 콘솔 warning x3
+  > `Not found 'repoIdentity.identity.legend' key in 'ko' locale messages`
+- **Root cause**: RepoSpecificForm.vue:261 가 `t('repoIdentity.identity.legend')` 호출, 그러나 실제 locale key 는 `repoIdentity.legend`. 잘못된 nesting 호출.
+- **Fix**: `t('repoIdentity.identity.legend')` → `t('repoIdentity.legend')`
+- **Files**: `apps/desktop/src/components/RepoSpecificForm.vue`
+- **Status**: ✅ **FIXED**
+
+### BUG-A4-004 — devMock 누락 명령 2건 (`count_hangul_commits` / `report_frontend_error`)
+
+- **Severity**: LOW
+- **Axis**: dev-mode mock coverage
+- **Panel**: settings > About sub (한글 commit 비율 IdentityCard) + 전역 (error reporter)
+- **Repro**: settings sub 순회 → 콘솔 warning
+  > `[devMock] unhandled command: count_hangul_commits {args: Object}`
+  > `[devMock] unhandled command: report_frontend_error {...}`
+- **Root cause**: devMock HANDLERS 에 두 명령 매핑 부재. fallback `[]` 반환은 type mismatch (HangulCommitStats / void 기대).
+- **Fix**:
+  - `count_hangul_commits`: 그럴듯한 fixture `{ scanned: 200, hangul: 87, ratio: 0.435 }` 반환
+  - `report_frontend_error`: silent ack (undefined) — error 자체는 console 에 이미 노출됨
+- **Files**: `apps/desktop/src/api/devMock.ts`
+- **Status**: ✅ **FIXED**
+
+## Phase A-4 결과 종합
+
+- 9 sub 모두 click 후 console **error 0 / warning 0**.
+- 3 i18n + 1 dev-mock = 총 4 bug fix.
+- vitest 901/901 PASS / typecheck 0 / i18n leaf 1311 대칭.

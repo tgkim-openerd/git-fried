@@ -258,7 +258,7 @@ const gpgsignBool = computed({
       <!-- per-repo identity (자주 쓰는 항목) -->
       <fieldset class="rounded border border-border p-3">
         <legend class="px-1 text-xs font-semibold">
-          {{ t('repoIdentity.identity.legend') }}
+          {{ t('repoIdentity.legend') }}
         </legend>
 
         <!-- v0.4 #1 (UltraPlan plan/31) — per-repo forge account override.

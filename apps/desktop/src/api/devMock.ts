@@ -1101,6 +1101,11 @@ const HANDLERS: Record<string, MockHandler> = {
   }),
   last_commit_message: () => COMMIT_SUMMARIES[0]?.subject ?? '',
 
+  // Sprint c89-B Phase A — IdentityCard 한글 commit 비율 mock (BUG-A4-005 회피).
+  count_hangul_commits: () => ({ scanned: 200, hangul: 87, ratio: 0.435 }),
+  // Sprint c89-B Phase A — frontend 에러 reporter mock (silent ack).
+  report_frontend_error: () => undefined,
+
   // Sprint F-P5 — commit message 검색 mock.
   search_commits_by_message: (args?: Record<string, unknown>) => {
     const inner = (args?.args ?? args) as
