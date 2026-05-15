@@ -1,6 +1,12 @@
-# UltraPlan v0.1 — Phase B Automation (Tauri 2 LLM-자동 검증 전략)
+# UltraPlan v0.2 — Phase B Automation (Tauri 2 LLM-자동 검증 전략)
 
-> **작성일**: 2026-05-15 (sprint c89-B 후속)
+> **v0.1 작성**: 2026-05-15 (sprint c89-B 후속)
+> **v0.2 patch**: 2026-05-15 (sprint c89-B Phase 1 종료 + compound 후)
+>   - §0.2 의 "70-80% 자동 가능" 가정 → Phase 1 실측 (+23 test) 으로 정정
+>   - §4 Codex 페어 정책: phase-end 2회 → wave-end inline checkpoint (plan/35 §4 v0.2 정렬)
+>   - §6 Backlog: i18n JSON dup-key prevention lefthook 추가
+>   - §9 Risk 신설: Codex worker stuck / stale registry (본 sprint 실증)
+>   - Done criteria 정정
 > **트리거**: 사용자 명시 "B 를 LLM 환경에서 직접 테스트 — 여러방면 탐색 → Codex 상의하며 Plan화"
 > **베이스**: [plan/35 v0.2](35-full-app-audit-hybrid.md) (Codex audit `task-mp6agi61` 반영)
 > **목표**: Phase B "수동 IPC audit" 의 가능한 한 큰 비율을 **LLM 100% 자동** 으로 전환
@@ -17,7 +23,7 @@
 
 | 영역 | 가정 (v0.1) | 실측 (v0.2) | 결론 |
 |---|---|---|---|
-| Rust 측 IPC handler logic | "사용자 수동" | **238 cargo test 이미 존재** (`pty/secret_mask/storage/git/forge/ai/auth/error/alias`) | 자동 가능 (70%+) |
+| Rust 측 IPC handler logic | "사용자 수동" | **238 cargo test 이미 존재** (`pty/secret_mask/storage/git/forge/ai/auth/error/alias`) | 자동 가능 |
 | `git/tests.rs` 한글 round-trip | "수동" | **582 LOC tempfile + git init + git commit + NFC** | 자동 OK |
 | `storage::db::tests` migration | "수동" | **7 migration test (cascade / korean name / pin toggle)** | 자동 OK |
 | `pty::sanitize_tests` OSC strip | "수동" | **OSC strip 4 state machine 검증** | 자동 OK |
@@ -26,7 +32,22 @@
 | Vue state + visual + dark + IME | "수동" | Playwright MCP (vite dev) — Tauri IPC mock | **Option C WebView2 CDP enable 시 가능** |
 | OS deep-link / keyring 실 호출 | "수동" | OS env 필요 | 수동 유지 |
 
-→ 결론: **Phase B의 70-80% 가 사실 자동 가능**. 가정의 일부 (사용자 수동) 가 잘못 — 본 plan v1.0 의 목표는 자동 영역 분할 + 실 구현.
+→ v0.1 결론: "Phase B 의 70-80% 가 자동 가능" (정성 추정).
+
+### 0.3 Phase 1 실측 결과 (v0.2 정정)
+
+sprint c89-B Phase 1 (Option A) 종료 시점 측정:
+
+| Phase | cluster | 신규 test | 누적 |
+|---|---|---|---|
+| 1.1 | error::tests + auth::tests (IPC fault injection + keyring key) | +7 | 245 |
+| 1.2 | forge::tests httpmock (401/403/429+Retry-After/200/500) | +7 | 252 |
+| 1.3 | git::worktree::tests (lifecycle + 한글) | +6 | 258 unit |
+| 1.4 | tests/sqlite_pool_acquire_timeout.rs (SAF-303 + tx Drop) | +3 integration | 261 total |
+
+**실측**: 238 → **261 (+23)**, +9.7% test 카운트. v0.1 의 "270+ 목표" 미달이지만 4 cluster (IPC fault / Forge / Worktree / DB pool) 핵심 cover. doc-test 2 ignored.
+
+**v0.2 자동화 비율 추정 수정**: "70-80%" 는 미증명 — Phase 1 의 +23 은 cargo test 만 측정. webview-side (Vue state + visual + dark + IME) 는 별도 측정 필요. Option B/C POC 검증 후 정확 비율 산정.
 
 ## 1. 옵션 enumerate (6 옵션 + 평가)
 
@@ -240,33 +261,111 @@ Phase 4 — 통합 + plan/35 v0.3
   - next_session_entry.md 갱신
 ```
 
-## 8. Codex 페어 호출 정책 (본 plan 진행)
+## 8. Codex 페어 호출 정책 — wave-end inline checkpoint (v0.2)
 
-UltraPlan cycle 패턴 (c82 의 7 round audit 축소):
+> v0.2 — plan/35 §4 v0.2 와 정렬. Codex 1차 audit `task-mp6e9beo-6lvc08` 가 worker
+> stuck (어제 task-mp5eoi2t 가 16h+ 점유) 으로 **결과 받지 못함**. 본 stuck 자체가
+> plan/35 audit Finding J + self-blind spot 패턴 3번 (Codex phase-end 가정) 의
+> 실증. inline checkpoint 로 정렬 + Risk §9 신설.
 
-- **Codex 1차** — plan/36 v0.1 missed scenario + 옵션 검증 method (background)
-- **Codex 2차** — Phase 1 (Option A) 종료 후 cargo test 추가 cluster 가 missed scenario 추가 cover 하는지 (consultation)
-- **Codex 3차** — Option C POC 결과 검토 + Tauri 2 CDP enable 의 보안/안정성 영향 평가
+### 8.1 v0.1 의 한계
 
-각 Codex 호출은 `--wait` slash 또는 background. fan-out group cap 준수.
+v0.1 의 "Codex 3차 (1차 plan / 2차 Phase 1 / 3차 Option C POC)" 는 phase-end 일괄
+호출 — Phase A 의 7m+ 큐 대기 + worker stuck 시 가용성 0. ROI 낮음.
 
-## 9. Risk 평가
+### 8.2 v0.2 inline checkpoint 정책
 
-| Risk | 영향 | mitigation |
+| Trigger | 호출 prompt | Skip 조건 |
 |---|---|---|
-| Tauri test feature unstable / 미완 | Option B 실패 | Tauri 2.x docs / GitHub issue 확인 + 옵션 D fallback |
-| WebView2 CDP enable 안 됨 | Option C 실패 | env var / Tauri config / Rust 코드 3 방법 시도 |
-| Playwright MCP connectOverCDP 미지원 | Option C 실패 | raw fetch `http://localhost:9222/json` + WebSocket 시도 |
-| httpmock dev-dep 추가가 release build 영향 | dev-dep 만 추가 | release feature 영향 없음 — 검증 |
-| 본 plan 분량이 사용자 시간 cap 초과 | Phase 1 만 진행 후 후속 sprint | Phase 별 commit + next_session_entry.md 진행 상태 |
+| **Option A cluster 종료** (1.1 / 1.2 / 1.3 / 1.4 각) | "Phase 1.x 신규 test cluster 의 missed scenario + Rust 측 fault path 추가 후보" | cluster 별 +6 test 미만 시 skip |
+| **Option B POC 종료** | "tauri test feature MockRuntime 의 stable 여부 + AppState mock 의 real-vs-mock 차이로 인한 false-positive 의심점" | POC 1 sample 만으로 fail 시 skip (Tauri docs 직접 확인) |
+| **Option C POC 종료** | "WebView2 CDP enable 의 보안 영향 + Tauri 2 의 additional_browser_args 안정성 + Playwright MCP connectOverCDP 검증 method" | uncertain 시 fan-out skip + manual 결정 |
+| **Phase 종합** (A / B / C 전체 종료) | "전체 cluster bug list + regression spec 후보 enumerate + 다음 sprint 우선순위" | 마지막 1회만 |
 
-## 10. Done criteria (v1.0)
+### 8.3 Codex worker 운영 (v0.2 신설)
 
-본 plan v1.0 final 후 진입 trigger:
+c89-B 실증 패턴:
 
-- [ ] Codex 1차/2차/3차 결과 통합 → v0.x → v1.0
-- [ ] 3 옵션 (A/B/C) 의 plan 절차 + done criteria 명시
-- [ ] regression spec evidence 형식 결정 (plan/35 §5.1 적용)
+- Codex `task-mp5eoi2t` 가 어제 (2026-05-14) 16h+ running 상태로 stuck — companion daemon 의 stale-PID detection 없음
+- 새 task 가 queue 에서 7m+ 대기 → 결국 받지 못함
+- `/codex:cancel` 만으로 worker 해제 안 됨 (PID dead but registry running)
+- JSON state 수동 수정 + Codex.exe process kill 필요 (사용자 수동 단계)
+
+대응 절차 (사용자 수동 영역):
+
+```bash
+# 1. 현재 task 상태 확인
+node ~/.claude/plugins/cache/openai-codex/codex/1.0.2/scripts/codex-companion.mjs status --all
+
+# 2. stale-PID task 의 state JSON 수동 cancel (last resort)
+# C:\Users\<user>\.claude\plugins\data\codex-openai-codex\state\<project>\jobs\task-<id>.json
+# "status": "running" → "cancelled" / "phase": "running" → "done"
+
+# 3. Codex.exe orphan process kill
+taskkill /IM Codex.exe /F      # 또는 taskmgr 에서 수동
+
+# 4. companion runtime 재진입 (새 task spawn 시 정상 동작)
+```
+
+본 절차는 자율 진행 영역 외 — 사용자 명시 cleanup 신호 시 진입.
+
+### 8.4 동일 fan-out group cap
+
+같은 영역 (예: Option A 1.1 inline + Phase 종합) 은 1회만. 다른 cluster (1.1 → 1.2) 는 별 fan-out — cap 적용 안 함.
+
+## 9. Risk 평가 (v0.2 — Codex stuck Risk 신설)
+
+| Risk | 영향 | mitigation | Status (sprint c89-B 종료) |
+|---|---|---|---|
+| Tauri test feature unstable / 미완 | Option B 실패 | Tauri 2.x docs / GitHub issue 확인 + 옵션 D fallback | 미검증 (다음 sprint) |
+| WebView2 CDP enable 안 됨 | Option C 실패 | env var / Tauri config / Rust 코드 3 방법 시도 | 미검증 (다음 sprint) |
+| Playwright MCP connectOverCDP 미지원 | Option C 실패 | raw fetch `http://localhost:9222/json` + WebSocket 시도 | 미검증 |
+| httpmock dev-dep 추가가 release build 영향 | dev-dep 만 추가 | release feature 영향 없음 — 검증 | **resolved** (Phase 1.2 cargo build 통과, release bundle 영향 0 확인) |
+| 본 plan 분량이 사용자 시간 cap 초과 | Phase 1 만 진행 후 후속 sprint | Phase 별 commit + next_session_entry.md 진행 상태 | **partial** (Phase 1 종료, B/C 다음 sprint) |
+| **Codex worker stuck / stale registry (v0.2 신설)** | Codex 페어 호출 영역 차단 | companion daemon stale-PID detection 미동작 — 사용자 수동 cleanup 절차 (§8.3) | **active** (실증 — Codex 1차 audit 결과 못 받음) |
+| **JSON top-level dup-key silent drop (v0.2 신설)** | i18n leaf-count 우회 + symmetry check 우회 | lefthook pre-commit dup-key 검사 (§6.7 backlog) | **resolved** (sprint c89-B `96d0be5` fix + solution) |
+
+## 6. Backlog — i18n JSON dup-key prevention (v0.2 신설)
+
+본 sprint c89-B Phase A-4 의 substrate 발견 (compound `i18n-json-top-level-duplicate-key-silent-drop`):
+
+### 6.7 lefthook pre-commit dup-key 검사
+
+```yaml
+# lefthook.yml — pre-commit 추가
+pre-commit:
+  commands:
+    i18n-dup-key:
+      glob: "apps/desktop/src/locales/*.json"
+      run: |
+        python -c "
+        import re, collections, sys
+        for f in '{staged_files}'.split():
+            text = open(f, encoding='utf-8').read()
+            keys = re.findall(r'^  \"([^\"]+)\":', text, re.MULTILINE)
+            dups = {k:c for k,c in collections.Counter(keys).items() if c > 1}
+            if dups:
+                print(f'duplicate top-level keys in {f}: {dups}', file=sys.stderr)
+                sys.exit(1)
+        "
+```
+
+### 6.8 `scripts/i18n-leaf-count.mjs` 보강
+
+`JSON.parse` 이전 raw 정규식 dup-key 검사. silent drop 차단.
+
+### 6.9 적용 sprint trigger
+
+- 다음 sprint 또는 [docs/solutions/i18n-json-top-level-duplicate-key-silent-drop.md](../solutions/i18n-json-top-level-duplicate-key-silent-drop.md) 의 예방 §1-2 절차 명시 후 commit
+
+## 10. Done criteria (v1.0 — v0.2 정정)
+
+본 plan v1.0 final 후 진입 trigger (v0.2 측정 정정):
+
+- [x] **Phase 1 (Option A) 실 구현 완료** — sprint c89-B 종료 시점 cargo test 238 → **261 (+23)** 실측. 가정 "70-80% 자동" 미증명, webview-side 별도 측정 필요 (§0.3).
+- [ ] Codex 페어 정책 v0.2 inline checkpoint 적용 (§8.2) — Phase 2 (B POC) 시 trigger
+- [ ] Option B POC 결과 (Tauri test feature 가능성) → v0.3 patch
+- [ ] Option C POC 결과 (WebView2 CDP 가능성) → v0.3 patch 또는 v1.0
 - [ ] 사용자 명시 v1.0 승인 후 실 구현 진입
 
-본 plan 의 실 구현은 **별도 commit + Phase 별 검증** — UltraPlan v1.0 final 까지 자율 audit cycle 만.
+본 plan 의 실 구현은 **별도 commit + Phase 별 검증** — Phase 1 commit 완료 (4245aaf / 83d631f / a4b58e8 / 88e7e88), Phase 2/3 는 다음 sprint 자율 또는 사용자 trigger.
