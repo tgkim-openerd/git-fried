@@ -110,9 +110,6 @@ const {
   closeSearch,
   onKeydown,
 } = useGraphSearch(rows, { onClose: () => drawGraph() })
-// vue-tsc 3 회귀: template `ref="searchInputRef"` 의 사용을 unused 로 오인 (TS 6133).
-// void 로 사용 표시 (런타임 영향 0).
-void searchInputRef
 
 // Sprint c40 — canvas 렌더링 + WIP idx 판정.
 const { drawGraph, isWipIdx } = useGraphCanvasRenderer({
@@ -153,7 +150,6 @@ const { onRowDblClick, onRowContextMenu, formatDate } = useCommitGraphInteractio
   commitActions,
   emit,
 })
-void moveSelection
 
 // c75-A: sha jump (외부 진입점). c76: wipRowCount SOT (Pattern 13 sister).
 const { selectAndScrollToSha } = useCommitGraphSelection({
@@ -191,14 +187,15 @@ const {
   resetColsAndCloseMenu,
   colDef,
 } = useCommitGraphHeader()
-// headerMenuRef 는 template ref 로 사용 (자동 매핑) — script 직접 참조 없으나 v-bind 필요.
-void headerMenuRef
 
 // c52/c51 #5 + c78-A: branch chip sticky overlay 좌표 (useCommitGraphStickyLayout SOT 위임).
 const { branchChipStickyWidth, branchChipStickyLeft } = useCommitGraphStickyLayout({
   graphWidth,
   allColumns: () => cols.allColumns,
 })
+
+// template-ref / unused-but-used markers (vue-tsc TS6133 회피, 런타임 영향 0).
+void [searchInputRef, moveSelection, headerMenuRef]
 </script>
 
 <template>
