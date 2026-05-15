@@ -77,3 +77,41 @@ pub fn delete_token(key: &str) -> AppResult<()> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Sprint c89-B Phase 1.1 (plan/36 §2.1.1) — auth keyring key 형식 검증.
+
+    #[test]
+    fn make_key_basic_format() {
+        let key = make_key("github", "https://api.github.com", Some("tgkim"));
+        assert_eq!(key, "github|https://api.github.com|tgkim");
+    }
+
+    #[test]
+    fn make_key_username_none_appends_empty() {
+        let key = make_key("gitea", "https://gitea.com", None);
+        assert_eq!(key, "gitea|https://gitea.com|");
+    }
+
+    /// Sprint c89-B — 한글 forge 이름 + 한글 username 도 정상 (NFC 가정).
+    /// keyring crate 는 UTF-8 정상 처리. DB 의 keychain_ref 도 동일.
+    #[test]
+    fn make_key_korean_username_preserved() {
+        let key = make_key("gitea", "https://git.dev.opnd.io", Some("김태길"));
+        assert_eq!(key, "gitea|https://git.dev.opnd.io|김태길");
+        // 분리자 `|` 가 한글 안에 누출되지 않음.
+        assert_eq!(key.split('|').count(), 3);
+    }
+
+    /// Sprint c89-B — base_url 에 trailing slash 또는 path 가 포함되면 그대로 key 에 들어감.
+    /// 즉 caller (예: profiles.rs) 가 사전에 base URL 정규화 책임 — 본 test 가 정규화 정책 회귀 가드.
+    #[test]
+    fn make_key_does_not_normalize_base_url() {
+        let key = make_key("gitea", "https://gitea.com/", Some("u"));
+        assert_eq!(key, "gitea|https://gitea.com/|u");
+        // 정규화 누락 시 같은 계정 2개 entry (with/without trailing slash) 잠재 — caller 책임.
+    }
+}

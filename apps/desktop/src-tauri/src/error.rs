@@ -253,4 +253,41 @@ mod tests {
         let unique: std::collections::HashSet<_> = kinds.iter().copied().collect();
         assert_eq!(unique.len(), kinds.len());
     }
+
+    // Sprint c89-B Phase 1.1 (plan/36 §2.1.1) — IPC fault injection 추가.
+
+    /// AppError 가 Send + Sync — tokio task 안전성 compile-time 검증.
+    #[test]
+    fn app_error_is_send_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<AppError>();
+        assert_send_sync::<AppResult<()>>();
+    }
+
+    /// `From<anyhow::Error>` chain 의 `{:#}` 가 cause chain 을 한 줄로 펼침.
+    #[test]
+    fn from_anyhow_preserves_chain() {
+        use anyhow::anyhow;
+        let chain = anyhow!("layer1").context("layer2").context("layer3");
+        let e: AppError = chain.into();
+        let msg = e.to_string();
+        // {:#} 형식은 inner 가 reverse outer 로 한 줄
+        assert!(msg.contains("layer3"), "msg={msg}");
+        assert!(msg.contains("layer1"), "msg={msg}");
+        assert_eq!(e.kind(), "internal");
+    }
+
+    /// `secret_mask` 가 Internal variant 의 일반 message 에도 적용.
+    /// (stderr 만 mask 가 아닌 일반 message 도 PAT 등 마스킹 — Serialize impl line 110).
+    #[test]
+    fn internal_message_pat_is_masked_in_serialize() {
+        let fake_pat = "ghp_AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIII";
+        let e = AppError::internal(format!("login failed token={fake_pat}"));
+        let v = serde_json::to_value(&e).expect("serde");
+        let msg = v["message"].as_str().unwrap_or("");
+        assert!(
+            !msg.contains(fake_pat),
+            "raw PAT leaked in serialize message: {msg}"
+        );
+    }
 }
