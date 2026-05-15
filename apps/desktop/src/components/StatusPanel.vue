@@ -287,18 +287,14 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
           <!-- c25-2.2 — Tree 모드: Staged (Modified 와 동일 패턴, action='-' unstage) -->
           <ul v-else-if="!collapsedStaged && viewMode === 'tree'">
             <template v-for="(row, idx) in stagedTreeRows" :key="`st-${idx}`">
-              <li
+              <StatusTreeDirRow
                 v-if="row.kind === 'dir'"
-                class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
-                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                :title="t('status.dirToggleTitle', { path: row.path })"
-                @click="toggleDir(row.path)"
-              >
-                <span class="text-[10px] text-muted-foreground">{{
-                  row.collapsed ? '▶' : '▼'
-                }}</span>
-                <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
-              </li>
+                :depth="row.depth"
+                :collapsed="row.collapsed"
+                :name="row.name"
+                :path="row.path"
+                @toggle="toggleDir"
+              />
               <li
                 v-else
                 class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
@@ -409,18 +405,14 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
           <!-- Sprint c25-2.1 — Tree 모드: 디렉토리 collapse + indent. file row 액션 동등. -->
           <ul v-else-if="!collapsedUnstaged && viewMode === 'tree'">
             <template v-for="(row, idx) in unstagedTreeRows" :key="`ut-${idx}`">
-              <li
+              <StatusTreeDirRow
                 v-if="row.kind === 'dir'"
-                class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
-                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                :title="t('status.dirToggleTitle', { path: row.path })"
-                @click="toggleDir(row.path)"
-              >
-                <span class="text-[10px] text-muted-foreground">{{
-                  row.collapsed ? '▶' : '▼'
-                }}</span>
-                <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
-              </li>
+                :depth="row.depth"
+                :collapsed="row.collapsed"
+                :name="row.name"
+                :path="row.path"
+                @toggle="toggleDir"
+              />
               <li
                 v-else
                 class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
@@ -519,18 +511,14 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
           <!-- c25-2.3 — Tree 모드: Untracked (string row, action='+' stage) -->
           <ul v-else-if="!collapsedUntracked && viewMode === 'tree'">
             <template v-for="(row, idx) in untrackedTreeRows" :key="`unt-${idx}`">
-              <li
+              <StatusTreeDirRow
                 v-if="row.kind === 'dir'"
-                class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 hover:bg-accent/30"
-                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                :title="t('status.dirToggleTitle', { path: row.path })"
-                @click="toggleDir(row.path)"
-              >
-                <span class="text-[10px] text-muted-foreground">{{
-                  row.collapsed ? '▶' : '▼'
-                }}</span>
-                <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
-              </li>
+                :depth="row.depth"
+                :collapsed="row.collapsed"
+                :name="row.name"
+                :path="row.path"
+                @toggle="toggleDir"
+              />
               <li
                 v-else
                 class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
@@ -595,16 +583,15 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
           <!-- c25-2.3 — Tree 모드: Conflicted (string row, action=mergetool / 해결) -->
           <ul v-else-if="!collapsedConflicted && viewMode === 'tree'">
             <template v-for="(row, idx) in conflictedTreeRows" :key="`ct-${idx}`">
-              <li
+              <StatusTreeDirRow
                 v-if="row.kind === 'dir'"
-                class="flex cursor-pointer select-none items-center gap-1 rounded px-1 py-0.5 text-destructive hover:bg-destructive/10"
-                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                :title="t('status.dirToggleTitle', { path: row.path })"
-                @click="toggleDir(row.path)"
-              >
-                <span class="text-[10px]">{{ row.collapsed ? '▶' : '▼' }}</span>
-                <span class="font-mono text-[11px]">{{ row.name }}/</span>
-              </li>
+                :depth="row.depth"
+                :collapsed="row.collapsed"
+                :name="row.name"
+                :path="row.path"
+                variant="destructive"
+                @toggle="toggleDir"
+              />
               <li
                 v-else
                 class="group flex items-center gap-2 rounded px-1 py-0.5 text-xs text-destructive hover:bg-destructive/10"
