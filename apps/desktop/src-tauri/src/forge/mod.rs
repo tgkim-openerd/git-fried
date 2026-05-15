@@ -172,3 +172,148 @@ pub struct CreatePullRequestReq {
     pub base: String,
     pub draft: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use httpmock::Method::GET;
+    use httpmock::MockServer;
+
+    // Sprint c89-B Phase 1.2 (plan/36 §2.1.2) — Forge API fault injection.
+    // ResponseForgeExt::error_for_status_forge 의 status → AppError 매핑 매트릭스.
+    // 4 case: 401 / 403 / 429+Retry-After / 200 OK pass-through.
+
+    #[tokio::test]
+    async fn forge_401_maps_to_auth_expired() {
+        let server = MockServer::start_async().await;
+        server
+            .mock_async(|when, then| {
+                when.method(GET).path("/api/v1/user");
+                then.status(401);
+            })
+            .await;
+
+        let res = reqwest::get(server.url("/api/v1/user")).await.unwrap();
+        let err = res.error_for_status_forge("gitea").unwrap_err();
+        match err {
+            AppError::AuthExpired { provider } => assert_eq!(provider, "gitea"),
+            other => panic!("expected AuthExpired, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn forge_403_maps_to_auth_expired() {
+        let server = MockServer::start_async().await;
+        server
+            .mock_async(|when, then| {
+                when.method(GET).path("/repos/o/r");
+                then.status(403);
+            })
+            .await;
+
+        let res = reqwest::get(server.url("/repos/o/r")).await.unwrap();
+        let err = res.error_for_status_forge("github").unwrap_err();
+        match err {
+            AppError::AuthExpired { provider } => assert_eq!(provider, "github"),
+            other => panic!("expected AuthExpired, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn forge_429_with_retry_after_maps_to_rate_limit() {
+        let server = MockServer::start_async().await;
+        server
+            .mock_async(|when, then| {
+                when.method(GET).path("/api/v3/repos");
+                then.status(429).header("Retry-After", "120");
+            })
+            .await;
+
+        let res = reqwest::get(server.url("/api/v3/repos")).await.unwrap();
+        let err = res.error_for_status_forge("github").unwrap_err();
+        match err {
+            AppError::RateLimit {
+                provider,
+                retry_after,
+            } => {
+                assert_eq!(provider, "github");
+                assert_eq!(retry_after, 120);
+            }
+            other => panic!("expected RateLimit, got {other:?}"),
+        }
+    }
+
+    /// 429 응답에 Retry-After 헤더 부재 시 default 60s.
+    #[tokio::test]
+    async fn forge_429_without_retry_after_defaults_to_60s() {
+        let server = MockServer::start_async().await;
+        server
+            .mock_async(|when, then| {
+                when.method(GET).path("/api/v1/repos");
+                then.status(429);
+            })
+            .await;
+
+        let res = reqwest::get(server.url("/api/v1/repos")).await.unwrap();
+        let err = res.error_for_status_forge("gitea").unwrap_err();
+        match err {
+            AppError::RateLimit { retry_after, .. } => assert_eq!(retry_after, 60),
+            other => panic!("expected RateLimit with default retry_after, got {other:?}"),
+        }
+    }
+
+    /// 429 + 잘못된 Retry-After (non-integer) 도 default 60s (안전 fallback).
+    #[tokio::test]
+    async fn forge_429_invalid_retry_after_defaults_to_60s() {
+        let server = MockServer::start_async().await;
+        server
+            .mock_async(|when, then| {
+                when.method(GET).path("/api/v1/repos");
+                then.status(429)
+                    .header("Retry-After", "Wed, 21 Oct 2027 07:28:00 GMT");
+            })
+            .await;
+
+        let res = reqwest::get(server.url("/api/v1/repos")).await.unwrap();
+        let err = res.error_for_status_forge("gitea").unwrap_err();
+        match err {
+            AppError::RateLimit { retry_after, .. } => assert_eq!(retry_after, 60),
+            other => panic!("expected RateLimit fallback, got {other:?}"),
+        }
+    }
+
+    /// 200 OK 응답은 통과 — body 포함 Response 반환.
+    #[tokio::test]
+    async fn forge_200_passes_through() {
+        let server = MockServer::start_async().await;
+        server
+            .mock_async(|when, then| {
+                when.method(GET).path("/ok");
+                then.status(200).body("hello");
+            })
+            .await;
+
+        let res = reqwest::get(server.url("/ok")).await.unwrap();
+        let res = res
+            .error_for_status_forge("gitea")
+            .expect("200 should pass");
+        let body = res.text().await.unwrap();
+        assert_eq!(body, "hello");
+    }
+
+    /// 500 server error 는 reqwest::Error 로 매핑 (AppError::Http).
+    #[tokio::test]
+    async fn forge_500_maps_to_http_error() {
+        let server = MockServer::start_async().await;
+        server
+            .mock_async(|when, then| {
+                when.method(GET).path("/boom");
+                then.status(500);
+            })
+            .await;
+
+        let res = reqwest::get(server.url("/boom")).await.unwrap();
+        let err = res.error_for_status_forge("gitea").unwrap_err();
+        assert_eq!(err.kind(), "http");
+    }
+}
