@@ -292,8 +292,30 @@ pwsh ./bench/memory.ps1
 | 항목 | 필요 입력 | 즉시 실행 명령 |
 |---|---|---|
 | **bench actual 6 metric** | `BENCH_REPO=/path/to/10k-commit-repo` | `cargo bench --bench git_perf` + `pwsh ./bench/memory.ps1` |
-| **SAF-301 bin size 비교** | (사용자 결정: panic="abort" 유지 vs unwind 전환) | `cargo build --release` × 2 (abort 현재 vs unwind 토글) → `ls -la` 비교 |
+| **SAF-301 bin size 비교** | ✅ **완료 (sprint c89-A, 2026-05-15)** — 아래 § 4.1 결과 | (재측정 시: `cargo build --release` × 2) |
 | **vite/esbuild CVE 0** | (PR-E vite 8 major sprint 진입 시점) | `bun update --latest vite esbuild` + manualChunks function migration |
+
+### 4.1 SAF-301 panic mode bin size 측정 결과 (sprint c89-A, 2026-05-15)
+
+**측정 환경**: Windows 11 Pro x64, rustc stable, `[profile.release] opt-level="s" + lto=true + codegen-units=1 + strip=true`
+
+| panic 모드 | git-fried.exe size | 변화 |
+|---|---|---|
+| **`panic = "abort"`** (현 적용) | 11,279,360 bytes (10.76 MiB) | baseline |
+| `panic = "unwind"` | 18,990,592 bytes (18.11 MiB) | **+7,711,232 bytes (+7.35 MiB / +68.37%)** |
+
+**결론 — `panic = "abort"` 유지 결정 강력 정당화**:
+
+- 일반 추정 +10~15% (Codex P2 권고 본문) 대비 **+68% 실측** = 5배 더 큰 비용
+- 원인 추정:
+  - Windows SEH (Structured Exception Handling) unwind metadata 가 Linux .eh_frame 대비 무거움
+  - LTO + opt-level="s" + codegen-units=1 의 강한 size 최적화가 abort 시 더 효과적
+  - tokio + sqlx + git2 등 대형 dep tree 의 unwind 비용 누적
+- desktop binary 사이즈 +7.35 MiB 는 사용자 다운로드 시간 + 디스크 footprint 직접 영향 → trade-off 합리화 어려움
+- 회복 시나리오는 SAF-301 v0.9 reasoning 정정대로 **panic → process exit → OS handle 정리 + SQLite WAL recovery** 로 실용적 cleanup OK
+- Codex P2 권고 (`panic="abort"` 유지 + unwrap/transaction 명시 처리 우선) 채택 정당
+
+**후속**: c89+ SAF-301 explicit Drop guard 항목 진입 시 `std::panic::catch_unwind` + manual rollback wrapper 만 추가 — panic mode 변경 X.
 
 ## 5. Sprint c82 Verification Summary (sprint commit 카탈로그)
 
