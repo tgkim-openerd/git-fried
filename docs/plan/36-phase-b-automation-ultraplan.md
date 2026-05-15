@@ -1,6 +1,13 @@
-# UltraPlan v0.2 — Phase B Automation (Tauri 2 LLM-자동 검증 전략)
+# UltraPlan v0.3 — Phase B Automation (Tauri 2 LLM-자동 검증 전략)
 
 > **v0.1 작성**: 2026-05-15 (sprint c89-B 후속)
+> **v0.2 patch**: 2026-05-15 (Phase 1 종료 + compound 후)
+> **v0.3 patch**: 2026-05-15 (Backlog 1~4 자율 진행 완료 후)
+>   - Option B POC 결과: Windows STATUS_ENTRYPOINT_NOT_FOUND (commit `9c9a292`)
+>   - Option C POC 결과: additionalBrowserArgs schema verify 통과 (commit `744f274`)
+>   - Backlog 1 i18n dup-key prevention 실 구현 (commit `70e6ea9`)
+>   - Backlog 4.1/4.2 template-LOC god 추출 (commits `886016d` / `dce39f8`)
+>   - Backlog 4.3 GitKrakenToolbar — 12 button 의미 분기 → 별도 sprint
 > **v0.2 patch**: 2026-05-15 (sprint c89-B Phase 1 종료 + compound 후)
 >   - §0.2 의 "70-80% 자동 가능" 가정 → Phase 1 실측 (+23 test) 으로 정정
 >   - §4 Codex 페어 정책: phase-end 2회 → wave-end inline checkpoint (plan/35 §4 v0.2 정렬)
@@ -358,14 +365,23 @@ pre-commit:
 
 - 다음 sprint 또는 [docs/solutions/i18n-json-top-level-duplicate-key-silent-drop.md](../solutions/i18n-json-top-level-duplicate-key-silent-drop.md) 의 예방 §1-2 절차 명시 후 commit
 
-## 10. Done criteria (v1.0 — v0.2 정정)
+## 10. Done criteria (v0.3 — 자율 진행 완료 시점 정정)
 
-본 plan v1.0 final 후 진입 trigger (v0.2 측정 정정):
+### 10.1 Sprint c89-B 자율 진행 결과 (2026-05-15 종료)
 
-- [x] **Phase 1 (Option A) 실 구현 완료** — sprint c89-B 종료 시점 cargo test 238 → **261 (+23)** 실측. 가정 "70-80% 자동" 미증명, webview-side 별도 측정 필요 (§0.3).
-- [ ] Codex 페어 정책 v0.2 inline checkpoint 적용 (§8.2) — Phase 2 (B POC) 시 trigger
-- [ ] Option B POC 결과 (Tauri test feature 가능성) → v0.3 patch
-- [ ] Option C POC 결과 (WebView2 CDP 가능성) → v0.3 patch 또는 v1.0
-- [ ] 사용자 명시 v1.0 승인 후 실 구현 진입
+- [x] **Phase 1 (Option A) 실 구현 완료** — cargo test 238 → **261 (+23)** 실측 (commit 4245aaf / 83d631f / a4b58e8 / 88e7e88)
+- [x] **Backlog 1 — i18n dup-key prevention 실 구현** — `scripts/i18n-leaf-count.mjs` 보강 + lefthook pre-commit 자동 활성 (commit `70e6ea9`)
+- [x] **Phase 2 (Option B) POC 완료** — Windows 환경 `STATUS_ENTRYPOINT_NOT_FOUND` 차단 확인, plan/36 §9 Risk 1 실증 (commit `9c9a292`). Linux/macOS 환경 재시도 별도 sprint trigger.
+- [x] **Phase 3 (Option C) POC 완료** — `additionalBrowserArgs` schema 호환 verify (commit `744f274`). 실 CDP attach 는 사용자 명시 trigger (tauri:dev + env var + Playwright MCP attach 검증 필요).
+- [x] **Backlog 4.1 — StatusPanel dir row 추출** — StatusTreeDirRow SOT (commit `886016d`, -16 라인)
+- [x] **Backlog 4.2 — FullscreenDiffView viewMode v-for 통합** — VIEW_MODES SOT (commit `dce39f8`, -31 라인)
+- [x] **Backlog 4.3 — GitKrakenToolbar 분석** — 12 button 의미 분기, 추출 ROI 낮음. 별도 sprint trigger.
 
-본 plan 의 실 구현은 **별도 commit + Phase 별 검증** — Phase 1 commit 완료 (4245aaf / 83d631f / a4b58e8 / 88e7e88), Phase 2/3 는 다음 sprint 자율 또는 사용자 trigger.
+### 10.2 v1.0 final 진입 조건 (사용자 명시 영역)
+
+- [ ] Codex worker cleanup (Windows Codex.exe orphan kill) → 2차 audit 의뢰
+- [ ] Option B POC Linux/macOS 환경 재시도 → 성공 시 173 IPC handler 통합 path cover
+- [ ] Option C 실 CDP attach POC (tauri:dev 빌드 + env var + Playwright MCP raw CDP attach 검증)
+- [ ] 사용자 명시 v1.0 승인 후 통합 실 구현
+
+본 plan 의 실 구현은 **별도 commit + Phase 별 검증**. Phase 1 / Backlog 모두 완료 — 다음 sprint trigger 는 사용자 명시 영역만 남음.
