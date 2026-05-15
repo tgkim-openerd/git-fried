@@ -84,6 +84,15 @@ function openHistory() {
 //     'file'  = readFile + FileViewer (CodeMirror syntax highlight, Phase 7c)
 //     'blame' = useFileBlame + line-by-line author/sha (Phase 7b inline)
 type ViewMode = 'diff' | 'split' | 'file' | 'blame'
+
+// Sprint c89-B Backlog 4.2 — template 4-button repetition 의 SOT.
+// Pattern 11 (group collapse) + v-for 변환 으로 56 라인 → 15 라인 + 6 라인 def.
+const VIEW_MODES: ReadonlyArray<{ value: ViewMode; label: string; aria: string }> = [
+  { value: 'diff', label: 'Diff', aria: 'Diff View — unified' },
+  { value: 'split', label: 'Split', aria: 'Split View — side-by-side' },
+  { value: 'file', label: 'File', aria: 'File View' },
+  { value: 'blame', label: 'Blame', aria: 'Blame View — inline line-by-line author' },
+]
 const viewMode = ref<ViewMode>('diff')
 function setViewMode(m: ViewMode) {
   viewMode.value = m
@@ -182,67 +191,27 @@ watch(
         <span class="ml-2">{{ headerLabel }}</span>
       </div>
 
-      <!-- Sprint c30 / GitKraken UX (Phase 4-1 + 6b + 7b) — View mode 3개 토글 -->
+      <!-- Sprint c30 / GitKraken UX (Phase 4-1 + 6b + 7b) — View mode 4개 토글.
+           c89-B Backlog 4.2 — v-for + VIEW_MODES SOT 로 변환 (4 inline button 통합). -->
       <div
         class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5"
         title="View 모드"
       >
         <button
+          v-for="m in VIEW_MODES"
+          :key="m.value"
           type="button"
           class="rounded px-1.5 py-0.5 text-[10px]"
           :class="
-            viewMode === 'diff'
+            viewMode === m.value
               ? 'bg-accent text-accent-foreground font-semibold'
               : 'text-muted-foreground hover:text-foreground'
           "
-          aria-label="Diff View — unified"
-          data-testid="fullscreen-diff-diff-view"
-          @click="setViewMode('diff')"
+          :aria-label="m.aria"
+          :data-testid="`fullscreen-diff-${m.value}-view`"
+          @click="setViewMode(m.value)"
         >
-          Diff
-        </button>
-        <!-- Sprint c54+++ Issue 2 — GitKraken parity Split (side-by-side) View. -->
-        <button
-          type="button"
-          class="rounded px-1.5 py-0.5 text-[10px]"
-          :class="
-            viewMode === 'split'
-              ? 'bg-accent text-accent-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
-          "
-          aria-label="Split View — side-by-side"
-          data-testid="fullscreen-diff-split-view"
-          @click="setViewMode('split')"
-        >
-          Split
-        </button>
-        <button
-          type="button"
-          class="rounded px-1.5 py-0.5 text-[10px]"
-          :class="
-            viewMode === 'file'
-              ? 'bg-accent text-accent-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
-          "
-          aria-label="File View"
-          data-testid="fullscreen-diff-file-view"
-          @click="setViewMode('file')"
-        >
-          File
-        </button>
-        <button
-          type="button"
-          class="rounded px-1.5 py-0.5 text-[10px]"
-          :class="
-            viewMode === 'blame'
-              ? 'bg-accent text-accent-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
-          "
-          aria-label="Blame View — inline line-by-line author"
-          data-testid="fullscreen-diff-blame-view"
-          @click="setViewMode('blame')"
-        >
-          Blame
+          {{ m.label }}
         </button>
       </div>
 
