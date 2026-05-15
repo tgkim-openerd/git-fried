@@ -917,7 +917,13 @@
     "importing": "가져오는 중...",
     "successHeader": "가져오기 완료",
     "tabRestoreNote": "활성 탭은 자동 복원됩니다.",
-    "redetect": "다시 탐지"
+    "redetect": "다시 탐지",
+    "pin": "즐겨찾기 (Pin)",
+    "activeTab": "활성 탭",
+    "success": "✅ 완료",
+    "failure": "❌ 실패",
+    "skip": "스킵",
+    "tabRestore": "탭 복원 시도"
   },
   "syncTemplate": {
     "title": "Sync template (다중 레포 cherry-pick)",
@@ -1051,14 +1057,6 @@
   "identityCard": {
     "title": "차별점",
     "koreanSafe": "한글 안전"
-  },
-  "gitkrakenImport": {
-    "pin": "즐겨찾기 (Pin)",
-    "activeTab": "활성 탭",
-    "success": "✅ 완료",
-    "failure": "❌ 실패",
-    "skip": "스킵",
-    "tabRestore": "탭 복원 시도"
   },
   "commitDetail": {
     "errNoRepoCommit": "레포/commit 미확정",

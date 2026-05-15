@@ -917,7 +917,13 @@
     "importing": "Importing...",
     "successHeader": "Import complete",
     "tabRestoreNote": "Active tabs are restored automatically.",
-    "redetect": "Re-detect"
+    "redetect": "Re-detect",
+    "pin": "Pin",
+    "activeTab": "Active tab",
+    "success": "✅ Complete",
+    "failure": "❌ Failed",
+    "skip": "Skipped",
+    "tabRestore": "Tab restore attempt"
   },
   "syncTemplate": {
     "title": "Sync template (multi-repo cherry-pick)",
@@ -1051,14 +1057,6 @@
   "identityCard": {
     "title": "Differentiators",
     "koreanSafe": "Korean-safe"
-  },
-  "gitkrakenImport": {
-    "pin": "Pin",
-    "activeTab": "Active tab",
-    "success": "✅ Complete",
-    "failure": "❌ Failed",
-    "skip": "Skipped",
-    "tabRestore": "Tab restore attempt"
   },
   "commitDetail": {
     "errNoRepoCommit": "Repo/commit not selected",

@@ -36,3 +36,27 @@
 - **Files**: `apps/desktop/src/composables/useMenuListener.ts`
 - **Status**: ✅ **FIXED** (page reload 후 TypeError 0)
 - **Prevention**: 향후 Tauri API 직접 호출 composable 작성 시 `isMockEnabled()` 가드 표준 패턴 정착. solution 작성 후보 (compound 영역).
+
+## Wave A-2/3/4 — launchpad / repositories / settings
+
+### BUG-A4-001 — `gitkrakenImport` namespace JSON duplicate key (silent drop)
+
+- **Severity**: HIGH (i18n silent regression — 13 leaf keys 누락)
+- **Axis**: i18n
+- **Panel**: settings (gitkrakenImport.title 호출 시점) + GitKrakenImportModal 전체
+- **Repro**: `bun run dev` → http://localhost:1420/settings → 콘솔 warning
+  > `[intlify] Not found 'gitkrakenImport.title' key in 'ko' locale messages`
+- **Root cause**: `gitkrakenImport` namespace 가 ko.json + en.json 양쪽 **2번 정의** (line 907 + 1055). JSON.parse() duplicate key 시 last-write-wins — 두번째 block (6 keys: pin/activeTab/success/failure/skip/tabRestore) 가 첫번째 block (13 keys: title/detectFailed/preview/workspaces/repos/favorites/tabs/skipped/importButton/importing/successHeader/tabRestoreNote/redetect) 을 덮음. 결과 title 등 13 key silent 잃음.
+- **Affected**: ko + en 양쪽 동일 drift. GitKrakenImport modal / settings sub 의 모든 첫 block 키 호출이 missing key warning. **i18n leaf 카운트 silent drop 13**.
+- **Fix**: 첫 block 끝에 두번째 block 의 6 key 추가 → 두번째 block 삭제. 19 unique key 단일 namespace 통합.
+- **Files**: `apps/desktop/src/locales/ko.json`, `apps/desktop/src/locales/en.json`
+- **Status**: ✅ **FIXED** (leaf 1298→1311, warning 0)
+- **Prevention**: `i18n-leaf-count.mjs` 또는 lefthook 에 duplicate top-level key 검사 추가 권장 — `python -c "import re, collections; ..."` 패턴. 본 audit 종료 시 별도 commit 으로 추가.
+
+## Phase A-2 / A-3 (launchpad / repositories) — bug 0
+
+console error 0, console warning 0, 시각 정상, 한글 표시 OK, 3-panel 레이아웃 OK.
+
+스크린샷:
+- `screenshots/A2-01-launchpad.png`
+- `screenshots/A3-01-repositories.png`
