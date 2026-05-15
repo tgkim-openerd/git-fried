@@ -248,3 +248,206 @@ pub async fn unlock_worktree(repo: &Path, path: &str) -> AppResult<()> {
         .into_ok()?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    // Sprint c89-B Phase 1.3 (plan/36 §2.1.3) — Worktree lifecycle audit.
+    // git/tests.rs 의 init_test_repo 패턴 재사용 — 외부에 노출 안 되므로 helper 자체 inline.
+
+    async fn init_repo_with_commit() -> (TempDir, std::path::PathBuf) {
+        let tmp = TempDir::new().unwrap();
+        let path = tmp.path().to_path_buf();
+
+        git_run(&path, &["init", "-q", "-b", "main"], &GitRunOpts::default())
+            .await
+            .unwrap()
+            .into_ok()
+            .unwrap();
+        git_run(
+            &path,
+            &["config", "user.name", "tester"],
+            &GitRunOpts::default(),
+        )
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+        git_run(
+            &path,
+            &["config", "user.email", "tester@example.com"],
+            &GitRunOpts::default(),
+        )
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+        // global commit.gpgsign=true 환경 회피 — test repo 만 disable.
+        git_run(
+            &path,
+            &["config", "commit.gpgsign", "false"],
+            &GitRunOpts::default(),
+        )
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+        // worktree add 는 commit 1+ 필요 — empty commit.
+        git_run(
+            &path,
+            &["commit", "--allow-empty", "-m", "init"],
+            &GitRunOpts::default(),
+        )
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+        (tmp, path)
+    }
+
+    #[tokio::test]
+    async fn list_returns_only_main_for_fresh_repo() {
+        let (_tmp, repo) = init_repo_with_commit().await;
+        let entries = list_worktrees(&repo).await.unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].is_main);
+        assert!(!entries[0].is_locked);
+        assert!(!entries[0].is_prunable);
+        assert_eq!(entries[0].branch.as_deref(), Some("main"));
+    }
+
+    #[tokio::test]
+    async fn add_then_list_returns_two_entries() {
+        let (_tmp, repo) = init_repo_with_commit().await;
+        let wt_tmp = TempDir::new().unwrap();
+        // sibling 경로 (repo 안에 worktree 두면 hierarchy 충돌). detach 가 안전.
+        let wt_path = wt_tmp.path().join("wt-feat");
+        let opts = AddWorktreeOpts {
+            path: wt_path.to_string_lossy().to_string(),
+            create_branch: Some("feat".into()),
+            branch: None,
+            start_point: None,
+        };
+        add_worktree(&repo, &opts).await.unwrap();
+
+        let entries = list_worktrees(&repo).await.unwrap();
+        assert_eq!(entries.len(), 2);
+        let main = entries.iter().find(|e| e.is_main).expect("main exists");
+        let feat = entries
+            .iter()
+            .find(|e| e.branch.as_deref() == Some("feat"))
+            .expect("feat worktree");
+        assert!(!feat.is_main);
+        assert_ne!(main.path, feat.path);
+        assert!(!feat.is_locked);
+    }
+
+    #[tokio::test]
+    async fn lock_unlock_round_trip() {
+        let (_tmp, repo) = init_repo_with_commit().await;
+        let wt_tmp = TempDir::new().unwrap();
+        let wt_path = wt_tmp.path().join("wt-lock");
+        add_worktree(
+            &repo,
+            &AddWorktreeOpts {
+                path: wt_path.to_string_lossy().to_string(),
+                create_branch: Some("lock-branch".into()),
+                branch: None,
+                start_point: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        lock_worktree(&repo, &wt_path.to_string_lossy(), Some("external-disk"))
+            .await
+            .unwrap();
+
+        let entries = list_worktrees(&repo).await.unwrap();
+        let feat = entries
+            .iter()
+            .find(|e| e.branch.as_deref() == Some("lock-branch"))
+            .expect("lock-branch wt");
+        assert!(feat.is_locked, "lock_worktree 후 is_locked=true 기대");
+
+        unlock_worktree(&repo, &wt_path.to_string_lossy())
+            .await
+            .unwrap();
+        let entries = list_worktrees(&repo).await.unwrap();
+        let feat = entries
+            .iter()
+            .find(|e| e.branch.as_deref() == Some("lock-branch"))
+            .expect("lock-branch wt 2");
+        assert!(!feat.is_locked, "unlock 후 is_locked=false 기대");
+    }
+
+    #[tokio::test]
+    async fn remove_then_list_only_main() {
+        let (_tmp, repo) = init_repo_with_commit().await;
+        let wt_tmp = TempDir::new().unwrap();
+        let wt_path = wt_tmp.path().join("wt-rm");
+        add_worktree(
+            &repo,
+            &AddWorktreeOpts {
+                path: wt_path.to_string_lossy().to_string(),
+                create_branch: Some("rm-branch".into()),
+                branch: None,
+                start_point: None,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(list_worktrees(&repo).await.unwrap().len(), 2);
+
+        remove_worktree(&repo, &wt_path.to_string_lossy(), false)
+            .await
+            .unwrap();
+        let entries = list_worktrees(&repo).await.unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(entries[0].is_main);
+    }
+
+    #[tokio::test]
+    async fn prune_on_clean_state_is_noop() {
+        let (_tmp, repo) = init_repo_with_commit().await;
+        // 정상 상태 prune — 에러 없이 통과 (no-op).
+        prune_worktrees(&repo).await.unwrap();
+        // 여전히 main 만.
+        let entries = list_worktrees(&repo).await.unwrap();
+        assert_eq!(entries.len(), 1);
+    }
+
+    /// Sprint c89-B — 한글 worktree 디렉토리 path 라운드트립.
+    /// `git worktree add` + `list --porcelain` 가 한글 path 를 UTF-8 그대로 처리.
+    #[tokio::test]
+    async fn korean_worktree_path_round_trip() {
+        let (_tmp, repo) = init_repo_with_commit().await;
+        let wt_tmp = TempDir::new().unwrap();
+        let wt_path = wt_tmp.path().join("작업-한글-wt");
+        add_worktree(
+            &repo,
+            &AddWorktreeOpts {
+                path: wt_path.to_string_lossy().to_string(),
+                create_branch: Some("한글-브랜치".into()),
+                branch: None,
+                start_point: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let entries = list_worktrees(&repo).await.unwrap();
+        let kor = entries
+            .iter()
+            .find(|e| e.branch.as_deref() == Some("한글-브랜치"))
+            .expect("한글 worktree");
+        // path 가 한글 component 포함 (대소문자 + slash 무관).
+        assert!(
+            kor.path.contains("작업-한글-wt"),
+            "한글 path 누출: {}",
+            kor.path
+        );
+    }
+}
