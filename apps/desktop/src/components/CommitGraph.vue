@@ -22,8 +22,7 @@ import { useGraphSelection } from '@/composables/useGraphSelection'
 import { useGraphCanvasRenderer } from '@/composables/useGraphCanvasRenderer'
 import { useCommitGraphRows } from '@/composables/useCommitGraphRows'
 import { useCommitGraphInteraction } from '@/composables/useCommitGraphInteraction'
-// Sprint c65 — presentation helpers (bodyFirstLine / refPillClass / authorInitial /
-// authorAvatarBg) composable 추출.
+// Sprint c65 — presentation helpers (bodyFirstLine / refPillClass / authorInitial / authorAvatarBg).
 import { useCommitGraphPresentation } from '@/composables/useCommitGraphPresentation'
 // Sprint c75-A — god comp 회귀 해소 (c74 +48 LOC 영역 분리).
 import { useGraphInfiniteScroll, GRAPH_LIMIT_STEP } from '@/composables/useGraphInfiniteScroll'
@@ -41,6 +40,7 @@ import {
 } from '@/composables/useCommitGraphLifecycle'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
+import CommitRefPill from './CommitRefPill.vue'
 import type { GraphRow } from '@/api/git'
 
 const { t } = useI18n()
@@ -419,34 +419,14 @@ void [searchInputRef, moveSelection, headerMenuRef]
               class="flex items-center gap-1 overflow-hidden bg-background/95 px-2"
             >
               <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="`stk-r-${r}`">
-                <span
+                <CommitRefPill
                   v-if="visibleRef(r)"
-                  class="ref-pill inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
-                  :class="refPillClass(r)"
-                >
-                  <button
-                    type="button"
-                    class="ref-pill-body cursor-pointer hover:underline"
-                    :title="
-                      soloRef === r
-                        ? `Solo 해제: ${r}`
-                        : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
-                    "
-                    :aria-label="soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`"
-                    @click.stop="toggleSoloRef(r)"
-                  >
-                    {{ r }}
-                  </button>
-                  <button
-                    type="button"
-                    class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
-                    :title="`그래프에서 숨김: ${r}`"
-                    :aria-label="`'${r}' 그래프에서 숨김`"
-                    @click.stop="hideRefByName(r)"
-                  >
-                    🙈
-                  </button>
-                </span>
+                  :name="r"
+                  :solo-ref="soloRef"
+                  :pill-class="refPillClass(r)"
+                  @solo="toggleSoloRef"
+                  @hide="hideRefByName"
+                />
               </template>
             </div>
           </template>
@@ -537,34 +517,14 @@ void [searchInputRef, moveSelection, headerMenuRef]
                 :class="[col.widthClass, 'flex items-center gap-1 overflow-hidden']"
               >
                 <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
-                  <span
+                  <CommitRefPill
                     v-if="visibleRef(r)"
-                    class="ref-pill inline-flex shrink-0 items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
-                    :class="refPillClass(r)"
-                  >
-                    <button
-                      type="button"
-                      class="ref-pill-body cursor-pointer hover:underline"
-                      :title="
-                        soloRef === r
-                          ? `Solo 해제: ${r}`
-                          : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
-                      "
-                      :aria-label="soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`"
-                      @click.stop="toggleSoloRef(r)"
-                    >
-                      {{ r }}
-                    </button>
-                    <button
-                      type="button"
-                      class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
-                      :title="`그래프에서 숨김: ${r}`"
-                      :aria-label="`'${r}' 그래프에서 숨김`"
-                      @click.stop="hideRefByName(r)"
-                    >
-                      🙈
-                    </button>
-                  </span>
+                    :name="r"
+                    :solo-ref="soloRef"
+                    :pill-class="refPillClass(r)"
+                    @solo="toggleSoloRef"
+                    @hide="hideRefByName"
+                  />
                 </template>
               </span>
               <!-- sha -->
@@ -589,34 +549,16 @@ void [searchInputRef, moveSelection, headerMenuRef]
                 </span>
                 <template v-if="!branchTagColumnVisible">
                   <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
-                    <span
+                    <CommitRefPill
                       v-if="visibleRef(r)"
-                      class="ref-pill ml-1.5 inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
-                      :class="refPillClass(r)"
-                    >
-                      <button
-                        type="button"
-                        class="ref-pill-body cursor-pointer hover:underline"
-                        :title="
-                          soloRef === r
-                            ? `Solo 해제: ${r}`
-                            : `이 ref 만 표시 (Solo): ${r}\n🙈 = 그래프에서 숨김`
-                        "
-                        :aria-label="soloRef === r ? `'${r}' Solo 해제` : `'${r}' 만 그래프에 표시`"
-                        @click.stop="toggleSoloRef(r)"
-                      >
-                        {{ r }}
-                      </button>
-                      <button
-                        type="button"
-                        class="ref-pill-hide opacity-0 transition-opacity hover:text-foreground"
-                        :title="`그래프에서 숨김: ${r}`"
-                        :aria-label="`'${r}' 그래프에서 숨김`"
-                        @click.stop="hideRefByName(r)"
-                      >
-                        🙈
-                      </button>
-                    </span>
+                      :name="r"
+                      :solo-ref="soloRef"
+                      :pill-class="refPillClass(r)"
+                      extra-class="ml-1.5"
+                      :shrink="false"
+                      @solo="toggleSoloRef"
+                      @hide="hideRefByName"
+                    />
                   </template>
                 </template>
               </span>
@@ -668,9 +610,4 @@ void [searchInputRef, moveSelection, headerMenuRef]
   </div>
 </template>
 
-<style scoped>
-/* Sprint K — branch ref hover 시에만 🙈 노출. */
-.ref-pill:hover .ref-pill-hide {
-  opacity: 1;
-}
-</style>
+<!-- Sprint c89-A — .ref-pill / .ref-pill-hide hover 룰은 CommitRefPill.vue 로 이주. -->
