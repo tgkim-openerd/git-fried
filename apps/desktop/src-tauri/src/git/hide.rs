@@ -124,6 +124,11 @@ pub async fn hide_many(
         return Ok(0);
     }
     let now = chrono::Utc::now().timestamp();
+    // tx rollback path: explicit `tx.rollback()` 없음 — sqlx `Transaction` 의 Drop trait
+    // 가 commit 전 drop 시 자동 rollback (sqlx 0.8 idiomatic). 본 for-loop 안 INSERT 가
+    // refs.len() 회 반복하므로 mid-loop panic/cancellation 빈도가 profiles::activate
+    // 보다 높지만 Drop 자동 rollback 으로 partial-insert 회피 보장.
+    // UltraPlan v0.4 B4 (docs/plan/37 §B4) 검증 통과 — explicit guard 추가 불필요.
     let mut tx = db.pool.begin().await.map_err(AppError::Db)?;
     let mut inserted = 0usize;
     for (name, kind) in refs {

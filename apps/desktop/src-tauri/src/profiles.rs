@@ -157,6 +157,11 @@ pub async fn activate(pool: &SqlitePool, id: i64) -> AppResult<Profile> {
     let started = std::time::Instant::now();
     tracing::info!(target: "git_fried_lib::profiles", id, "activate 시작");
     // DB: 모든 프로파일 비활성화 후 대상만 활성화 (single-active invariant)
+    //
+    // tx rollback path: explicit `tx.rollback()` 없음 — sqlx `Transaction` 의 Drop trait
+    // 가 commit 전 drop 시 자동 rollback 수행 (sqlx 0.8 idiomatic). 본 site 의 2 UPDATE
+    // 사이 panic 또는 cancellation 시 단일 active invariant 가 깨지지 않도록 보장.
+    // UltraPlan v0.4 B4 (docs/plan/37 §B4) 검증 통과 — explicit guard 추가 불필요.
     let mut tx = pool.begin().await.map_err(AppError::Db)?;
     sqlx::query("UPDATE profiles SET is_active = 0")
         .execute(&mut *tx)
