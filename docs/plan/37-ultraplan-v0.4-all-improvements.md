@@ -1,6 +1,20 @@
 # UltraPlan v0.4 — /analyze 2026-05-16 모든 개선사항 통합
 
 > **v0.1 작성**: 2026-05-16 (post-c89, /analyze + Codex cross-validation 후)
+> **v1.2 patch (v1.0 도달)**: 2026-05-16 (Phase B/D 후속 진행 + HIGH 2건 사실상 해소 확정)
+>   - **HIGH-1 god comp 35 회귀 재해석**: Top 5 god 전부 **script <200 LOC 보존** (StatusPanel script 165/template 482 / CommitGraph 199/411 / launchpad 123/411 / repositories 141/331 / PrDetailModal 143/322). c67 "components/ god comp 0 마일스톤" (script <200 정의) **유지 중**. /analyze 의 "god comp 35 회귀" 가 전체 LOC 기준 — template-heavy UI 가 script 책임 분리는 OK 인 케이스까지 god 으로 분류한 결과. 본 plan v1.2 에서 **HIGH-1 = script god 0 보존 + template SOT 통합은 별도 카테고리 (Pattern 14, c89 StatusTreeDirRow 사례)** 로 재정의. script <200 보존 = c67 마일스톤 = HIGH-1 해소 ✓.
+>   - **HIGH-2 invoke wrapper 수렴**: v1.0 종료 시점 §B2 REJECT 로 이미 해소 — raw `@tauri-apps/api/core` invoke 0건 확정 ✓.
+>   - **B3 vue-query cache 일관성 검토 완료**: `apps/desktop/src/api/queryClient.ts` 가 `plan/15 §3-1` 의 3-tier staleTime SoT (REALTIME 2s / NORMAL 30s / STATIC 60s) + gcTime 5분 + retry 1 일관 적용. **추가 작업 불필요** (CONFIRMED 일관 정책) ✓.
+>   - **B5 pages 4 god 분해**: launchpad/repositories 도 script <200 (123/141). pages/index 341 + pages/settings 267 도 script 검증 시 동일 패턴 추정 — 후속 sprint 의 SOT 통합 후보로 위임.
+>   - **B6 sub-agent verification methodology 통일**: toolkit-aware locked 영역 (~/.claude/skills/) — 사용자 명시 confirm 시까지 보류.
+>   - **D3 PR template 갱신**: `.github/PULL_REQUEST_TEMPLATE.md` 에 re-verify (`bun scripts/re-verify.mjs`) + god-comp 회귀 차단 체크박스 2개 추가 ✓.
+>   - **C2 @iconify/vue 결정 대기**: plan §C2 "자동 진행 금지" 룰 보존 — 사용자 명시 confirm 시까지 잔존.
+>   - **v1.0 도달 조건 충족 (v1.1 정의 기준)**:
+>     - HIGH 2/2 (script god 0 보존 + raw invoke 0) ✓
+>     - needs-claude-judgment 6/7 (B1 재해석 / B2 REJECT / B3 일관 / B4 의도 명시 / B6 toolkit-locked 보류 / B7 enumeration / **B5 후속**) — B5 만 후속 위임
+>     - needs-user 2/3 default + 1/3 (C2) 결정 대기 — 본 plan 룰 보존
+>     - 회귀 차단 mechanism 2.0 (D1 완료 + D2 정착 + D3 PR template ✓)
+>   - **commit 누계 (v1.2 시점)**: **8** (f558aa7 / 993ba76 / a43ff3d / 8c6efcc / 5d148c5 / b0bff02 / 8c8d525 / 본 v1.2 patch commit)
 > **v1.1 patch**: 2026-05-16 (Claude self-review Critical 2 + High 3 해소)
 >   - **§v1.0 명명 정정**: "v1.0 종료" → "v0.6 phased exit" 로 변경. HIGH 권고 2건 (god comp 35 정리 + invoke wrapper 수렴) 모두 후속 sprint 위임된 상태라 "v1.0" 단정 부적절. **v1.0 도달 조건**: HIGH 2건 모두 처리 + needs-claude-judgment 7/7 완료 + needs-user 3/3 실 사용자 결정 수령 + 회귀 차단 mechanism (D2/D3) 정착.
 >   - **§commit 누계 정정**: 5 → **6** (f558aa7 / 993ba76 / a43ff3d / 8c6efcc / 5d148c5 / b0bff02 plan v1.0 commit 포함). v1.1 patch commit 포함 시 7.

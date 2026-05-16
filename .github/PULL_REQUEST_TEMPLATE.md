@@ -19,6 +19,8 @@
 - [ ] 한글 round-trip 회귀 (해당 시) — `docs/plan/06 §회귀 차단` 정합
 - [ ] 사용자 본인 레포 1개 dogfood 검증 (해당 시)
 - [ ] 메모리 baseline +20% 이내 (큰 변경 시 — `docs/plan/20`)
+- [ ] **`bun scripts/re-verify.mjs` — 5 SoT 통과** (i18n leaf 1311 / Tauri IPC catalog / god comp 카운트 / raw invoke 0 / cargo test) — UltraPlan v0.4 §D1
+- [ ] **god comp 신규 회귀 없음** (lefthook `god-comp-check` warning 0건 또는 추출 commit 동반 — `docs/plan/37 §B1/§D2`)
 
 ## ⚠️ Commit message 정합 (CLAUDE.md 정합)
 
