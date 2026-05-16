@@ -15,6 +15,11 @@ export default [
       'auto-imports.d.ts',
       'components.d.ts',
       'coverage/**',
+      // c74 .gitignore 와 정합 — vite.config.* 빌드 산출물 (`.js` 는 `.ts` 의 transpiled 출력).
+      // UltraPlan v0.4 LLM-test 단계에서 발견 (잠복 6 errors `process is not defined`).
+      'vite.config.js',
+      'vite.config.timestamp-*',
+      'test-results/**',
     ],
   },
   js.configs.recommended,
