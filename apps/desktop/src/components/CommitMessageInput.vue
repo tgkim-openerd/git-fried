@@ -181,7 +181,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
           type="button"
           class="rounded-md border border-input px-2 py-0.5"
           :class="mode === 'free' ? 'bg-accent text-accent-foreground' : ''"
-          aria-label="자유 형식 commit 메시지 모드"
+          :aria-label="t('a11y.ariaLabel.commitMessageFree')"
           :aria-pressed="mode === 'free'"
           @click="mode = 'free'"
         >

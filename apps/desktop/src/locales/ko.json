@@ -19,6 +19,26 @@
     },
     "snoozedHint": "{n}개 snoozed (탭 전환)"
   },
+  "a11y": {
+    "ariaLabel": {
+      "close": "닫기",
+      "searchClose": "검색 닫기",
+      "pathFlat": "평탄 path 모드",
+      "pathTree": "디렉토리 트리 모드",
+      "commitMessageFree": "자유 형식 commit 메시지 모드",
+      "contextMenu": "컨텍스트 메뉴",
+      "subMenu": "서브메뉴",
+      "prevHunk": "이전 hunk",
+      "nextHunk": "다음 hunk",
+      "expandAllDiffs": "모든 파일 diff 펼치기",
+      "collapseAllDiffs": "모든 파일 diff 접기",
+      "loading": "로딩 중...",
+      "prevHunkMove": "이전 hunk 로 이동",
+      "nextHunkMove": "다음 hunk 로 이동",
+      "fileHistory": "파일 히스토리 보기",
+      "settingsCategory": "설정 카테고리"
+    }
+  },
   "common": {
     "ok": "확인",
     "cancel": "취소",

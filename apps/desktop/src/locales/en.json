@@ -19,6 +19,26 @@
     },
     "snoozedHint": "{n} snoozed (tab to switch)"
   },
+  "a11y": {
+    "ariaLabel": {
+      "close": "Close",
+      "searchClose": "Close search",
+      "pathFlat": "Flat path mode",
+      "pathTree": "Directory tree mode",
+      "commitMessageFree": "Free-form commit message mode",
+      "contextMenu": "Context menu",
+      "subMenu": "Submenu",
+      "prevHunk": "Previous hunk",
+      "nextHunk": "Next hunk",
+      "expandAllDiffs": "Expand all file diffs",
+      "collapseAllDiffs": "Collapse all file diffs",
+      "loading": "Loading...",
+      "prevHunkMove": "Move to previous hunk",
+      "nextHunkMove": "Move to next hunk",
+      "fileHistory": "View file history",
+      "settingsCategory": "Settings categories"
+    }
+  },
   "common": {
     "ok": "OK",
     "cancel": "Cancel",

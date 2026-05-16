@@ -19,7 +19,8 @@ test.describe('Settings page — 5 sub-component 마운트 + 카테고리 nav', 
 
   test('좌측 카테고리 nav + 기본 카테고리 (Profiles) 노출', async ({ page }) => {
     // 6 그룹 라벨 (account / workspace / editor / ui / maintenance / start) 중 일부.
-    await expect(page.getByText(/Profiles/i).first()).toBeVisible()
+    // ko/en 양언어 regex — i18n drift 회피 (ko "profiles": "프로파일" / en "Profiles").
+    await expect(page.getByText(/프로파일|Profiles/i).first()).toBeVisible()
     await expect(page.getByText(/Forge/i).first()).toBeVisible()
   })
 

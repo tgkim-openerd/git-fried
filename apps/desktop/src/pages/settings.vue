@@ -144,7 +144,7 @@ const buildInfo = computed(() => ({
     -->
     <nav
       class="w-52 shrink-0 overflow-auto border-r border-border bg-card py-4 text-sm"
-      aria-label="설정 카테고리"
+      :aria-label="t('a11y.ariaLabel.settingsCategory')"
     >
       <h1 class="px-4 pb-3 text-base font-semibold">{{ t('settings.title') }}</h1>
       <ul class="flex flex-col gap-1">

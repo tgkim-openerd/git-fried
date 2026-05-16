@@ -301,7 +301,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
                     ? 'bg-accent text-accent-foreground font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
                 "
-                aria-label="평탄 path 모드"
+                :aria-label="t('a11y.ariaLabel.pathFlat')"
                 title="Path"
                 @click="setViewMode('path')"
               >
@@ -315,7 +315,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
                     ? 'bg-accent text-accent-foreground font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
                 "
-                aria-label="디렉토리 트리 모드"
+                :aria-label="t('a11y.ariaLabel.pathTree')"
                 title="Tree"
                 @click="setViewMode('tree')"
               >

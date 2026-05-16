@@ -98,13 +98,24 @@ const rawInvokers = importerFiles
 console.log(rawInvokers.length === 0 ? '(none — 모든 호출이 @/api/invokeWithTimeout wrapper 경유)' : rawInvokers.join('\n'))
 
 // 5. Rust test 카운트 SoT (--no-run 컴파일 + exe --list)
+// LOW-1 fix (UltraPlan v0.4 LLM-test sprint): mtime 가장 늦은 exe 선택 (newer Cargo.lock 매칭이
+// 여러 stale exe 매치 가능 → 가장 오래된 첫 매치 선택해 stale count 보고하던 결함 해소).
 header('5. Rust test 카운트 (SoT: cargo test --no-run + exe --list)')
 const exeGlob = run(
-  `find ${SRC_RUST}/../target/debug/deps -maxdepth 1 -name "git_fried_lib-*.exe" -newer ${SRC_RUST}/../Cargo.lock 2>/dev/null | head -1`,
+  `ls -t ${SRC_RUST}/../target/debug/deps/git_fried_lib-*.exe 2>/dev/null | head -1`,
 )
 if (exeGlob && !exeGlob.startsWith('ERROR')) {
-  const count = run(`"${exeGlob}" --list 2>/dev/null | grep -cE ": (test|tokio::test)$"`)
-  console.log(`최신 lib exe: ${count} tests`)
+  const libCount = run(`"${exeGlob}" --list 2>/dev/null | grep -cE ": (test|tokio::test)$"`)
+  // integration test exe 도 같이 카운트 (SoT 통합 — cargo test 의 모든 binary)
+  const integGlob = run(
+    `ls -t ${SRC_RUST}/../target/debug/deps/sqlite_pool_acquire_timeout-*.exe 2>/dev/null | head -1`,
+  )
+  let integCount = '0'
+  if (integGlob && !integGlob.startsWith('ERROR')) {
+    integCount = run(`"${integGlob}" --list 2>/dev/null | grep -cE ": (test|tokio::test)$"`)
+  }
+  const total = parseInt(libCount, 10) + parseInt(integCount, 10)
+  console.log(`최신 lib exe: ${libCount} tests + integration: ${integCount} = ${total} total`)
 } else {
   console.log('SKIP — cargo test --no-run 먼저 실행 필요 (또는 Linux/macOS 환경)')
 }

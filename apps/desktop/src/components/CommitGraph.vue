@@ -240,7 +240,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
           <button
             type="button"
             class="text-xs text-muted-foreground hover:text-foreground"
-            aria-label="검색 닫기"
+            :aria-label="t('a11y.ariaLabel.searchClose')"
             @click="closeSearch"
           >
             ✕
