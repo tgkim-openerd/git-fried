@@ -630,7 +630,24 @@
     "workspaceTitleAll": "전체 워크스페이스",
     "workspaceTitle": "워크스페이스: {name}",
     "searchPlaceholder": "검색 (브랜치 / 태그 / submodule) — ⌘⌥F",
-    "clearSearch": "검색 지우기"
+    "clearSearch": "검색 지우기",
+    "quickTab": {
+      "changes": "변경",
+      "changesTitle": "변경 탭 (⌘1)",
+      "branches": "브랜치",
+      "branchesTitle": "브랜치 탭 (⌘2 / ⌘B)",
+      "stash": "Stash",
+      "stashTitle": "Stash 탭 (⌘3)",
+      "pr": "PR",
+      "prTitle": "PR 탭 (⌘6)",
+      "worktree": "Worktree",
+      "worktreeTitle": "Worktree 탭 (⌘7)"
+    },
+    "emptyState": {
+      "noActiveRepoTitle": "레포 미선택",
+      "noActiveRepoDescription": "상단 탭 또는 '레포' 페이지에서 활성 레포 선택"
+    },
+    "footerStack": "Tauri 2 · Vue 3 · Rust"
   },
   "worktree": {
     "title": "Worktree",

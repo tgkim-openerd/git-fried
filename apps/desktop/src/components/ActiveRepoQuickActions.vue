@@ -37,28 +37,49 @@ const ahead = computed(() => status.value?.ahead ?? 0)
 const behind = computed(() => status.value?.behind ?? 0)
 
 // 7-tab 단축 버튼 — pages/index.vue 의 useShortcut('tab1'~'tab7') 로 dispatch.
+// SB-002 fix (UltraPlan v0.4 sidebar gitkraken-diff): label/title 을 i18n `sidebar.quickTab.*` 로 마이그.
 const QUICK_TABS: ReadonlyArray<{
   key: ShortcutAction
   icon: string
-  label: string
-  title: string
+  labelKey: string
+  titleKey: string
 }> = [
-  { key: 'tab1', icon: '◇', label: '변경', title: '변경 탭 (⌘1)' },
-  { key: 'tab2', icon: '⎇', label: '브랜치', title: '브랜치 탭 (⌘2 / ⌘B)' },
-  { key: 'tab3', icon: '⤓', label: 'Stash', title: 'Stash 탭 (⌘3)' },
-  { key: 'tab6', icon: '⇄', label: 'PR', title: 'PR 탭 (⌘6)' },
-  { key: 'tab7', icon: '🌳', label: 'Worktree', title: 'Worktree 탭 (⌘7)' },
+  {
+    key: 'tab1',
+    icon: '◇',
+    labelKey: 'sidebar.quickTab.changes',
+    titleKey: 'sidebar.quickTab.changesTitle',
+  },
+  {
+    key: 'tab2',
+    icon: '⎇',
+    labelKey: 'sidebar.quickTab.branches',
+    titleKey: 'sidebar.quickTab.branchesTitle',
+  },
+  {
+    key: 'tab3',
+    icon: '⤓',
+    labelKey: 'sidebar.quickTab.stash',
+    titleKey: 'sidebar.quickTab.stashTitle',
+  },
+  { key: 'tab6', icon: '⇄', labelKey: 'sidebar.quickTab.pr', titleKey: 'sidebar.quickTab.prTitle' },
+  {
+    key: 'tab7',
+    icon: '🌳',
+    labelKey: 'sidebar.quickTab.worktree',
+    titleKey: 'sidebar.quickTab.worktreeTitle',
+  },
 ]
 </script>
 
 <template>
   <div class="flex flex-col">
-    <!-- 미선택 상태 — EmptyState 가이드. -->
+    <!-- 미선택 상태 — EmptyState 가이드 (SB-002 i18n 마이그). -->
     <EmptyState
       v-if="store.activeRepoId == null"
       icon="📁"
-      title="레포 미선택"
-      description="상단 탭 또는 '레포' 페이지에서 활성 레포 선택"
+      :title="t('sidebar.emptyState.noActiveRepoTitle')"
+      :description="t('sidebar.emptyState.noActiveRepoDescription')"
       size="sm"
     />
 
@@ -91,18 +112,18 @@ const QUICK_TABS: ReadonlyArray<{
       </div>
       <div v-else class="text-[10px] text-muted-foreground">{{ t('common.noChanges') }}</div>
 
-      <!-- quick tab buttons -->
+      <!-- quick tab buttons — SB-002 i18n migration (sidebar.quickTab.*). -->
       <div class="grid grid-cols-5 gap-1">
         <button
-          v-for="t in QUICK_TABS"
-          :key="t.key"
+          v-for="qt in QUICK_TABS"
+          :key="qt.key"
           type="button"
           class="flex flex-col items-center gap-0 rounded-md border border-border bg-card px-1 py-1 text-[10px] hover:bg-accent hover:text-accent-foreground"
-          :title="t.title"
-          @click="dispatchShortcut(t.key)"
+          :title="t(qt.titleKey)"
+          @click="dispatchShortcut(qt.key)"
         >
-          <span class="text-sm leading-none">{{ t.icon }}</span>
-          <span class="leading-tight">{{ t.label }}</span>
+          <span class="text-sm leading-none">{{ qt.icon }}</span>
+          <span class="leading-tight">{{ t(qt.labelKey) }}</span>
         </button>
       </div>
 

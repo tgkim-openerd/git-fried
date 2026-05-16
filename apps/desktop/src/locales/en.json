@@ -630,7 +630,24 @@
     "workspaceTitleAll": "All workspaces",
     "workspaceTitle": "Workspace: {name}",
     "searchPlaceholder": "Search (branch / tag / submodule) — Cmd+Alt+F",
-    "clearSearch": "Clear search"
+    "clearSearch": "Clear search",
+    "quickTab": {
+      "changes": "Changes",
+      "changesTitle": "Changes tab (Cmd+1)",
+      "branches": "Branches",
+      "branchesTitle": "Branches tab (Cmd+2 / Cmd+B)",
+      "stash": "Stash",
+      "stashTitle": "Stash tab (Cmd+3)",
+      "pr": "PR",
+      "prTitle": "PR tab (Cmd+6)",
+      "worktree": "Worktree",
+      "worktreeTitle": "Worktree tab (Cmd+7)"
+    },
+    "emptyState": {
+      "noActiveRepoTitle": "No repo selected",
+      "noActiveRepoDescription": "Select an active repo from top tabs or the 'Repos' page"
+    },
+    "footerStack": "Tauri 2 · Vue 3 · Rust"
   },
   "worktree": {
     "title": "Worktree",

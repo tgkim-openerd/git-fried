@@ -156,7 +156,7 @@ useShortcut('filterRepos', focusSidebarSearch)
     </div>
 
     <footer class="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-      Tauri 2 · Vue 3 · Rust
+      {{ t('sidebar.footerStack') }}
     </footer>
   </aside>
 </template>
