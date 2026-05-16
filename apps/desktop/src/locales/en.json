@@ -672,7 +672,9 @@
     "lockPromptMessage": "Lock reason for '{path}' (optional, e.g. external disk / inactive)",
     "lockPromptPlaceholder": "e.g. external SSD detached",
     "empty": "No worktrees",
-    "emptyHint": "Enter a path above and click add to create a new worktree."
+    "emptyHint": "Enter a path above and click add to create a new worktree.",
+    "miniLockTitle": "Lock this worktree (enter reason)",
+    "miniUnlockTitle": "Unlock this worktree"
   },
   "tag": {
     "loading": "Loading...",

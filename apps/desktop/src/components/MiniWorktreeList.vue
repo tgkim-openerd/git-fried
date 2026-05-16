@@ -2,17 +2,22 @@
 // Sprint c27-1 (ARCH-003 fix) — Sidebar 의 Worktree mini list.
 
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useWorktrees } from '@/composables/useWorktrees'
 import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut } from '@/composables/useShortcuts'
+// UltraPlan v0.4 SB-009 — worktree lock/unlock click toggle (inline icon).
+import { useWorktreePanelActions } from '@/composables/useWorktreePanelActions'
 import MiniSection from './MiniSection.vue'
 // Sprint c54+ (ARCH-c54-001 sister uniformity) — sidebar skeleton placeholder.
 import SkeletonBlock from './SkeletonBlock.vue'
 
+const { t } = useI18n()
 const store = useReposStore()
 const repoIdRef = computed(() => store.activeRepoId)
 
 const { data: worktrees, isFetching } = useWorktrees(repoIdRef)
+const { onLock, onUnlock } = useWorktreePanelActions(repoIdRef)
 const sortedWorktrees = computed(() => {
   const list = [...(worktrees.value ?? [])]
   list.sort((a, b) => {
@@ -54,13 +59,29 @@ function worktreeName(path: string): string {
       <li
         v-for="w in miniWorktrees"
         :key="`mw-${w.path}`"
-        class="flex items-center gap-1 rounded px-1 py-1 text-[11px]"
+        class="group flex items-center gap-1 rounded px-1 py-1 text-[11px]"
         :title="`${w.path}${w.branch ? ' [' + w.branch + ']' : ''}${w.isLocked ? ' (locked)' : ''}`"
       >
         <span class="shrink-0 w-3 text-center text-[10px]">
           <span v-if="w.isMain" class="text-warning-amber" title="main worktree">★</span>
-          <span v-else-if="w.isLocked" class="text-danger-rose" title="locked">🔒</span>
-          <span v-else class="text-muted-foreground">·</span>
+          <button
+            v-else-if="w.isLocked"
+            type="button"
+            class="text-danger-rose hover:text-danger-rose/70"
+            :title="t('worktree.miniUnlockTitle')"
+            @click="onUnlock(w.path)"
+          >
+            🔒
+          </button>
+          <button
+            v-else
+            type="button"
+            class="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100"
+            :title="t('worktree.miniLockTitle')"
+            @click="onLock(w.path)"
+          >
+            🔓
+          </button>
         </span>
         <span class="flex-1 truncate font-mono">{{ worktreeName(w.path) }}</span>
         <span

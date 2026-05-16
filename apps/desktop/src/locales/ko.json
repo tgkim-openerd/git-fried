@@ -672,7 +672,9 @@
     "lockPromptMessage": "'{path}' 잠금 사유 (선택, 외장 디스크 / 비활성 등)",
     "lockPromptPlaceholder": "예: 외장 SSD 분리",
     "empty": "Worktree 없음",
-    "emptyHint": "위에 경로를 입력하고 add 버튼으로 새 worktree 를 만들 수 있습니다."
+    "emptyHint": "위에 경로를 입력하고 add 버튼으로 새 worktree 를 만들 수 있습니다.",
+    "miniLockTitle": "이 worktree 잠그기 (사유 입력)",
+    "miniUnlockTitle": "이 worktree 잠금 해제"
   },
   "tag": {
     "loading": "불러오는 중...",
