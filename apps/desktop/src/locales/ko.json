@@ -647,7 +647,9 @@
       "noActiveRepoTitle": "레포 미선택",
       "noActiveRepoDescription": "상단 탭 또는 '레포' 페이지에서 활성 레포 선택"
     },
-    "footerStack": "Tauri 2 · Vue 3 · Rust"
+    "footerStack": "Tauri 2 · Vue 3 · Rust",
+    "resizeHandleAriaLabel": "Sidebar 너비 조정",
+    "resizeHandleTitle": "드래그로 sidebar 너비 조정 (180-400px)"
   },
   "worktree": {
     "title": "Worktree",

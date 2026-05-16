@@ -8,6 +8,7 @@ import { STALE_TIME } from '@/api/queryClient'
 import { useReposStore } from '@/stores/repos'
 import { buildBranchTree, filterTree } from '@/composables/useBranchTree'
 import { useSidebarSearch } from '@/composables/useSidebarSearch'
+import { semverCompare } from '@/utils/semverCompare'
 import MiniSection from './MiniSection.vue'
 import BranchTreeView from './BranchTreeView.vue'
 // Sprint c54+ (ARCH-c54-001 sister uniformity) — sidebar skeleton placeholder.
@@ -26,7 +27,12 @@ const { data: tags, isFetching } = useQuery({
   staleTime: STALE_TIME.NORMAL,
 })
 
-const tagsList = computed(() => tags.value ?? [])
+// UltraPlan v0.4 sidebar GitKraken DIFF — SB-008 fix.
+// git2 default alphabetical 정렬 → semver descending (최신 우선). GitKraken parity.
+const tagsList = computed(() => {
+  const list = tags.value ?? []
+  return [...list].sort((a, b) => semverCompare(b.name, a.name))
+})
 
 const tree = computed(() => {
   const built = buildBranchTree<TagInfo>(tagsList.value, { getName: (t) => t.name })

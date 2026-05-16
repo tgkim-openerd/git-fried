@@ -2,6 +2,9 @@
 // 최상위 레이아웃: 사이드바(좌) + 본문(우, file-routing 페이지) + 헤더 (Profiles / Theme / Settings).
 import { computed } from 'vue'
 import Sidebar from './components/Sidebar.vue'
+// UltraPlan v0.4 SB-001 — sidebar resize handle (drag to adjust width, localStorage 영속).
+import SidebarResizeHandle from './components/SidebarResizeHandle.vue'
+import { useSidebarWidth } from '@/composables/useSidebarWidth'
 import RepoTabBar from './components/RepoTabBar.vue'
 import CommandPalette from './components/CommandPalette.vue'
 import ProfileSwitcher from './components/ProfileSwitcher.vue'
@@ -93,6 +96,13 @@ useAppWindowHooks({
 const fsDiff = useFullscreenDiff()
 const fullscreenActive = computed(() => fsDiff.current.value != null)
 const sidebarShown = computed(() => ui.sidebarVisible.value && !fullscreenActive.value)
+// UltraPlan v0.4 SB-001 — sidebar 사용자 drag 너비 (180-400px, localStorage 영속, default 220).
+const sidebarWidth = useSidebarWidth()
+const gridCols = computed(() => {
+  if (!sidebarShown.value) return '1fr'
+  // sidebar width + 4px (resize handle) + 1fr (main)
+  return `${sidebarWidth.value}px 4px 1fr`
+})
 
 // Phase 10-6 — 네이티브 메뉴 (Tauri menu) bridge. toggleTheme 은 useAppWindowHooks 가 등록.
 useMenuListener()
@@ -101,10 +111,10 @@ useMenuListener()
 <template>
   <div
     class="grid h-screen overflow-hidden"
-    :class="sidebarShown ? 'grid-cols-[220px_1fr] xl:grid-cols-[280px_1fr]' : 'grid-cols-[0_1fr]'"
+    :style="{ gridTemplateColumns: gridCols }"
   >
     <Sidebar v-if="sidebarShown" />
-    <div v-else />
+    <SidebarResizeHandle v-if="sidebarShown" />
     <main class="flex flex-col overflow-hidden">
       <!-- Phase 13-3 (GitKraken parity) — 헤더 row 제거. nav 를 RepoTabBar 의 trailing slot 으로 통합.
            기존 36px 헤더 row 절약 → vertical 공간 확보. -->

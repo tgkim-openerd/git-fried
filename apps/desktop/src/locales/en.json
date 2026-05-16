@@ -647,7 +647,9 @@
       "noActiveRepoTitle": "No repo selected",
       "noActiveRepoDescription": "Select an active repo from top tabs or the 'Repos' page"
     },
-    "footerStack": "Tauri 2 · Vue 3 · Rust"
+    "footerStack": "Tauri 2 · Vue 3 · Rust",
+    "resizeHandleAriaLabel": "Resize sidebar width",
+    "resizeHandleTitle": "Drag to resize sidebar (180-400px)"
   },
   "worktree": {
     "title": "Worktree",
