@@ -1,6 +1,13 @@
 # UltraPlan v0.4 — /analyze 2026-05-16 모든 개선사항 통합
 
 > **v0.1 작성**: 2026-05-16 (post-c89, /analyze + Codex cross-validation 후)
+> **v1.3 patch**: 2026-05-16 (/goal "구현 전부 진행" — C2 진행 + B5/B6 결론 + D2 차단 모드 보존)
+>   - **§C2 진행 완료** — `bun remove @iconify/vue` (package.json:56 제거). 5-Check 통과: 코드 0 hit (정적+동적 import 모두) + bun.lock 미등록 (이전부터 0 hit, 진정한 dead) + test/docs 0 hit. 검증: `typecheck` exit 0 / `bun run build` exit 0 / vitest 901/901 PASS (1차 useWorkspaceMutations flaky 였으나 re-run exit 0 = environmental). needs-user 3/3 모두 해소 (default + 명시 진행).
+>   - **§B5 결론** — pages/index script 155/template 185 + pages/settings script 138/template 129. 모두 script <200 보존 + template 도 큰 god 아님 (≤200 가능). 추가 SOT 통합 ROI 낮음 — 후속 sprint 의 자연 발견 시 처리.
+>   - **§B6 toolkit-aware locked 보존** — `~/.claude/commands/analyze.md` 검토 결과 god comp 카운트 specific prompt 부재. toolkit prompt 갱신은 다른 프레임워크 (Nuxt/Next/React) 영향 가능 — over-generalization 위험. 사용자 명시 confirm 시까지 보류.
+>   - **§D2 차단 모드 보존** — warning 모드 유지. plan §C3 default (a) 점진 추출 과 (b) 차단 만 의 충돌 회피. 차단 모드 승격은 god comp 35 잔존 모두 해소 후.
+>   - **god comp template 영역 SOT 통합** — c89 StatusTreeDirRow 패턴 추가 진행은 후속 sprint backlog. 본 sprint 의 ROI 평가: 단일 SOT 추출 (~50-100 라인 감소) vs sprint 시간 cost. needs-claude-judgment 의 자연 후속.
+>   - **commit 누계 (v1.3 시점)**: **9** (f558aa7..본 commit)
 > **v1.2 patch (v1.0 도달)**: 2026-05-16 (Phase B/D 후속 진행 + HIGH 2건 사실상 해소 확정)
 >   - **HIGH-1 god comp 35 회귀 재해석**: Top 5 god 전부 **script <200 LOC 보존** (StatusPanel script 165/template 482 / CommitGraph 199/411 / launchpad 123/411 / repositories 141/331 / PrDetailModal 143/322). c67 "components/ god comp 0 마일스톤" (script <200 정의) **유지 중**. /analyze 의 "god comp 35 회귀" 가 전체 LOC 기준 — template-heavy UI 가 script 책임 분리는 OK 인 케이스까지 god 으로 분류한 결과. 본 plan v1.2 에서 **HIGH-1 = script god 0 보존 + template SOT 통합은 별도 카테고리 (Pattern 14, c89 StatusTreeDirRow 사례)** 로 재정의. script <200 보존 = c67 마일스톤 = HIGH-1 해소 ✓.
 >   - **HIGH-2 invoke wrapper 수렴**: v1.0 종료 시점 §B2 REJECT 로 이미 해소 — raw `@tauri-apps/api/core` invoke 0건 확정 ✓.
