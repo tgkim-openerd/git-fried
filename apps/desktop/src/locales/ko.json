@@ -21,7 +21,6 @@
   },
   "a11y": {
     "ariaLabel": {
-      "close": "닫기",
       "searchClose": "검색 닫기",
       "pathFlat": "평탄 path 모드",
       "pathTree": "디렉토리 트리 모드",

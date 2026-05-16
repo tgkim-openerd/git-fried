@@ -169,6 +169,7 @@ const buildInfo = computed(() => ({
                       ? ''
                       : 'text-muted-foreground',
                 ]"
+                :data-testid="`settings-category-${c.id}`"
                 :aria-pressed="active === c.id"
                 :aria-disabled="c.futureRelease ? 'true' : undefined"
                 :aria-label="`${t(GROUP_I18N_KEY[g.id] ?? g.label)} > ${t(ITEM_I18N_KEY[c.id] ?? c.label)}`"

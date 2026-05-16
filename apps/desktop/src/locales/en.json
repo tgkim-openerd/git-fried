@@ -21,7 +21,6 @@
   },
   "a11y": {
     "ariaLabel": {
-      "close": "Close",
       "searchClose": "Close search",
       "pathFlat": "Flat path mode",
       "pathTree": "Directory tree mode",

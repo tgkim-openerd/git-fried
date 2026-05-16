@@ -1,6 +1,20 @@
 # UltraPlan v0.4 — /analyze 2026-05-16 모든 개선사항 통합
 
 > **v0.1 작성**: 2026-05-16 (post-c89, /analyze + Codex cross-validation 후)
+> **v1.4 patch**: 2026-05-16 (/goal "자율주행 진행" — /code-review 13 issue 종합 처리)
+>   - **ARCH-001 HIGH 해소**: Pattern 20 측정 도구 lockstep drift 해결
+>     - `scripts/god-comp-check.mjs` script LOC + total LOC layer 분리 (Layer A 차단 / Layer B-only INFO)
+>     - `scripts/re-verify.mjs §3` 동일 layer 분리 출력 (Layer A 0개 = c67 보존 / Layer B-only 35)
+>     - `GOD_COMP_SCRIPT_THRESHOLD` / `GOD_COMP_TOTAL_THRESHOLD` env 분리
+>   - **ARCH-002 MED 해소**: `a11y.ariaLabel.close` 제거 (common.close DRY) — 1327→1326
+>   - **ARCH-003 MED 해소**: settings nav `data-testid="settings-category-{id}"` 부여 + e2e selector testid 일관 (양언어 regex 회복) + plugin futureRelease 검증 모드 변경
+>   - **ARCH-004 MED 해소**: `scripts/re-verify.mjs` Node API 치환 (shell-free) — `readdirSync + statSync` 로 ls 대체 / `execFileSync` 로 shell interpolation 회피 / cross-platform robust
+>   - **ARCH-005 LOW 해소**: integration test exe 동적 enum — `tests/*.rs` prefix 자동 매치 (sqlite_pool_acquire_timeout 하드코딩 제거)
+>   - **SEC INFO 1건 해소**: `execFileSync` 사용으로 shell injection unreachable → 0 attack surface
+>   - **LINT-001/002 자동 해소**: re-verify.mjs:87 shell grep 제거로 escape 영역 제거
+>   - **ARCH-006 LOW backlog 보강**: §A1.partial-i18n-policy 추가 (아래)
+>   - **ARCH-007 INFO**: a11y namespace family shape 결정 (아래)
+>   - **TYPE INFO**: `DefineLocaleMessage` augmentation 후속 sprint backlog
 > **v1.3 patch**: 2026-05-16 (/goal "구현 전부 진행" — C2 진행 + B5/B6 결론 + D2 차단 모드 보존)
 >   - **§C2 진행 완료** — `bun remove @iconify/vue` (package.json:56 제거). 5-Check 통과: 코드 0 hit (정적+동적 import 모두) + bun.lock 미등록 (이전부터 0 hit, 진정한 dead) + test/docs 0 hit. 검증: `typecheck` exit 0 / `bun run build` exit 0 / vitest 901/901 PASS (1차 useWorkspaceMutations flaky 였으나 re-run exit 0 = environmental). needs-user 3/3 모두 해소 (default + 명시 진행).
 >   - **§B5 결론** — pages/index script 155/template 185 + pages/settings script 138/template 129. 모두 script <200 보존 + template 도 큰 god 아님 (≤200 가능). 추가 SOT 통합 ROI 낮음 — 후속 sprint 의 자연 발견 시 처리.
@@ -141,6 +155,51 @@
 - A1~A4 commit 4건 + A5 audit 결과 inline 기록 완료
 - `docs/IMPLEMENTATION-STATUS.md` 의 IPC / test / i18n 라인이 실측과 일치
 - MEMORY drift 1건 해소
+
+### A1. Partial i18n Migration Policy (v1.4 patch — ARCH-006)
+
+**정의**: 한 sprint 에서 hardcoded text → i18n 마이그 시 부분 진행이 합리적인 조건.
+
+| 조건 | 마이그 in scope | 마이그 out of scope |
+|----|----|----|
+| 컴포넌트 `<script setup>` 의 `useI18n` import 보유 | ✓ 본 sprint | — |
+| `useI18n` import 미보유 | — | 다음 sprint (일괄 도입 sub-sprint) |
+| 회귀 risk 낮음 (binding 1줄 변경) | ✓ | — |
+| 회귀 risk 큼 (composable 의존성 / props 영향) | — | 별도 sprint + 회귀 보호 test 동반 |
+
+**일괄 vs 점진 결정 기준**:
+- N ≤ 5 컴포넌트 + import 보유 비율 ≥ 80% → **일괄 권장** (atomic refactor)
+- N ≥ 10 컴포넌트 또는 import 보유 비율 < 50% → **점진 권장** (회귀 risk 분산)
+- 사이 회색지대 → 사용자 결정 영역 (needs-user)
+
+**잔존 11건 (a11y.ariaLabel.*) 의 owner/effort**:
+
+| 컴포넌트 | useI18n 도입 | i18n key | effort |
+|----|----|----|----|
+| BaseModal.vue | 필요 | close (common.close 재사용) | XS |
+| ContextMenu.vue | 필요 | contextMenu, subMenu | S |
+| FullscreenDiffView.vue | 필요 | prevHunk, nextHunk | S |
+| PrFilesTab.vue | 필요 | expandAllDiffs, collapseAllDiffs | S |
+| SkeletonBlock.vue | 필요 | loading | XS |
+| StatusInlineDiff.vue | 필요 | prevHunkMove, nextHunkMove, fileHistory | M |
+
+**권고**: 다음 sprint **일괄 도입** (useI18n 6 import + 11 binding 마이그 = atomic, marginal cost ≈ 점진의 6배 회피).
+
+### A2. a11y Namespace Family Shape (v1.4 patch — ARCH-007)
+
+**결정 (앞으로 a11y 흡수 시 일관 적용)**:
+
+`a11y.{kebabAriaAttribute}.{semanticKey}` 형태로 family 확장.
+
+| Namespace | 흡수 대상 |
+|----|----|
+| `a11y.ariaLabel.*` ✓ 신설 | `aria-label` 속성 모든 값 |
+| `a11y.ariaDescribedBy.*` (예정) | `aria-describedby` 의 hint 텍스트 |
+| `a11y.role.*` (예정) | role 명시 컴포넌트의 보조 텍스트 (alert / status 등) |
+| `a11y.srOnly.*` (예정) | screen-reader-only `<span class="sr-only">` 텍스트 |
+| `a11y.liveRegion.*` (예정) | `aria-live` 동적 알림 메시지 |
+
+**원칙**: 각 sub-namespace 의 child 는 **semantic key** (UI 위치 아님). 예: `close` (의미) ≠ `modalCloseButton` (위치). 위치 변경 시 key 변경 없이 사용처만 이동.
 
 ---
 

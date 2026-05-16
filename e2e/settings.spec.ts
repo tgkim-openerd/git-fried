@@ -18,48 +18,47 @@ test.describe('Settings page — 5 sub-component 마운트 + 카테고리 nav', 
   })
 
   test('좌측 카테고리 nav + 기본 카테고리 (Profiles) 노출', async ({ page }) => {
-    // 6 그룹 라벨 (account / workspace / editor / ui / maintenance / start) 중 일부.
-    // ko/en 양언어 regex — i18n drift 회피 (ko "profiles": "프로파일" / en "Profiles").
-    await expect(page.getByText(/프로파일|Profiles/i).first()).toBeVisible()
-    await expect(page.getByText(/Forge/i).first()).toBeVisible()
+    // testid SoT — i18n drift / locale 무관 (UltraPlan v0.4 ARCH-003 회복).
+    await expect(page.locator('[data-testid="settings-category-profiles"]')).toBeVisible()
+    await expect(page.locator('[data-testid="settings-category-forge"]')).toBeVisible()
   })
 
-  // 카테고리 nav 의 button 은 aria-label="그룹 > Item" 형식이라 textContent 로 매칭.
-  // aria-pressed 가 있는 button (카테고리 버튼) 으로 좁혀 안전 선택.
-  function navButton(page: import('@playwright/test').Page, text: string) {
-    return page.locator('button[aria-pressed]').filter({ hasText: text }).first()
+  // category id 별 testid SoT — i18n / nav label 변경 무관 안정성.
+  function navTestId(page: import('@playwright/test').Page, id: string) {
+    return page.locator(`[data-testid="settings-category-${id}"]`)
   }
 
   test('General 카테고리 → SettingsGeneral 마운트', async ({ page }) => {
-    await navButton(page, 'General').click()
+    await navTestId(page, 'general').click()
     await expect(page.getByRole('heading', { name: 'General', level: 2 })).toBeVisible()
     await expect(page.getByText(/Auto-Fetch 간격/)).toBeVisible()
     await expect(page.getByText(/Auto-Prune on fetch/)).toBeVisible()
   })
 
   test('UI Customization → SettingsUiCustomization 마운트 + Custom theme', async ({ page }) => {
-    await navButton(page, 'UI Customization').click()
+    await navTestId(page, 'ui').click()
     await expect(page.getByRole('heading', { name: 'UI Customization', level: 2 })).toBeVisible()
     await expect(page.getByText(/Date locale/)).toBeVisible()
     await expect(page.getByText(/Custom theme \(JSON\)/)).toBeVisible()
   })
 
   test('Editor / Terminal → SettingsEditor 마운트', async ({ page }) => {
-    await navButton(page, 'Editor / Terminal').click()
+    await navTestId(page, 'editor').click()
     await expect(page.getByRole('heading', { name: 'Editor / Terminal', level: 2 })).toBeVisible()
     await expect(page.getByText(/Zoom.*px/)).toBeVisible()
   })
 
   test('Maintenance → SettingsMaintenance 마운트', async ({ page }) => {
-    await navButton(page, 'gc / fsck / LFS').click()
+    await navTestId(page, 'maintenance').click()
     await expect(page.getByRole('heading', { name: '레포 유지보수', level: 2 })).toBeVisible()
   })
 
-  test('Plugin / Integration → SettingsPluginIntegration 마운트', async ({ page }) => {
-    await navButton(page, '외부 도구 연결').click()
-    await expect(
-      page.getByRole('heading', { name: 'Plugin / Integration', level: 2 }),
-    ).toBeVisible()
-    await expect(page.getByText(/GitHub Actions/)).toBeVisible()
+  test('Plugin / Integration — futureRelease 비활성 (v0.5 예정)', async ({ page }) => {
+    // settings.vue:83 의 plugin item futureRelease: true — click 차단 + tooltip 노출 검증.
+    // UltraPlan v0.4 ARCH-003 후속 — Plugin/Integration 마운트 test 는 v0.5 출시 후 활성화.
+    const btn = navTestId(page, 'plugin')
+    await expect(btn).toBeVisible()
+    await expect(btn).toHaveAttribute('aria-disabled', 'true')
+    await expect(btn).toHaveAttribute('title', /v0\.5/)
   })
 })
