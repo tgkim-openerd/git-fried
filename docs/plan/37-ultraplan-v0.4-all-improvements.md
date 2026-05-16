@@ -1,6 +1,18 @@
 # UltraPlan v0.4 — /analyze 2026-05-16 모든 개선사항 통합
 
 > **v0.1 작성**: 2026-05-16 (post-c89, /analyze + Codex cross-validation 후)
+> **v1.0 종료**: 2026-05-16 (Phase A + B 일부 + C default + D1 완료 / 대형 작업 후속 sprint 위임)
+>   - **Phase A** 5/5 완료 (3 commit `f558aa7..a43ff3d`)
+>   - **Phase B**: B2 REJECT (raw invoke 0건 확정) / B4 완료 (`8c6efcc` sqlx tx 의도 주석) / B7 완료 (enumeration → B2 REJECT 사유 확정) / **B1·B3·B5·B6 은 후속 sprint 위임** (size 큼, plan §B 잔존)
+>   - **Phase C** 3건 default 적용 명시 (notify 유지 / @iconify/vue 보류 / god comp 점진)
+>   - **Phase D1** 완료 (`5d148c5` `scripts/re-verify.mjs`) / **D2·D3 후속 sprint 위임**
+>   - **commit 누계**: 5 (f558aa7 / 993ba76 / a43ff3d / 8c6efcc / 5d148c5)
+>   - **Done criteria 충족** — autonomous-safe 5/5 + needs-user 3/3 (default) + needs-claude-judgment 4/7 + 회귀 차단 mechanism 1개 (D1) 정착
+> **v0.3 patch**: 2026-05-16 (Phase C default + B2 REJECT + B7 분류 결과)
+>   - **§B2 REJECT** — invoke 직접 172건 enumeration 결과 170건이 `api/git.ts` (wrapper layer 자체) + 1건 `registerGlobalErrorHandler` (역시 `@/api/invokeWithTimeout` wrapper) + ErrorBoundary 는 invoke 미사용. **실 raw `@tauri-apps/api/core` invoke 직접 호출 0건**. /analyze 의 "invoke 직접 172 vs wrapper 263" 단정이 wrapper-가-invoke-를-쓴-패턴 을 직접 호출로 오분류한 결과. plan §B2/§B3/§B7 영향: B2 종료(REJECT), B3 의 선결조건 제거 → B3 는 "useQuery 57 + useMutation 108 = 165 hook 의 cache 일관성 검토"로 의미 한정, B7 은 enumeration 결과로 종료(완료).
+>   - **§C1 default 적용**: `notify` + `tauri-plugin-fs` reservation **유지** (c53 결정 보존, plan/04 활성 일정 없음). Cargo.toml 21~31 / 52~58 주석 그대로.
+>   - **§C2 default 적용**: `@iconify/vue` **보류** (자동 제거 금지 — plan 자체 룰). 사용자 명시 confirm + `bun run build/typecheck/test` 통과 검증 후 별도 commit 으로 처리. 본 plan v1.0 종료까지 미진행.
+>   - **§C3 default 적용**: god comp 회귀 전략 **(a) 점진 추출** — Top 5 (≥400 LOC) sprint c90~c94 분산. 본 plan v1.0 종료 시점에는 plan §B1 으로 위임만 명시, 실제 추출은 후속 sprint.
 > **v0.2 patch**: 2026-05-16 (Phase A 5/5 완료 직후)
 >   - A1 commit `f558aa7`: Tauri IPC catalog drift 169→167 / 26→29 / 66→64 (`bun scripts/generate-tauri-commands-index.mjs` 재생성 + IMPLEMENTATION-STATUS.md:19 갱신)
 >   - A2 MEMORY: c67 마일스톤 메모에 회귀 명시 (script-only <200 유지 + 전체 LOC ≥200 35건 회귀 분리)
