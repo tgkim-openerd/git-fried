@@ -3,37 +3,40 @@
 > 자동 생성: `bun scripts/generate-tauri-commands-index.mjs`
 > 소스: `apps/desktop/src-tauri/src/ipc/*.rs`
 
-**총 169 commands**, 26 파일, 66 카테고리.
+**총 167 commands**, 29 파일, 64 카테고리.
 
 ## 파일별 분포
 
 | 파일 | commands |
 |---|---:|
-| `ipc/forge_commands.rs` | 17 |
-| `ipc/v02_commands.rs` | 17 |
+| `ipc/forge_commands.rs` | 18 |
 | `ipc/status_commands.rs` | 12 |
 | `ipc/stash_commands.rs` | 10 |
 | `ipc/ai_commands.rs` | 9 |
 | `ipc/lfs_commands.rs` | 9 |
 | `ipc/remote_commands.rs` | 9 |
 | `ipc/branch_commands.rs` | 8 |
-| `ipc/commit_commands.rs` | 8 |
 | `ipc/launchpad_commands.rs` | 8 |
-| `ipc/sync_commands.rs` | 7 |
+| `ipc/commit_commands.rs` | 7 |
+| `ipc/v02_commands.rs` | 7 |
 | `ipc/hide_commands.rs` | 6 |
 | `ipc/rebase_commands.rs` | 6 |
+| `ipc/worktree_commands.rs` | 6 |
 | `ipc/profile_commands.rs` | 5 |
-| `ipc/repo_commands.rs` | 5 |
+| `ipc/sync_commands.rs` | 5 |
 | `ipc/tag_commands.rs` | 5 |
 | `ipc/alias_commands.rs` | 4 |
 | `ipc/bisect_commands.rs` | 4 |
+| `ipc/merge_commands.rs` | 4 |
 | `ipc/pty_commands.rs` | 4 |
+| `ipc/repo_commands.rs` | 4 |
 | `ipc/submodule_commands.rs` | 4 |
 | `ipc/workspace_commands.rs` | 4 |
 | `ipc/graph_commands.rs` | 3 |
 | `ipc/importer_commands.rs` | 3 |
 | `ipc/commands.rs` | 1 |
 | `ipc/diagnostic_commands.rs` | 1 |
+| `ipc/search_commands.rs` | 1 |
 | `ipc/mod.rs` | 0 |
 
 ## 카테고리별 분포 (prefix snake_case 1번째 토큰)
@@ -50,17 +53,17 @@
 | `delete_*` | 5 |
 | `add_*` | 5 |
 | `bulk_*` | 5 |
+| `set_*` | 4 |
 | `bisect_*` | 4 |
 | `forge_*` | 4 |
 | `pty_*` | 4 |
 | `apply_*` | 4 |
-| `push_*` | 4 |
-| `set_*` | 3 |
 | `unhide_*` | 3 |
 | `import_*` | 3 |
+| `read_*` | 3 |
 | `update_*` | 3 |
 | `remove_*` | 3 |
-| `read_*` | 3 |
+| `push_*` | 3 |
 | `merge_*` | 2 |
 | `rename_*` | 2 |
 | `hide_*` | 2 |
@@ -72,7 +75,6 @@
 | `unset_*` | 1 |
 | `cherry_*` | 1 |
 | `switch_*` | 1 |
-| `commit_*` | 1 |
 | `last_*` | 1 |
 | `compare_*` | 1 |
 | `reset_*` | 1 |
@@ -85,8 +87,11 @@
 | `close_*` | 1 |
 | `reopen_*` | 1 |
 | `search_*` | 1 |
+| `write_*` | 1 |
+| `take_*` | 1 |
+| `launch_*` | 1 |
 | `activate_*` | 1 |
-| `clone_*` | 1 |
+| `unified_*` | 1 |
 | `stash_*` | 1 |
 | `pop_*` | 1 |
 | `drop_*` | 1 |
@@ -98,14 +103,10 @@
 | `init_*` | 1 |
 | `sync_*` | 1 |
 | `fetch_*` | 1 |
-| `pull_*` | 1 |
+| `predict_*` | 1 |
 | `prune_*` | 1 |
 | `lock_*` | 1 |
 | `unlock_*` | 1 |
-| `write_*` | 1 |
-| `take_*` | 1 |
-| `launch_*` | 1 |
-| `predict_*` | 1 |
 
 ## 카테고리별 상세
 
@@ -125,9 +126,9 @@
 - **`list_stash(repo_id: i64) -> AppResult<Vec<git_stash::StashEntry>>`** — `ipc/stash_commands.rs`
 - **`list_submodules(repo_id: i64) -> AppResult<Vec<git_sub::SubmoduleEntry>>`** — `ipc/submodule_commands.rs`
 - **`list_tags(repo_id: i64) -> AppResult<Vec<git_tag::TagInfo>>`** — `ipc/tag_commands.rs`
-- **`list_worktrees(repo_id: i64) -> AppResult<Vec<git_wt::WorktreeEntry>>`** — `ipc/v02_commands.rs`
 - **`list_reflog(args: ReflogArgs) -> AppResult<Vec<git_reflog::ReflogEntry>>`** — `ipc/v02_commands.rs`
 - **`list_workspaces() -> AppResult<Vec<Workspace>>`** — `ipc/workspace_commands.rs`
+- **`list_worktrees(repo_id: i64) -> AppResult<Vec<git_wt::WorktreeEntry>>`** — `ipc/worktree_commands.rs`
 
 ### `ai_*` (9)
 
@@ -208,7 +209,7 @@
 - **`add_review_comment(args: AddReviewCommentArgs) -> AppResult<()>`** — `ipc/forge_commands.rs`
 - **`add_remote(args: AddRemoteArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
 - **`add_repo(args: AddRepoArgs) -> AppResult<Repo>`** — `ipc/repo_commands.rs`
-- **`add_worktree(args: AddWorktreeArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
+- **`add_worktree(args: AddWorktreeArgs) -> AppResult<()>`** — `ipc/worktree_commands.rs`
 
 ### `bulk_*` (5)
 
@@ -217,6 +218,13 @@
 - **`bulk_quick_status(workspace_id: Option<i64>) -> AppResult<Vec<git_bulk::BulkResult<git_status::QuickStatus>>>`** — `ipc/sync_commands.rs`
 - **`bulk_list_prs(args: BulkPrsArgs) -> AppResult<Vec<git_bulk::BulkResult<Vec<crate::forge::PullRequest>>>>`** — `ipc/sync_commands.rs`
 - **`bulk_cherry_pick(args: BulkCherryPickArgs) -> AppResult<Vec<git_cp::CherryPickResult>>`** — `ipc/v02_commands.rs`
+
+### `set_*` (4)
+
+- **`set_repo_alias(args: SetAliasArgs) -> AppResult<RepoAlias>`** — `ipc/alias_commands.rs`
+- **`set_repo_forge_account(args: SetRepoForgeAccountArgs) -> AppResult<crate::storage::Repo>`** — `ipc/forge_commands.rs`
+- **`set_remote_url(args: SetRemoteUrlArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
+- **`set_repo_pinned(args: SetPinnedArgs) -> AppResult<Repo>`** — `ipc/repo_commands.rs`
 
 ### `bisect_*` (4)
 
@@ -246,19 +254,6 @@
 - **`apply_stash_file(args: StashFileArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
 - **`apply_patch(args: PatchArgs) -> AppResult<()>`** — `ipc/status_commands.rs`
 
-### `push_*` (4)
-
-- **`push_stash(args: PushStashArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
-- **`push_stash_staged(args: PushStashStagedArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
-- **`push(args: PushArgs) -> AppResult<git_sync::SyncResult>`** — `ipc/sync_commands.rs`
-- **`push_tag(args: PushTagArgs) -> AppResult<()>`** — `ipc/tag_commands.rs`
-
-### `set_*` (3)
-
-- **`set_repo_alias(args: SetAliasArgs) -> AppResult<RepoAlias>`** — `ipc/alias_commands.rs`
-- **`set_remote_url(args: SetRemoteUrlArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
-- **`set_repo_pinned(args: SetPinnedArgs) -> AppResult<Repo>`** — `ipc/repo_commands.rs`
-
 ### `unhide_*` (3)
 
 - **`unhide_ref(args: UnhideRefArgs) -> AppResult<()>`** — `ipc/hide_commands.rs`
@@ -271,6 +266,12 @@
 - **`import_gitkraken_dry_run(args: GitKrakenImportArgs) -> AppResult<gitkraken::ImportPlan>`** — `ipc/importer_commands.rs`
 - **`import_gitkraken_apply(args: GitKrakenImportArgs) -> AppResult<gitkraken::ApplyResult>`** — `ipc/importer_commands.rs`
 
+### `read_*` (3)
+
+- **`read_conflicted(args: ConflictedFileArgs) -> AppResult<git_merge::ConflictedFile>`** — `ipc/merge_commands.rs`
+- **`read_repo_config(repo_id: i64) -> AppResult<git_cfg_local::RepoConfigSnapshot>`** — `ipc/remote_commands.rs`
+- **`read_file(args: ReadFileArgs) -> AppResult<String>`** — `ipc/status_commands.rs`
+
 ### `update_*` (3)
 
 - **`update_profile(args: UpdateProfileArgs) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
@@ -281,13 +282,13 @@
 
 - **`remove_remote(args: RemoteNameArgs) -> AppResult<()>`** — `ipc/remote_commands.rs`
 - **`remove_repo(id: i64) -> AppResult<()>`** — `ipc/repo_commands.rs`
-- **`remove_worktree(args: RemoveWorktreeArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
+- **`remove_worktree(args: RemoveWorktreeArgs) -> AppResult<()>`** — `ipc/worktree_commands.rs`
 
-### `read_*` (3)
+### `push_*` (3)
 
-- **`read_repo_config(repo_id: i64) -> AppResult<git_cfg_local::RepoConfigSnapshot>`** — `ipc/remote_commands.rs`
-- **`read_file(args: ReadFileArgs) -> AppResult<String>`** — `ipc/status_commands.rs`
-- **`read_conflicted(args: ConflictedFileArgs) -> AppResult<git_merge::ConflictedFile>`** — `ipc/v02_commands.rs`
+- **`push_stash(args: PushStashArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
+- **`push_stash_staged(args: PushStashStagedArgs) -> AppResult<()>`** — `ipc/stash_commands.rs`
+- **`push_tag(args: PushTagArgs) -> AppResult<()>`** — `ipc/tag_commands.rs`
 
 ### `merge_*` (2)
 
@@ -340,10 +341,6 @@
 
 - **`switch_branch(args: SwitchBranchArgs) -> AppResult<()>`** — `ipc/branch_commands.rs`
 
-### `commit_*` (1)
-
-- **`commit(args: CommitArgs) -> AppResult<git_commit::CommitResult>`** — `ipc/commit_commands.rs`
-
 ### `last_*` (1)
 
 - **`last_commit_message(repo_id: i64) -> AppResult<String>`** — `ipc/commit_commands.rs`
@@ -392,13 +389,25 @@
 
 - **`search_commits_by_message(args: SearchCommitsByMessageArgs) -> AppResult<Vec<repo::CommitSummary>>`** — `ipc/graph_commands.rs`
 
+### `write_*` (1)
+
+- **`write_resolved(args: WriteResolvedArgs) -> AppResult<()>`** — `ipc/merge_commands.rs`
+
+### `take_*` (1)
+
+- **`take_side(args: TakeSideArgs) -> AppResult<()>`** — `ipc/merge_commands.rs`
+
+### `launch_*` (1)
+
+- **`launch_mergetool(args: LaunchMergetoolArgs) -> AppResult<MergetoolResult>`** — `ipc/merge_commands.rs`
+
 ### `activate_*` (1)
 
 - **`activate_profile(id: i64) -> AppResult<Profile>`** — `ipc/profile_commands.rs`
 
-### `clone_*` (1)
+### `unified_*` (1)
 
-- **`clone_repo(args: CloneRepoArgs) -> AppResult<CloneRepoResult>`** — `ipc/repo_commands.rs`
+- **`unified_search(_args: UnifiedSearchArgs) -> AppResult<Vec<UnifiedSearchHit>>`** — `ipc/search_commands.rs`
 
 ### `stash_*` (1)
 
@@ -444,35 +453,19 @@
 
 - **`fetch_all(repo_id: i64) -> AppResult<git_sync::SyncResult>`** — `ipc/sync_commands.rs`
 
-### `pull_*` (1)
-
-- **`pull(args: PullArgs) -> AppResult<git_sync::SyncResult>`** — `ipc/sync_commands.rs`
-
-### `prune_*` (1)
-
-- **`prune_worktrees(repo_id: i64) -> AppResult<()>`** — `ipc/v02_commands.rs`
-
-### `lock_*` (1)
-
-- **`lock_worktree(args: LockWorktreeArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
-
-### `unlock_*` (1)
-
-- **`unlock_worktree(args: UnlockWorktreeArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
-
-### `write_*` (1)
-
-- **`write_resolved(args: WriteResolvedArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
-
-### `take_*` (1)
-
-- **`take_side(args: TakeSideArgs) -> AppResult<()>`** — `ipc/v02_commands.rs`
-
-### `launch_*` (1)
-
-- **`launch_mergetool(args: LaunchMergetoolArgs) -> AppResult<MergetoolResult>`** — `ipc/v02_commands.rs`
-
 ### `predict_*` (1)
 
 - **`predict_target_conflict(args: PredictConflictArgs) -> AppResult<git_cp_pred::ConflictPrediction>`** — `ipc/v02_commands.rs`
+
+### `prune_*` (1)
+
+- **`prune_worktrees(repo_id: i64) -> AppResult<()>`** — `ipc/worktree_commands.rs`
+
+### `lock_*` (1)
+
+- **`lock_worktree(args: LockWorktreeArgs) -> AppResult<()>`** — `ipc/worktree_commands.rs`
+
+### `unlock_*` (1)
+
+- **`unlock_worktree(args: UnlockWorktreeArgs) -> AppResult<()>`** — `ipc/worktree_commands.rs`
 
