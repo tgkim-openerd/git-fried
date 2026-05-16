@@ -28,6 +28,11 @@ pre-commit:
       # ko/en 대칭 SoT (drift 시 exit 1). c74+ 자동 보장.
       glob: "apps/desktop/src/locales/*.json"
       run: node scripts/i18n-leaf-count.mjs
+    god-comp-check:
+      # UltraPlan v0.4 §D2 minimum viable — 신규/회귀 ≥200 LOC .vue warning.
+      # 현재 warning 모드 (exit 0). Phase C3 (b) 차단 결정 시 `GOD_COMP_FAIL=1` 환경변수로 승격.
+      glob: "apps/desktop/src/**/*.vue"
+      run: node scripts/god-comp-check.mjs {staged_files}
 
 pre-push:
   parallel: true

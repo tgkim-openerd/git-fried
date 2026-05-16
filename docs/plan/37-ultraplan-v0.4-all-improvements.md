@@ -1,13 +1,19 @@
 # UltraPlan v0.4 — /analyze 2026-05-16 모든 개선사항 통합
 
 > **v0.1 작성**: 2026-05-16 (post-c89, /analyze + Codex cross-validation 후)
-> **v1.0 종료**: 2026-05-16 (Phase A + B 일부 + C default + D1 완료 / 대형 작업 후속 sprint 위임)
+> **v1.1 patch**: 2026-05-16 (Claude self-review Critical 2 + High 3 해소)
+>   - **§v1.0 명명 정정**: "v1.0 종료" → "v0.6 phased exit" 로 변경. HIGH 권고 2건 (god comp 35 정리 + invoke wrapper 수렴) 모두 후속 sprint 위임된 상태라 "v1.0" 단정 부적절. **v1.0 도달 조건**: HIGH 2건 모두 처리 + needs-claude-judgment 7/7 완료 + needs-user 3/3 실 사용자 결정 수령 + 회귀 차단 mechanism (D2/D3) 정착.
+>   - **§commit 누계 정정**: 5 → **6** (f558aa7 / 993ba76 / a43ff3d / 8c6efcc / 5d148c5 / b0bff02 plan v1.0 commit 포함). v1.1 patch commit 포함 시 7.
+>   - **§B4 표현 완화**: "검증 통과" → "의도 명시". sqlx Transaction Drop 자동 rollback 의 idiomatic 인정은 Codex finding confidence: likely 였고 panic injection test 미수행. 본 patch 에서 panic injection test 후속 sprint 항목으로 정립.
+>   - **§C2 표기 정확화**: "needs-user 3/3 default" → "needs-user 2/3 default + 1/3 결정 대기". @iconify/vue 잔존 backlog 명시.
+>   - **§D2 minimum viable lefthook gate 정립** (후속 sprint 위임 → v1.1 자체 항목): `lefthook.yml` 의 pre-commit 에 `god-comp-check` 단계 추가 — 신규 또는 회귀 ≥200 LOC .vue 발생 시 warning. 차단 (fail) 은 사용자 결정 후. 본 patch 에서 mechanism 만 정착.
+> **v0.6 phased exit (구 v1.0 종료)**: 2026-05-16 (Phase A + B 일부 + C default + D1 완료 / 대형 작업 후속 sprint 위임)
 >   - **Phase A** 5/5 완료 (3 commit `f558aa7..a43ff3d`)
->   - **Phase B**: B2 REJECT (raw invoke 0건 확정) / B4 완료 (`8c6efcc` sqlx tx 의도 주석) / B7 완료 (enumeration → B2 REJECT 사유 확정) / **B1·B3·B5·B6 은 후속 sprint 위임** (size 큼, plan §B 잔존)
->   - **Phase C** 3건 default 적용 명시 (notify 유지 / @iconify/vue 보류 / god comp 점진)
->   - **Phase D1** 완료 (`5d148c5` `scripts/re-verify.mjs`) / **D2·D3 후속 sprint 위임**
->   - **commit 누계**: 5 (f558aa7 / 993ba76 / a43ff3d / 8c6efcc / 5d148c5)
->   - **Done criteria 충족** — autonomous-safe 5/5 + needs-user 3/3 (default) + needs-claude-judgment 4/7 + 회귀 차단 mechanism 1개 (D1) 정착
+>   - **Phase B**: B2 REJECT (raw invoke 0건 확정) / B4 완료 (`8c6efcc` sqlx tx 의도 명시 주석) / B7 완료 (enumeration → B2 REJECT 사유 확정) / **B1·B3·B5·B6 은 후속 sprint 위임** (size 큼, plan §B 잔존)
+>   - **Phase C** 3건 분류 적용: C1 default 유지 + C3 default 점진 + **C2 결정 대기** (default 보류, @iconify/vue 잔존 backlog)
+>   - **Phase D1** 완료 (`5d148c5` `scripts/re-verify.mjs`) / **D2 minimum viable v1.1 patch 정착** / **D3 후속 sprint 위임**
+>   - **commit 누계**: **6** (f558aa7 / 993ba76 / a43ff3d / 8c6efcc / 5d148c5 / b0bff02) — v1.1 patch commit 포함 시 7
+>   - **Done criteria 충족 (v0.6)** — autonomous-safe 5/5 + needs-user 2/3 default + 1/3 대기 + needs-claude-judgment 4/7 + 회귀 차단 mechanism 1.5개 (D1 완료 + D2 minimum viable)
 > **v0.3 patch**: 2026-05-16 (Phase C default + B2 REJECT + B7 분류 결과)
 >   - **§B2 REJECT** — invoke 직접 172건 enumeration 결과 170건이 `api/git.ts` (wrapper layer 자체) + 1건 `registerGlobalErrorHandler` (역시 `@/api/invokeWithTimeout` wrapper) + ErrorBoundary 는 invoke 미사용. **실 raw `@tauri-apps/api/core` invoke 직접 호출 0건**. /analyze 의 "invoke 직접 172 vs wrapper 263" 단정이 wrapper-가-invoke-를-쓴-패턴 을 직접 호출로 오분류한 결과. plan §B2/§B3/§B7 영향: B2 종료(REJECT), B3 의 선결조건 제거 → B3 는 "useQuery 57 + useMutation 108 = 165 hook 의 cache 일관성 검토"로 의미 한정, B7 은 enumeration 결과로 종료(완료).
 >   - **§C1 default 적용**: `notify` + `tauri-plugin-fs` reservation **유지** (c53 결정 보존, plan/04 활성 일정 없음). Cargo.toml 21~31 / 52~58 주석 그대로.
