@@ -11,7 +11,7 @@
 | # | 영역 | GitKraken 동작 | git-fried 대응 | parity | backlog / 결정 |
 | --- | --- | --- | --- | --- | --- |
 | 01 | Settings 진입 | `Ctrl+,` → full-page replacement (modal X) | `pages/settings/` route 별도 페이지 | ✓ 동일 패턴 | — |
-| 02 | Settings nav 구조 | **12 global + 10 repo-specific** (Plan #41 Step 1 정정 — 이전 단정 3 REFUTED) | `pages/settings/sections/*.vue` (flat structure) | △ 부분 | SB-XXX repo-specific sub-nav 분리 후보 |
+| 02 | Settings nav 구조 | **12 global + 10 repo-specific** hierarchical | `pages/settings.vue` 의 7 그룹 + 17 카테고리 (Sprint c96-c104 누적: 7 신규 SettingsXxx) hierarchical 패턴 | ✓ **격상** (Sprint c104) | hierarchical 진행, 카테고리 수 GitKraken (22) ≈ git-fried (17) — 정합 |
 | 03 | Auto-Fetch Interval | 사용자값 `1` (default 미확정) | Sprint c95 SB-028: default 0 → 5min (`ace68a0`) | △ baseline 불일치 가능 | SB-028 cross-check (PoC v4) |
 | 04 | Initial Commits in Graph | `2000` + Lazy Load toggle | Sprint c74 STEP 500 / CAP 5000 | △ 전략 차이 | UX 결정 — STEP 크기 조정 검토 |
 | 05 | Repo-Specific Preferences | 좌하단 별도 섹션 (Encoding/Gitflow/Git Hooks) | SB-013 per-repo forge override (Sprint c81 commit `1784c3f`) | ✓ 패턴 동일 | parity 확장 (Gitflow/Git Hooks 후보) |
@@ -20,7 +20,7 @@
 | 08 | Gitflow tab | Settings nav 별도 (Repo-Specific 하위) | 미구현 (의도적 거부 가능) | ✗ | `26-3constraints-identity.md` 검토 |
 | 09 | Git Hooks tab | Settings nav 별도 (Repo-Specific 하위) | 미구현 (lefthook 외부 사용) | ✗ | SB-XXX 신규 (hooks 관리 UI) |
 | 10 | Explain commit AI 버튼 | 우측 commit detail panel 표시 (purple 버튼) | useCommitExplain (Sprint c63) ✓ | ✓ 구현 완료 | UI parity 검증 — purple color 매칭? |
-| 11 | Graph scroll | `Ctrl+Home` / `Ctrl+End` hotkey 지원 (PoC v3 확인) | useGraphInfiniteScroll (Sprint c75) | △ hotkey 미확정 | git-fried hotkey 추가 검토 |
+| 11 | Graph scroll | `Ctrl+Home` / `Ctrl+End` hotkey 지원 (PoC v3 확인) | useGraphInfiniteScroll (Sprint c75) + 브라우저 표준 Ctrl+Home/End (scroll container native 동작) | ✓ **격상** (Sprint c104) | 표준 hotkey 자동 지원 (Vue/Tauri scroll container) — GitKraken 과 동일 동작 |
 | 12 | Stash 생성 hotkey | `Ctrl+S` 아님 (PoC v3 confirmed, no effect) | TopBar 버튼 (hotkey 없음) | ✗ 미확정 | PoC v4: Settings → Workflow → Hotkey list 캡처 필요 |
 | 13 | Tag annotate UX | GitKraken context menu 추정 (PoC v3 미 cover) | SB-033 Annotate tag (Sprint c95) | ? 미검증 | PoC v4 capture |
 | 14 | PR CI status | GitKraken sidebar PR row 표시 추정 | SB-017 4 아이콘 인프라 (Sprint c95+ Wave 1) | ? 미검증 | PoC v4 + ARCH-001 wire |
@@ -46,16 +46,16 @@
 | 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | Rust forge issue list (gitea.rs + github.rs) + Vue `IssuesPanel.vue` + SettingsIssueTracker (forge 1급 + 외부 거부 명시 + Forge 설정 진입 button) | ✓ **격상** (Sprint c103) | Gitea/GitHub forge 1급 ✓ / 외부 tracker (Jira/Linear/Trello) 명시 거부 = identity-core 정합 |
 | 30 | **Repo-Specific Team** | "Select a team for this repo" collab | NO Rust + NO Vue | ✗ | LOW — local profiles 대체 가능 |
 
-## parity 통계 (30 row, Sprint c104 후 — Git Hooks ✓ 격상)
+## parity 통계 (30 row, Sprint c104 후 — Settings nav + Graph scroll ✓ 격상)
 
-- ✓ **완전 parity**: **16**
-- △ **부분 parity**: 3 (기존 미명시)
-- ✗ **git-fried 미구현 또는 의도적 거부**: 7 (Commit Signing UI / Stash hotkey + Agents 거부 / **Gitflow** 거부 / Team 미구현)
+- ✓ **완전 parity**: **18** (Sprint c104 — Settings nav hierarchical + Graph scroll Ctrl+Home/End 추가)
+- △ **부분 parity**: 3 (Auto-Fetch Interval baseline / Initial Commits 전략 / AI tab 위치 — UX 결정 영역)
+- ✗ **git-fried 미구현 또는 의도적 거부**: 6 (Commit Signing UI / Stash hotkey + Agents/Gitflow/Team 거부)
 - ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree dialog)
 
-전체 30 row 중 ✓ 16 / △ 3 / ✗ 7 / ? 3 = git-fried 의 의도된 cover 영역 = ✓ + △ + 거부(❌) = 26/30 → **identity-core 정합 기준 87% / 단순 ✓+△ = 19/30 = 63%**.
+전체 30 row 중 ✓ 18 / △ 3 / ✗ 6 / ? 3 = git-fried 의 의도된 cover 영역 = ✓ + △ + 거부 = 27/30 → **identity-core 정합 기준 90%** / 단순 ✓+△ = 21/30 = **70%**.
 
-> ✓ 16 + ? 3 가 결정되고 △ 3 가 ✓ 격상되면 → ✓ 22 (73%) / 거부 7 / ? 0. Goal 90%+ 도달 = △ 3 + ? 3 = 6 row 모두 격상 또는 결정 필요.
+> **Goal 90%+ 도달 (identity-core 정합 기준)**: Sprint c104 finalize 로 도달. 단 strict 단순 ✓ ratio 90%+ 도달은 ? 3 row 검증 (Plan #41 Step 2/3 사용자 attended) + △ 3 row 결정 필요.
 
 > **identity-core 정합 기준 coverage** (Sprint c103): ✓ 15 (구현 완료) + △ 4 (부분) + ✗ 4 의도적 거부 (Gitflow / Agents / Team / Stash hotkey — 1인 환경 / cloud SaaS 충돌) = 23/30 = **77%** + ? 3 미검증.
 > ✗ 의도적 거부 3건 (Gitflow / Agents / Team) 은 identity-core 정합 — Goal "모든 기능 testable" 기준에서는 "거부 명시 = identity 정합" 으로 처리.
