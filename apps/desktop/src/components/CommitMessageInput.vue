@@ -45,7 +45,9 @@ const footer = ref('')
 const freeMessage = ref(general.value.commitTemplate)
 const signoff = ref(false)
 // Plan #42 H-4 / M-1.2 부분 wire — Settings.commitSkipHooks default 적용.
-// 사용자 form 안에서 checkbox 해제 가능 (사용자 의도 우선).
+// Codex 5차 audit `a0a801fa629a5bed5` MED 명시 — **one-time init 의도** (mount 시
+// 1회). 사용자 form 안에서 checkbox 해제 가능 (사용자 의도 우선). Settings 의
+// commitSkipHooks 변경 후 form 이 이미 mount 됐으면 sync 안 됨 (의도).
 const noVerify = ref(general.value.commitSkipHooks)
 // Sprint c25-2 §3-2 — Amend 토글. ON 시 last_commit_message prefill, --amend 로 commit.
 const amend = ref(false)
@@ -77,12 +79,14 @@ const finalMessage = computed(() => {
           body: body.value,
           footer: footer.value,
         })
-  // Plan #42 H-4 / M-1.2 wire — Settings.commitRemoveComments true 시 `^#` 라인 strip.
-  // git 기본 commit-msg hook 동작 일관 (사용자 명시 가능).
+  // Plan #42 H-4 / M-1.2 wire — Settings.commitRemoveComments true 시 git comment 라인 strip.
+  // Codex 5차 audit `a0a801fa629a5bed5` MED 해소 — `^#` 전체 대신 `^# ` (스페이스 포함)
+  // 또는 단독 `^#$` 만 strip (git commit-msg 의 default comment 패턴 일관).
+  // markdown heading `# Title` 도 strip 되지만 일반 `#tag` / `#issue123` 같은 라인은 보존.
   if (general.value.commitRemoveComments) {
     return raw
       .split('\n')
-      .filter((line) => !line.startsWith('#'))
+      .filter((line) => !/^#(\s|$)/.test(line))
       .join('\n')
       .trim()
   }
@@ -103,7 +107,9 @@ const cmtMut = useCommitMutation({
     subject.value = ''
     body.value = ''
     footer.value = ''
-    freeMessage.value = ''
+    // Plan #42 M-1.2 wire — Codex 5차 audit `a0a801fa629a5bed5` HIGH 해소.
+    // commit 성공 후 다음 commit draft 에 template 재적용 (이전: '' 으로 비움 → template 소멸).
+    freeMessage.value = general.value.commitTemplate
     breaking.value = false
   },
   onCommitted: () => emit('committed'),
