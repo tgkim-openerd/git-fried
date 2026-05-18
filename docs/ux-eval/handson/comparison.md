@@ -37,7 +37,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 21 | Repo-Specific Encoding | i18n.commitEncoding / logOutputEncoding 등 per-repo override | Rust `config_local.rs` + Vue `RepoSpecificForm.vue` B2 (실 input 작동) + SettingsEncoding.vue 가이드 + link | ✓ **격상** (Sprint c103) | identity-core 한글 안전 — RepoSpecificForm 의 실 input + Settings 가이드 합산 cover |
 | 22 | Repo-Specific Gitflow | per-repo gitflow branch.* 설정 | RepoSpecificForm 의 gitflow.* 영역 + `config_local.rs` (input 존재, 단 UI 외 통합 미구현) | ✗ **의도적 거부** (Sprint c103) | 1인 듀얼 forge 환경 — identity-core 거부 (`docs/plan/26-3constraints-identity.md`). RepoSpecificForm input 만 유지, 풀 Gitflow workflow 모듈 미구현 |
-| 23 | Repo-Specific Git Hooks | per-repo `core.hooksPath` 관리 + hook list | PARTIAL Rust `core.hooksPath` + Vue `RepoSpecificForm.vue` B1 | △ MED | hook manager UI 신규 후보 |
+| 23 | Repo-Specific Git Hooks | per-repo `core.hooksPath` 관리 + hook list + enable/disable | Rust `hooks.rs` (28 표준 + executable bit + activate/deactivate IPC) + Vue `SettingsGitHooks.vue` + RepoSpecificForm B1 core.hooksPath | ✓ **격상** (Sprint c104) | Sprint c99 read-only scan + c104 enable/disable toggle (rename `.sample` ↔ active) — lefthook wrapper 통합만 후속 sprint |
 | 24 | **Repo-Specific Commit** | Push after each commit / Skip git hooks / Squash / Commit Template (Codex 1차 신규) | PARTIAL Rust `commit.rs` + gpgsign | △ HIGH | Commit template / Squash toggle UI 신규 |
 | 25 | **Repo-Specific Agents** | 외부 AI agent 연동 (cloud) | PARTIAL/DIFFERENT `ai/runner.rs` (CLI subprocess 다른 개념) | ✗ **거부 권고** | git-fried 정체성 충돌 (cloud SaaS), 미구현 유지 |
 | 26 | **Repo-Specific Conflict Prevention** | per-repo 충돌 사전 검출 옵션 | **YES** Rust `conflict_prediction.rs` + `v02_commands.rs` IPC + Vue `StatusBar.vue` + `useUserSettings.ts` | △ HIGH | **Settings UI 노출만 필요** — 빠른 win |
@@ -46,14 +46,16 @@
 | 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | Rust forge issue list (gitea.rs + github.rs) + Vue `IssuesPanel.vue` + SettingsIssueTracker (forge 1급 + 외부 거부 명시 + Forge 설정 진입 button) | ✓ **격상** (Sprint c103) | Gitea/GitHub forge 1급 ✓ / 외부 tracker (Jira/Linear/Trello) 명시 거부 = identity-core 정합 |
 | 30 | **Repo-Specific Team** | "Select a team for this repo" collab | NO Rust + NO Vue | ✗ | LOW — local profiles 대체 가능 |
 
-## parity 통계 (30 row, Sprint c103 후 — Encoding + Issue Tracker ✓ + Gitflow 의도적 거부)
+## parity 통계 (30 row, Sprint c104 후 — Git Hooks ✓ 격상)
 
-- ✓ **완전 parity**: **15**
-- △ **부분 parity**: 4 (Git Hooks + 기존 미명시 3)
+- ✓ **완전 parity**: **16**
+- △ **부분 parity**: 3 (기존 미명시)
 - ✗ **git-fried 미구현 또는 의도적 거부**: 7 (Commit Signing UI / Stash hotkey + Agents 거부 / **Gitflow** 거부 / Team 미구현)
 - ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree dialog)
 
-전체 30 row 중 ✓ 15 / △ 4 / ✗ 7 / ? 3 = git-fried 의 의도된 cover 영역 = ✓ + △ + 거부(❌) = 26/30 → **identity-core 정합 기준 87%**.
+전체 30 row 중 ✓ 16 / △ 3 / ✗ 7 / ? 3 = git-fried 의 의도된 cover 영역 = ✓ + △ + 거부(❌) = 26/30 → **identity-core 정합 기준 87% / 단순 ✓+△ = 19/30 = 63%**.
+
+> ✓ 16 + ? 3 가 결정되고 △ 3 가 ✓ 격상되면 → ✓ 22 (73%) / 거부 7 / ? 0. Goal 90%+ 도달 = △ 3 + ? 3 = 6 row 모두 격상 또는 결정 필요.
 
 > **identity-core 정합 기준 coverage** (Sprint c103): ✓ 15 (구현 완료) + △ 4 (부분) + ✗ 4 의도적 거부 (Gitflow / Agents / Team / Stash hotkey — 1인 환경 / cloud SaaS 충돌) = 23/30 = **77%** + ? 3 미검증.
 > ✗ 의도적 거부 3건 (Gitflow / Agents / Team) 은 identity-core 정합 — Goal "모든 기능 testable" 기준에서는 "거부 명시 = identity 정합" 으로 처리.

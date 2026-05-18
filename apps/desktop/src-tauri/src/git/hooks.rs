@@ -5,7 +5,7 @@
 //
 // 본 모듈 = read-only scan. enable/disable / edit 은 별도 sprint (M-1 후속).
 
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 use std::fs::Metadata;
 use std::path::{Path, PathBuf};
@@ -80,14 +80,103 @@ pub struct HookEntry {
     pub executable: bool,
 }
 
-/// `.git/hooks/` 또는 `core.hooksPath` 디렉토리 scan + 표준 hook 28개 + 추가 발견 hook 통합 반환.
-pub async fn list_git_hooks(
+/// Plan #42 M-1 후속 (Sprint c104) — `.sample` → active rename (활성화).
+/// `<name>.sample` 파일이 존재해야 함. 실패 시 AppError.
+pub async fn hook_activate_from_sample(
     repo_path: &Path,
     hooks_path_override: Option<&str>,
-) -> AppResult<Vec<HookEntry>> {
-    let hooks_dir = match hooks_path_override {
+    name: &str,
+) -> AppResult<()> {
+    if name.trim().is_empty() {
+        return Err(AppError::validation("hook name 비어있음"));
+    }
+    if name.contains('/') || name.contains('\\') || name.contains("..") {
+        return Err(AppError::validation(
+            "invalid hook name (path traversal 차단)",
+        ));
+    }
+    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override);
+    let sample_path = hooks_dir.join(format!("{name}.sample"));
+    let active_path = hooks_dir.join(name);
+    if !sample_path.exists() {
+        return Err(AppError::validation(format!(
+            "{}.sample 파일 없음 — 활성화 불가",
+            name
+        )));
+    }
+    if active_path.exists() {
+        return Err(AppError::validation(format!(
+            "{} 이미 활성 — 중복 활성화 거부",
+            name
+        )));
+    }
+    std::fs::rename(&sample_path, &active_path).map_err(|e| {
+        AppError::internal(format!("rename {sample_path:?} -> {active_path:?}: {e}"))
+    })?;
+    // Unix executable bit 부여 (rename 후 권한 보존되지만 명시).
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(metadata) = std::fs::metadata(&active_path) {
+            let mut perms = metadata.permissions();
+            perms.set_mode(perms.mode() | 0o755);
+            let _ = std::fs::set_permissions(&active_path, perms);
+        }
+    }
+    tracing::info!(
+        target: "git_fried_lib::hooks",
+        repo = %repo_path.display(),
+        name,
+        "hook_activate_from_sample 완료"
+    );
+    Ok(())
+}
+
+/// Plan #42 M-1 후속 (Sprint c104) — active → `.sample` rename (비활성화).
+/// `<name>` 파일이 존재해야 함. `<name>.sample` 이미 존재 시 거부.
+pub async fn hook_deactivate_to_sample(
+    repo_path: &Path,
+    hooks_path_override: Option<&str>,
+    name: &str,
+) -> AppResult<()> {
+    if name.trim().is_empty() {
+        return Err(AppError::validation("hook name 비어있음"));
+    }
+    if name.contains('/') || name.contains('\\') || name.contains("..") {
+        return Err(AppError::validation(
+            "invalid hook name (path traversal 차단)",
+        ));
+    }
+    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override);
+    let active_path = hooks_dir.join(name);
+    let sample_path = hooks_dir.join(format!("{name}.sample"));
+    if !active_path.exists() {
+        return Err(AppError::validation(format!(
+            "{} 활성 파일 없음 — 비활성화 불가",
+            name
+        )));
+    }
+    if sample_path.exists() {
+        return Err(AppError::validation(format!(
+            "{}.sample 이미 존재 — rename 충돌 거부",
+            name
+        )));
+    }
+    std::fs::rename(&active_path, &sample_path).map_err(|e| {
+        AppError::internal(format!("rename {active_path:?} -> {sample_path:?}: {e}"))
+    })?;
+    tracing::info!(
+        target: "git_fried_lib::hooks",
+        repo = %repo_path.display(),
+        name,
+        "hook_deactivate_to_sample 완료"
+    );
+    Ok(())
+}
+
+fn resolve_hooks_dir(repo_path: &Path, hooks_path_override: Option<&str>) -> PathBuf {
+    match hooks_path_override {
         Some(p) if !p.trim().is_empty() => {
-            // override 가 relative 면 repo root 기준
             let pb = PathBuf::from(p);
             if pb.is_absolute() {
                 pb
@@ -96,7 +185,15 @@ pub async fn list_git_hooks(
             }
         }
         _ => repo_path.join(".git").join("hooks"),
-    };
+    }
+}
+
+/// `.git/hooks/` 또는 `core.hooksPath` 디렉토리 scan + 표준 hook 28개 + 추가 발견 hook 통합 반환.
+pub async fn list_git_hooks(
+    repo_path: &Path,
+    hooks_path_override: Option<&str>,
+) -> AppResult<Vec<HookEntry>> {
+    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override);
 
     tracing::debug!(
         target: "git_fried_lib::hooks",

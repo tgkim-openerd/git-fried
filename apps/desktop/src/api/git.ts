@@ -465,6 +465,19 @@ export const listGitHooks = (
   hooksPathOverride: string | null = null,
 ): Promise<GitHookEntry[]> => invoke('list_git_hooks', { repoId, hooksPathOverride })
 
+// Plan #42 M-1 후속 (Sprint c104) — Git Hooks enable/disable toggle.
+export const hookActivate = (
+  repoId: number,
+  name: string,
+  hooksPathOverride: string | null = null,
+): Promise<void> => invoke('hook_activate', { args: { repoId, name, hooksPathOverride } })
+
+export const hookDeactivate = (
+  repoId: number,
+  name: string,
+  hooksPathOverride: string | null = null,
+): Promise<void> => invoke('hook_deactivate', { args: { repoId, name, hooksPathOverride } })
+
 // Plan #42 M-2 (Sprint c100) — Sparse Checkout repo manager.
 export interface SparseStatus {
   enabled: boolean

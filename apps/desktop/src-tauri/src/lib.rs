@@ -169,6 +169,9 @@ pub fn run() {
             ipc::importer_commands::import_gitkraken_apply,
             // Plan #42 M-1 (Sprint c99) — Git Hooks manager (read-only scan).
             ipc::hooks_commands::list_git_hooks,
+            // Plan #42 M-1 후속 (Sprint c104) — Git Hooks enable/disable.
+            ipc::hooks_commands::hook_activate,
+            ipc::hooks_commands::hook_deactivate,
             // Plan #42 M-2 (Sprint c100) — Sparse Checkout repo manager.
             ipc::sparse_commands::sparse_status,
             ipc::sparse_commands::sparse_init_cone,

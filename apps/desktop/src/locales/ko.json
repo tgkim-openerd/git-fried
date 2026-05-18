@@ -582,7 +582,15 @@
       "notExecutableLabel": "실행 불가",
       "notExecutableHint": "executable bit 없음 — git 은 실행 안 함. Unix: `chmod +x` 필요. Windows: 일반적으로 무시 (Git for Windows ACL 기준)",
       "missingSummary": "표준 hook 중 미설치 {n}개 (펼쳐서 확인)",
-      "editNote": "💡 hook 편집은 직접 파일 열기 (`.git/hooks/<name>`). enable/disable 토글 + 외부 lefthook 통합은 다음 sprint (Plan #42 M-1 후속)."
+      "editNote": "💡 hook 편집은 직접 파일 열기 (`.git/hooks/<name>`). 외부 lefthook 통합은 다음 sprint (Plan #42 M-1 후속).",
+      "activateButton": "활성화",
+      "activateButtonTitle": "{name}.sample → {name} rename (활성화)",
+      "deactivateButton": "비활성화",
+      "deactivateButtonTitle": "{name} → {name}.sample rename (비활성화, 파일 보존)",
+      "toastActivateSuccess": "Hook 활성화 완료: {name}",
+      "toastActivateFail": "Hook 활성화 실패",
+      "toastDeactivateSuccess": "Hook 비활성화 완료: {name}",
+      "toastDeactivateFail": "Hook 비활성화 실패"
     },
     "issueTracker": {
       "title": "Issue Tracker",

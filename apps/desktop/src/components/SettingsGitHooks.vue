@@ -8,9 +8,10 @@
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useQuery } from '@tanstack/vue-query'
-import { listGitHooks } from '@/api/git'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { hookActivate, hookDeactivate, listGitHooks } from '@/api/git'
 import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 // Plan #42 M-1 (Codex 8차 HIGH fix) — core.hooksPath 자동 반영 (RepoSpecificForm
 // 의 hooksPath 변경 시 hook list 도 그 경로 scan).
@@ -19,12 +20,45 @@ import EmptyState from '@/components/EmptyState.vue'
 import SkeletonBlock from '@/components/SkeletonBlock.vue'
 
 const { t } = useI18n()
+const toast = useToast()
+const qc = useQueryClient()
 const reposStore = useReposStore()
 const activeRepoId = computed<number | null>(() => reposStore.activeRepoId)
 const repoConfig = useRepoConfig(activeRepoId)
 const hooksPathOverride = computed<string | null>(
   () => repoConfig.query.data.value?.hooksPath ?? null,
 )
+
+// Plan #42 M-1 후속 (Sprint c104) — enable/disable toggle mutation.
+function invalidateHooks() {
+  if (activeRepoId.value != null) {
+    qc.invalidateQueries({ queryKey: ['git-hooks', activeRepoId.value] })
+  }
+}
+
+const activateMut = useMutation({
+  mutationFn: (name: string) => {
+    if (activeRepoId.value == null) return Promise.reject(new Error('no repo'))
+    return hookActivate(activeRepoId.value, name, hooksPathOverride.value)
+  },
+  onSuccess: (_, name) => {
+    toast.success(t('settings.gitHooks.toastActivateSuccess', { name }))
+    invalidateHooks()
+  },
+  onError: (e) => toast.error(t('settings.gitHooks.toastActivateFail'), describeError(e)),
+})
+
+const deactivateMut = useMutation({
+  mutationFn: (name: string) => {
+    if (activeRepoId.value == null) return Promise.reject(new Error('no repo'))
+    return hookDeactivate(activeRepoId.value, name, hooksPathOverride.value)
+  },
+  onSuccess: (_, name) => {
+    toast.success(t('settings.gitHooks.toastDeactivateSuccess', { name }))
+    invalidateHooks()
+  },
+  onError: (e) => toast.error(t('settings.gitHooks.toastDeactivateFail'), describeError(e)),
+})
 
 const hooksQuery = useQuery({
   // Codex 8차 MED — hooksPath 변경 시 자동 refetch (queryKey 에 포함).
@@ -104,8 +138,20 @@ const missingHooks = computed(() =>
                   {{ t('settings.gitHooks.notExecutableLabel') }}
                 </span>
               </span>
-              <span class="text-[11px] text-muted-foreground">
-                {{ h.size != null ? `${h.size} bytes` : '' }}
+              <span class="flex items-center gap-2">
+                <span class="text-[11px] text-muted-foreground">
+                  {{ h.size != null ? `${h.size} bytes` : '' }}
+                </span>
+                <button
+                  v-if="h.standard"
+                  type="button"
+                  class="rounded border border-input bg-background px-1.5 py-0.5 text-[10px] hover:bg-accent/40 disabled:opacity-50"
+                  :disabled="deactivateMut.isPending.value"
+                  :title="t('settings.gitHooks.deactivateButtonTitle', { name: h.name })"
+                  @click="deactivateMut.mutate(h.name)"
+                >
+                  {{ t('settings.gitHooks.deactivateButton') }}
+                </button>
               </span>
             </li>
           </ul>
@@ -123,13 +169,22 @@ const missingHooks = computed(() =>
           <p class="mb-2 text-xs text-muted-foreground">
             {{ t('settings.gitHooks.sampleDescription') }}
           </p>
-          <ul class="flex flex-wrap gap-1 text-xs">
+          <ul class="flex flex-col gap-1 text-xs">
             <li
               v-for="h in sampleOnlyHooks"
               :key="h.name"
-              class="rounded border border-border bg-background px-2 py-0.5 font-mono"
+              class="flex items-center justify-between gap-2 rounded border border-border bg-background px-2 py-0.5"
             >
-              {{ h.name }}
+              <span class="font-mono">{{ h.name }}</span>
+              <button
+                type="button"
+                class="rounded border border-input bg-background px-1.5 py-0.5 text-[10px] hover:bg-accent/40 disabled:opacity-50"
+                :disabled="activateMut.isPending.value"
+                :title="t('settings.gitHooks.activateButtonTitle', { name: h.name })"
+                @click="activateMut.mutate(h.name)"
+              >
+                {{ t('settings.gitHooks.activateButton') }}
+              </button>
             </li>
           </ul>
         </section>

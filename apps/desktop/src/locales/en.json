@@ -582,7 +582,15 @@
       "notExecutableLabel": "not exec",
       "notExecutableHint": "Missing executable bit — git will not run this. Unix: run `chmod +x`. Windows: generally ignored (Git for Windows uses ACLs).",
       "missingSummary": "Standard hooks not installed: {n} (click to expand)",
-      "editNote": "💡 Edit hooks by opening the file directly (`.git/hooks/<name>`). Enable/disable toggle + lefthook integration lands in the next sprint (Plan #42 M-1 follow-up)."
+      "editNote": "💡 Edit hooks by opening the file directly (`.git/hooks/<name>`). Lefthook integration lands in the next sprint (Plan #42 M-1 follow-up).",
+      "activateButton": "Activate",
+      "activateButtonTitle": "{name}.sample → {name} rename (activate)",
+      "deactivateButton": "Deactivate",
+      "deactivateButtonTitle": "{name} → {name}.sample rename (deactivate, file preserved)",
+      "toastActivateSuccess": "Hook activated: {name}",
+      "toastActivateFail": "Hook activate failed",
+      "toastDeactivateSuccess": "Hook deactivated: {name}",
+      "toastDeactivateFail": "Hook deactivate failed"
     },
     "issueTracker": {
       "title": "Issue Tracker",
