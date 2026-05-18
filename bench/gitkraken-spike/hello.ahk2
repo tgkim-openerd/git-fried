@@ -1,0 +1,40 @@
+#Requires AutoHotkey v2.0
+; Phase 0 hello — AHK v2 portable 동작 검증 (minimal)
+;
+; 검증 항목:
+;   1. v2 syntax parse 가능 (#Requires v2.0)
+;   2. FileAppend / A_Now 함수 시그니처 존재
+;   3. exit code 0 정상 종료
+;
+; 실행: scripts/run-ahk2.ps1 -Script bench/gitkraken-spike/hello.ahk2
+
+LogFile := A_ScriptDir . "\hello-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== AHK v2 hello check ===`n", LogFile)
+FileAppend("A_AhkVersion: " . A_AhkVersion . "`n", LogFile)
+FileAppend("A_Now: " . A_Now . "`n", LogFile)
+FileAppend("A_ScreenWidth: " . A_ScreenWidth . "`n", LogFile)
+FileAppend("A_ScreenHeight: " . A_ScreenHeight . "`n", LogFile)
+FileAppend("A_ScreenDPI: " . A_ScreenDPI . "`n", LogFile)
+FileAppend("A_WorkingDir: " . A_WorkingDir . "`n", LogFile)
+
+; WinExist 로 GitKraken 존재 여부 (dry-run, focus X)
+SetTitleMatchMode(2)
+gkExists := WinExist("ahk_exe gitkraken.exe")
+FileAppend("GitKraken WinExist hwnd: " . gkExists . "`n", LogFile)
+
+if (gkExists) {
+    try {
+        title := WinGetTitle("ahk_exe gitkraken.exe")
+        FileAppend("GitKraken first title: " . title . "`n", LogFile)
+    } catch as e {
+        FileAppend("GitKraken title err: " . e.Message . "`n", LogFile)
+    }
+}
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ExitApp(0)

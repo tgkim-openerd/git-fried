@@ -86,3 +86,13 @@ docs/ux-eval/screenshots/*.png
 docs/ux-eval/screenshots/session-*.json
 !docs/ux-eval/screenshots/README.md
 
+# Plan #40 — GitKraken AHK v2 자동 제어 toolchain
+# - AHK v2 portable binary (3MB, autohotkey.com 재배포 — repo 미보관)
+# - hello-result.log + ahk-v2.zip 자체도 binary
+# - Phase 2+ 자동 캡처 산출물 (handson/screenshots) 도 시크릿 위험으로 미커밋
+bench/gitkraken-spike/ahk-v2/
+bench/gitkraken-spike/ahk-v2.zip
+bench/gitkraken-spike/hello-result.log
+docs/ux-eval/handson/screenshots/*.png
+!docs/ux-eval/handson/screenshots/README.md
+
