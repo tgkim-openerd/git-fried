@@ -10,6 +10,9 @@ import { useMutation } from '@tanstack/vue-query'
 import { useBranches } from '@/composables/useBranches'
 // Sprint c54+++ — 우클릭 컨텍스트 메뉴 (GitKraken parity, Pattern 9 sister).
 import { useBranchInteraction } from '@/composables/useBranchInteraction'
+// SB-013 (UltraPlan v0.4 sidebar microgap Phase 3, 2026-05-18) — hide/solo 시각 토큰
+// BranchPanel SoT 의 패턴을 Mini list 에 fan-out (Codex 권고: 일관성 확보).
+import { useBranchVisibilityActions } from '@/composables/useBranchVisibilityActions'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 // Sprint c38 fix HIGH-2 — plan/29 E5 acceptance "다른 worktree 점유 브랜치 cross-ref 배지".
 import { useWorktrees } from '@/composables/useWorktrees'
@@ -50,6 +53,8 @@ const repoIdRef = computed(() => store.activeRepoId)
 const search = useSidebarSearch()
 
 const { data: branches, isFetching } = useBranches(repoIdRef)
+// SB-013 — hide/solo 시각 토큰 (BranchPanel SoT 일관성).
+const { isHidden, soloRef } = useBranchVisibilityActions(repoIdRef)
 const { counts } = useStatusCounts(repoIdRef)
 // Sprint c38 fix HIGH-2 — worktree 점유 branch map (other-worktree 만, main 제외).
 // branch name → 점유 worktree path (다른 worktree).
@@ -134,13 +139,15 @@ async function onSwitchBranch(name: string, isHead: boolean) {
           type="button"
           class="group flex w-full items-center gap-1 px-1 py-1 text-[11px]"
           @contextmenu="onBranchContextMenu($event, data)"
-          :class="
+          :class="[
             data.isHead
               ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-500 rounded'
               : occupiedMap.has(data.name)
                 ? 'text-muted-foreground cursor-not-allowed rounded'
-                : 'text-foreground hover:bg-accent/40 cursor-pointer rounded'
-          "
+                : 'text-foreground hover:bg-accent/40 cursor-pointer rounded',
+            isHidden(data.name) ? 'opacity-40 line-through' : '',
+            soloRef === data.name ? 'ring-1 ring-orange-500/40' : '',
+          ]"
           :disabled="occupiedMap.has(data.name) && !data.isHead"
           :title="
             data.isHead

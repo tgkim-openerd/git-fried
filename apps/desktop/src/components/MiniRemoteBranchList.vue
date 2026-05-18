@@ -6,6 +6,8 @@ import { computed, useTemplateRef } from 'vue'
 import { useBranches } from '@/composables/useBranches'
 // Sprint c54+++ — 우클릭 컨텍스트 메뉴 (GitKraken parity, Pattern 9 sister).
 import { useBranchInteraction } from '@/composables/useBranchInteraction'
+// SB-013 (Phase 3, 2026-05-18) — hide/solo 시각 토큰 (BranchPanel SoT 일관성).
+import { useBranchVisibilityActions } from '@/composables/useBranchVisibilityActions'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut } from '@/composables/useShortcuts'
@@ -32,6 +34,8 @@ const repoIdRef = computed(() => store.activeRepoId)
 const search = useSidebarSearch()
 
 const { data: branches, isFetching } = useBranches(repoIdRef)
+// SB-013 — hide/solo 시각 토큰.
+const { isHidden, soloRef } = useBranchVisibilityActions(repoIdRef)
 
 const remoteBranches = computed(() => {
   const all = branches.value ?? []
@@ -69,6 +73,10 @@ const tree = computed(() => {
       <template #default="{ data }: { data: BranchInfo }">
         <div
           class="flex items-center gap-1 px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40 rounded"
+          :class="[
+            isHidden(data.name) ? 'opacity-40 line-through' : '',
+            soloRef === data.name ? 'ring-1 ring-orange-500/40' : '',
+          ]"
           :title="`${data.name} (remote tracking)`"
           @contextmenu="onBranchContextMenu($event, data)"
         >

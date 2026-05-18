@@ -13,9 +13,14 @@ import MiniSection from './MiniSection.vue'
 import BranchTreeView from './BranchTreeView.vue'
 // Sprint c54+ (ARCH-c54-001 sister uniformity) — sidebar skeleton placeholder.
 import SkeletonBlock from './SkeletonBlock.vue'
+// SB-013 (Phase 3, 2026-05-18) — hide/solo 시각 토큰 (BranchPanel SoT 일관성).
+import { useBranchVisibilityActions } from '@/composables/useBranchVisibilityActions'
 
 const store = useReposStore()
 const search = useSidebarSearch()
+const repoIdRef = computed(() => store.activeRepoId)
+// SB-013 — hide/solo 시각 토큰 (tag kind 도 hiddenSet/soloRef 공유).
+const { isHidden, soloRef } = useBranchVisibilityActions(repoIdRef)
 
 const { data: tags, isFetching } = useQuery({
   queryKey: computed(() => ['tags', store.activeRepoId]),
@@ -68,7 +73,11 @@ function onTagClick(sha: string): void {
       <template #default="{ data }: { data: TagInfo }">
         <div
           class="flex items-center gap-1 px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40 rounded"
-          :class="data.commitSha ? 'cursor-pointer' : ''"
+          :class="[
+            data.commitSha ? 'cursor-pointer' : '',
+            isHidden(data.name) ? 'opacity-40 line-through' : '',
+            soloRef === data.name ? 'ring-1 ring-orange-500/40' : '',
+          ]"
           :title="data.subject ?? `tag ${data.name}`"
           @click="data.commitSha && onTagClick(data.commitSha)"
         >
