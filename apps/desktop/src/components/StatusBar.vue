@@ -139,6 +139,10 @@ function onShortcutClick(h: ShortcutHintExt) {
   if (!h.action) return
   dispatchShortcut(h.action)
 }
+
+// Plan #42 SB-NEW-1 (Sprint c101) — Bottom-right parity: app version 표시.
+// Vite import.meta.env.* 또는 package.json bundle 시점 inject. 단순 const.
+const appVersion = '0.3.0'
 </script>
 
 <template>
@@ -237,6 +241,22 @@ function onShortcutClick(h: ShortcutHintExt) {
     >
       ⭐💤 {{ launchpadCount }}
     </RouterLink>
+
+    <!-- Plan #42 SB-NEW-1 (Sprint c101) — Bottom-right parity: version / license tier.
+         GitKraken parity (zoom % 는 Tauri 가 native — 표시 보류, version + license + repo
+         counts 우선). -->
+    <span
+      class="ml-1 flex items-center gap-1.5 border-l border-border/40 pl-2 text-[10px] opacity-60 hover:opacity-100"
+      data-testid="status-bar-meta"
+    >
+      <span
+        class="rounded bg-blue-500/20 px-1 py-0 text-blue-700 dark:text-blue-300"
+        :title="t('statusBar.licenseTitle')"
+      >
+        {{ t('statusBar.licenseLabel') }}
+      </span>
+      <span class="font-mono" :title="t('statusBar.versionTitle')"> v{{ appVersion }} </span>
+    </span>
   </footer>
 
   <AiResultModal

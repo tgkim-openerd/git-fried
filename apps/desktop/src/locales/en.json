@@ -1499,6 +1499,9 @@
     "aiResultTitle": "Conflict area analysis",
     "launchpadTitle": "Launchpad — pinned + active snooze",
     "launchpadAria": "Launchpad — {n} pinned + active snooze PRs",
+    "licenseLabel": "FREE",
+    "licenseTitle": "License — OSS (MIT). Where GitKraken parity shows 'PRO', git-fried surfaces its free-license stance.",
+    "versionTitle": "git-fried version (Plan #42 SB-NEW-1, Sprint c101)",
     "shortcut": {
       "palette": "Palette",
       "view": "View",
