@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Sprint c27-1 (ARCH-003 fix) — Sidebar 의 Worktree mini list.
 
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useWorktrees } from '@/composables/useWorktrees'
 import { useReposStore } from '@/stores/repos'
@@ -17,7 +17,16 @@ const store = useReposStore()
 const repoIdRef = computed(() => store.activeRepoId)
 
 const { data: worktrees, isFetching } = useWorktrees(repoIdRef)
-const { onLock, onUnlock } = useWorktreePanelActions(repoIdRef)
+// SB-016/SB-009 fix (Phase 9, 2026-05-18) — useWorktreePanelActions signature 정합.
+// MiniWorktreeList 는 lock/unlock 만 사용 — addWorktree 의 newPath/newBranch 는 unused
+// dummy ref 전달 (signature backward-compat). 추후 add 모달 분리 시 옵션 분할 권장.
+const newPath = ref('')
+const newBranch = ref('')
+const { onLock, onUnlock } = useWorktreePanelActions({
+  repoId: () => store.activeRepoId,
+  newPath,
+  newBranch,
+})
 const sortedWorktrees = computed(() => {
   const list = [...(worktrees.value ?? [])]
   list.sort((a, b) => {
