@@ -18,7 +18,8 @@ describe('useUserSettings', () => {
   it('default general settings', async () => {
     const { useGeneralSettings } = await importFresh()
     const g = useGeneralSettings()
-    expect(g.value.autoFetchIntervalMin).toBe(0)
+    // SB-028 (Phase 9, 2026-05-18) — default 0 → 5분 (Codex 권고, battery/network 절충).
+    expect(g.value.autoFetchIntervalMin).toBe(5)
     expect(g.value.autoPruneOnFetch).toBe(false)
     expect(g.value.defaultBranch).toBe('main')
     expect(g.value.rememberTabs).toBe(true)
@@ -46,7 +47,8 @@ describe('useUserSettings', () => {
     localStorage.setItem('git-fried.general.v1', '{not valid')
     const { useGeneralSettings } = await importFresh()
     const g = useGeneralSettings()
-    expect(g.value.autoFetchIntervalMin).toBe(0)
+    // SB-028 — default 변경 (0 → 5).
+    expect(g.value.autoFetchIntervalMin).toBe(5)
   })
 
   it('general 변경 시 deep watch 로 localStorage persist', async () => {
@@ -85,6 +87,15 @@ describe('useUserSettings', () => {
     const { formatDateLocalized } = await importFresh()
     const result = formatDateLocalized(0, { year: 'numeric' })
     expect(result).toContain('1970')
+  })
+
+  // SB-028 (Phase 9, 2026-05-18) — 기존 사용자 저장값 (autoFetchIntervalMin: 0) 회귀 차단.
+  it('SB-028 기존 사용자 autoFetchIntervalMin: 0 저장 → 보존 (default 변경 무관)', async () => {
+    localStorage.setItem('git-fried.general.v1', JSON.stringify({ autoFetchIntervalMin: 0 }))
+    const { useGeneralSettings } = await importFresh()
+    const g = useGeneralSettings()
+    // 사용자가 명시적으로 0 (비활성) 저장 → deep merge 가 그대로 보존.
+    expect(g.value.autoFetchIntervalMin).toBe(0)
   })
 
   // SB-050 (UltraPlan v0.4 sidebar microgap Phase 7-A, 2026-05-18) — Codex 발견

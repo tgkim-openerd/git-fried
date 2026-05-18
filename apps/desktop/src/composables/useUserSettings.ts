@@ -76,7 +76,11 @@ const UI_KEY = 'git-fried.ui.v1'
 
 function defaultGeneral(): GeneralSettings {
   return {
-    autoFetchIntervalMin: 0,
+    // SB-028 (UltraPlan v0.4 sidebar microgap Phase 9, 2026-05-18) — auto-fetch
+    // default 0 → 5분. Codex 권고 (b) — battery/network 절충 (GitKraken 의 1분 보다
+    // 보수적, 30 sec 미만 fetch storm 회피). 기존 사용자 저장값 (0 또는 사용자 명시)
+    // 은 deep merge 로 보존 — 회귀 차단.
+    autoFetchIntervalMin: 5,
     autoPruneOnFetch: false,
     // v1.0 #26 — default false (privacy by default, §9 Q8 권장).
     telemetryOptIn: false,
