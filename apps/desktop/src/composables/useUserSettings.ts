@@ -129,13 +129,52 @@ export function formatRelativeTime(
   return tr('time.yearAgo', { n: Math.floor(diff / 31536000) })
 }
 
+/**
+ * SB-050 (UltraPlan v0.4 sidebar microgap Phase 7-A, 2026-05-18) — Codex audit
+ * (`afa27e8d62219ed53`) 발견 micro-gap: 기존 `{ ...defaultX(), ...obj }` 얕은 병합은
+ * nested 객체 (예: `miniSidebarSections: { branch, remote, ... }`) 의 일부 키만 저장된
+ * 경우 default 의 나머지 키를 날린다.
+ *
+ * 예: localStorage 에 `{"miniSidebarSections":{"tag":false}}` 만 있으면 shallow merge
+ * 결과는 `{ tag:false }` 만 남고 `branch/remote/worktree/stash/submodule/pr` 모두 undefined.
+ *
+ * Deep merge — 1 레벨 nested 객체만 cover (현재 GeneralSettings / UiSettings 의 nested
+ * 깊이는 1 레벨 — `miniSidebarSections` 만). 2+ 레벨은 본 구현 scope 외.
+ *
+ * SB-012 의 `uiSettings.branchClickAction` 추가 전에 본 작업 선행 — Codex 권고 정합.
+ */
+function deepMergeSettings<T extends Record<string, unknown>>(defaults: T, stored: Partial<T>): T {
+  const out: Record<string, unknown> = { ...defaults }
+  for (const [key, storedVal] of Object.entries(stored)) {
+    const defVal = defaults[key as keyof T]
+    if (
+      defVal != null &&
+      typeof defVal === 'object' &&
+      !Array.isArray(defVal) &&
+      storedVal != null &&
+      typeof storedVal === 'object' &&
+      !Array.isArray(storedVal)
+    ) {
+      // 1 레벨 nested merge — default 의 모든 키 보존 + stored 의 키로 override.
+      out[key] = {
+        ...(defVal as Record<string, unknown>),
+        ...(storedVal as Record<string, unknown>),
+      }
+    } else if (storedVal !== undefined) {
+      out[key] = storedVal
+    }
+  }
+  return out as T
+}
+
 function loadGeneral(): GeneralSettings {
   if (typeof localStorage === 'undefined') return defaultGeneral()
   try {
     const raw = localStorage.getItem(GENERAL_KEY)
     if (!raw) return defaultGeneral()
     const obj = JSON.parse(raw) as Partial<GeneralSettings>
-    return { ...defaultGeneral(), ...obj }
+    // SB-050 — shallow → deep merge (nested 객체 default 키 보존).
+    return deepMergeSettings(defaultGeneral(), obj)
   } catch {
     return defaultGeneral()
   }
@@ -147,7 +186,8 @@ function loadUi(): UiSettings {
     const raw = localStorage.getItem(UI_KEY)
     if (!raw) return defaultUi()
     const obj = JSON.parse(raw) as Partial<UiSettings>
-    return { ...defaultUi(), ...obj }
+    // SB-050 — shallow → deep merge (miniSidebarSections 7 키 default 보존).
+    return deepMergeSettings(defaultUi(), obj)
   } catch {
     return defaultUi()
   }
