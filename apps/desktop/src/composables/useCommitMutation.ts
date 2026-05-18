@@ -18,7 +18,6 @@ import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries, useStatus } from '@/composables/useStatus'
 import { useGeneralSettings } from '@/composables/useUserSettings'
-import { localBranchName } from '@/composables/useBranchActions'
 import type { CommitResult } from '@/types/git'
 import { i18n } from '@/i18n'
 
@@ -92,15 +91,18 @@ export function useCommitMutation(opts: UseCommitMutationOptions) {
         invalidate(opts.repoId())
         opts.onCommitted()
         // Plan #42 M-1.2 wire — commitPushAfter true 시 자동 push.
-        // useStatus 의 branch 사용 (HEAD 의 short ref 형태). detached HEAD 또는
-        // branch 미정 시 push skip + warning. branch fail 시 silent.
+        // useStatus 의 branch 사용 (Rust status.rs:100-103 의 repo.head().shorthand()
+        // 결과 — local branch shorthand `feature/foo` 형태, refs/heads/ prefix 없음).
+        // Codex 6차 audit `a9893dcb520b8a1e9` HIGH 해소 — localBranchName 적용 제거
+        // (origin/ prefix 제거용 함수라 feature/foo → foo 로 오염 위험).
+        // detached HEAD / status 미로드 시 branch null → skip + warning.
         if (general.value.commitPushAfter) {
           const repoId = opts.repoId()
           const branchName = status.data.value?.branch ?? null
           if (repoId != null && branchName) {
             ipcPush({
               repoId,
-              branch: localBranchName(branchName),
+              branch: branchName,
               setUpstream: false,
             })
               .then((r) => {
@@ -108,7 +110,7 @@ export function useCommitMutation(opts: UseCommitMutationOptions) {
                   toast.success(t('toast.pushSuccess'), branchName)
                   invalidate(repoId)
                 } else {
-                  toast.warning(t('toast.pushAfterCommitFailed'), describeError(r))
+                  toast.error(t('toast.pushAfterCommitFailed'), describeError(r))
                 }
               })
               .catch((e) => {
