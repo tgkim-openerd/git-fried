@@ -162,6 +162,7 @@ pub fn run() {
             ipc::tag_commands::delete_tag,
             ipc::tag_commands::push_tag,
             ipc::tag_commands::delete_remote_tag,
+            ipc::tag_commands::annotate_existing_tag,
             ipc::repo_commands::clone_repo,
             ipc::importer_commands::import_gitkraken_detect,
             ipc::importer_commands::import_gitkraken_dry_run,

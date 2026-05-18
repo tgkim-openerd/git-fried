@@ -1076,7 +1076,14 @@
     "cmCreateBranch": "Create branch from...",
     "cmCopySha": "Copy commit SHA",
     "cmDeleteLocal": "Delete local",
-    "cmDeleteRemote": "Delete remote (origin)"
+    "cmDeleteRemote": "Delete remote (origin)",
+    "cmAnnotate": "Add/edit annotation",
+    "annotateTitle": "Annotate tag — {name}",
+    "annotateMessage": "Add a message to {name} (lightweight → annotated, or overwrite existing message).",
+    "annotatePlaceholder": "Annotation message (e.g. release notes)",
+    "toastAnnotated": "Tag annotated",
+    "toastAnnotateFailed": "Annotate failed",
+    "errMissingSha": "Missing commit SHA — cannot annotate"
   },
   "reflog": {
     "recoverBranchTitle": "Reflog recovery branch",

@@ -55,6 +55,25 @@ pub struct TagNameArgs {
     pub name: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnotateTagArgs {
+    pub repo_id: i64,
+    pub name: String,
+    pub commit_sha: String,
+    pub message: String,
+}
+
+/// SB-033 (Sprint c95, 2026-05-18) — 기존 tag annotate (GitKraken parity).
+#[tauri::command]
+pub async fn annotate_existing_tag(
+    args: AnnotateTagArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    let path = repo_path(&state, args.repo_id).await?;
+    git_tag::annotate_existing_tag(&path, &args.name, &args.commit_sha, &args.message).await
+}
+
 #[tauri::command]
 pub async fn delete_tag(
     args: TagNameArgs,

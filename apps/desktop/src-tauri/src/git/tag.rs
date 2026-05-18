@@ -117,6 +117,37 @@ pub async fn create_tag(
     Ok(())
 }
 
+/// SB-033 (UltraPlan v0.4 sidebar microgap Sprint c95, 2026-05-18) — 기존 tag 를
+/// annotated 로 upgrade (GitKraken parity S5: tag context menu "Annotate tag").
+/// `git tag -af <name> <commit_sha> -m <msg>` — force replace, 동일 commit 위치 보존.
+///
+/// - lightweight → annotated: 첫 message 추가
+/// - annotated → annotated: 기존 message 덮어쓰기
+pub async fn annotate_existing_tag(
+    repo: &Path,
+    name: &str,
+    commit_sha: &str,
+    message: &str,
+) -> AppResult<()> {
+    if name.trim().is_empty() {
+        return Err(AppError::validation("tag 이름 비어있음"));
+    }
+    if commit_sha.trim().is_empty() {
+        return Err(AppError::validation("commit SHA 비어있음"));
+    }
+    if message.trim().is_empty() {
+        return Err(AppError::validation("annotation message 비어있음"));
+    }
+    git_run(
+        repo,
+        &["tag", "-af", name, commit_sha, "-m", message],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
+    Ok(())
+}
+
 /// 로컬 tag 삭제. 원격은 별도 push_tag(--delete) 또는 delete_remote_tag.
 pub async fn delete_tag(repo: &Path, name: &str) -> AppResult<()> {
     git_run(repo, &["tag", "-d", name], &GitRunOpts::default())

@@ -1189,6 +1189,27 @@ export const pushTag = (repoId: number, remote: string, name: string): Promise<v
 export const deleteRemoteTag = (repoId: number, remote: string, name: string): Promise<void> =>
   invoke('delete_remote_tag', { args: { repoId, remote, name: toNFC(name) } })
 
+/**
+ * SB-033 (Sprint c95, 2026-05-18) — 기존 tag annotated 로 upgrade
+ * (lightweight → annotated 또는 annotated message 덮어쓰기). GitKraken parity S5.
+ *
+ * git CLI: `git tag -af <name> <commit_sha> -m <msg>` (force replace 동일 commit).
+ */
+export const annotateExistingTag = (
+  repoId: number,
+  name: string,
+  commitSha: string,
+  message: string,
+): Promise<void> =>
+  invoke('annotate_existing_tag', {
+    args: {
+      repoId,
+      name: toNFC(name),
+      commitSha,
+      message: toNFC(message),
+    },
+  })
+
 // --- Repository-Specific Preferences (`docs/plan/14 §3` Sprint B14-3) ---
 
 export interface RepoConfigSnapshot {

@@ -1076,7 +1076,14 @@
     "cmCreateBranch": "브랜치 생성...",
     "cmCopySha": "커밋 SHA 복사",
     "cmDeleteLocal": "로컬 삭제",
-    "cmDeleteRemote": "원격(origin) 삭제"
+    "cmDeleteRemote": "원격(origin) 삭제",
+    "cmAnnotate": "Annotate 추가/변경",
+    "annotateTitle": "Tag annotate — {name}",
+    "annotateMessage": "{name} tag 에 메시지 추가 (lightweight → annotated 또는 message 덮어쓰기).",
+    "annotatePlaceholder": "annotation 메시지 (예: 릴리즈 노트)",
+    "toastAnnotated": "Annotate 완료",
+    "toastAnnotateFailed": "Annotate 실패",
+    "errMissingSha": "커밋 SHA 없음 — annotate 불가"
   },
   "reflog": {
     "recoverBranchTitle": "Reflog 복구 브랜치",

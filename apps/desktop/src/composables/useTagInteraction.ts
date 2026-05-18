@@ -27,7 +27,8 @@
 //   })
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { createBranch, switchBranch, type TagInfo } from '@/api/git'
+import { useQueryClient } from '@tanstack/vue-query'
+import { annotateExistingTag, createBranch, switchBranch, type TagInfo } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
@@ -51,6 +52,7 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
   const { t } = useI18n()
   const toast = useToast()
   const invalidateAll = useInvalidateRepoQueries()
+  const qc = useQueryClient()
 
   async function checkoutTag(tag: TagInfo) {
     const id = opts.repoId()
@@ -119,6 +121,32 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
     opts.onDeleteRemote(name)
   }
 
+  // SB-033 (UltraPlan v0.4 sidebar microgap Sprint c95, 2026-05-18) — Annotate tag
+  // (GitKraken parity S5 menu #6). Lightweight tag 를 annotated 로 upgrade 또는
+  // 기존 annotated tag 의 message 덮어쓰기. force replace 동일 commit_sha 위치 보존.
+  async function annotateTag(tag: TagInfo) {
+    const id = opts.repoId()
+    if (id == null) return
+    if (!tag.commitSha) {
+      toast.error(t('tagActions.toastAnnotateFailed'), t('tagActions.errMissingSha'))
+      return
+    }
+    const message = await promptDialog({
+      title: t('tagActions.annotateTitle', { name: tag.name }),
+      message: t('tagActions.annotateMessage', { name: tag.name }),
+      placeholder: t('tagActions.annotatePlaceholder'),
+      defaultValue: tag.subject ?? '',
+    })
+    if (!message?.trim()) return
+    try {
+      await annotateExistingTag(id, tag.name, tag.commitSha, message.trim())
+      toast.success(t('tagActions.toastAnnotated'), tag.name)
+      qc.invalidateQueries({ queryKey: ['tags', id] })
+    } catch (e) {
+      toast.error(t('tagActions.toastAnnotateFailed'), describeError(e))
+    }
+  }
+
   function onTagContextMenu(ev: MouseEvent, tag: TagInfo) {
     ev.preventDefault()
     ev.stopPropagation()
@@ -133,6 +161,13 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
         label: t('tagActions.cmCreateBranch'),
         icon: '🌿',
         action: () => void createBranchFromTag(tag),
+      },
+      // SB-033 — Annotate tag (lightweight → annotated upgrade 또는 message 변경).
+      {
+        label: t('tagActions.cmAnnotate'),
+        icon: '🏷',
+        disabled: !tag.commitSha,
+        action: () => void annotateTag(tag),
       },
       { divider: true },
       {
@@ -164,6 +199,7 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
     copyTagSha,
     deleteTagLocal,
     deleteTagRemote,
+    annotateTag,
     onTagContextMenu,
   }
 }
