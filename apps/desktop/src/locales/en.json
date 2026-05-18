@@ -529,6 +529,12 @@
       },
       "futureNote": "v1.x: External diff/merge tool launch, Terminal font/cursor settings."
     },
+    "lfs": {
+      "title": "Git LFS",
+      "description": "Git LFS (Large File Storage) status + track / untrack / install / fetch / pull / prune for the active repo. Maps to GitKraken Repo-Specific Preferences LFS (Plan #42 H-2).",
+      "noActiveRepoWarning": "⚠ No active repo. Select one from the sidebar.",
+      "perRepoNote": "Applies to the active repo only. Repository-Specific integration planned (Plan #42 M-1.1+ via RepoSpecificForm)."
+    },
     "conflictPrevention": {
       "title": "Conflict Prevention",
       "description": "Detect potential conflicts with the target branch before merging, surfaced in the StatusBar. Same as the Conflict Detection toggle in General — this page exposes the polling interval detail.",
@@ -611,6 +617,7 @@
       "forge": "Forge accounts (PAT)",
       "repoSpecific": "Repository-Specific",
       "conflictPrevention": "Conflict Prevention",
+      "lfs": "Git LFS",
       "editor": "Editor / Terminal (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

@@ -26,6 +26,8 @@ import SettingsMaintenance from '@/components/SettingsMaintenance.vue'
 import SettingsPluginIntegration from '@/components/SettingsPluginIntegration.vue'
 // Plan #42 H-1 — Conflict Prevention Settings UI 노출 (Sprint c96+).
 import SettingsConflictPrevention from '@/components/SettingsConflictPrevention.vue'
+// Plan #42 H-2 — LFS Settings UI 노출 (LfsPanel wrap).
+import SettingsLfs from '@/components/SettingsLfs.vue'
 import { useUiState } from '@/composables/useUiState'
 
 type Category =
@@ -36,6 +38,7 @@ type Category =
   | 'editor'
   | 'repoSpecific'
   | 'conflictPrevention'
+  | 'lfs'
   | 'maintenance'
   | 'migrate'
   | 'about'
@@ -67,6 +70,9 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       // Conflict Prevention 의 git-fried 매핑. global default 우선 (per-repo
       // override 는 다음 sprint M-1.1).
       { id: 'conflictPrevention', label: 'Conflict Prevention' },
+      // Plan #42 H-2 — GitKraken Settings 의 Repo-Specific LFS 매핑.
+      // LfsPanel (280 LOC, lfs_commands.rs 9 IPC) 를 Settings 진입점으로 노출.
+      { id: 'lfs', label: 'Git LFS' },
     ],
   },
   {
@@ -118,6 +124,7 @@ const ITEM_I18N_KEY: Record<string, string> = {
   forge: 'settings.items.forge',
   repoSpecific: 'settings.items.repoSpecific',
   conflictPrevention: 'settings.items.conflictPrevention',
+  lfs: 'settings.items.lfs',
   editor: 'settings.items.editor',
   ui: 'settings.items.ui',
   maintenance: 'settings.items.maintenance',
@@ -213,6 +220,9 @@ const buildInfo = computed(() => ({
 
       <!-- Plan #42 H-1 — Conflict Prevention -->
       <SettingsConflictPrevention v-else-if="active === 'conflictPrevention'" />
+
+      <!-- Plan #42 H-2 — Git LFS (LfsPanel wrap) -->
+      <SettingsLfs v-else-if="active === 'lfs'" />
 
       <!-- 유지보수 -->
       <SettingsMaintenance v-else-if="active === 'maintenance'" />

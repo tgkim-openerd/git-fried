@@ -529,6 +529,12 @@
       },
       "futureNote": "v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정."
     },
+    "lfs": {
+      "title": "Git LFS",
+      "description": "Git LFS (Large File Storage) 의 active repo 상태 + track / untrack / install / fetch / pull / prune. GitKraken Repo-Specific Preferences 의 LFS 항목 매핑 (Plan #42 H-2).",
+      "noActiveRepoWarning": "⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.",
+      "perRepoNote": "본 페이지는 active repo 에만 적용. Repository-Specific 항목 (Plan #42 M-1.1+ 에서 RepoSpecificForm 통합 예정)."
+    },
     "conflictPrevention": {
       "title": "Conflict Prevention",
       "description": "병합 전에 target branch 와의 잠재 충돌을 사전 감지해 StatusBar 에 경고합니다. General 탭의 Conflict Detection toggle 과 동일 — 본 페이지에서 폴링 interval detail 설정.",
@@ -611,6 +617,7 @@
       "forge": "Forge 계정 (PAT)",
       "repoSpecific": "Repository-Specific",
       "conflictPrevention": "Conflict Prevention",
+      "lfs": "Git LFS",
       "editor": "에디터 / 터미널 (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",
