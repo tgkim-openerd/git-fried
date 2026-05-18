@@ -46,14 +46,25 @@
 | 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | PARTIAL Rust forge issue list + Vue `IssuesPanel.vue` + `useExternalIssueTracker.ts` (skeleton) | △ MED | Gitea/GitHub 1급 — 외부 tracker (Jira/Linear) 제외 |
 | 30 | **Repo-Specific Team** | "Select a team for this repo" collab | NO Rust + NO Vue | ✗ | LOW — local profiles 대체 가능 |
 
-## parity 통계 (30 row)
+## parity 통계 (30 row, Sprint c96 batch 후)
 
-- ✓ **완전 parity**: 4 (Settings 진입 / Repo-Specific 패턴 / Explain commit AI / scroll)
-- △ **부분 parity**: 16 (9 기존 + 7 신규 Repo-Specific 중 6 PARTIAL — Encoding / Gitflow / Git Hooks / Commit / Conflict Prevention / LFS / Sparse Checkout / Issue Tracker)
+- ✓ **완전 parity**: **6** (Settings 진입 / Repo-Specific 패턴 / Explain commit AI / scroll / **Conflict Prevention** / **LFS**)
+- △ **부분 parity**: 14 (9 기존 + 5 신규 Repo-Specific — Encoding / Gitflow / Git Hooks / Commit / Sparse Checkout / Issue Tracker)
 - ✗ **git-fried 미구현 또는 거부**: 6 (Commit Signing UI / Stash hotkey + Agents 거부 / Team 미구현)
 - ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree dialog)
 
-전체 30 row 중 ✓ 4 / △ 16 / ✗ 6 / ? 3 = git-fried coverage ~67% (✓ + △ = 20/30).
+전체 30 row 중 ✓ 6 / △ 14 / ✗ 6 / ? 3 = git-fried coverage ~67% (✓ + △ = 20/30).
+
+> **Sprint c96 batch 결과** (Plan #42 H-1 ~ H-4, Codex 4차 batch audit `add561df32ed26bb1` 검증): 절대 ✓ count 4→6 증가 (Conflict Prevention + LFS), △ 16→14 감소. ratio 같지만 절대 parity 격상.
+
+## Sprint c96 batch 산출물 정합
+
+| Plan #42 항목 | commit | 상태 |
+| --- | --- | --- |
+| H-1 Conflict Prevention UI 노출 | `f729b37` + `d449b6d` (audit fix) | ✓ 완료 (StatusBar refetchInterval wire + clamp + 0=비활성) |
+| H-2 LFS Settings UI 노출 | `ccdbb36` + `6b6a353` (null guard fix) | ✓ 완료 (LfsPanel wrap + activeRepoId guard) |
+| H-3 Encoding identity-core 가이드 | `18ad715` | △ 부분 (안내 only, RepoSpecificForm link 안내) |
+| H-4 Commit 4 toggle + template | `37d3a95` + `6b6a353` (M-1.2 부분 wire) | △ 부분 (UI/persistence + commitSkipHooks → noVerify default 연결) |
 
 ## Codex 합류 가치 (Memory Rule 3 실측)
 
