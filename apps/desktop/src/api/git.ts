@@ -803,7 +803,10 @@ export const mergeBranch = (
   source: string,
   noFf: boolean = true,
   noCommit: boolean = false,
-): Promise<MergeOpResult> => invoke('merge_branch', { args: { repoId, source, noFf, noCommit } })
+  /** Plan #42 M-1.2 squashByDefault wire (Sprint c98) — `git merge --squash`. */
+  squash: boolean = false,
+): Promise<MergeOpResult> =>
+  invoke('merge_branch', { args: { repoId, source, noFf, noCommit, squash } })
 
 export const rebaseBranch = (repoId: number, upstream: string): Promise<MergeOpResult> =>
   invoke('rebase_branch', { args: { repoId, upstream } })

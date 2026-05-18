@@ -21,6 +21,10 @@ pub struct MergeBranchArgs {
     pub no_ff: bool,
     #[serde(default)]
     pub no_commit: bool,
+    /// Plan #42 M-1.2 squashByDefault wire (Sprint c98) — `git merge --squash`.
+    /// true 시 no-ff / no-commit 자동 포함 (git 동작), 호출자가 별도 commit 호출.
+    #[serde(default)]
+    pub squash: bool,
 }
 
 #[tauri::command]
@@ -29,7 +33,7 @@ pub async fn merge_branch(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_branch::MergeResult> {
     let path = repo_path(&state, args.repo_id).await?;
-    git_branch::merge_into_head(&path, &args.source, args.no_ff, args.no_commit).await
+    git_branch::merge_into_head(&path, &args.source, args.no_ff, args.no_commit, args.squash).await
 }
 
 #[derive(Debug, Deserialize)]

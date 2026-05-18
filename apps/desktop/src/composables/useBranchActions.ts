@@ -23,6 +23,9 @@ import {
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { confirmDialog, promptDialog } from '@/composables/useConfirm'
+// Plan #42 M-1.2 squashByDefault wire (Sprint c98) — Settings.commitSquashByDefault
+// 를 mergeIntoHead 의 default 로 적용.
+import { useGeneralSettings } from '@/composables/useUserSettings'
 import { i18n } from '@/i18n'
 
 const t = i18n.global.t
@@ -56,6 +59,8 @@ export function localBranchName(name: string): string {
 export function useBranchActions(getRepoId: () => number | null) {
   const toast = useToast()
   const invalidate = useInvalidateRepoQueries()
+  // Plan #42 M-1.2 squashByDefault wire — mergeIntoHead 시 commitSquashByDefault 적용.
+  const general = useGeneralSettings()
 
   function repoIdOrToast(): number | null {
     const id = getRepoId()
@@ -158,16 +163,33 @@ export function useBranchActions(getRepoId: () => number | null) {
       toast.warning(t('branchActions.toastMergeFail'), t('branchActions.toastMergeSelfForbidden'))
       return
     }
+    // Plan #42 M-1.2 wire — Settings.commitSquashByDefault true 시 confirm 메시지에
+    // squash 표기 추가 (사용자 의도 명시).
+    const useSquash = general.value.commitSquashByDefault
     const ok = await confirmDialog({
       title: t('confirm.mergeIntoHeadTitle'),
-      message: t('confirm.mergeIntoHeadMessage', { name: branch.name }),
+      message: useSquash
+        ? t('confirm.mergeIntoHeadMessageSquash', { name: branch.name })
+        : t('confirm.mergeIntoHeadMessage', { name: branch.name }),
       danger: true,
     })
     if (!ok) return
     try {
-      const r = await mergeBranch(id, localBranchName(branch.name), true, false)
+      // squash=true 시 noFf/noCommit 자동 동반 (Rust 측 처리), 호출자가 별도 commit.
+      const r = await mergeBranch(
+        id,
+        localBranchName(branch.name),
+        !useSquash, // noFf: squash 시 false (git --squash 가 no-ff 자동 포함)
+        false,
+        useSquash, // squash
+      )
       if (r.success) {
-        toast.success(t('branchActions.toastMergeSuccess'), `${branch.name} → HEAD`)
+        toast.success(
+          useSquash
+            ? t('branchActions.toastMergeSquashSuccess')
+            : t('branchActions.toastMergeSuccess'),
+          `${branch.name} → HEAD`,
+        )
       } else if (r.conflicted) {
         toast.error(
           t('branchActions.toastMergeConflict'),

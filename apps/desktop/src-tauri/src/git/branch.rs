@@ -185,11 +185,17 @@ pub struct MergeResult {
 
 /// `git merge <source>` (현재 HEAD 위에 source 머지). conflict 시 abort 안 함 —
 /// 호출자가 결과 보고 처리.
+///
+/// Plan #42 M-1.2 squashByDefault wire (Sprint c98) — `squash` 옵션 추가.
+/// `git merge --squash <source>` = source commits 를 single working tree change 로
+/// 적용 (commit 자동 생성 X — 사용자가 별도 commit 필요). git 동작상 squash 는
+/// no-commit 자동 동반 — 호출자가 별도 commit 호출 의도.
 pub async fn merge_into_head(
     path: &Path,
     source: &str,
     no_ff: bool,
     no_commit: bool,
+    squash: bool,
 ) -> AppResult<MergeResult> {
     if source.trim().is_empty() {
         return Err(AppError::validation("source 비어있음"));
@@ -201,16 +207,22 @@ pub async fn merge_into_head(
         source,
         no_ff,
         no_commit,
+        squash,
         "merge_into_head 시작"
     );
     // 보안: source 가 `-` 로 시작하면 거부 (CWE-88) + `--end-of-options`.
     let safe_source = reject_dash_prefix(source, "source ref")?;
     let mut args: Vec<String> = vec!["merge".into()];
-    if no_ff {
-        args.push("--no-ff".into());
-    }
-    if no_commit {
-        args.push("--no-commit".into());
+    if squash {
+        // git merge --squash 는 no-ff / no-commit 동작 자동 포함 (호출자 별도 commit 필요).
+        args.push("--squash".into());
+    } else {
+        if no_ff {
+            args.push("--no-ff".into());
+        }
+        if no_commit {
+            args.push("--no-commit".into());
+        }
     }
     args.push("--end-of-options".into());
     args.push(safe_source.into());
