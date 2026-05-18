@@ -35,7 +35,7 @@
 
 | # | 영역 | GitKraken 동작 | git-fried 대응 (Codex 1차) | parity | backlog / 결정 |
 | --- | --- | --- | --- | --- | --- |
-| 21 | Repo-Specific Encoding | i18n.commitEncoding / logOutputEncoding 등 per-repo override | PARTIAL Rust `config_local.rs` + Vue `RepoSpecificForm.vue` B2 | △ HIGH | identity-core 한글 안전 — Settings UI 통합 권고 |
+| 21 | Repo-Specific Encoding | i18n.commitEncoding / logOutputEncoding 등 per-repo override | Rust `config_local.rs` + Vue `RepoSpecificForm.vue` B2 (실 input 작동) + SettingsEncoding.vue 가이드 + link | ✓ **격상** (Sprint c103) | identity-core 한글 안전 — RepoSpecificForm 의 실 input + Settings 가이드 합산 cover |
 | 22 | Repo-Specific Gitflow | per-repo gitflow branch.* 설정 | PARTIAL Rust `config_local.rs` gitflow.* | △ LOW | 1인 환경 가치 낮음 — 미구현 유지 권고 |
 | 23 | Repo-Specific Git Hooks | per-repo `core.hooksPath` 관리 + hook list | PARTIAL Rust `core.hooksPath` + Vue `RepoSpecificForm.vue` B1 | △ MED | hook manager UI 신규 후보 |
 | 24 | **Repo-Specific Commit** | Push after each commit / Skip git hooks / Squash / Commit Template (Codex 1차 신규) | PARTIAL Rust `commit.rs` + gpgsign | △ HIGH | Commit template / Squash toggle UI 신규 |
@@ -46,14 +46,14 @@
 | 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | PARTIAL Rust forge issue list + Vue `IssuesPanel.vue` + `useExternalIssueTracker.ts` (skeleton) | △ MED | Gitea/GitHub 1급 — 외부 tracker (Jira/Linear) 제외 |
 | 30 | **Repo-Specific Team** | "Select a team for this repo" collab | NO Rust + NO Vue | ✗ | LOW — local profiles 대체 가능 |
 
-## parity 통계 (30 row, Sprint c102 후 — SB-NEW 5건 일괄 ✓ 격상)
+## parity 통계 (30 row, Sprint c103 후 — Encoding ✓ 격상)
 
-- ✓ **완전 parity**: **13** (Settings 진입 / Repo-Specific 패턴 / Explain commit AI / scroll / **Conflict Prevention** / **LFS** / **Commit Options** / **Sparse Checkout** / **Status bar** / **Top toolbar** / **Sidebar counts** / **Right panel Path/Tree** / **Tab polish**)
-- △ **부분 parity**: 7 (기존 일부 + 5 Repo-Specific — Encoding / Gitflow / Git Hooks / Issue Tracker + 기존 미명시 3)
+- ✓ **완전 parity**: **14** (... 위 13 + **Encoding** identity-core)
+- △ **부분 parity**: 6 (Gitflow / Git Hooks / Issue Tracker + 기존 미명시 3)
 - ✗ **git-fried 미구현 또는 거부**: 6 (Commit Signing UI / Stash hotkey + Agents 거부 / Team 미구현)
 - ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree dialog)
 
-전체 30 row 중 ✓ 13 / △ 7 / ✗ 6 / ? 3 = git-fried coverage **77%** (✓ + △ = 23/30, 절대 ✓ +5 추가 — Sprint c102 finding).
+전체 30 row 중 ✓ 14 / △ 6 / ✗ 6 / ? 3 = git-fried coverage **80%** (✓ + △ = 24/30, 절대 ✓ +1 — Sprint c103 Encoding 격상).
 
 > **Sprint c96 + c97 + c98 누적 결과** (Plan #42 H-1 ~ H-4 + M-1.2 5/5 wire + M-3, Codex 7차 batch audit `adf22d6a0607a9f0d` 통과): 절대 ✓ count 4→**7** 증가 (Conflict Prevention + LFS + Commit Options 격상). 다음 sprint = M-1 Git Hooks UI / M-2 Sparse Checkout / M-1.1 Conflict per-repo override (DB migration).
 
