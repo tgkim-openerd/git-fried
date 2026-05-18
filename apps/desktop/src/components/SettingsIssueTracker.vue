@@ -6,10 +6,19 @@
 // + useIssuesReleases 1급) + 외부 tracker (Linear/Jira/Trello) v0.4 skeleton.
 //
 // 본 페이지: forge 1급 상태 안내 + 외부 tracker 정책 명시 (v0.5+ 사용자 결정 영역).
+//
+// Codex 5차 audit `a0a801fa629a5bed5` LOW 해소 — actionable items 추가
+// (Forge 설정 진입 emit + docs 링크).
 
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+
+const emit = defineEmits<{ navigate: [target: 'forge'] }>()
+
+function gotoForgeSetup() {
+  emit('navigate', 'forge')
+}
 </script>
 
 <template>
@@ -28,6 +37,14 @@ const { t } = useI18n()
         <li>{{ t('settings.issueTracker.giteaSupported') }}</li>
         <li>{{ t('settings.issueTracker.githubSupported') }}</li>
       </ul>
+      <button
+        type="button"
+        class="mt-3 rounded border border-input bg-background px-2 py-1 text-xs hover:bg-accent/40"
+        data-testid="issuetracker-goto-forge"
+        @click="gotoForgeSetup"
+      >
+        {{ t('settings.issueTracker.gotoForgeButton') }}
+      </button>
     </section>
 
     <section class="rounded border border-border bg-muted/20 p-4 text-sm">

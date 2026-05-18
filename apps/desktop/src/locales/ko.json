@@ -536,6 +536,7 @@
       "forgeFirstClassDescription": "현재 active repo 의 forge issue 는 IssuesPanel 의 별도 영역에서 read-only 노출 (v0.3 단계).",
       "giteaSupported": "Gitea — forge_account_id 설정 후 자동 통합 ✓",
       "githubSupported": "GitHub — PAT 등록 후 자동 통합 ✓",
+      "gotoForgeButton": "→ Forge 계정 설정 페이지로",
       "externalTitle": "외부 Issue Tracker (skeleton 상태)",
       "externalDescription": "Linear / Jira / Trello — useExternalIssueTracker composable 의 skeleton 만 존재. mutation 적용 + 사용자 PAT 등록 + UI 진입점은 v0.5+ 결정 영역.",
       "linearStatus": "Linear — skeleton (mutation 미구현)",

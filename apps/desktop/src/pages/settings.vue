@@ -251,7 +251,10 @@ const buildInfo = computed(() => ({
       <SettingsCommit v-else-if="active === 'commit'" />
 
       <!-- Plan #42 M-3 — Issue Tracker forge 1급 안내 -->
-      <SettingsIssueTracker v-else-if="active === 'issueTracker'" />
+      <SettingsIssueTracker
+        v-else-if="active === 'issueTracker'"
+        @navigate="(target) => (active = target)"
+      />
 
       <!-- 유지보수 -->
       <SettingsMaintenance v-else-if="active === 'maintenance'" />

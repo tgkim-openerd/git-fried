@@ -536,6 +536,7 @@
       "forgeFirstClassDescription": "Issues for the active repo's forge are read-only in the dedicated IssuesPanel (v0.3 stage).",
       "giteaSupported": "Gitea — auto-integrated after setting forge_account_id ✓",
       "githubSupported": "GitHub — auto-integrated after PAT registration ✓",
+      "gotoForgeButton": "→ Go to Forge accounts page",
       "externalTitle": "External Issue Trackers (skeleton)",
       "externalDescription": "Linear / Jira / Trello — only the useExternalIssueTracker composable skeleton exists. Mutation, user PAT registration, and UI entry are deferred to v0.5+.",
       "linearStatus": "Linear — skeleton (mutation pending)",
