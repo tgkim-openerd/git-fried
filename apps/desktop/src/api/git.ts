@@ -447,6 +447,21 @@ export interface LfsFile {
   size: number | null
 }
 export const lfsStatus = (repoId: number): Promise<LfsStatus> => invoke('lfs_status', { repoId })
+
+// Plan #42 M-1 (Sprint c99) — Git Hooks manager (read-only scan).
+export interface GitHookEntry {
+  name: string
+  standard: boolean
+  exists: boolean
+  sampleExists: boolean
+  path: string | null
+  size: number | null
+}
+
+export const listGitHooks = (
+  repoId: number,
+  hooksPathOverride: string | null = null,
+): Promise<GitHookEntry[]> => invoke('list_git_hooks', { repoId, hooksPathOverride })
 export const lfsListFiles = (repoId: number): Promise<LfsFile[]> =>
   invoke('lfs_list_files', { repoId })
 export const lfsTrack = (repoId: number, pattern: string): Promise<void> =>

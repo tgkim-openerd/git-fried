@@ -17,6 +17,7 @@ pub mod diff;
 pub mod file_history;
 pub mod graph;
 pub mod hide;
+pub mod hooks;
 pub mod identity_stats;
 pub mod lfs;
 pub mod maintenance;

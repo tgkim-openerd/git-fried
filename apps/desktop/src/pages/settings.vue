@@ -34,6 +34,8 @@ import SettingsEncoding from '@/components/SettingsEncoding.vue'
 import SettingsCommit from '@/components/SettingsCommit.vue'
 // Plan #42 M-3 — Issue Tracker Settings (forge 1급 + 외부 tracker 결정 안내).
 import SettingsIssueTracker from '@/components/SettingsIssueTracker.vue'
+// Plan #42 M-1 — Git Hooks manager (read-only scan, Sprint c99).
+import SettingsGitHooks from '@/components/SettingsGitHooks.vue'
 import { useUiState } from '@/composables/useUiState'
 
 type Category =
@@ -48,6 +50,7 @@ type Category =
   | 'encoding'
   | 'commit'
   | 'issueTracker'
+  | 'gitHooks'
   | 'maintenance'
   | 'migrate'
   | 'about'
@@ -90,6 +93,8 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       { id: 'commit', label: 'Commit' },
       // Plan #42 M-3 — Issue Tracker (forge 1급 + 외부 tracker 결정 안내).
       { id: 'issueTracker', label: 'Issue Tracker' },
+      // Plan #42 M-1 — Git Hooks manager (read-only scan, Sprint c99).
+      { id: 'gitHooks', label: 'Git Hooks' },
     ],
   },
   {
@@ -145,6 +150,7 @@ const ITEM_I18N_KEY: Record<string, string> = {
   encoding: 'settings.items.encoding',
   commit: 'settings.items.commit',
   issueTracker: 'settings.items.issueTracker',
+  gitHooks: 'settings.items.gitHooks',
   editor: 'settings.items.editor',
   ui: 'settings.items.ui',
   maintenance: 'settings.items.maintenance',
@@ -255,6 +261,9 @@ const buildInfo = computed(() => ({
         v-else-if="active === 'issueTracker'"
         @navigate="(target) => (active = target)"
       />
+
+      <!-- Plan #42 M-1 — Git Hooks manager (read-only scan) -->
+      <SettingsGitHooks v-else-if="active === 'gitHooks'" />
 
       <!-- 유지보수 -->
       <SettingsMaintenance v-else-if="active === 'maintenance'" />

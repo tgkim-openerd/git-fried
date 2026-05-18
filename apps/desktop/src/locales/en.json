@@ -533,6 +533,21 @@
       },
       "futureNote": "v1.x: External diff/merge tool launch, Terminal font/cursor settings."
     },
+    "gitHooks": {
+      "title": "Git Hooks",
+      "description": "Maps to GitKraken Settings Repo-Specific Preferences Git Hooks. Read-only scan of .git/hooks/ (or the core.hooksPath override) + enumeration of 28 standard hooks (Plan #42 M-1).",
+      "noActiveRepoWarning": "⚠ No active repo. Select one from the sidebar.",
+      "loadFailed": "Failed to load hooks list",
+      "activeTitle": "Active Hooks",
+      "activeEmpty": "No active hooks",
+      "activeEmptyDescription": "No real hook files in .git/hooks/ besides samples. Usually means a wrapper (lefthook / husky) is not installed.",
+      "sampleTitle": "Sample Hooks (template, inactive)",
+      "sampleDescription": "Default `.sample` templates from git init. To activate, remove the `.sample` suffix and grant execute permission (chmod +x).",
+      "nonStandardLabel": "non-std",
+      "nonStandardHint": "Files outside the standard hook names (lefthook / husky / custom wrapper)",
+      "missingSummary": "Standard hooks not installed: {n} (click to expand)",
+      "editNote": "💡 Edit hooks by opening the file directly (`.git/hooks/<name>`). Enable/disable toggle + lefthook integration lands in the next sprint (Plan #42 M-1 follow-up)."
+    },
     "issueTracker": {
       "title": "Issue Tracker",
       "description": "Maps to GitKraken Settings Repo-Specific Preferences Issue Tracker. git-fried provides first-class forge integration (Gitea + GitHub) + external tracker (Linear/Jira/Trello) decision area for v0.5+.",
@@ -669,6 +684,7 @@
       "encoding": "Encoding (Korean-safe)",
       "commit": "Commit",
       "issueTracker": "Issue Tracker",
+      "gitHooks": "Git Hooks",
       "editor": "Editor / Terminal (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

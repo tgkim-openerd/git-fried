@@ -30,6 +30,7 @@ pub mod diagnostic_commands;
 pub mod forge_commands;
 pub mod graph_commands;
 pub mod hide_commands;
+pub mod hooks_commands;
 pub mod importer_commands;
 pub mod launchpad_commands;
 pub mod lfs_commands;

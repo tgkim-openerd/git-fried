@@ -533,6 +533,21 @@
       },
       "futureNote": "v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정."
     },
+    "gitHooks": {
+      "title": "Git Hooks",
+      "description": "GitKraken Settings Repo-Specific Preferences 의 Git Hooks 매핑. .git/hooks/ 디렉토리 (또는 core.hooksPath override) 의 hook 파일 read-only scan + 표준 hook 28개 enumerate (Plan #42 M-1).",
+      "noActiveRepoWarning": "⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.",
+      "loadFailed": "Hook list 로드 실패",
+      "activeTitle": "Active Hooks (활성 hook 파일)",
+      "activeEmpty": "활성 hook 없음",
+      "activeEmptyDescription": ".git/hooks/ 에 sample 외 실제 hook 파일 없음. 보통 lefthook / husky 같은 wrapper 가 미설치 상태.",
+      "sampleTitle": "Sample Hooks (template, 비활성)",
+      "sampleDescription": "git init 의 기본 template `.sample` 파일. 활성화하려면 `.sample` 확장자 제거 + 실행 권한 부여 (chmod +x).",
+      "nonStandardLabel": "비표준",
+      "nonStandardHint": "표준 hook 이름이 아닌 파일 (lefthook / husky / 사용자 정의 wrapper)",
+      "missingSummary": "표준 hook 중 미설치 {n}개 (펼쳐서 확인)",
+      "editNote": "💡 hook 편집은 직접 파일 열기 (`.git/hooks/<name>`). enable/disable 토글 + 외부 lefthook 통합은 다음 sprint (Plan #42 M-1 후속)."
+    },
     "issueTracker": {
       "title": "Issue Tracker",
       "description": "GitKraken Settings Repo-Specific Preferences 의 Issue Tracker 매핑. git-fried 의 forge 1급 (Gitea + GitHub) 통합 + 외부 tracker (Linear/Jira/Trello) v0.5+ 결정 영역.",
@@ -669,6 +684,7 @@
       "encoding": "Encoding (한글 안전)",
       "commit": "Commit",
       "issueTracker": "Issue Tracker",
+      "gitHooks": "Git Hooks",
       "editor": "에디터 / 터미널 (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",
