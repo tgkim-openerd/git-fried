@@ -13,10 +13,12 @@
 
 import { ref } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
-import { commit as ipcCommit } from '@/api/git'
+import { commit as ipcCommit, push as ipcPush } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
-import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { useInvalidateRepoQueries, useStatus } from '@/composables/useStatus'
+import { useGeneralSettings } from '@/composables/useUserSettings'
+import { localBranchName } from '@/composables/useBranchActions'
 import type { CommitResult } from '@/types/git'
 import { i18n } from '@/i18n'
 
@@ -62,6 +64,10 @@ export function hasConflictHints(res: { stdout?: string; stderr?: string }): boo
 export function useCommitMutation(opts: UseCommitMutationOptions) {
   const toast = useToast()
   const invalidate = useInvalidateRepoQueries()
+  // Plan #42 M-1.2 wire (Sprint c97+) — commit 성공 후 commitPushAfter 설정 시
+  // 자동 push. useStatus(opts.repoId) 로 현재 active branch 조회.
+  const general = useGeneralSettings()
+  const status = useStatus(() => opts.repoId())
 
   const lastResult = ref<CommitResult | null>(null)
 
@@ -85,6 +91,36 @@ export function useCommitMutation(opts: UseCommitMutationOptions) {
         opts.amend.value = false
         invalidate(opts.repoId())
         opts.onCommitted()
+        // Plan #42 M-1.2 wire — commitPushAfter true 시 자동 push.
+        // useStatus 의 branch 사용 (HEAD 의 short ref 형태). detached HEAD 또는
+        // branch 미정 시 push skip + warning. branch fail 시 silent.
+        if (general.value.commitPushAfter) {
+          const repoId = opts.repoId()
+          const branchName = status.data.value?.branch ?? null
+          if (repoId != null && branchName) {
+            ipcPush({
+              repoId,
+              branch: localBranchName(branchName),
+              setUpstream: false,
+            })
+              .then((r) => {
+                if (r.success) {
+                  toast.success(t('toast.pushSuccess'), branchName)
+                  invalidate(repoId)
+                } else {
+                  toast.warning(t('toast.pushAfterCommitFailed'), describeError(r))
+                }
+              })
+              .catch((e) => {
+                toast.error(t('toast.pushAfterCommitFailed'), describeError(e))
+              })
+          } else {
+            toast.warning(
+              t('toast.pushAfterCommitSkipped'),
+              t('toast.pushAfterCommitSkippedReason'),
+            )
+          }
+        }
       } else {
         // pre-commit hook 실패 등 — inline panel 로 표시.
         lastResult.value = res
