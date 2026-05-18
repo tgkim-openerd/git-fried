@@ -25,11 +25,11 @@
 | 13 | Tag annotate UX | GitKraken context menu 추정 (PoC v3 미 cover) | SB-033 Annotate tag (Sprint c95) | ? 미검증 | PoC v4 capture |
 | 14 | PR CI status | GitKraken sidebar PR row 표시 추정 | SB-017 4 아이콘 인프라 (Sprint c95+ Wave 1) | ? 미검증 | PoC v4 + ARCH-001 wire |
 | 15 | Worktree context menu | GitKraken 추정 (PoC v3 미 cover) | useWorktreePanelActions (Sprint c95 fix) | ? 미검증 | PoC v4 capture |
-| 16 | **Bottom-right status bar** | zoom 100% / Support / license PRO / version v12.1.1 | 부분 구현 (Sprint c91 Phase A) | △ 부분 | **SB-NEW-1 HIGH** (Codex 신규) |
-| 17 | **Top toolbar 6 버튼** | Pull / Push / Branch / Stash / Pop / Terminal | GitKrakenToolbar.vue (414 LOC, Layer B template-heavy) | △ 부분 | **SB-NEW-2 MED** — parity 검증 |
-| 18 | **Sidebar section count badges** | LOCAL 35 / REMOTE 71 / WORKTREES 4 / STASHES 10 / PULL REQUESTS 0 (TEAMS 별도) | 일부 sidebar 라벨만 표시 | △ 부분 | **SB-NEW-3 MED** — count 추가 |
-| 19 | **Right detail panel file view** | Path/Tree segmented + View all files checkbox + parent/commit hash | CommitDetailSidebar.vue (399 LOC, Sprint c67) | △ 부분 | **SB-NEW-4 MED** — Path/Tree toggle 신규 |
-| 20 | **Tab row polish** | active tab close `x` + 우측 `+` 새 탭 + drag handle | RepoTabBar.vue (Sprint c64, 127 LOC) | △ 부분 | **SB-NEW-5 LOW** — `+` 새 탭 + close `x` 검증 |
+| 16 | **Bottom-right status bar** | zoom 100% / Support / license PRO / version v12.1.1 | Sprint c91 Phase A + Sprint c101 SB-NEW-1 (FREE 라이선스 + v0.3.0 버전) | ✓ **격상** | zoom % / Support 링크 보류 (Tauri native zoom) |
+| 17 | **Top toolbar 6 버튼** | Pull / Push / Branch / Stash / Pop / Terminal | GitKrakenToolbar.vue 의 6 버튼 (Pull/Push/Branch/Stash/Pop/Terminal) **이미 구현** | ✓ **격상** | Sprint c102 finding — Codex 단정 REFUTED |
+| 18 | **Sidebar section count badges** | LOCAL 35 / REMOTE 71 / WORKTREES 4 / STASHES 10 / PULL REQUESTS 0 (TEAMS 별도) | MiniSection 의 `(count)` 표시 **이미 구현** (모든 mini list) | ✓ **격상** | Sprint c102 finding — cosmetic 스타일만 차이 (괄호 vs space) |
+| 19 | **Right detail panel file view** | Path/Tree segmented + View all files checkbox + parent/commit hash | CommitDetailSidebar 의 `ViewMode = 'path' \| 'tree'` **이미 구현** | ✓ **격상** | Sprint c102 finding — Path/Tree segmented 이미 cover |
+| 20 | **Tab row polish** | active tab close `x` + 우측 `+` 새 탭 + drag handle | RepoTabBar 의 `✕ 닫기` + Sprint G 다중 탭 **이미 구현** | ✓ **격상** | Sprint c102 finding — close `x` 이미 cover |
 
 ### Plan #41 Step 1 신규 row (Repo-Specific 7 신규 항목)
 
@@ -46,14 +46,14 @@
 | 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | PARTIAL Rust forge issue list + Vue `IssuesPanel.vue` + `useExternalIssueTracker.ts` (skeleton) | △ MED | Gitea/GitHub 1급 — 외부 tracker (Jira/Linear) 제외 |
 | 30 | **Repo-Specific Team** | "Select a team for this repo" collab | NO Rust + NO Vue | ✗ | LOW — local profiles 대체 가능 |
 
-## parity 통계 (30 row, Sprint c100 후)
+## parity 통계 (30 row, Sprint c102 후 — SB-NEW 5건 일괄 ✓ 격상)
 
-- ✓ **완전 parity**: **8** (Settings 진입 / Repo-Specific 패턴 / Explain commit AI / scroll / **Conflict Prevention** / **LFS** / **Commit Options** / **Sparse Checkout**)
-- △ **부분 parity**: 12 (7 기존 + 5 Repo-Specific — Encoding / Gitflow / Git Hooks / Issue Tracker + 기존 8 미명시)
+- ✓ **완전 parity**: **13** (Settings 진입 / Repo-Specific 패턴 / Explain commit AI / scroll / **Conflict Prevention** / **LFS** / **Commit Options** / **Sparse Checkout** / **Status bar** / **Top toolbar** / **Sidebar counts** / **Right panel Path/Tree** / **Tab polish**)
+- △ **부분 parity**: 7 (기존 일부 + 5 Repo-Specific — Encoding / Gitflow / Git Hooks / Issue Tracker + 기존 미명시 3)
 - ✗ **git-fried 미구현 또는 거부**: 6 (Commit Signing UI / Stash hotkey + Agents 거부 / Team 미구현)
 - ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree dialog)
 
-전체 30 row 중 ✓ 8 / △ 12 / ✗ 6 / ? 3 = git-fried coverage ~67% (✓ + △ = 20/30, 절대 ✓ +1 추가).
+전체 30 row 중 ✓ 13 / △ 7 / ✗ 6 / ? 3 = git-fried coverage **77%** (✓ + △ = 23/30, 절대 ✓ +5 추가 — Sprint c102 finding).
 
 > **Sprint c96 + c97 + c98 누적 결과** (Plan #42 H-1 ~ H-4 + M-1.2 5/5 wire + M-3, Codex 7차 batch audit `adf22d6a0607a9f0d` 통과): 절대 ✓ count 4→**7** 증가 (Conflict Prevention + LFS + Commit Options 격상). 다음 sprint = M-1 Git Hooks UI / M-2 Sparse Checkout / M-1.1 Conflict per-repo override (DB migration).
 
