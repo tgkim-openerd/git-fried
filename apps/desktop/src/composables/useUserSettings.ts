@@ -69,6 +69,21 @@ export interface UiSettings {
    * MiniBranchList / MiniRemoteBranchList 양쪽 적용 (SB-051 remote 대칭).
    */
   branchClickAction: 'checkout' | 'select'
+  /**
+   * SB-014 (UltraPlan v0.4 sidebar microgap Sprint c95, 2026-05-18) — Smart Branch
+   * Visibility (GitKraken parity S3 gear icon). 큰 monorepo 환경에서 자동 필터.
+   *
+   * - enabled=false (default): no filtering, 모든 branch visible.
+   * - enabled=true: HEAD + HEAD 의 upstream + mergeTarget + mergeTarget upstream 만 visible.
+   *   사용자 명시 unhide 한 branch 는 보존 (additive layer, useHiddenRefs 와 layering).
+   *
+   * mergeTarget=null → auto-detect (main / master / develop / trunk 순).
+   * Setting UI (Commit Graph header gear) 는 별도 sprint.
+   */
+  smartBranchVisibility: {
+    enabled: boolean
+    mergeTarget: string | null
+  }
 }
 
 const GENERAL_KEY = 'git-fried.general.v1'
@@ -109,6 +124,11 @@ function defaultUi(): UiSettings {
     externalEditor: 'none',
     // SB-012 — default 'checkout' (회귀 차단). 'select' 토글은 Settings UI 별도 sprint.
     branchClickAction: 'checkout',
+    // SB-014 — default disabled (회귀 차단). Settings UI / Commit Graph gear 별도 sprint.
+    smartBranchVisibility: {
+      enabled: false,
+      mergeTarget: null,
+    },
   }
 }
 

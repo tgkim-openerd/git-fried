@@ -76,11 +76,13 @@ describe('useTagInteraction', () => {
 
     expect(openAt).toHaveBeenCalledOnce()
     const items = openAt.mock.calls[0]![1] as Array<{ label?: string; divider?: boolean }>
-    // 3 actions (push/checkout/createBranch) + divider + 1 copy + divider + 2 delete = 8
-    expect(items).toHaveLength(8)
+    // SB-033 (Sprint c95, 2026-05-18) — annotate 추가로 9 items:
+    // 3 actions (push/checkout/createBranch) + 1 annotate + divider + 1 copy +
+    // divider + 2 delete = 9
+    expect(items).toHaveLength(9)
     expect(items[0]!.label).toBeTruthy()
-    expect(items[3]!.divider).toBe(true) // first divider after 3 actions
-    expect(items[5]!.divider).toBe(true) // second divider before delete pair
+    expect(items[4]!.divider).toBe(true) // first divider after 3 actions + 1 annotate
+    expect(items[6]!.divider).toBe(true) // second divider before delete pair
   })
 
   it('copyTagSha — clipboard.writeText 호출 (commitSha 8자)', async () => {
