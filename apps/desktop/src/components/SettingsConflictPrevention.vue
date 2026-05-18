@@ -17,6 +17,14 @@ import { useGeneralSettings } from '@/composables/useUserSettings'
 
 const { t } = useI18n()
 const general = useGeneralSettings()
+
+// Codex 3차 audit `ad4048ff933d26406` MED 항목 — v-model.number 의 NaN/range
+// edge case 처리. 0 = 비활성 (autoFetch 동일 관례), [0, 60] clamp.
+function onIntervalChange(e: Event) {
+  const raw = (e.target as HTMLInputElement).valueAsNumber
+  const clamped = Number.isFinite(raw) ? Math.max(0, Math.min(60, Math.round(raw))) : 5
+  general.value.conflictDetectionIntervalMin = clamped
+}
 </script>
 
 <template>
@@ -49,13 +57,14 @@ const general = useGeneralSettings()
       </span>
       <span class="flex items-center gap-2">
         <input
-          v-model.number="general.conflictDetectionIntervalMin"
+          :value="general.conflictDetectionIntervalMin"
           type="number"
           min="0"
           max="60"
           :disabled="!general.conflictDetection"
           class="w-20 rounded border border-input bg-background px-2 py-1 text-right text-sm disabled:opacity-50"
           data-testid="conflict-prevention-interval"
+          @change="onIntervalChange"
         />
         <span class="text-xs text-muted-foreground">{{
           t('settings.conflictPrevention.intervalUnit')

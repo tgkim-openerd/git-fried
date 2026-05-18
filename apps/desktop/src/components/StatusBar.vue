@@ -35,6 +35,18 @@ const predictionEnabled = computed(
   () => store.activeRepoId != null && general.value.conflictDetection,
 )
 
+// Plan #42 H-1 (Sprint c96+) — Codex 3차 audit `ad4048ff933d26406` HIGH 항목 해소.
+// SettingsConflictPrevention 의 conflictDetectionIntervalMin (분) 을 ms 로 환산.
+// 0 = 비활성 (refetchInterval false) — 다른 settings (autoFetchIntervalMin) 의 0=disabled
+// 관례 일관. clamp [0, 60] (SettingsConflictPrevention input max=60 일치).
+const predictionIntervalMs = computed(() => {
+  if (!predictionEnabled.value) return false
+  const raw = general.value.conflictDetectionIntervalMin
+  const minutes = Number.isFinite(raw) ? Math.max(0, Math.min(60, Math.round(raw))) : 5
+  if (minutes === 0) return false // 0 = 비활성
+  return minutes * 60_000
+})
+
 const predictionQuery = useQuery({
   queryKey: computed(() => ['conflict-prediction', store.activeRepoId]),
   queryFn: () => {
@@ -45,8 +57,8 @@ const predictionQuery = useQuery({
   },
   enabled: predictionEnabled,
   staleTime: STALE_TIME.STATIC,
-  // refetchInterval 도 false 가능 — 설정 disabled 시 자동 정지.
-  refetchInterval: computed(() => (predictionEnabled.value ? 60_000 : false)),
+  // 폴링 간격: SettingsConflictPrevention.intervalMin (default 5분) — hardcode 60_000 폐기.
+  refetchInterval: predictionIntervalMs,
 })
 
 const prediction = computed(() => predictionQuery.data.value ?? null)

@@ -531,11 +531,11 @@
     },
     "conflictPrevention": {
       "title": "Conflict Prevention",
-      "description": "병합 전에 target branch 와의 잠재 충돌을 사전 감지해 StatusBar 에 경고합니다. GitKraken Repo-Specific Preferences 의 동등 항목 (Plan #42 H-1).",
+      "description": "병합 전에 target branch 와의 잠재 충돌을 사전 감지해 StatusBar 에 경고합니다. General 탭의 Conflict Detection toggle 과 동일 — 본 페이지에서 폴링 interval detail 설정.",
       "enabledLabel": "Conflict Prevention 활성",
-      "enabledHint": "백그라운드 폴링으로 target branch 충돌 예측 (60s ~ 분 단위, 아래 interval 설정).",
+      "enabledHint": "백그라운드 폴링으로 target branch 충돌 예측. 비활성 시 StatusBar 의 conflict 경고 미표시.",
       "intervalLabel": "폴링 간격",
-      "intervalHint": "0 = 즉시 폴 (debug, battery/network 부담). 1~60 권장 (default 5분).",
+      "intervalHint": "0 = 비활성 (autoFetch 와 동일 관례). 1~60 분 권장 (default 5분).",
       "intervalUnit": "분",
       "perRepoNote": "현재 global default 설정. per-repo override 는 다음 sprint (Plan #42 M-1.1) 에서 RepoSpecificForm 통합 예정."
     },

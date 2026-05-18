@@ -531,11 +531,11 @@
     },
     "conflictPrevention": {
       "title": "Conflict Prevention",
-      "description": "Detect potential conflicts with the target branch before merging, surfaced in the StatusBar. Equivalent to GitKraken Repo-Specific Preferences (Plan #42 H-1).",
+      "description": "Detect potential conflicts with the target branch before merging, surfaced in the StatusBar. Same as the Conflict Detection toggle in General — this page exposes the polling interval detail.",
       "enabledLabel": "Enable conflict prevention",
-      "enabledHint": "Background polling predicts target-branch conflicts (60s ~ minutes, set interval below).",
+      "enabledHint": "Background polling predicts target-branch conflicts. When disabled, no conflict warning appears in the StatusBar.",
       "intervalLabel": "Polling interval",
-      "intervalHint": "0 = immediate (debug only, battery/network heavy). 1-60 recommended (default 5 min).",
+      "intervalHint": "0 = disabled (same convention as autoFetch). 1-60 min recommended (default 5 min).",
       "intervalUnit": "min",
       "perRepoNote": "Currently global default. Per-repo override planned for next sprint (Plan #42 M-1.1) via RepoSpecificForm."
     },
