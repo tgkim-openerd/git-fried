@@ -43,17 +43,17 @@
 | 26 | **Repo-Specific Conflict Prevention** | per-repo 충돌 사전 검출 옵션 | **YES** Rust `conflict_prediction.rs` + `v02_commands.rs` IPC + Vue `StatusBar.vue` + `useUserSettings.ts` | △ HIGH | **Settings UI 노출만 필요** — 빠른 win |
 | 27 | **Repo-Specific LFS** | per-repo LFS track / install / fetch | **YES** Rust `lfs.rs` + `lfs_commands.rs` (7 IPC) + Vue `LfsPanel.vue` + `api/git.ts` | △ HIGH | **Settings UI 노출만 필요** — 빠른 win |
 | 28 | **Repo-Specific Sparse Checkout** | per-repo sparse manager | PARTIAL Rust `clone.rs` CloneOptions.sparse_paths (clone 시점만) + Vue `CloneRepoModal.vue` | △ MED | repo-specific manager UI 신규 |
-| 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | PARTIAL Rust forge issue list + Vue `IssuesPanel.vue` + `useExternalIssueTracker.ts` (skeleton) | △ MED | Gitea/GitHub 1급 — 외부 tracker (Jira/Linear) 제외 |
+| 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | Rust forge issue list (gitea.rs + github.rs) + Vue `IssuesPanel.vue` + SettingsIssueTracker (forge 1급 + 외부 거부 명시 + Forge 설정 진입 button) | ✓ **격상** (Sprint c103) | Gitea/GitHub forge 1급 ✓ / 외부 tracker (Jira/Linear/Trello) 명시 거부 = identity-core 정합 |
 | 30 | **Repo-Specific Team** | "Select a team for this repo" collab | NO Rust + NO Vue | ✗ | LOW — local profiles 대체 가능 |
 
-## parity 통계 (30 row, Sprint c103 후 — Encoding ✓ 격상)
+## parity 통계 (30 row, Sprint c103 후 — Encoding + Issue Tracker ✓ 격상)
 
-- ✓ **완전 parity**: **14** (... 위 13 + **Encoding** identity-core)
-- △ **부분 parity**: 6 (Gitflow / Git Hooks / Issue Tracker + 기존 미명시 3)
+- ✓ **완전 parity**: **15** (... + **Encoding** identity-core + **Issue Tracker** forge 1급)
+- △ **부분 parity**: 5 (Gitflow / Git Hooks + 기존 미명시 3)
 - ✗ **git-fried 미구현 또는 거부**: 6 (Commit Signing UI / Stash hotkey + Agents 거부 / Team 미구현)
 - ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree dialog)
 
-전체 30 row 중 ✓ 14 / △ 6 / ✗ 6 / ? 3 = git-fried coverage **80%** (✓ + △ = 24/30, 절대 ✓ +1 — Sprint c103 Encoding 격상).
+전체 30 row 중 ✓ 15 / △ 5 / ✗ 6 / ? 3 = git-fried coverage **80%** (✓ + △ = 24/30, 절대 ✓ +2 — Sprint c103 Encoding + Issue Tracker 격상).
 
 > **Sprint c96 + c97 + c98 누적 결과** (Plan #42 H-1 ~ H-4 + M-1.2 5/5 wire + M-3, Codex 7차 batch audit `adf22d6a0607a9f0d` 통과): 절대 ✓ count 4→**7** 증가 (Conflict Prevention + LFS + Commit Options 격상). 다음 sprint = M-1 Git Hooks UI / M-2 Sparse Checkout / M-1.1 Conflict per-repo override (DB migration).
 
