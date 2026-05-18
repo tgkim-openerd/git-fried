@@ -2,7 +2,7 @@
 
 > **GitHub 개인 + Gitea 회사를 동시에 다루는 한국 풀스택 개발자를 위한, GitKraken 보다 가볍고 정확한 데스크탑 Git 클라이언트.**
 
-상태: **v0.3 release prep** — 187+ commits (PR #1 머지 후 c33~c37-11 46 commits) / 191 frontend + 63 Rust 파일 / 5 SQLite migrations / Cargo test + bench 통과 / vitest 60/660 / TypeScript 0 errors / ESLint v9 flat config 0 / vue-i18n 534 키 ko·en 대칭. v1.0 핵심 기능 + GitKraken 12.0 catalog 95% 흡수 완료.
+상태: **v0.3 release prep** — 598 total commits (sprint c93 누계 main 242) / 94 .vue + 125 composable + 4 page = 223 frontend + 88 Rust 파일 / **8 SQLite migrations** / Cargo test 261 (245 PASS) + bench compile / **vitest 90 / 901 PASS** / TypeScript 0 errors / ESLint v9 flat config 0 / vue-i18n **1343 키 ko·en 대칭**. v1.0 핵심 기능 + GitKraken 12.0 catalog 95% 흡수 완료.
 
 → **5분 시작**: [docs/QUICK_START.md](docs/QUICK_START.md) — 신규 진입자 1순위
 → [REVIEW.md](REVIEW.md) (현재 진행 현황) / [CHANGELOG.md](CHANGELOG.md)
