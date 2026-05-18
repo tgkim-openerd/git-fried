@@ -39,6 +39,8 @@ const activeRepoId = computed<number | null>(() => reposStore.activeRepoId)
       {{ t('settings.lfs.perRepoNote') }}
     </p>
 
-    <LfsPanel :repo-id="activeRepoId" />
+    <!-- Codex 4차 audit `add561df32ed26bb1` HIGH 해소 — null repo 에서 LfsPanel
+         숨김 (이전: warning + LfsPanel 렌더 → track 버튼 클릭 후 mutation reject). -->
+    <LfsPanel v-if="activeRepoId != null" :repo-id="activeRepoId" />
   </div>
 </template>

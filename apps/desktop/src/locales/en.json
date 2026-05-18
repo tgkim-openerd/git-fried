@@ -538,7 +538,7 @@
       "skipHooksLabel": "Skip git hooks by default",
       "skipHooksHint": "Apply --no-verify by default (bypass pre-commit / commit-msg hooks). Use with care.",
       "squashLabel": "Squash by default (merge behavior)",
-      "squashHint": "Auto-squash on branch merge (collapse to a single commit). See RepoSpecificForm for details.",
+      "squashHint": "Auto-squash default on branch merge (Plan #42 M-1.2 application pending).",
       "removeCommentsLabel": "Remove comments from commit messages",
       "removeCommentsHint": "Auto-strip lines starting with # from commit messages.",
       "templateLabel": "Commit template",

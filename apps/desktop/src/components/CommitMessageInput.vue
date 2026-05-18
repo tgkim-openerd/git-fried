@@ -17,9 +17,13 @@ import { useAiCommitMessage } from '@/composables/useAiCommitMessage'
 import { useCommitMutation, hookKind } from '@/composables/useCommitMutation'
 // Sprint c79-C — Amend 토글 ON 시 마지막 commit prefill 영역 (50 LOC) 분리.
 import { useAmendPrefill } from '@/composables/useAmendPrefill'
+// Plan #42 H-4 → M-1.2 부분 wire (Codex 4차 audit 권고) — Settings 의 commitSkipHooks
+// default 값을 noVerify checkbox 초기값으로 적용. 사용자 form 안 override 가능.
+import { useGeneralSettings } from '@/composables/useUserSettings'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const general = useGeneralSettings()
 
 const toast = useToast()
 import { buildConventional, type ConventionalType } from '@/types/git'
@@ -38,7 +42,9 @@ const body = ref('')
 const footer = ref('')
 const freeMessage = ref('')
 const signoff = ref(false)
-const noVerify = ref(false)
+// Plan #42 H-4 / M-1.2 부분 wire — Settings.commitSkipHooks default 적용.
+// 사용자 form 안에서 checkbox 해제 가능 (사용자 의도 우선).
+const noVerify = ref(general.value.commitSkipHooks)
 // Sprint c25-2 §3-2 — Amend 토글. ON 시 last_commit_message prefill, --amend 로 commit.
 const amend = ref(false)
 const invalidate = useInvalidateRepoQueries()

@@ -538,7 +538,7 @@
       "skipHooksLabel": "Skip git hooks by default",
       "skipHooksHint": "기본적으로 --no-verify 적용 (pre-commit / commit-msg hook 우회). 신중히 사용.",
       "squashLabel": "Squash by default (merge behavior)",
-      "squashHint": "branch merge 시 자동 squash (만 1 commit 합치기). 자세한 동작은 RepoSpecificForm 참조.",
+      "squashHint": "branch merge 시 자동 squash 옵션 default 활성 (Plan #42 M-1.2 적용 예정).",
       "removeCommentsLabel": "Remove comments from commit messages",
       "removeCommentsHint": "commit message 의 # 시작 주석 줄 자동 제거.",
       "templateLabel": "Commit template",
