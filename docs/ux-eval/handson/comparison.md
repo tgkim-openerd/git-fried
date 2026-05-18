@@ -81,6 +81,14 @@
 | **M-1.2 squashByDefault wire** | **`13f83bb`** + **`7ffa218`** (Codex 7차 MED+LOW fix) | ✓ **완료** — Rust merge_branch IPC squash 옵션 추가 + Vue useBranchActions + useBranchDragDrop 양쪽 적용 |
 | **Commit Options parity** | 5/5 wire 완료 | △ → **✓** 격상 (Codex 7차 HIGH 0) |
 
+## Sprint c99 산출물 정합 (M-1 Git Hooks manager read-only)
+
+| Plan #42 항목 | commit | 상태 |
+| --- | --- | --- |
+| **M-1 Git Hooks manager UI** | `3368c9e` + `40b8931` (Codex 8차 HIGH fix) | △ 유지 (Codex 권고) — read-only scan + UI + executable bit / core.hooksPath 자동 반영 / 비표준 wrapper 라벨 / 28 표준 hook enumerate. enable/disable / edit / lefthook wrapper 통합은 M-1 후속 |
+| Rust git/hooks.rs 신규 196 LOC + IPC + lib.rs 등록 | (`3368c9e` 포함) | ✓ 새 모듈 |
+| 신규 SettingsGitHooks.vue + useRepoConfig wire | (`3368c9e` + `40b8931`) | ✓ 통합 |
+
 ## Sprint c97 잔여 (다음 진입점)
 
 | # | 항목 | effort | Codex 5차 권고 우선순위 |
