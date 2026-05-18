@@ -40,7 +40,9 @@ const breaking = ref(false)
 const subject = ref('')
 const body = ref('')
 const footer = ref('')
-const freeMessage = ref('')
+// Plan #42 H-4 / M-1.2 wire — Settings.commitTemplate 으로 freeMessage 초기 prefill.
+// 사용자가 form 진입 시 template 가 미리 적용된 상태. 빈 template 은 effect 없음.
+const freeMessage = ref(general.value.commitTemplate)
 const signoff = ref(false)
 // Plan #42 H-4 / M-1.2 부분 wire — Settings.commitSkipHooks default 적용.
 // 사용자 form 안에서 checkbox 해제 가능 (사용자 의도 우선).
@@ -64,15 +66,27 @@ useAmendPrefill({
 })
 
 const finalMessage = computed(() => {
-  if (mode.value === 'free') return freeMessage.value
-  return buildConventional({
-    type: type.value,
-    scope: scope.value,
-    breaking: breaking.value,
-    subject: subject.value,
-    body: body.value,
-    footer: footer.value,
-  })
+  const raw =
+    mode.value === 'free'
+      ? freeMessage.value
+      : buildConventional({
+          type: type.value,
+          scope: scope.value,
+          breaking: breaking.value,
+          subject: subject.value,
+          body: body.value,
+          footer: footer.value,
+        })
+  // Plan #42 H-4 / M-1.2 wire — Settings.commitRemoveComments true 시 `^#` 라인 strip.
+  // git 기본 commit-msg hook 동작 일관 (사용자 명시 가능).
+  if (general.value.commitRemoveComments) {
+    return raw
+      .split('\n')
+      .filter((line) => !line.startsWith('#'))
+      .join('\n')
+      .trim()
+  }
+  return raw
 })
 
 // Sprint c31 — subjectLength / subjectZone / subjectPct / subjectWarn 모두
