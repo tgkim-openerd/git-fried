@@ -1,0 +1,29 @@
+#Requires AutoHotkey v2.0
+; Plan #40 Phase 3 — Tag 영역
+;
+; image search anchor 없이 cover 가능: sidebar TAGS expanded 상태 가정
+
+#Include ..\lib\gk-helpers.ahk2
+
+SpikeDir := A_ScriptDir . "\.."
+CaptureScript := SpikeDir . "\capture-screen.ps1"
+LogFile := SpikeDir . "\04-tag-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== 04 Tag ===`n", LogFile)
+WaitForUserUnattended(3, "Tag capture 시작")
+
+gkHwnd := FindGitKrakenMainWindow(LogFile)
+if (!gkHwnd) {
+    ExitApp(10)
+}
+SafeActivateGkOrCapture(gkHwnd, LogFile)
+
+; sidebar TAGS section 보이는 default capture
+CaptureWindow(gkHwnd, "04-tag-default", CaptureScript, LogFile)
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ExitApp(0)

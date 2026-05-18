@@ -1,0 +1,102 @@
+#Requires AutoHotkey v2.0
+; Plan #40 Phase 3 helper — 영역별 ui-tour script 재사용 함수
+;
+; usage: #Include lib/gk-helpers.ahk2
+;
+; 제공:
+;   FindGitKrakenMainWindow() — multi-process 5 hwnd 중 main visible 선별 (PoC v2.1)
+;   SafeActivateGk(hwnd) — Restore + Activate + active 재확인 (focus 회수 detect)
+;   CaptureWindow(hwnd, label) — capture-screen.ps1 호출 (PrintWindow API)
+;   WaitForUserUnattended(seconds, msg) — ToolTip 카운트다운
+
+FindGitKrakenMainWindow(logFile := "") {
+    hwnds := WinGetList("ahk_exe gitkraken.exe")
+    if (logFile != "")
+        FileAppend("WinGetList found " . hwnds.Length . " gitkraken.exe windows`n", logFile)
+    bestHwnd := 0
+    bestArea := 0
+    for hwnd in hwnds {
+        try {
+            title := WinGetTitle("ahk_id " . hwnd)
+            mm := WinGetMinMax("ahk_id " . hwnd)
+            x := 0, y := 0, w := 0, h := 0
+            WinGetPos(&x, &y, &w, &h, "ahk_id " . hwnd)
+            area := w * h
+            if (logFile != "")
+                FileAppend("  hwnd=" . hwnd . " title='" . title . "' mm=" . mm . " size=" . w . "x" . h . "`n", logFile)
+            if (title != "" && InStr(title, "GitKraken")) {
+                if (mm == -1 || area > bestArea) {
+                    bestHwnd := hwnd
+                    bestArea := mm == -1 ? -1 : area
+                }
+            }
+        } catch as e {
+            if (logFile != "")
+                FileAppend("  hwnd=" . hwnd . " err: " . e.Message . "`n", logFile)
+        }
+    }
+    return bestHwnd
+}
+
+; SafeActivateGk — strict mode (keyboard 액션 필요 시): focus fail 시 false
+; SafeActivateGkOrCapture — capture-only mode: focus fail 시에도 true (PrintWindow 가 background hwnd 도 캡처)
+SafeActivateGk(hwnd, logFile := "") {
+    mm := WinGetMinMax("ahk_id " . hwnd)
+    if (mm == -1) {
+        if (logFile != "")
+            FileAppend("Window minimized -> WinRestore`n", logFile)
+        WinRestore("ahk_id " . hwnd)
+        Sleep 500
+    }
+    WinActivate("ahk_id " . hwnd)
+    if (!WinWaitActive("ahk_id " . hwnd, , 5)) {
+        if (logFile != "")
+            FileAppend("[ERROR] WinWaitActive timeout 5s (strict)`n", logFile)
+        return false
+    }
+    Sleep 1200
+    activeHwnd := WinGetID("A")
+    if (activeHwnd != hwnd) {
+        if (logFile != "")
+            FileAppend("[ERROR] Focus stolen — active=" . activeHwnd . " expected=" . hwnd . "`n", logFile)
+        return false
+    }
+    return true
+}
+
+SafeActivateGkOrCapture(hwnd, logFile := "") {
+    ; capture-only mode — PrintWindow API 가 background hwnd 도 캡처 가능하므로
+    ; focus fail 시에도 progress 허용. log 에 warning 만 emit.
+    mm := WinGetMinMax("ahk_id " . hwnd)
+    if (mm == -1) {
+        if (logFile != "")
+            FileAppend("Window minimized -> WinRestore`n", logFile)
+        WinRestore("ahk_id " . hwnd)
+        Sleep 500
+    }
+    WinActivate("ahk_id " . hwnd)
+    if (!WinWaitActive("ahk_id " . hwnd, , 3)) {
+        if (logFile != "")
+            FileAppend("[WARN] WinWaitActive timeout — proceeding with PrintWindow (capture-only OK)`n", logFile)
+    } else {
+        Sleep 800
+    }
+    return true  ; capture-only — 항상 true
+}
+
+CaptureWindow(hwnd, label, captureScriptPath, logFile := "") {
+    hwndHex := Format("0x{:X}", hwnd)
+    if (logFile != "")
+        FileAppend("Capturing: " . label . " (hwnd=" . hwndHex . ")`n", logFile)
+    cmdLine := 'pwsh -NoProfile -File "' . captureScriptPath . '" -Label "' . label . '" -Hwnd ' . hwndHex
+    RunWait(cmdLine, , "Hide")
+    Sleep 300
+}
+
+WaitForUserUnattended(seconds, msg, posX := 100, posY := 100) {
+    Loop seconds {
+        ToolTip(msg . " — " . (seconds + 1 - A_Index) . "초 후 시작 (마우스/키보드 사용 X)", posX, posY)
+        Sleep 1000
+    }
+    ToolTip()
+}

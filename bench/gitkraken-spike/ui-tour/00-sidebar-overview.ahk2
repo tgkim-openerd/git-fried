@@ -1,0 +1,46 @@
+#Requires AutoHotkey v2.0
+; Plan #40 Phase 3 — SC-overview: sidebar 전체 + main graph baseline capture
+;
+; 사전 setup (사용자 1회):
+;   GitKraken sidebar 모든 섹션 expanded — LOCAL / REMOTE / WORKTREES / STASHES /
+;   CLOUD PATCHES / PULL REQUESTS / TAGS (Codex V2 baseline)
+;
+; 자동 action:
+;   1. main window activate
+;   2. capture: sidebar-overview (전체 sidebar + graph + commit detail panel)
+;   3. ESC (다이얼로그 닫기 안전망)
+;   4. capture: graph-after-esc
+;
+; 사용처: 6 영역의 baseline 한 번에 얻음 (Codex finding 7건 — sidebar counts 등)
+
+#Include ..\lib\gk-helpers.ahk2
+
+SpikeDir := A_ScriptDir . "\.."
+CaptureScript := SpikeDir . "\capture-screen.ps1"
+LogFile := SpikeDir . "\00-sidebar-overview-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== 00 Sidebar overview ===`n", LogFile)
+FileAppend("A_Now: " . A_Now . "`n", LogFile)
+
+WaitForUserUnattended(5, "GitKraken sidebar 모든 섹션 expanded 확인")
+
+gkHwnd := FindGitKrakenMainWindow(LogFile)
+if (!gkHwnd) {
+    ExitApp(10)
+}
+
+if (!SafeActivateGk(gkHwnd, LogFile)) {
+    ExitApp(11)
+}
+
+CaptureWindow(gkHwnd, "00-sidebar-overview-default", CaptureScript, LogFile)
+Send "{Escape}"
+Sleep 500
+CaptureWindow(gkHwnd, "00-sidebar-overview-after-esc", CaptureScript, LogFile)
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ExitApp(0)

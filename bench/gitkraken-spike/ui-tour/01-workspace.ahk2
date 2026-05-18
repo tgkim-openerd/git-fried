@@ -1,0 +1,41 @@
+#Requires AutoHotkey v2.0
+; Plan #40 Phase 3 — Workspace 영역
+;
+; 단순 navigation: Ctrl+O (Open Repo) dialog 진입 + 닫기 (Esc) — workspace dropdown 비교 baseline
+
+#Include ..\lib\gk-helpers.ahk2
+
+SpikeDir := A_ScriptDir . "\.."
+CaptureScript := SpikeDir . "\capture-screen.ps1"
+LogFile := SpikeDir . "\01-workspace-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== 01 Workspace ===`n", LogFile)
+WaitForUserUnattended(3, "Workspace capture 시작")
+
+gkHwnd := FindGitKrakenMainWindow(LogFile)
+if (!gkHwnd) {
+    ExitApp(10)
+}
+if (!SafeActivateGk(gkHwnd, LogFile)) {
+    ExitApp(11)
+}
+
+; 1. Default main view (workspace dropdown 닫힌 상태)
+CaptureWindow(gkHwnd, "01-workspace-default", CaptureScript, LogFile)
+
+; 2. Ctrl+O (Open Repo dialog)
+Send "^o"
+Sleep 1500
+CaptureWindow(gkHwnd, "01-workspace-open-dialog", CaptureScript, LogFile)
+
+; 3. Escape (close dialog)
+Send "{Escape}"
+Sleep 800
+CaptureWindow(gkHwnd, "01-workspace-after-esc", CaptureScript, LogFile)
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ExitApp(0)

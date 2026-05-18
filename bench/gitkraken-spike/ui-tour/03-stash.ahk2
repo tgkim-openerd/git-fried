@@ -1,0 +1,44 @@
+#Requires AutoHotkey v2.0
+; Plan #40 Phase 3 — Stash 영역
+;
+; image search anchor 없이 cover 가능한 시나리오:
+;   1. default view (sidebar 의 STASHES 섹션 visible 가정)
+;   2. Ctrl+S (Stash 생성 hotkey?) — GitKraken hotkey 확인용
+;   3. Escape
+
+#Include ..\lib\gk-helpers.ahk2
+
+SpikeDir := A_ScriptDir . "\.."
+CaptureScript := SpikeDir . "\capture-screen.ps1"
+LogFile := SpikeDir . "\03-stash-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== 03 Stash ===`n", LogFile)
+WaitForUserUnattended(3, "Stash capture 시작")
+
+gkHwnd := FindGitKrakenMainWindow(LogFile)
+if (!gkHwnd) {
+    ExitApp(10)
+}
+if (!SafeActivateGk(gkHwnd, LogFile)) {
+    ExitApp(11)
+}
+
+; 1. Default view — sidebar 의 STASHES 섹션이 보이는 상태 (사전 setup)
+CaptureWindow(gkHwnd, "03-stash-default", CaptureScript, LogFile)
+
+; 2. Ctrl+S — GitKraken 의 Stash 생성 hotkey? (확인용)
+Send "^s"
+Sleep 1200
+CaptureWindow(gkHwnd, "03-stash-ctrl-s", CaptureScript, LogFile)
+
+; 3. Escape (모달 / 다이얼로그 있으면 닫기)
+Send "{Escape}"
+Sleep 800
+CaptureWindow(gkHwnd, "03-stash-after-esc", CaptureScript, LogFile)
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ExitApp(0)

@@ -1,0 +1,28 @@
+#Requires AutoHotkey v2.0
+; Plan #40 Phase 3 — Worktree 영역
+;
+; image search anchor 없이 cover 가능: sidebar WORKTREES expanded 가정
+
+#Include ..\lib\gk-helpers.ahk2
+
+SpikeDir := A_ScriptDir . "\.."
+CaptureScript := SpikeDir . "\capture-screen.ps1"
+LogFile := SpikeDir . "\06-worktree-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== 06 Worktree ===`n", LogFile)
+WaitForUserUnattended(3, "Worktree capture 시작")
+
+gkHwnd := FindGitKrakenMainWindow(LogFile)
+if (!gkHwnd) {
+    ExitApp(10)
+}
+SafeActivateGkOrCapture(gkHwnd, LogFile)
+
+CaptureWindow(gkHwnd, "06-worktree-default", CaptureScript, LogFile)
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ExitApp(0)

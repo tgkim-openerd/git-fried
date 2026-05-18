@@ -1,0 +1,46 @@
+#Requires AutoHotkey v2.0
+; Plan #40 Phase 3 — Graph 영역 (8 시나리오 중 default + Ctrl+Home / End / 우측 detail)
+;
+; PoC v3: image search anchor 없이 keyboard / hotkey 만으로 cover 가능한 시나리오만
+
+#Include ..\lib\gk-helpers.ahk2
+
+SpikeDir := A_ScriptDir . "\.."
+CaptureScript := SpikeDir . "\capture-screen.ps1"
+LogFile := SpikeDir . "\02-graph-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== 02 Graph ===`n", LogFile)
+WaitForUserUnattended(3, "Graph capture 시작")
+
+gkHwnd := FindGitKrakenMainWindow(LogFile)
+if (!gkHwnd) {
+    ExitApp(10)
+}
+if (!SafeActivateGk(gkHwnd, LogFile)) {
+    ExitApp(11)
+}
+
+; 1. Default graph view
+CaptureWindow(gkHwnd, "02-graph-default", CaptureScript, LogFile)
+
+; 2. Ctrl+Home (graph top — HEAD/most recent)
+Send "^{Home}"
+Sleep 800
+CaptureWindow(gkHwnd, "02-graph-top", CaptureScript, LogFile)
+
+; 3. Ctrl+End (graph bottom — oldest commit)
+Send "^{End}"
+Sleep 1500  ; large scroll
+CaptureWindow(gkHwnd, "02-graph-bottom", CaptureScript, LogFile)
+
+; 4. Ctrl+Home 복귀
+Send "^{Home}"
+Sleep 800
+CaptureWindow(gkHwnd, "02-graph-home-return", CaptureScript, LogFile)
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ExitApp(0)
