@@ -241,7 +241,7 @@ pub async fn merge_into_head(
         && (out.stdout.contains("CONFLICT") || out.stderr.contains("CONFLICT"));
     let elapsed_ms = started.elapsed().as_millis() as u64;
     if out.exit_code == Some(0) {
-        tracing::info!(target: "git_fried_lib::merge", repo = %path.display(), source, elapsed_ms, "merge_into_head 완료");
+        tracing::info!(target: "git_fried_lib::merge", repo = %path.display(), source, no_ff, no_commit, squash, elapsed_ms, "merge_into_head 완료");
     } else if conflicted {
         tracing::warn!(target: "git_fried_lib::merge", repo = %path.display(), source, elapsed_ms, "merge_into_head conflict — 호출자 처리");
     } else {

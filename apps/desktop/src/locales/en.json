@@ -428,7 +428,7 @@
     "amendPushedMessage": "This commit may already be pushed.\n• ahead = 0 (all local commits are on remote)\n• Amending changes the last commit hash → teammates' fetch may conflict\n• Resolution: push then force-push (--force-with-lease) required",
     "mergeIntoHeadTitle": "Merge",
     "mergeIntoHeadMessage": "Merge '{name}' into current HEAD?",
-    "mergeIntoHeadMessageSquash": "**Squash merge** '{name}' into current HEAD? (Applies changes as a single working-tree change, commit separately.)",
+    "mergeIntoHeadMessageSquash": "Squash merge '{name}' into current HEAD?\n• Applies changes as a single working-tree change\n• Commit needs to be performed separately",
     "rebaseOntoTitle": "Rebase",
     "rebaseOntoMessage": "Rebase current HEAD onto '{name}'?\n⚠ On conflict, --continue is required.",
     "cherryPickHeadMessage": "Cherry-pick commit {sha} onto current HEAD?",

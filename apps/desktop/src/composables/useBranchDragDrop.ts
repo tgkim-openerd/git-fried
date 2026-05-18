@@ -23,6 +23,9 @@ import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useI18n } from 'vue-i18n'
 import { confirmDialog, promptDialog } from '@/composables/useConfirm'
+// Plan #42 M-1.2 squashByDefault wire (Sprint c98 Codex 7차 audit MED) —
+// drag-drop merge path 도 commitSquashByDefault 적용.
+import { useGeneralSettings } from '@/composables/useUserSettings'
 
 const DT_BRANCH = 'application/x-git-fried-branch'
 const DT_COMMIT = 'application/x-git-fried-commit'
@@ -37,6 +40,8 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
   const toast = useToast()
   const invalidate = useInvalidateRepoQueries()
   const { t } = useI18n()
+  // Plan #42 M-1.2 wire (Codex 7차 audit MED) — drag-drop merge 도 squash 적용.
+  const general = useGeneralSettings()
 
   const dragOverIdx = ref<number | null>(null)
 
@@ -112,9 +117,20 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
       try {
         if (a === 'm' || a === 'merge') {
           await opts.switchAsync(repoId, opts.localName(target.name))
-          const r = await mergeBranch(repoId, opts.localName(branchName), true, false)
+          // Plan #42 M-1.2 wire — Settings.commitSquashByDefault 적용.
+          const useSquash = general.value.commitSquashByDefault
+          const r = await mergeBranch(
+            repoId,
+            opts.localName(branchName),
+            !useSquash, // noFf: squash 시 false (--squash 가 no-ff 자동)
+            false,
+            useSquash,
+          )
           if (r.success) {
-            toast.success('Merge 완료', `${branchName} → ${target.name}`)
+            toast.success(
+              useSquash ? t('branchActions.toastMergeSquashSuccess') : 'Merge 완료',
+              `${branchName} → ${target.name}`,
+            )
           } else if (r.conflicted) {
             toast.error('Merge 충돌', '변경 패널에서 해결')
           } else {
