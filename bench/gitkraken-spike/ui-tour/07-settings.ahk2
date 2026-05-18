@@ -1,0 +1,130 @@
+#Requires AutoHotkey v2.0
+; Plan #40 Phase 2 PoC v2 — SC-07-1 Settings 모달 진입 (WinList enumerate 강화)
+;
+; v1 결함 (2026-05-18 첫 실행):
+;   - WinExist("ahk_exe gitkraken.exe") = hwnd 8067510 가 main visible window 아님
+;   - WinActivate 후 Cursor IDE 가 곧바로 foreground 회수 → Ctrl+, 가 Cursor 로 전달
+;   - 캡처가 GitKraken 아닌 Cursor 화면
+;
+; v2 보정:
+;   1. WinGetList enumerate → visible + size ≥ 800x600 + title 조건 main window 선별
+;   2. WinRestore + WinActivate + WinWaitActive 5s
+;   3. WinActive 재확인 (Cursor 회수 방지)
+;   4. capture-screen.ps1 호출 시 -Hwnd 전달 (PrintWindow window-only)
+;
+; 실행: pwsh -NoProfile -File scripts/run-ahk2.ps1 -Script bench/gitkraken-spike/ui-tour/07-settings.ahk2 -TimeoutSec 60
+
+SpikeDir := A_ScriptDir . "\.."
+CaptureScript := SpikeDir . "\capture-screen.ps1"
+LogFile := SpikeDir . "\07-settings-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== SC-07-1 Settings PoC v2 ===`n", LogFile)
+FileAppend("A_Now: " . A_Now . "`n", LogFile)
+FileAppend("A_ScreenDPI: " . A_ScreenDPI . "`n", LogFile)
+
+; --- Helper: GitKraken main visible window 찾기 ---
+FindGitKrakenMainWindow() {
+    global LogFile
+    hwnds := WinGetList("ahk_exe gitkraken.exe")
+    FileAppend("WinGetList found " . hwnds.Length . " gitkraken.exe windows`n", LogFile)
+    bestHwnd := 0
+    bestArea := 0
+    for hwnd in hwnds {
+        try {
+            title := WinGetTitle("ahk_id " . hwnd)
+            mm := WinGetMinMax("ahk_id " . hwnd)  ; -1 minimized, 0 normal, 1 maximized
+            x := 0, y := 0, w := 0, h := 0
+            WinGetPos(&x, &y, &w, &h, "ahk_id " . hwnd)
+            area := w * h
+            FileAppend("  hwnd=" . hwnd . " title='" . title . "' mm=" . mm . " pos=" . x . "," . y . " size=" . w . "x" . h . "`n", LogFile)
+            ; main window 조건: title non-empty, size 큰 것, minimized 도 OK (Restore 가능)
+            if (title != "" && w >= 800 && h >= 600 && area > bestArea) {
+                bestHwnd := hwnd
+                bestArea := area
+            }
+        } catch as e {
+            FileAppend("  hwnd=" . hwnd . " err: " . e.Message . "`n", LogFile)
+        }
+    }
+    return bestHwnd
+}
+
+; --- 1. unattended 안내 (5초) ---
+ToolTip("GitKraken 자동 제어 v2 — 5초 후 시작. 마우스/키보드 사용 X", 100, 100)
+Loop 5 {
+    ToolTip("GitKraken 자동 제어 v2 — " . (6 - A_Index) . "초 후 시작", 100, 100)
+    Sleep 1000
+}
+ToolTip()
+
+; --- 2. main window 식별 ---
+gkHwnd := FindGitKrakenMainWindow()
+if (!gkHwnd) {
+    FileAppend("[ERROR] No suitable GitKraken main window found`n", LogFile)
+    ToolTip("실패: GitKraken main window 못 찾음", 100, 100)
+    Sleep 3000
+    ToolTip()
+    ExitApp(10)
+}
+FileAppend("Selected main hwnd: " . gkHwnd . "`n", LogFile)
+
+; --- 3. Restore + Activate ---
+mm := WinGetMinMax("ahk_id " . gkHwnd)
+if (mm == -1) {
+    FileAppend("Window minimized — WinRestore`n", LogFile)
+    WinRestore("ahk_id " . gkHwnd)
+    Sleep 500
+}
+WinActivate("ahk_id " . gkHwnd)
+if (!WinWaitActive("ahk_id " . gkHwnd, , 5)) {
+    FileAppend("[ERROR] WinWaitActive timeout 5s`n", LogFile)
+    ToolTip("실패: WinActivate timeout (다른 app 이 focus 점유)", 100, 100)
+    Sleep 3000
+    ToolTip()
+    ExitApp(11)
+}
+Sleep 1200  ; transition 충분히
+title := WinGetTitle("ahk_id " . gkHwnd)
+FileAppend("Activated title: " . title . "`n", LogFile)
+
+; --- 4. Active 재확인 ---
+activeHwnd := WinGetID("A")  ; current active
+FileAppend("Currently active hwnd: " . activeHwnd . " (expected " . gkHwnd . ")`n", LogFile)
+if (activeHwnd != gkHwnd) {
+    FileAppend("[ERROR] Focus stolen by another window`n", LogFile)
+    ToolTip("실패: focus 가 다른 app 으로 회수됨 (Cursor/IDE 가 점유)", 100, 100)
+    Sleep 3000
+    ToolTip()
+    ExitApp(12)
+}
+
+; --- 5. capture before (window-only via PrintWindow) ---
+FileAppend("Capturing before (hwnd=" . gkHwnd . ")`n", LogFile)
+hwndHex := Format("0x{:X}", gkHwnd)
+RunWait('pwsh -NoProfile -File "' . CaptureScript . '" -Label "07-settings-v2-before" -Hwnd ' . hwndHex, , "Hide")
+Sleep 300
+
+; --- 6. Send Ctrl+, ---
+FileAppend("Sending Ctrl+,`n", LogFile)
+Send "^,"
+Sleep 1800  ; transition 충분히
+
+; --- 7. capture after ---
+FileAppend("Capturing after`n", LogFile)
+RunWait('pwsh -NoProfile -File "' . CaptureScript . '" -Label "07-settings-v2-after" -Hwnd ' . hwndHex, , "Hide")
+Sleep 300
+
+; --- 8. Escape ---
+FileAppend("Sending Escape`n", LogFile)
+Send "{Escape}"
+Sleep 800
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ToolTip("PoC v2 완료. 캡처 + 로그 확인", 100, 100)
+Sleep 2000
+ToolTip()
+ExitApp(0)
