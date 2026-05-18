@@ -529,6 +529,16 @@
       },
       "futureNote": "v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정."
     },
+    "conflictPrevention": {
+      "title": "Conflict Prevention",
+      "description": "병합 전에 target branch 와의 잠재 충돌을 사전 감지해 StatusBar 에 경고합니다. GitKraken Repo-Specific Preferences 의 동등 항목 (Plan #42 H-1).",
+      "enabledLabel": "Conflict Prevention 활성",
+      "enabledHint": "백그라운드 폴링으로 target branch 충돌 예측 (60s ~ 분 단위, 아래 interval 설정).",
+      "intervalLabel": "폴링 간격",
+      "intervalHint": "0 = 즉시 폴 (debug, battery/network 부담). 1~60 권장 (default 5분).",
+      "intervalUnit": "분",
+      "perRepoNote": "현재 global default 설정. per-repo override 는 다음 sprint (Plan #42 M-1.1) 에서 RepoSpecificForm 통합 예정."
+    },
     "maintenanceSection": {
       "description": "현재 활성 레포에 git gc / fsck / lfs install 실행. 거대 레포는 수 분 걸릴 수 있습니다.",
       "noActiveRepoWarning": "⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.",
@@ -600,6 +610,7 @@
       "profiles": "프로파일",
       "forge": "Forge 계정 (PAT)",
       "repoSpecific": "Repository-Specific",
+      "conflictPrevention": "Conflict Prevention",
       "editor": "에디터 / 터미널 (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

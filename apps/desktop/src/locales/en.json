@@ -529,6 +529,16 @@
       },
       "futureNote": "v1.x: External diff/merge tool launch, Terminal font/cursor settings."
     },
+    "conflictPrevention": {
+      "title": "Conflict Prevention",
+      "description": "Detect potential conflicts with the target branch before merging, surfaced in the StatusBar. Equivalent to GitKraken Repo-Specific Preferences (Plan #42 H-1).",
+      "enabledLabel": "Enable conflict prevention",
+      "enabledHint": "Background polling predicts target-branch conflicts (60s ~ minutes, set interval below).",
+      "intervalLabel": "Polling interval",
+      "intervalHint": "0 = immediate (debug only, battery/network heavy). 1-60 recommended (default 5 min).",
+      "intervalUnit": "min",
+      "perRepoNote": "Currently global default. Per-repo override planned for next sprint (Plan #42 M-1.1) via RepoSpecificForm."
+    },
     "maintenanceSection": {
       "description": "Run git gc / fsck / lfs install on the active repository. Large repos may take several minutes.",
       "noActiveRepoWarning": "⚠ No active repository. Select a repo from the Sidebar.",
@@ -600,6 +610,7 @@
       "profiles": "Profiles",
       "forge": "Forge accounts (PAT)",
       "repoSpecific": "Repository-Specific",
+      "conflictPrevention": "Conflict Prevention",
       "editor": "Editor / Terminal (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

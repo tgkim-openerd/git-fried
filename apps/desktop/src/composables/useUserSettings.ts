@@ -19,6 +19,13 @@ export interface GeneralSettings {
   /** Sprint D4: 백그라운드 Conflict prediction (StatusBar) 활성. */
   conflictDetection: boolean
   /**
+   * Plan #42 H-1 (Sprint c96+) — Conflict prediction 폴링 간격 (분 단위). default 5.
+   * 0 = 즉시 폴 (debug only — battery/network 부담). 1~60 권장 범위.
+   * Codex 1차 페어 (a360d071bdc15d908) — GitKraken Auto-Fetch 의 사용자값 1 보다
+   * 보수적 default.
+   */
+  conflictDetectionIntervalMin: number
+  /**
    * v1.0 #26 (UltraPlan plan/31) — Telemetry opt-in (privacy by default).
    * §9 Q8 권장: 미진행 (default false). 사용자 명시 opt-in 시만 Sentry 류 전송.
    * 본 flag false 시 모든 telemetry 비활성 (registerGlobalErrorHandler 도 IPC
@@ -103,6 +110,7 @@ function defaultGeneral(): GeneralSettings {
     rememberTabs: true,
     autoUpdateSubmodules: false,
     conflictDetection: true,
+    conflictDetectionIntervalMin: 5,
   }
 }
 

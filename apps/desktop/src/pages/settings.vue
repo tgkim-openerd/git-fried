@@ -24,6 +24,8 @@ import SettingsUiCustomization from '@/components/SettingsUiCustomization.vue'
 import SettingsEditor from '@/components/SettingsEditor.vue'
 import SettingsMaintenance from '@/components/SettingsMaintenance.vue'
 import SettingsPluginIntegration from '@/components/SettingsPluginIntegration.vue'
+// Plan #42 H-1 — Conflict Prevention Settings UI 노출 (Sprint c96+).
+import SettingsConflictPrevention from '@/components/SettingsConflictPrevention.vue'
 import { useUiState } from '@/composables/useUiState'
 
 type Category =
@@ -33,6 +35,7 @@ type Category =
   | 'ui'
   | 'editor'
   | 'repoSpecific'
+  | 'conflictPrevention'
   | 'maintenance'
   | 'migrate'
   | 'about'
@@ -58,7 +61,13 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     id: 'workspace',
     label: '워크스페이스',
-    items: [{ id: 'repoSpecific', label: 'Repository-Specific' }],
+    items: [
+      { id: 'repoSpecific', label: 'Repository-Specific' },
+      // Plan #42 H-1 (Sprint c96+) — GitKraken Settings 의 Repo-Specific
+      // Conflict Prevention 의 git-fried 매핑. global default 우선 (per-repo
+      // override 는 다음 sprint M-1.1).
+      { id: 'conflictPrevention', label: 'Conflict Prevention' },
+    ],
   },
   {
     id: 'editor',
@@ -108,6 +117,7 @@ const ITEM_I18N_KEY: Record<string, string> = {
   profiles: 'settings.items.profiles',
   forge: 'settings.items.forge',
   repoSpecific: 'settings.items.repoSpecific',
+  conflictPrevention: 'settings.items.conflictPrevention',
   editor: 'settings.items.editor',
   ui: 'settings.items.ui',
   maintenance: 'settings.items.maintenance',
@@ -200,6 +210,9 @@ const buildInfo = computed(() => ({
 
       <!-- Repository-Specific -->
       <RepoSpecificForm v-else-if="active === 'repoSpecific'" />
+
+      <!-- Plan #42 H-1 — Conflict Prevention -->
+      <SettingsConflictPrevention v-else-if="active === 'conflictPrevention'" />
 
       <!-- 유지보수 -->
       <SettingsMaintenance v-else-if="active === 'maintenance'" />
