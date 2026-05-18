@@ -4,12 +4,14 @@
 >
 > 본 비교표는 부분 cover (Phase 2 Settings detail + Phase 3 7영역 default view). PoC v4 (image search anchor + 사용자 sidebar 모든 섹션 expand setup) 결과 보강 후 update 권고.
 
-## parity matrix (20 row)
+## parity matrix (30+ row — Plan #41 Step 1 update)
+
+> Plan #41 Step 1 결과: Repo-Specific Preferences 가 3 → **10 항목** 으로 확장 발견 (Codex 1차 페어 검증 완료). 7 신규 row 추가.
 
 | # | 영역 | GitKraken 동작 | git-fried 대응 | parity | backlog / 결정 |
 | --- | --- | --- | --- | --- | --- |
 | 01 | Settings 진입 | `Ctrl+,` → full-page replacement (modal X) | `pages/settings/` route 별도 페이지 | ✓ 동일 패턴 | — |
-| 02 | Settings nav 구조 | 12 global + 3 repo-specific (Encoding/Gitflow/Git Hooks 는 repo-specific 하위) | `pages/settings/sections/*.vue` (flat structure) | △ 부분 | SB-XXX repo-specific sub-nav 분리 후보 |
+| 02 | Settings nav 구조 | **12 global + 10 repo-specific** (Plan #41 Step 1 정정 — 이전 단정 3 REFUTED) | `pages/settings/sections/*.vue` (flat structure) | △ 부분 | SB-XXX repo-specific sub-nav 분리 후보 |
 | 03 | Auto-Fetch Interval | 사용자값 `1` (default 미확정) | Sprint c95 SB-028: default 0 → 5min (`ace68a0`) | △ baseline 불일치 가능 | SB-028 cross-check (PoC v4) |
 | 04 | Initial Commits in Graph | `2000` + Lazy Load toggle | Sprint c74 STEP 500 / CAP 5000 | △ 전략 차이 | UX 결정 — STEP 크기 조정 검토 |
 | 05 | Repo-Specific Preferences | 좌하단 별도 섹션 (Encoding/Gitflow/Git Hooks) | SB-013 per-repo forge override (Sprint c81 commit `1784c3f`) | ✓ 패턴 동일 | parity 확장 (Gitflow/Git Hooks 후보) |
@@ -29,14 +31,29 @@
 | 19 | **Right detail panel file view** | Path/Tree segmented + View all files checkbox + parent/commit hash | CommitDetailSidebar.vue (399 LOC, Sprint c67) | △ 부분 | **SB-NEW-4 MED** — Path/Tree toggle 신규 |
 | 20 | **Tab row polish** | active tab close `x` + 우측 `+` 새 탭 + drag handle | RepoTabBar.vue (Sprint c64, 127 LOC) | △ 부분 | **SB-NEW-5 LOW** — `+` 새 탭 + close `x` 검증 |
 
-## parity 통계
+### Plan #41 Step 1 신규 row (Repo-Specific 7 신규 항목)
+
+| # | 영역 | GitKraken 동작 | git-fried 대응 (Codex 1차) | parity | backlog / 결정 |
+| --- | --- | --- | --- | --- | --- |
+| 21 | Repo-Specific Encoding | i18n.commitEncoding / logOutputEncoding 등 per-repo override | PARTIAL Rust `config_local.rs` + Vue `RepoSpecificForm.vue` B2 | △ HIGH | identity-core 한글 안전 — Settings UI 통합 권고 |
+| 22 | Repo-Specific Gitflow | per-repo gitflow branch.* 설정 | PARTIAL Rust `config_local.rs` gitflow.* | △ LOW | 1인 환경 가치 낮음 — 미구현 유지 권고 |
+| 23 | Repo-Specific Git Hooks | per-repo `core.hooksPath` 관리 + hook list | PARTIAL Rust `core.hooksPath` + Vue `RepoSpecificForm.vue` B1 | △ MED | hook manager UI 신규 후보 |
+| 24 | **Repo-Specific Commit** | Push after each commit / Skip git hooks / Squash / Commit Template (Codex 1차 신규) | PARTIAL Rust `commit.rs` + gpgsign | △ HIGH | Commit template / Squash toggle UI 신규 |
+| 25 | **Repo-Specific Agents** | 외부 AI agent 연동 (cloud) | PARTIAL/DIFFERENT `ai/runner.rs` (CLI subprocess 다른 개념) | ✗ **거부 권고** | git-fried 정체성 충돌 (cloud SaaS), 미구현 유지 |
+| 26 | **Repo-Specific Conflict Prevention** | per-repo 충돌 사전 검출 옵션 | **YES** Rust `conflict_prediction.rs` + `v02_commands.rs` IPC + Vue `StatusBar.vue` + `useUserSettings.ts` | △ HIGH | **Settings UI 노출만 필요** — 빠른 win |
+| 27 | **Repo-Specific LFS** | per-repo LFS track / install / fetch | **YES** Rust `lfs.rs` + `lfs_commands.rs` (7 IPC) + Vue `LfsPanel.vue` + `api/git.ts` | △ HIGH | **Settings UI 노출만 필요** — 빠른 win |
+| 28 | **Repo-Specific Sparse Checkout** | per-repo sparse manager | PARTIAL Rust `clone.rs` CloneOptions.sparse_paths (clone 시점만) + Vue `CloneRepoModal.vue` | △ MED | repo-specific manager UI 신규 |
+| 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | PARTIAL Rust forge issue list + Vue `IssuesPanel.vue` + `useExternalIssueTracker.ts` (skeleton) | △ MED | Gitea/GitHub 1급 — 외부 tracker (Jira/Linear) 제외 |
+| 30 | **Repo-Specific Team** | "Select a team for this repo" collab | NO Rust + NO Vue | ✗ | LOW — local profiles 대체 가능 |
+
+## parity 통계 (30 row)
 
 - ✓ **완전 parity**: 4 (Settings 진입 / Repo-Specific 패턴 / Explain commit AI / scroll)
-- △ **부분 parity**: 9 (nav 구조 / Auto-Fetch / Initial Commits / AI 통합 위치 / Status bar / Top toolbar / Sidebar counts / Right panel / Tab polish + scroll hotkey)
-- ✗ **git-fried 미구현**: 4 (Commit Signing / Gitflow / Git Hooks / Stash hotkey)
-- ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree)
+- △ **부분 parity**: 16 (9 기존 + 7 신규 Repo-Specific 중 6 PARTIAL — Encoding / Gitflow / Git Hooks / Commit / Conflict Prevention / LFS / Sparse Checkout / Issue Tracker)
+- ✗ **git-fried 미구현 또는 거부**: 6 (Commit Signing UI / Stash hotkey + Agents 거부 / Team 미구현)
+- ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree dialog)
 
-전체 20 row 중 ✓ 4 / △ 9 / ✗ 4 / ? 3.
+전체 30 row 중 ✓ 4 / △ 16 / ✗ 6 / ? 3 = git-fried coverage ~67% (✓ + △ = 20/30).
 
 ## Codex 합류 가치 (Memory Rule 3 실측)
 

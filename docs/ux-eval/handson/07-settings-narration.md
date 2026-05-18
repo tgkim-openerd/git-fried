@@ -17,7 +17,7 @@
 
 **시나리오 가정 정정 1**: Settings 는 **modal 이 아닌 full-page replacement**. 좌측 sidebar 가 통째로 Preferences nav 로 전환, 우측 panel 이 settings form. 상단 탭 row (open 한 repo 들) 와 메뉴바 (File/Edit/View/Help) 는 유지.
 
-**좌측 nav 구조 (12 global + 3 repo-specific — Codex REFUTED 정정)**:
+**좌측 nav 구조 (12 global + 10 repo-specific — Plan #41 Step 1 Codex 2차 REFUTED 정정)**:
 
 | 그룹 | 항목 |
 | --- | --- |
@@ -26,9 +26,26 @@
 | Organization | TaeKyum Kim |
 | **Preferences (global 12)** | General / Profiles / SSH / Integrations / GitKraken AI / External Tools / Notifications / UI Customization / Commit Signing / Editor / In-App Terminal / Experimental |
 | Repo-Specific Preferences | `Repo: react-native` (현재 active repo) |
-| **Repo-Specific sub-nav (3)** | Encoding / Gitflow / Git Hooks (Codex 검증 — global 이 아니라 repo 별 override) |
+| **Repo-Specific sub-nav (10)** | Encoding / Gitflow / Git Hooks / **Commit / Agents / Conflict Prevention / LFS / Sparse Checkout / Issue Tracker / Team** (Plan #41 Step 1 신규 7 추가) |
 
-> **Codex cross-validation 정정 (Memory Rule 3 적용)**: 초기 draft 의 "Preferences 15 항목" 단정 REFUTED. Encoding / Gitflow / Git Hooks 는 global Preferences 가 아니라 **Repo-Specific Preferences 하위 sub-nav**. 이 분리는 git-fried 의 per-repo settings 설계에 영향 — global vs repo override 의 명시 분리 가치.
+> **Plan #41 Step 1 신규 발견 (2차 REFUTED)**: Plan #40 Phase 2/3 Codex 검증의 "3 repo-specific items (Encoding/Gitflow/Git Hooks)" 단정 = 다시 REFUTED. 실제는 **10 항목** — 7 신규 (Commit / Agents / Conflict Prevention / LFS / Sparse Checkout / Issue Tracker / Team) 발견. Multi-round Codex 페어 검증의 가치 정량 증명 — vision rule 35% baseline 외에도 multi-pass 가 추가 finding emit.
+
+**Plan #41 Step 1 Codex 1차 페어 — git-fried implementation 정량**:
+
+| # | 영역 | Rust | Vue | 평가 |
+| --- | --- | --- | --- | --- |
+| 1 | Encoding | PARTIAL `config_local.rs` | PARTIAL `RepoSpecificForm.vue` | HIGH (identity-core) |
+| 2 | Gitflow | PARTIAL `config_local.rs` gitflow.* | PARTIAL `RepoSpecificForm.vue` | LOW (1인 환경) |
+| 3 | Git Hooks | PARTIAL `core.hooksPath` | PARTIAL | MED |
+| 4 | Commit | PARTIAL `commit.rs` + gpgsign | PARTIAL `CommitMessageInput.vue` | HIGH (GPG/Squash/Template) |
+| 5 | Agents | PARTIAL/DIFFERENT `ai/runner.rs` | `useAiCli.ts` | **거부 권고** (cloud SaaS 정체성 충돌) |
+| 6 | Conflict Prevention | **YES** `conflict_prediction.rs` + IPC | YES `StatusBar.vue` | HIGH (UI 노출만 필요) |
+| 7 | LFS | **YES** `lfs.rs` + 7 IPC | YES `LfsPanel.vue` | HIGH (Settings 노출만) |
+| 8 | Sparse Checkout | PARTIAL `clone.rs` (clone 시점만) | PARTIAL `CloneRepoModal.vue` | MED |
+| 9 | Issue Tracker | PARTIAL `forge/gitea.rs` `forge/github.rs` | PARTIAL `IssuesPanel.vue` | MED (외부 tracker 제외) |
+| 10 | Team | NO | NO | LOW (local profiles 대체) |
+
+**핵심 인사이트**: 6/10 항목 이미 구현 (PARTIAL ~ YES). Settings UI 노출 + per-repo override hook 만 추가하면 빠른 wins.
 
 ### 우측 panel — General 활성 항목
 
