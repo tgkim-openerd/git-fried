@@ -545,6 +545,8 @@
       "sampleDescription": "git init 의 기본 template `.sample` 파일. 활성화하려면 `.sample` 확장자 제거 + 실행 권한 부여 (chmod +x).",
       "nonStandardLabel": "비표준",
       "nonStandardHint": "표준 hook 이름이 아닌 파일 (lefthook / husky / 사용자 정의 wrapper)",
+      "notExecutableLabel": "실행 불가",
+      "notExecutableHint": "executable bit 없음 — git 은 실행 안 함. Unix: `chmod +x` 필요. Windows: 일반적으로 무시 (Git for Windows ACL 기준)",
       "missingSummary": "표준 hook 중 미설치 {n}개 (펼쳐서 확인)",
       "editNote": "💡 hook 편집은 직접 파일 열기 (`.git/hooks/<name>`). enable/disable 토글 + 외부 lefthook 통합은 다음 sprint (Plan #42 M-1 후속)."
     },

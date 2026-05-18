@@ -12,18 +12,26 @@ import { useQuery } from '@tanstack/vue-query'
 import { listGitHooks } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useReposStore } from '@/stores/repos'
+// Plan #42 M-1 (Codex 8차 HIGH fix) — core.hooksPath 자동 반영 (RepoSpecificForm
+// 의 hooksPath 변경 시 hook list 도 그 경로 scan).
+import { useRepoConfig } from '@/composables/useRepoConfig'
 import EmptyState from '@/components/EmptyState.vue'
 import SkeletonBlock from '@/components/SkeletonBlock.vue'
 
 const { t } = useI18n()
 const reposStore = useReposStore()
 const activeRepoId = computed<number | null>(() => reposStore.activeRepoId)
+const repoConfig = useRepoConfig(activeRepoId)
+const hooksPathOverride = computed<string | null>(
+  () => repoConfig.query.data.value?.hooksPath ?? null,
+)
 
 const hooksQuery = useQuery({
-  queryKey: computed(() => ['git-hooks', activeRepoId.value]),
+  // Codex 8차 MED — hooksPath 변경 시 자동 refetch (queryKey 에 포함).
+  queryKey: computed(() => ['git-hooks', activeRepoId.value, hooksPathOverride.value]),
   queryFn: () => {
     if (activeRepoId.value == null) return Promise.resolve([])
-    return listGitHooks(activeRepoId.value, null)
+    return listGitHooks(activeRepoId.value, hooksPathOverride.value)
   },
   enabled: computed(() => activeRepoId.value != null),
 })
@@ -86,6 +94,14 @@ const missingHooks = computed(() =>
                   :title="t('settings.gitHooks.nonStandardHint')"
                 >
                   {{ t('settings.gitHooks.nonStandardLabel') }}
+                </span>
+                <!-- Codex 8차 HIGH — non-executable hook 은 git 이 ignore. 사용자 안내. -->
+                <span
+                  v-if="!h.executable"
+                  class="rounded bg-red-500/20 px-1 text-[10px] text-red-700 dark:text-red-300"
+                  :title="t('settings.gitHooks.notExecutableHint')"
+                >
+                  {{ t('settings.gitHooks.notExecutableLabel') }}
                 </span>
               </span>
               <span class="text-[11px] text-muted-foreground">

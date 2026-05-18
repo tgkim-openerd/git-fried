@@ -7,7 +7,25 @@
 
 use crate::error::AppResult;
 use serde::{Deserialize, Serialize};
+use std::fs::Metadata;
 use std::path::{Path, PathBuf};
+
+/// Plan #42 M-1 (Codex 8차 HIGH fix) — executable bit 판단.
+/// Unix: mode & 0o111 (owner/group/other 중 하나라도 +x).
+/// Windows: 권한 모델 다름 (.exe/.bat/.cmd 확장자 또는 ACL) — 보수적으로 true 반환.
+#[cfg(unix)]
+fn is_executable(metadata: Option<&Metadata>) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    metadata
+        .map(|m| m.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false)
+}
+
+#[cfg(not(unix))]
+fn is_executable(metadata: Option<&Metadata>) -> bool {
+    // Windows 의 git for windows 는 sh script 를 ACL 기준 실행. file 존재만으로 충분.
+    metadata.is_some()
+}
 
 /// Git 의 표준 hook 이름 — `man githooks`. 사용자 환경에 없는 hook 도 entry 반환 (exists=false).
 pub const STANDARD_HOOK_NAMES: &[&str] = &[
@@ -56,6 +74,10 @@ pub struct HookEntry {
     pub path: Option<PathBuf>,
     /// 파일 크기 (bytes, exists=true 시)
     pub size: Option<u64>,
+    /// Plan #42 M-1 (Codex 8차 HIGH fix) — executable bit (Unix 0o111, Windows 항상 true).
+    /// git 은 non-executable hook 을 ignore — `exists=true` + `executable=false` 시
+    /// "파일 있으나 git 이 실행 안 함" 안내 필요.
+    pub executable: bool,
 }
 
 /// `.git/hooks/` 또는 `core.hooksPath` 디렉토리 scan + 표준 hook 28개 + 추가 발견 hook 통합 반환.
@@ -92,6 +114,7 @@ pub async fn list_git_hooks(
             sample_exists: false,
             path: None,
             size: None,
+            executable: false,
         })
         .collect();
 
@@ -129,7 +152,15 @@ pub async fn list_git_hooks(
             None => continue,
         };
         let metadata = ent.metadata().ok();
+        // Codex 8차 MED — directory/symlink 도 entry 로 표시될 가능성. file 만 채택.
+        if let Some(m) = metadata.as_ref() {
+            if !m.is_file() {
+                continue;
+            }
+        }
         let size = metadata.as_ref().map(|m| m.len());
+        // Codex 8차 HIGH — executable bit (Unix 0o111). Windows 는 권한 모델 다름 — 항상 true 처리.
+        let executable = is_executable(metadata.as_ref());
         let (base_name, is_sample) = if let Some(stripped) = file_name.strip_suffix(".sample") {
             (stripped.to_string(), true)
         } else {
@@ -144,6 +175,7 @@ pub async fn list_git_hooks(
                     entry.exists = true;
                     entry.path = Some(path.clone());
                     entry.size = size;
+                    entry.executable = executable;
                 }
             }
         } else if !is_sample {
@@ -155,6 +187,7 @@ pub async fn list_git_hooks(
                 sample_exists: false,
                 path: Some(path.clone()),
                 size,
+                executable,
             });
         }
     }

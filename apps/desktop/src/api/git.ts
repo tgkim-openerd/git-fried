@@ -456,6 +456,8 @@ export interface GitHookEntry {
   sampleExists: boolean
   path: string | null
   size: number | null
+  /** Plan #42 M-1 (Codex 8차) — Unix executable bit. git 은 non-executable hook ignore. */
+  executable: boolean
 }
 
 export const listGitHooks = (

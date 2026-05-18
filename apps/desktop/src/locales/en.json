@@ -545,6 +545,8 @@
       "sampleDescription": "Default `.sample` templates from git init. To activate, remove the `.sample` suffix and grant execute permission (chmod +x).",
       "nonStandardLabel": "non-std",
       "nonStandardHint": "Files outside the standard hook names (lefthook / husky / custom wrapper)",
+      "notExecutableLabel": "not exec",
+      "notExecutableHint": "Missing executable bit — git will not run this. Unix: run `chmod +x`. Windows: generally ignored (Git for Windows uses ACLs).",
       "missingSummary": "Standard hooks not installed: {n} (click to expand)",
       "editNote": "💡 Edit hooks by opening the file directly (`.git/hooks/<name>`). Enable/disable toggle + lefthook integration lands in the next sprint (Plan #42 M-1 follow-up)."
     },
