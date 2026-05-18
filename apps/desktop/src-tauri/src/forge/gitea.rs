@@ -464,6 +464,9 @@ impl RawPr {
             additions: self.additions,
             deletions: self.deletions,
             html_url: self.html_url,
+            // SB-017 (Phase 4, 2026-05-18) — ci_status 는 별도 endpoint
+            // (`/repos/{o}/{r}/statuses/{sha}`) 호출 필요. 본 매핑 단계 None.
+            ci_status: None,
         }
     }
 }

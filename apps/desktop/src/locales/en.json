@@ -760,7 +760,13 @@
     "reopen": "Reopen",
     "close": "Close",
     "merging": "Merging...",
-    "merge": "Merge"
+    "merge": "Merge",
+    "ciStatus": {
+      "passed": "CI passed",
+      "pending": "CI pending / review requested",
+      "failed": "CI failed / changes requested",
+      "draft": "Draft"
+    }
   },
   "stash": {
     "title": "Stash",

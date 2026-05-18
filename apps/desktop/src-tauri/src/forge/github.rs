@@ -474,6 +474,9 @@ impl RawPr {
             additions: self.additions,
             deletions: self.deletions,
             html_url: self.html_url,
+            // SB-017 — ci_status: list 응답에는 미포함, 별도 endpoint
+            // (`/repos/{o}/{r}/commits/{sha}/status`) 호출 필요. 본 매핑 단계 None.
+            ci_status: None,
         }
     }
 }

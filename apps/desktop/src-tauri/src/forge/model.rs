@@ -25,6 +25,24 @@ pub enum IssueState {
     Closed,
 }
 
+/// SB-017 (UltraPlan v0.4 sidebar microgap Phase 4, 2026-05-18) — PR head_sha 의 combined
+/// CI 상태. Gitea `/repos/{o}/{r}/statuses/{sha}` 의 state 또는 GitHub `/repos/{o}/{r}/
+/// commits/{sha}/status` 의 state 매핑.
+///
+/// Frontend 4 아이콘 매핑:
+///   - PR.draft=true → ⚫ gray D (CI status 무관, 최우선)
+///   - Success → 🟢 green check
+///   - Pending → 🟡 yellow dot
+///   - Failure → 🔴 red X
+///   - None (no CI run) → 표시 없음
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CiStatus {
+    Success,
+    Pending,
+    Failure,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Author {
@@ -64,6 +82,10 @@ pub struct PullRequest {
     pub additions: Option<u64>,
     pub deletions: Option<u64>,
     pub html_url: String,
+    /// SB-017 — head_sha 의 combined CI 상태 (별도 API 호출로 채움).
+    /// 미호출 / CI 없는 sha 는 None.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ci_status: Option<CiStatus>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -227,6 +249,53 @@ mod tests {
         ] {
             assert_eq!(serde_json::to_string(&kind).unwrap(), expected);
         }
+    }
+
+    #[test]
+    fn ci_status_serde_snake_case_three_variants() {
+        // SB-017 (Phase 4, 2026-05-18) — Gitea/GitHub combined CI state mapping.
+        for (kind, expected) in [
+            (CiStatus::Success, "\"success\""),
+            (CiStatus::Pending, "\"pending\""),
+            (CiStatus::Failure, "\"failure\""),
+        ] {
+            assert_eq!(serde_json::to_string(&kind).unwrap(), expected);
+        }
+        // round-trip
+        let back: CiStatus = serde_json::from_str("\"pending\"").unwrap();
+        assert_eq!(back, CiStatus::Pending);
+    }
+
+    #[test]
+    fn pull_request_ci_status_optional_default_none() {
+        // SB-017 — 기존 PR 응답 (ci_status 필드 없음) backward-compat.
+        let json = r#"{
+            "forgeKind":"github",
+            "owner":"tgkim","repo":"git-fried","number":1,
+            "title":"feat: x","bodyMd":"",
+            "state":"open","headBranch":"feat/x","baseBranch":"main",
+            "headSha":"abc","author":{"username":"tgkim"},
+            "createdAt":0,"updatedAt":0,"merged":false,
+            "draft":false,"labels":[],"comments":0,
+            "htmlUrl":"https://github.com/tgkim/git-fried/pull/1"
+        }"#;
+        let pr: PullRequest = serde_json::from_str(json).unwrap();
+        assert!(pr.ci_status.is_none());
+
+        // ci_status 채워진 케이스.
+        let json2 = r#"{
+            "forgeKind":"gitea",
+            "owner":"tgkim","repo":"git-fried","number":2,
+            "title":"feat: y","bodyMd":"",
+            "state":"open","headBranch":"feat/y","baseBranch":"main",
+            "headSha":"def","author":{"username":"tgkim"},
+            "createdAt":0,"updatedAt":0,"merged":false,
+            "draft":false,"labels":[],"comments":0,
+            "htmlUrl":"https://git.dev.opnd.io/tgkim/git-fried/pulls/2",
+            "ciStatus":"success"
+        }"#;
+        let pr2: PullRequest = serde_json::from_str(json2).unwrap();
+        assert_eq!(pr2.ci_status, Some(CiStatus::Success));
     }
 
     #[test]

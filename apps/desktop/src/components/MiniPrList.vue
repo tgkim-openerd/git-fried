@@ -42,13 +42,41 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
         :title="`#${p.number} ${p.title}\nby ${p.author.username} — ${p.headBranch} → ${p.baseBranch}`"
         @click="dispatchShortcut('tab6')"
       >
-        <span class="shrink-0 font-mono text-[10px] text-muted-foreground"> #{{ p.number }} </span>
+        <!-- SB-017 (Phase 4, 2026-05-18) — CI 4 아이콘 (GitKraken parity S9):
+             draft (gray D) 최우선, 그 후 ci_status (green/yellow/red), 없으면 미표시. -->
         <span
           v-if="p.draft"
-          class="shrink-0 rounded bg-muted/50 px-1 text-[9px] text-muted-foreground"
+          class="shrink-0 text-[10px] text-muted-foreground"
+          :title="t('pr.ciStatus.draft')"
+          :aria-label="t('pr.ciStatus.draft')"
         >
-          draft
+          ⚫
         </span>
+        <span
+          v-else-if="p.ciStatus === 'success'"
+          class="shrink-0 text-[10px] text-diff-add"
+          :title="t('pr.ciStatus.passed')"
+          :aria-label="t('pr.ciStatus.passed')"
+        >
+          ✓
+        </span>
+        <span
+          v-else-if="p.ciStatus === 'pending'"
+          class="shrink-0 text-[10px] text-warning-amber"
+          :title="t('pr.ciStatus.pending')"
+          :aria-label="t('pr.ciStatus.pending')"
+        >
+          ●
+        </span>
+        <span
+          v-else-if="p.ciStatus === 'failure'"
+          class="shrink-0 text-[10px] text-danger-rose"
+          :title="t('pr.ciStatus.failed')"
+          :aria-label="t('pr.ciStatus.failed')"
+        >
+          ✕
+        </span>
+        <span class="shrink-0 font-mono text-[10px] text-muted-foreground"> #{{ p.number }} </span>
         <span class="flex-1 truncate">{{ p.title }}</span>
         <span v-if="p.comments > 0" class="text-[9px] text-muted-foreground">
           💬{{ p.comments }}

@@ -760,7 +760,13 @@
     "reopen": "다시 열기",
     "close": "닫기",
     "merging": "머지 중...",
-    "merge": "머지"
+    "merge": "머지",
+    "ciStatus": {
+      "passed": "CI 통과",
+      "pending": "CI 진행 중 / 리뷰 대기",
+      "failed": "CI 실패 / 변경 요청",
+      "draft": "초안 (Draft)"
+    }
   },
   "stash": {
     "title": "Stash",

@@ -913,6 +913,12 @@ export interface ForgeLabel {
   name: string
   color: string
 }
+/**
+ * SB-017 (UltraPlan v0.4 sidebar microgap Phase 4, 2026-05-18) — PR head_sha 의 combined
+ * CI 상태. Rust `forge::model::CiStatus` 와 serde snake_case 정합.
+ */
+export type CiStatus = 'success' | 'pending' | 'failure'
+
 export interface PullRequest {
   forgeKind: ForgeKindWide
   owner: string
@@ -935,6 +941,8 @@ export interface PullRequest {
   additions: number | null
   deletions: number | null
   htmlUrl: string
+  /** SB-017 — list 응답에는 미포함 (Rust None). 별도 endpoint 호출 시 채워짐. */
+  ciStatus?: CiStatus | null
 }
 export interface ForgeIssue {
   forgeKind: ForgeKindWide
