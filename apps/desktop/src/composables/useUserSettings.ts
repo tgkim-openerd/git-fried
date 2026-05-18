@@ -58,6 +58,17 @@ export interface UiSettings {
    * 'none' = 비활성 / 그 외 = URI scheme 으로 shell.open (OS handler 가 launch).
    */
   externalEditor: ExternalEditorKind
+  /**
+   * SB-012 (UltraPlan v0.4 sidebar microgap Phase 7-B, 2026-05-18) — Branch row click 동작.
+   *
+   * - 'checkout' (default, 회귀 차단) — git-fried 기존 1-click 빠른 전환.
+   * - 'select' (GitKraken parity S3) — click 은 selection 만, dblclick 으로 checkout.
+   *   큰 monorepo + 많은 branch 환경에서 실수 클릭 방지.
+   *
+   * Codex 권고 default: 'checkout' 유지 (사용자 muscle memory 차단 회피).
+   * MiniBranchList / MiniRemoteBranchList 양쪽 적용 (SB-051 remote 대칭).
+   */
+  branchClickAction: 'checkout' | 'select'
 }
 
 const GENERAL_KEY = 'git-fried.general.v1'
@@ -92,6 +103,8 @@ function defaultUi(): UiSettings {
       tag: true,
     },
     externalEditor: 'none',
+    // SB-012 — default 'checkout' (회귀 차단). 'select' 토글은 Settings UI 별도 sprint.
+    branchClickAction: 'checkout',
   }
 }
 
@@ -143,10 +156,12 @@ export function formatRelativeTime(
  *
  * SB-012 의 `uiSettings.branchClickAction` 추가 전에 본 작업 선행 — Codex 권고 정합.
  */
-function deepMergeSettings<T extends Record<string, unknown>>(defaults: T, stored: Partial<T>): T {
-  const out: Record<string, unknown> = { ...defaults }
-  for (const [key, storedVal] of Object.entries(stored)) {
-    const defVal = defaults[key as keyof T]
+function deepMergeSettings<T extends object>(defaults: T, stored: Partial<T>): T {
+  const out = { ...defaults } as Record<string, unknown>
+  const defRec = defaults as Record<string, unknown>
+  for (const key of Object.keys(stored)) {
+    const storedVal = (stored as Record<string, unknown>)[key]
+    const defVal = defRec[key]
     if (
       defVal != null &&
       typeof defVal === 'object' &&
@@ -174,7 +189,7 @@ function loadGeneral(): GeneralSettings {
     if (!raw) return defaultGeneral()
     const obj = JSON.parse(raw) as Partial<GeneralSettings>
     // SB-050 — shallow → deep merge (nested 객체 default 키 보존).
-    return deepMergeSettings(defaultGeneral(), obj)
+    return deepMergeSettings<GeneralSettings>(defaultGeneral(), obj)
   } catch {
     return defaultGeneral()
   }
@@ -187,7 +202,7 @@ function loadUi(): UiSettings {
     if (!raw) return defaultUi()
     const obj = JSON.parse(raw) as Partial<UiSettings>
     // SB-050 — shallow → deep merge (miniSidebarSections 7 키 default 보존).
-    return deepMergeSettings(defaultUi(), obj)
+    return deepMergeSettings<UiSettings>(defaultUi(), obj)
   } catch {
     return defaultUi()
   }

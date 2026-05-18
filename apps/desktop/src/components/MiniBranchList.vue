@@ -13,6 +13,9 @@ import { useBranchInteraction } from '@/composables/useBranchInteraction'
 // SB-013 (UltraPlan v0.4 sidebar microgap Phase 3, 2026-05-18) — hide/solo 시각 토큰
 // BranchPanel SoT 의 패턴을 Mini list 에 fan-out (Codex 권고: 일관성 확보).
 import { useBranchVisibilityActions } from '@/composables/useBranchVisibilityActions'
+// SB-012 (Phase 7-B, 2026-05-18) — branchClickAction (checkout/select) toggle.
+import { useUiSettingsStore } from '@/composables/useUserSettings'
+import { useBranchSelection } from '@/composables/useBranchSelection'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 // Sprint c38 fix HIGH-2 — plan/29 E5 acceptance "다른 worktree 점유 브랜치 cross-ref 배지".
 import { useWorktrees } from '@/composables/useWorktrees'
@@ -55,6 +58,9 @@ const search = useSidebarSearch()
 const { data: branches, isFetching } = useBranches(repoIdRef)
 // SB-013 — hide/solo 시각 토큰 (BranchPanel SoT 일관성).
 const { isHidden, soloRef } = useBranchVisibilityActions(repoIdRef)
+// SB-012 — branchClickAction (checkout / select) toggle.
+const uiSettings = useUiSettingsStore()
+const { selected: selectedBranch, setSelected } = useBranchSelection()
 const { counts } = useStatusCounts(repoIdRef)
 // Sprint c38 fix HIGH-2 — worktree 점유 branch map (other-worktree 만, main 제외).
 // branch name → 점유 worktree path (다른 worktree).
@@ -94,6 +100,20 @@ const switchMut = useMutation({
   },
   onError: (e) => toast.error(t('errors.branchSwitchFailed'), describeError(e)),
 })
+
+// SB-012 (Phase 7-B, 2026-05-18) — click 분기: 'checkout' 즉시 전환 / 'select' selection 만.
+// dblclick 은 setting 무관 즉시 checkout.
+function onBranchRowClick(name: string, isHead: boolean) {
+  if (isHead) {
+    setSelected(name)
+    return
+  }
+  if (uiSettings.value.branchClickAction === 'select') {
+    setSelected(name)
+  } else {
+    void onSwitchBranch(name, isHead)
+  }
+}
 
 async function onSwitchBranch(name: string, isHead: boolean) {
   if (isHead) return
@@ -147,6 +167,7 @@ async function onSwitchBranch(name: string, isHead: boolean) {
                 : 'text-foreground hover:bg-accent/40 cursor-pointer rounded',
             isHidden(data.name) ? 'opacity-40 line-through' : '',
             soloRef === data.name ? 'ring-1 ring-orange-500/40' : '',
+            selectedBranch === data.name && !data.isHead ? 'ring-1 ring-primary/50' : '',
           ]"
           :disabled="occupiedMap.has(data.name) && !data.isHead"
           :title="
@@ -159,7 +180,8 @@ async function onSwitchBranch(name: string, isHead: boolean) {
                   })
                 : t('branchList.checkoutTitle', { name: data.name })
           "
-          @click="onSwitchBranch(data.name, data.isHead)"
+          @click="onBranchRowClick(data.name, data.isHead)"
+          @dblclick="onSwitchBranch(data.name, data.isHead)"
         >
           <span class="shrink-0 w-3 text-center">{{ data.isHead ? '●' : '' }}</span>
           <span class="flex-1 truncate font-mono text-left">

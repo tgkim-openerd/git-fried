@@ -8,6 +8,9 @@ import { useBranches } from '@/composables/useBranches'
 import { useBranchInteraction } from '@/composables/useBranchInteraction'
 // SB-013 (Phase 3, 2026-05-18) — hide/solo 시각 토큰 (BranchPanel SoT 일관성).
 import { useBranchVisibilityActions } from '@/composables/useBranchVisibilityActions'
+// SB-051 (Phase 7-B, 2026-05-18) — Remote row click 대칭성 (Local row 와 동일 정책 적용).
+import { useUiSettingsStore } from '@/composables/useUserSettings'
+import { useBranchSelection } from '@/composables/useBranchSelection'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut } from '@/composables/useShortcuts'
@@ -36,6 +39,15 @@ const search = useSidebarSearch()
 const { data: branches, isFetching } = useBranches(repoIdRef)
 // SB-013 — hide/solo 시각 토큰.
 const { isHidden, soloRef } = useBranchVisibilityActions(repoIdRef)
+// SB-051 — select 모드일 때 Remote row click → selection. 'checkout' 모드는 동작 없음
+// (checkout-from-remote 는 별도 sprint — useBranchActions 확장 필요).
+const uiSettings = useUiSettingsStore()
+const { selected: selectedBranch, setSelected } = useBranchSelection()
+function onRemoteRowClick(name: string) {
+  if (uiSettings.value.branchClickAction === 'select') {
+    setSelected(name)
+  }
+}
 
 const remoteBranches = computed(() => {
   const all = branches.value ?? []
@@ -76,8 +88,11 @@ const tree = computed(() => {
           :class="[
             isHidden(data.name) ? 'opacity-40 line-through' : '',
             soloRef === data.name ? 'ring-1 ring-orange-500/40' : '',
+            selectedBranch === data.name ? 'ring-1 ring-primary/50' : '',
+            uiSettings.branchClickAction === 'select' ? 'cursor-pointer' : '',
           ]"
           :title="`${data.name} (remote tracking)`"
+          @click="onRemoteRowClick(data.name)"
           @contextmenu="onBranchContextMenu($event, data)"
         >
           <!-- marker 자리 유지 (LOCAL ● 정렬 align). GitKraken parity — leaf prefix 화살표 제거. -->
