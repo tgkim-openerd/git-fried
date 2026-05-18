@@ -46,16 +46,16 @@
 | 29 | **Repo-Specific Issue Tracker** | Jira / Linear / GitHub Issues 연동 | PARTIAL Rust forge issue list + Vue `IssuesPanel.vue` + `useExternalIssueTracker.ts` (skeleton) | △ MED | Gitea/GitHub 1급 — 외부 tracker (Jira/Linear) 제외 |
 | 30 | **Repo-Specific Team** | "Select a team for this repo" collab | NO Rust + NO Vue | ✗ | LOW — local profiles 대체 가능 |
 
-## parity 통계 (30 row, Sprint c96 batch 후)
+## parity 통계 (30 row, Sprint c98 후)
 
-- ✓ **완전 parity**: **6** (Settings 진입 / Repo-Specific 패턴 / Explain commit AI / scroll / **Conflict Prevention** / **LFS**)
-- △ **부분 parity**: 14 (9 기존 + 5 신규 Repo-Specific — Encoding / Gitflow / Git Hooks / Commit / Sparse Checkout / Issue Tracker)
+- ✓ **완전 parity**: **7** (Settings 진입 / Repo-Specific 패턴 / Explain commit AI / scroll / **Conflict Prevention** / **LFS** / **Commit Options**)
+- △ **부분 parity**: 13 (8 기존 + 5 신규 Repo-Specific — Encoding / Gitflow / Git Hooks / Sparse Checkout / Issue Tracker)
 - ✗ **git-fried 미구현 또는 거부**: 6 (Commit Signing UI / Stash hotkey + Agents 거부 / Team 미구현)
 - ? **미검증 (PoC v4 필요)**: 3 (Tag annotate / PR CI / Worktree dialog)
 
-전체 30 row 중 ✓ 6 / △ 14 / ✗ 6 / ? 3 = git-fried coverage ~67% (✓ + △ = 20/30).
+전체 30 row 중 ✓ 7 / △ 13 / ✗ 6 / ? 3 = git-fried coverage ~67% (✓ + △ = 20/30).
 
-> **Sprint c96 batch 결과** (Plan #42 H-1 ~ H-4, Codex 4차 batch audit `add561df32ed26bb1` 검증): 절대 ✓ count 4→6 증가 (Conflict Prevention + LFS), △ 16→14 감소. ratio 같지만 절대 parity 격상.
+> **Sprint c96 + c97 + c98 누적 결과** (Plan #42 H-1 ~ H-4 + M-1.2 5/5 wire + M-3, Codex 7차 batch audit `adf22d6a0607a9f0d` 통과): 절대 ✓ count 4→**7** 증가 (Conflict Prevention + LFS + Commit Options 격상). 다음 sprint = M-1 Git Hooks UI / M-2 Sparse Checkout / M-1.1 Conflict per-repo override (DB migration).
 
 ## Sprint c96 batch 산출물 정합
 
@@ -73,7 +73,13 @@
 | M-1.2 template prefill + removeComments | `857fa1d` + `93a6e38` (Codex 5차 fix) | △ 부분 (3/5 wire 진행) |
 | M-3 Issue Tracker forge 1급 안내 | `2042f75` + `d0d8a5a` (Codex 5차 LOW fix) | △ (forge 1급 ✓ + 외부 skeleton 결정 안내 + actionable button) |
 | **M-1.2 pushAfter wire** | **`9b7faaa`** + **`a0caae4`** (Codex 6차 HIGH fix) | △ 부분 → **4/5 wire 완료** (commitPushAfter → useCommitMutation onSuccess push IPC) |
-| **잔여 1**: M-1.2 squashByDefault | (deferred) | mergeBranch IPC squash 옵션 미지원 → Rust 측 신규 IPC 필요 (M-L) |
+
+## Sprint c98 산출물 정합 (M-1.2 squashByDefault wire — Commit Options △→✓)
+
+| Plan #42 항목 | commit | 상태 |
+| --- | --- | --- |
+| **M-1.2 squashByDefault wire** | **`13f83bb`** + **`7ffa218`** (Codex 7차 MED+LOW fix) | ✓ **완료** — Rust merge_branch IPC squash 옵션 추가 + Vue useBranchActions + useBranchDragDrop 양쪽 적용 |
+| **Commit Options parity** | 5/5 wire 완료 | △ → **✓** 격상 (Codex 7차 HIGH 0) |
 
 ## Sprint c97 잔여 (다음 진입점)
 
