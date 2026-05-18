@@ -1,0 +1,85 @@
+#Requires AutoHotkey v2.0
+; Plan #41 Step 1 — Settings nav 모든 항목 enumerate
+;
+; 흐름:
+;   1. GitKraken activate
+;   2. Settings 진입 (Ctrl+,)
+;   3. nav 의 12 global + 3 repo-specific 항목 각각 click + capture
+;   4. ESC 으로 Settings 종료
+;
+; 좌표: window-relative click (CoordMode + WinGetPos)
+; nav 항목 좌표 (PoC v2.1 캡처 1738x1091 기준):
+
+#Include ..\lib\gk-helpers.ahk2
+
+SpikeDir := A_ScriptDir . "\.."
+CaptureScript := SpikeDir . "\capture-screen.ps1"
+LogFile := SpikeDir . "\07a-settings-nav-result.log"
+try {
+    FileDelete(LogFile)
+} catch {
+}
+
+FileAppend("=== 07a Settings nav enumerate ===`n", LogFile)
+FileAppend("A_Now: " . A_Now . "`n", LogFile)
+
+WaitForUserUnattended(5, "Settings nav enumerate")
+
+gkHwnd := FindGitKrakenMainWindow(LogFile)
+if (!gkHwnd) {
+    ExitApp(10)
+}
+if (!SafeActivateGk(gkHwnd, LogFile)) {
+    ExitApp(11)
+}
+
+; --- Settings 진입 ---
+Send "^,"
+Sleep 2000
+
+; window position 측정 (screen-relative click 계산용)
+wx := 0, wy := 0, ww := 0, wh := 0
+WinGetPos(&wx, &wy, &ww, &wh, "ahk_id " . gkHwnd)
+FileAppend("GitKraken window pos: " . wx . "," . wy . " size: " . ww . "x" . wh . "`n", LogFile)
+
+; nav 좌표 (window-relative, PoC v2.1 캡처 1738x1091 기준)
+NAV_X := 130
+navItems := [
+    ["general", 340],
+    ["profiles", 386],
+    ["ssh", 432],
+    ["integrations", 478],
+    ["ai", 523],
+    ["external-tools", 568],
+    ["notifications", 614],
+    ["ui-customization", 659],
+    ["commit-signing", 705],
+    ["editor", 751],
+    ["in-app-terminal", 797],
+    ["experimental", 842],
+    ["encoding", 968],
+    ["gitflow", 1014],
+    ["git-hooks", 1059]
+]
+
+CoordMode("Mouse", "Screen")
+
+for item in navItems {
+    label := item[1]
+    yRel := item[2]
+    clickX := wx + NAV_X
+    clickY := wy + yRel
+    FileAppend("Clicking " . label . " at " . clickX . "," . clickY . "`n", LogFile)
+    MouseMove(clickX, clickY, 5)
+    Sleep 200
+    Click
+    Sleep 1500
+    CaptureWindow(gkHwnd, "07a-settings-" . label, CaptureScript, LogFile)
+}
+
+; --- ESC ---
+Send "{Escape}"
+Sleep 800
+
+FileAppend("=== exit 0 ===`n", LogFile)
+ExitApp(0)
