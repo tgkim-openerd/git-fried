@@ -80,3 +80,9 @@ snapshot-*.md
 .claude/agent-memory/
 .claude/settings.local.json
 checkpoint.md
+
+# UI/UX 흡수 sprint — capture artifacts (사용자 작업 화면 / 시크릿 위험)
+docs/ux-eval/screenshots/*.png
+docs/ux-eval/screenshots/session-*.json
+!docs/ux-eval/screenshots/README.md
+
