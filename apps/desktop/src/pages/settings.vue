@@ -28,6 +28,8 @@ import SettingsPluginIntegration from '@/components/SettingsPluginIntegration.vu
 import SettingsConflictPrevention from '@/components/SettingsConflictPrevention.vue'
 // Plan #42 H-2 — LFS Settings UI 노출 (LfsPanel wrap).
 import SettingsLfs from '@/components/SettingsLfs.vue'
+// Plan #42 H-3 — Encoding identity-core UI (한글 안전 가이드).
+import SettingsEncoding from '@/components/SettingsEncoding.vue'
 import { useUiState } from '@/composables/useUiState'
 
 type Category =
@@ -39,6 +41,7 @@ type Category =
   | 'repoSpecific'
   | 'conflictPrevention'
   | 'lfs'
+  | 'encoding'
   | 'maintenance'
   | 'migrate'
   | 'about'
@@ -73,6 +76,9 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       // Plan #42 H-2 — GitKraken Settings 의 Repo-Specific LFS 매핑.
       // LfsPanel (280 LOC, lfs_commands.rs 9 IPC) 를 Settings 진입점으로 노출.
       { id: 'lfs', label: 'Git LFS' },
+      // Plan #42 H-3 — Encoding identity-core 가이드 (한글 안전).
+      // RepoSpecificForm 의 i18n.commitEncoding/logOutputEncoding 안내.
+      { id: 'encoding', label: 'Encoding (한글 안전)' },
     ],
   },
   {
@@ -125,6 +131,7 @@ const ITEM_I18N_KEY: Record<string, string> = {
   repoSpecific: 'settings.items.repoSpecific',
   conflictPrevention: 'settings.items.conflictPrevention',
   lfs: 'settings.items.lfs',
+  encoding: 'settings.items.encoding',
   editor: 'settings.items.editor',
   ui: 'settings.items.ui',
   maintenance: 'settings.items.maintenance',
@@ -223,6 +230,9 @@ const buildInfo = computed(() => ({
 
       <!-- Plan #42 H-2 — Git LFS (LfsPanel wrap) -->
       <SettingsLfs v-else-if="active === 'lfs'" />
+
+      <!-- Plan #42 H-3 — Encoding 한글 안전 가이드 -->
+      <SettingsEncoding v-else-if="active === 'encoding'" />
 
       <!-- 유지보수 -->
       <SettingsMaintenance v-else-if="active === 'maintenance'" />

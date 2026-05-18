@@ -529,6 +529,19 @@
       },
       "futureNote": "v1.x: External diff/merge tool launch, Terminal font/cursor settings."
     },
+    "encodingPage": {
+      "title": "Encoding (Korean-safe)",
+      "description": "git-fried's identity-core. UTF-8 first + safe handling of other encodings like Windows CP949, Japanese Shift_JIS (Rust encoding_rs + unicode_normalization).",
+      "koreanSafeTitle": "Korean-safe handling",
+      "koreanSafe1": "commit message / branch / tag / file path all normalized to UTF-8 NFC (unicode_normalization)",
+      "koreanSafe2": "git2 raw bytes decoded via encoding_rs (mangled bytes auto-fallback)",
+      "koreanSafe3": "Windows console legacy CP949 output via separate decode path (logOutputEncoding)",
+      "perRepoTitle": "Repository-Specific encoding",
+      "perRepoDescription": "Edit each repo's .git/config i18n.* entries directly from the Repository-Specific page.",
+      "commitEncodingHint": "Raw byte encoding of commit messages (default UTF-8)",
+      "logOutputEncodingHint": "Output encoding of git log / status (Windows console compatibility)",
+      "repoSpecificLink": "👉 Change per-repo encoding via i18n.commitEncoding / logOutputEncoding on the Repository-Specific page"
+    },
     "lfs": {
       "title": "Git LFS",
       "description": "Git LFS (Large File Storage) status + track / untrack / install / fetch / pull / prune for the active repo. Maps to GitKraken Repo-Specific Preferences LFS (Plan #42 H-2).",
@@ -618,6 +631,7 @@
       "repoSpecific": "Repository-Specific",
       "conflictPrevention": "Conflict Prevention",
       "lfs": "Git LFS",
+      "encoding": "Encoding (Korean-safe)",
       "editor": "Editor / Terminal (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

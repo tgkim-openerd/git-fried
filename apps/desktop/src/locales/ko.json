@@ -529,6 +529,19 @@
       },
       "futureNote": "v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정."
     },
+    "encodingPage": {
+      "title": "Encoding (한글 안전)",
+      "description": "git-fried 의 identity-core. UTF-8 우선 + Windows CP949 / 일본어 Shift_JIS 등 다른 인코딩 안전 처리 (Rust encoding_rs + unicode_normalization).",
+      "koreanSafeTitle": "한글 안전 처리",
+      "koreanSafe1": "commit message / branch / tag / file path 모두 UTF-8 NFC normalize (unicode_normalization)",
+      "koreanSafe2": "git2 호출 후 raw bytes → encoding_rs 로 decode (mangled bytes 자동 fallback)",
+      "koreanSafe3": "Windows console legacy CP949 출력은 별도 디코드 경로 (logOutputEncoding 사용 시)",
+      "perRepoTitle": "Repository-Specific 인코딩",
+      "perRepoDescription": "각 repo 의 .git/config 의 i18n.* 항목을 Repository-Specific 페이지에서 직접 변경 가능.",
+      "commitEncodingHint": "commit message 의 raw bytes 인코딩 (default UTF-8)",
+      "logOutputEncodingHint": "git log / status 의 출력 인코딩 (Windows console 호환)",
+      "repoSpecificLink": "👉 Repository-Specific 페이지의 i18n.commitEncoding / logOutputEncoding 항목에서 active repo 별 인코딩 변경"
+    },
     "lfs": {
       "title": "Git LFS",
       "description": "Git LFS (Large File Storage) 의 active repo 상태 + track / untrack / install / fetch / pull / prune. GitKraken Repo-Specific Preferences 의 LFS 항목 매핑 (Plan #42 H-2).",
@@ -618,6 +631,7 @@
       "repoSpecific": "Repository-Specific",
       "conflictPrevention": "Conflict Prevention",
       "lfs": "Git LFS",
+      "encoding": "Encoding (한글 안전)",
       "editor": "에디터 / 터미널 (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",
