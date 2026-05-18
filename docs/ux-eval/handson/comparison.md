@@ -66,6 +66,22 @@
 | H-3 Encoding identity-core 가이드 | `18ad715` | △ 부분 (안내 only, RepoSpecificForm link 안내) |
 | H-4 Commit 4 toggle + template | `37d3a95` + `6b6a353` (M-1.2 부분 wire) | △ 부분 (UI/persistence + commitSkipHooks → noVerify default 연결) |
 
+## Sprint c97 partial 산출물 정합 (M-1.2 + M-3)
+
+| Plan #42 항목 | commit | 상태 |
+| --- | --- | --- |
+| M-1.2 template prefill + removeComments | `857fa1d` + `93a6e38` (Codex 5차 fix) | △ 부분 (3/5 wire: skipHooks + template + removeComments — pushAfter / squashByDefault 잔여) |
+| M-3 Issue Tracker forge 1급 안내 | `2042f75` | △ (forge 1급 ✓ + 외부 tracker skeleton 결정 안내) |
+
+## Sprint c97 잔여 (다음 진입점)
+
+| # | 항목 | effort | Codex 5차 권고 우선순위 |
+| --- | --- | --- | --- |
+| 1 | M-1.2 pushAfter + squashByDefault wire (Commit Options △→✓) | M | **1차 권고** — 작은 effort로 ✓ 격상 |
+| 2 | M-1 Git Hooks manager UI | M | 사용자 가치 HIGH |
+| 3 | M-2 Sparse Checkout repo manager | M | repo-specific manager gap |
+| 4 | M-1.1 Conflict Prevention per-repo override (DB migration) | M-L | 비용 대비 parity 효과 작음 (이미 ✓ 집계) |
+
 ## Codex 합류 가치 (Memory Rule 3 실측)
 
 | Phase | Claude 단정 수 | Codex CONFIRMED | Codex REFUTED | PARTIAL | Codex-only 신규 | Claude 오류율 |
