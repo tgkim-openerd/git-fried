@@ -36,6 +36,8 @@ import SettingsCommit from '@/components/SettingsCommit.vue'
 import SettingsIssueTracker from '@/components/SettingsIssueTracker.vue'
 // Plan #42 M-1 — Git Hooks manager (read-only scan, Sprint c99).
 import SettingsGitHooks from '@/components/SettingsGitHooks.vue'
+// Plan #42 M-2 — Sparse Checkout repo manager (Sprint c100).
+import SettingsSparseCheckout from '@/components/SettingsSparseCheckout.vue'
 import { useUiState } from '@/composables/useUiState'
 
 type Category =
@@ -51,6 +53,7 @@ type Category =
   | 'commit'
   | 'issueTracker'
   | 'gitHooks'
+  | 'sparseCheckout'
   | 'maintenance'
   | 'migrate'
   | 'about'
@@ -95,6 +98,8 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       { id: 'issueTracker', label: 'Issue Tracker' },
       // Plan #42 M-1 — Git Hooks manager (read-only scan, Sprint c99).
       { id: 'gitHooks', label: 'Git Hooks' },
+      // Plan #42 M-2 — Sparse Checkout repo manager (Sprint c100).
+      { id: 'sparseCheckout', label: 'Sparse Checkout' },
     ],
   },
   {
@@ -151,6 +156,7 @@ const ITEM_I18N_KEY: Record<string, string> = {
   commit: 'settings.items.commit',
   issueTracker: 'settings.items.issueTracker',
   gitHooks: 'settings.items.gitHooks',
+  sparseCheckout: 'settings.items.sparseCheckout',
   editor: 'settings.items.editor',
   ui: 'settings.items.ui',
   maintenance: 'settings.items.maintenance',
@@ -264,6 +270,9 @@ const buildInfo = computed(() => ({
 
       <!-- Plan #42 M-1 — Git Hooks manager (read-only scan) -->
       <SettingsGitHooks v-else-if="active === 'gitHooks'" />
+
+      <!-- Plan #42 M-2 — Sparse Checkout repo manager -->
+      <SettingsSparseCheckout v-else-if="active === 'sparseCheckout'" />
 
       <!-- 유지보수 -->
       <SettingsMaintenance v-else-if="active === 'maintenance'" />

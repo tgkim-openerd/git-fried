@@ -19,6 +19,7 @@ pub mod graph;
 pub mod hide;
 pub mod hooks;
 pub mod identity_stats;
+
 pub mod lfs;
 pub mod maintenance;
 pub mod merge;
@@ -32,6 +33,7 @@ pub mod repository;
 pub mod reset;
 pub mod restore;
 pub mod runner;
+pub mod sparse;
 pub mod stage;
 pub mod stash;
 pub mod status;

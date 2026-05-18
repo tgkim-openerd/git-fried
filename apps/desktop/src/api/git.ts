@@ -464,6 +464,26 @@ export const listGitHooks = (
   repoId: number,
   hooksPathOverride: string | null = null,
 ): Promise<GitHookEntry[]> => invoke('list_git_hooks', { repoId, hooksPathOverride })
+
+// Plan #42 M-2 (Sprint c100) — Sparse Checkout repo manager.
+export interface SparseStatus {
+  enabled: boolean
+  cone: boolean
+  paths: string[]
+}
+
+export const sparseStatus = (repoId: number): Promise<SparseStatus> =>
+  invoke('sparse_status', { repoId })
+
+export const sparseInitCone = (repoId: number): Promise<void> =>
+  invoke('sparse_init_cone', { repoId })
+
+export const sparseSet = (repoId: number, paths: string[]): Promise<void> =>
+  invoke('sparse_set', { args: { repoId, paths } })
+
+export const sparseDisable = (repoId: number): Promise<void> => invoke('sparse_disable', { repoId })
+
+export const sparseReapply = (repoId: number): Promise<void> => invoke('sparse_reapply', { repoId })
 export const lfsListFiles = (repoId: number): Promise<LfsFile[]> =>
   invoke('lfs_list_files', { repoId })
 export const lfsTrack = (repoId: number, pattern: string): Promise<void> =>
