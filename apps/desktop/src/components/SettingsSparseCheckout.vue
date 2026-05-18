@@ -12,6 +12,10 @@ import { sparseDisable, sparseInitCone, sparseReapply, sparseSet, sparseStatus }
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
+// Plan #42 M-2 (Codex 9차 HIGH fix) — sparse mutations 가 working tree 변경 →
+// useStatus refetch 필요.
+import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { confirmDialog } from '@/composables/useConfirm'
 import EmptyState from '@/components/EmptyState.vue'
 import SkeletonBlock from '@/components/SkeletonBlock.vue'
 
@@ -20,6 +24,7 @@ const toast = useToast()
 const qc = useQueryClient()
 const reposStore = useReposStore()
 const activeRepoId = computed<number | null>(() => reposStore.activeRepoId)
+const invalidateRepo = useInvalidateRepoQueries()
 
 const statusQuery = useQuery({
   queryKey: computed(() => ['sparse-status', activeRepoId.value]),
@@ -40,6 +45,9 @@ const pathsInput = ref('')
 function invalidate() {
   if (activeRepoId.value != null) {
     qc.invalidateQueries({ queryKey: ['sparse-status', activeRepoId.value] })
+    // Codex 9차 audit `a013fdf5202813c56` HIGH 해소 — sparse mutations 가 working tree
+    // 변경 → status/log/repos query 도 refetch 필요.
+    invalidateRepo(activeRepoId.value)
   }
 }
 
@@ -102,6 +110,17 @@ function onApplyPaths() {
     return
   }
   setMut.mutate(paths)
+}
+
+// Codex 9차 audit MED — disable 의 대규모 working tree 복원 영향 사용자 확인.
+async function onDisableConfirm() {
+  const ok = await confirmDialog({
+    title: t('settings.sparse.disableButton'),
+    message: t('settings.sparse.disableConfirmMessage'),
+    danger: true,
+  })
+  if (!ok) return
+  disableMut.mutate()
 }
 </script>
 
@@ -230,7 +249,7 @@ function onApplyPaths() {
                 class="rounded border border-red-500/40 bg-red-500/10 px-3 py-1 text-xs text-red-700 hover:bg-red-500/20 disabled:opacity-50 dark:text-red-300"
                 :disabled="disableMut.isPending.value"
                 data-testid="sparse-disable"
-                @click="disableMut.mutate()"
+                @click="onDisableConfirm"
               >
                 {{
                   disableMut.isPending.value

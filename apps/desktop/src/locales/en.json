@@ -555,6 +555,7 @@
       "reapplyPending": "Reapplying...",
       "disableButton": "Disable (restore full)",
       "disablePending": "Disabling...",
+      "disableConfirmMessage": "Disabling sparse-checkout restores the entire working tree.\n• Large monorepos may check out GB-scale files\n• Proceed?",
       "coneNote": "💡 Cone mode = directory-level sparse (no gitignore-like glob patterns). For broad patterns, use `git sparse-checkout set --no-cone` directly via CLI — not exposed in this UI.",
       "toastInitSuccess": "Sparse-checkout initialized (cone mode)",
       "toastInitFail": "Sparse-checkout init failed",

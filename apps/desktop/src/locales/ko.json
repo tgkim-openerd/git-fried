@@ -555,6 +555,7 @@
       "reapplyPending": "Reapply 중...",
       "disableButton": "Disable (전체 복원)",
       "disablePending": "Disable 중...",
+      "disableConfirmMessage": "Sparse-checkout 을 비활성하면 working tree 전체가 복원됩니다.\n• 대형 monorepo 에서는 GB 단위 파일 checkout 발생 가능\n• 진행하시겠습니까?",
       "coneNote": "💡 cone mode = 디렉토리 단위 sparse (gitignore 같은 광범위 패턴 X). 광범위 패턴은 `git sparse-checkout set --no-cone` 필요 — 본 UI 미지원 (사용자 CLI 직접 호출).",
       "toastInitSuccess": "Sparse-checkout init cone mode 완료",
       "toastInitFail": "Sparse-checkout init 실패",
