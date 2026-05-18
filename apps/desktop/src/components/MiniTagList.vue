@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // Phase 12-1 — Sidebar TAGS hierarchical tree (예: release/v2.0.0 → release > v2.0.0).
 
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
 import { listTags, type TagInfo } from '@/api/git'
 import { STALE_TIME } from '@/api/queryClient'
@@ -16,11 +17,18 @@ import SkeletonBlock from './SkeletonBlock.vue'
 // SB-013 (Phase 3, 2026-05-18) — hide/solo 시각 토큰 (BranchPanel SoT 일관성).
 import { useBranchVisibilityActions } from '@/composables/useBranchVisibilityActions'
 
+const { t } = useI18n()
 const store = useReposStore()
 const search = useSidebarSearch()
 const repoIdRef = computed(() => store.activeRepoId)
 // SB-013 — hide/solo 시각 토큰 (tag kind 도 hiddenSet/soloRef 공유).
 const { isHidden, soloRef } = useBranchVisibilityActions(repoIdRef)
+
+// SB-018 (UltraPlan v0.4 sidebar microgap Phase 5, 2026-05-18) — Tag mini 전용 filter bar
+// (GitKraken parity S5: Tags section 의 dedicated filter). 통합 search 와 OR 조합 —
+// 한 쪽이 active 면 작동, 둘 다 active 면 AND (intersect).
+const tagFilter = ref('')
+const tagFilterTrimmed = computed(() => tagFilter.value.trim().toLowerCase())
 
 const { data: tags, isFetching } = useQuery({
   queryKey: computed(() => ['tags', store.activeRepoId]),
@@ -41,7 +49,10 @@ const tagsList = computed(() => {
 
 const tree = computed(() => {
   const built = buildBranchTree<TagInfo>(tagsList.value, { getName: (t) => t.name })
-  return filterTree(built, search.trimmed.value, (t) => t.name)
+  // SB-018 — 통합 search query 우선 적용 후 tag-only filter 추가 (AND 조합).
+  const afterGlobal = filterTree(built, search.trimmed.value, (t) => t.name)
+  if (!tagFilterTrimmed.value) return afterGlobal
+  return filterTree(afterGlobal, tagFilterTrimmed.value, (t) => t.name)
 })
 
 // SB-030 (UltraPlan v0.4 sidebar microgap Phase 2, 2026-05-18) — tag click=jump to commit
@@ -64,11 +75,22 @@ function onTagClick(sha: string): void {
       height="sm"
       data-testid="mini-tag-skeleton"
     />
+    <!-- SB-018 (Phase 5, 2026-05-18) — Tag-only filter bar (GitKraken S5 parity). -->
+    <div v-else-if="tagsList.length > 5" class="px-1 pb-0.5">
+      <input
+        v-model="tagFilter"
+        type="search"
+        :placeholder="t('tagList.filterPlaceholder')"
+        :aria-label="t('tagList.filterAriaLabel')"
+        data-testid="mini-tag-filter"
+        class="w-full rounded border border-input bg-background px-1.5 py-0.5 text-[10px] outline-none focus:border-primary"
+      />
+    </div>
     <BranchTreeView
-      v-else
+      v-if="tagsList.length > 0 || !isFetching"
       :nodes="tree"
       storage-key="branch-tree.tags"
-      :auto-expand="search.isActive.value"
+      :auto-expand="search.isActive.value || tagFilterTrimmed.length > 0"
     >
       <template #default="{ data }: { data: TagInfo }">
         <div

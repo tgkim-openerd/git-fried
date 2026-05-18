@@ -1675,5 +1675,9 @@
     "expandTitle": "Expand {title} section",
     "collapseTitle": "Collapse {title} section",
     "moreLabel": "⋯ +{count} more (click View all →)"
+  },
+  "tagList": {
+    "filterPlaceholder": "Filter tags (e.g. v1.)",
+    "filterAriaLabel": "Tag filter input"
   }
 }

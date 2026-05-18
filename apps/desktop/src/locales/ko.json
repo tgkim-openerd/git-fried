@@ -1675,5 +1675,9 @@
     "expandTitle": "{title} 섹션 펴기",
     "collapseTitle": "{title} 섹션 접기",
     "moreLabel": "⋯ +{count}개 더 (전체 → 클릭)"
+  },
+  "tagList": {
+    "filterPlaceholder": "태그 필터 (예: v1.)",
+    "filterAriaLabel": "태그 검색 필터"
   }
 }
