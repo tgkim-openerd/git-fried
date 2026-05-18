@@ -2,6 +2,7 @@
 // Sprint c27-1 (ARCH-003 fix) — Sidebar 의 Open PR mini list (active-repo-only).
 
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { usePullRequests } from '@/composables/usePullRequests'
 import { useReposStore } from '@/stores/repos'
 import { dispatchShortcut } from '@/composables/useShortcuts'
@@ -9,6 +10,7 @@ import MiniSection from './MiniSection.vue'
 // Sprint c54+ (ARCH-c54-001 sister uniformity) — sidebar skeleton placeholder.
 import SkeletonBlock from './SkeletonBlock.vue'
 
+const { t } = useI18n()
 const store = useReposStore()
 const repoIdRef = computed(() => store.activeRepoId)
 
@@ -53,7 +55,7 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
         </span>
       </li>
       <li v-if="moreCount > 0" class="px-1 py-0.5 text-[10px] text-muted-foreground">
-        ⋯ +{{ moreCount }}개 더 (전체 → 클릭)
+        {{ t('miniSection.moreLabel', { count: moreCount }) }}
       </li>
     </ul>
   </MiniSection>

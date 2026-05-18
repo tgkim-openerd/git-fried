@@ -93,7 +93,7 @@ function worktreeName(path: string): string {
         </span>
       </li>
       <li v-if="moreCount > 0" class="px-1 py-0.5 text-[10px] text-muted-foreground">
-        ⋯ +{{ moreCount }}개 더 (전체 → 클릭)
+        {{ t('miniSection.moreLabel', { count: moreCount }) }}
       </li>
     </ul>
   </MiniSection>

@@ -38,6 +38,12 @@ const tree = computed(() => {
   const built = buildBranchTree<TagInfo>(tagsList.value, { getName: (t) => t.name })
   return filterTree(built, search.trimmed.value, (t) => t.name)
 })
+
+// SB-030 (UltraPlan v0.4 sidebar microgap Phase 2, 2026-05-18) — tag click=jump to commit
+// (GitKraken parity S5: tag click 은 checkout 이 아닌 commit graph 점프).
+function onTagClick(sha: string): void {
+  window.gitFriedSelectCommit?.(sha)
+}
 </script>
 
 <template>
@@ -62,7 +68,9 @@ const tree = computed(() => {
       <template #default="{ data }: { data: TagInfo }">
         <div
           class="flex items-center gap-1 px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40 rounded"
+          :class="data.commitSha ? 'cursor-pointer' : ''"
           :title="data.subject ?? `tag ${data.name}`"
+          @click="data.commitSha && onTagClick(data.commitSha)"
         >
           <span class="shrink-0 w-3 text-center text-[9px]">{{ data.annotated ? '🏷' : '·' }}</span>
           <span class="flex-1 truncate font-mono">

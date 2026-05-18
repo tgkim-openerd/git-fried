@@ -16,7 +16,11 @@
 //     <ul>...rows...</ul>
 //   </MiniSection>
 
+import { useI18n } from 'vue-i18n'
 import { useSectionCollapse } from '@/composables/useSectionCollapse'
+import { useMaximizedSection } from '@/composables/useMaximizedSection'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   /** 섹션 제목 (uppercase 표기). */
@@ -34,10 +38,19 @@ const emit = defineEmits<{
 }>()
 
 const collapsed = useSectionCollapse(props.storageKey)
+// SB-015 — Mini section dblclick maximize (singleton ref + localStorage 영속).
+const { isMaximized, shouldHide, toggleMaximize } = useMaximizedSection()
+const isMaxedHere = isMaximized(props.storageKey)
+const isHiddenByOther = shouldHide(props.storageKey)
 </script>
 
 <template>
-  <div :data-testid="`mini-section-${storageKey}`" class="mt-1 space-y-0.5">
+  <div
+    v-if="!isHiddenByOther"
+    :data-testid="`mini-section-${storageKey}`"
+    class="mt-1 space-y-0.5"
+    :class="isMaxedHere ? 'rounded ring-1 ring-primary/30' : ''"
+  >
     <div
       class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground"
     >
@@ -45,8 +58,13 @@ const collapsed = useSectionCollapse(props.storageKey)
         type="button"
         :data-testid="`mini-section-toggle-${storageKey}`"
         class="flex flex-1 items-center gap-1 hover:text-foreground"
-        :title="`${title} 섹션 ${collapsed ? '펴기' : '접기'}`"
+        :title="
+          collapsed
+            ? t('miniSection.expandTitle', { title })
+            : t('miniSection.collapseTitle', { title })
+        "
         @click="collapsed = !collapsed"
+        @dblclick.stop.prevent="toggleMaximize(storageKey)"
       >
         <span class="text-[9px]">{{ collapsed ? '▶' : '▼' }}</span>
         <span>{{ title }} ({{ count }})</span>
@@ -58,7 +76,7 @@ const collapsed = useSectionCollapse(props.storageKey)
         :title="fullTooltip"
         @click="emit('full')"
       >
-        전체 →
+        {{ t('miniSection.viewAll') }}
       </button>
     </div>
     <slot v-if="!collapsed" />

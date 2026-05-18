@@ -217,9 +217,15 @@
     "help": "도움말"
   },
   "wizard": {
-    "step1": { "title": "환영합니다 — git-fried 의 차별점" },
-    "step2": { "title": "테마 선택" },
-    "step3": { "title": "시작하기" },
+    "step1": {
+      "title": "환영합니다 — git-fried 의 차별점"
+    },
+    "step2": {
+      "title": "테마 선택"
+    },
+    "step3": {
+      "title": "시작하기"
+    },
     "welcome": {
       "intro": "GitKraken / Tower / Fork 대체 — Tauri ~30MB native + 한글 안전 + AI 무료. 다음 단계로 진행해 환경을 설정하세요.",
       "h1Title": "Tauri ~30MB",
@@ -1374,23 +1380,70 @@
     "_initial": "이니셜",
     "_gravatar": "Gravatar",
     "_categoryIntegration": "Integration (외부 도구)",
-    "repoSwitch": { "label": "Repo: 빠른 전환", "hint": "⌘⇧P / ⌘T" },
-    "repoRefresh": { "label": "Repo: 모든 쿼리 새로고침", "hint": "invalidate everything" },
-    "repoFetch": { "label": "Repo: Fetch (모든 remote)", "hint": "⌘L" },
-    "repoPull": { "label": "Repo: Pull", "hint": "⌘⇧L" },
-    "repoPush": { "label": "Repo: Push", "hint": "⌘⇧K" },
-    "repoWorkspaceAll": { "label": "Workspace: 전체" },
-    "repoUnselect": { "label": "Repo: 선택 해제" },
-    "repoTabClose": { "label": "탭: 활성 탭 닫기", "hint": "⌘⇧W" },
-    "repoTabCloseOthers": { "label": "탭: 다른 탭 모두 닫기" },
-    "repoTabCloseAll": { "label": "탭: 모두 닫기" },
-    "repoTabNext": { "label": "탭: 다음", "hint": "⌃Tab" },
-    "repoTabPrev": { "label": "탭: 이전", "hint": "⌃⇧Tab" },
-    "repoFilter": { "label": "Sidebar 레포 필터 focus", "hint": "⌘⌥F" },
-    "repoGoHome": { "label": "홈으로", "hint": "navigate /" },
-    "repoGoLaunchpad": { "label": "Launchpad", "hint": "navigate /launchpad" },
-    "repoGoSettings": { "label": "설정", "hint": "navigate /settings" },
-    "repoOpenInExplorer": { "label": "레포 폴더 열기 (OS 파일 매니저)", "hint": "⌥O" },
+    "repoSwitch": {
+      "label": "Repo: 빠른 전환",
+      "hint": "⌘⇧P / ⌘T"
+    },
+    "repoRefresh": {
+      "label": "Repo: 모든 쿼리 새로고침",
+      "hint": "invalidate everything"
+    },
+    "repoFetch": {
+      "label": "Repo: Fetch (모든 remote)",
+      "hint": "⌘L"
+    },
+    "repoPull": {
+      "label": "Repo: Pull",
+      "hint": "⌘⇧L"
+    },
+    "repoPush": {
+      "label": "Repo: Push",
+      "hint": "⌘⇧K"
+    },
+    "repoWorkspaceAll": {
+      "label": "Workspace: 전체"
+    },
+    "repoUnselect": {
+      "label": "Repo: 선택 해제"
+    },
+    "repoTabClose": {
+      "label": "탭: 활성 탭 닫기",
+      "hint": "⌘⇧W"
+    },
+    "repoTabCloseOthers": {
+      "label": "탭: 다른 탭 모두 닫기"
+    },
+    "repoTabCloseAll": {
+      "label": "탭: 모두 닫기"
+    },
+    "repoTabNext": {
+      "label": "탭: 다음",
+      "hint": "⌃Tab"
+    },
+    "repoTabPrev": {
+      "label": "탭: 이전",
+      "hint": "⌃⇧Tab"
+    },
+    "repoFilter": {
+      "label": "Sidebar 레포 필터 focus",
+      "hint": "⌘⌥F"
+    },
+    "repoGoHome": {
+      "label": "홈으로",
+      "hint": "navigate /"
+    },
+    "repoGoLaunchpad": {
+      "label": "Launchpad",
+      "hint": "navigate /launchpad"
+    },
+    "repoGoSettings": {
+      "label": "설정",
+      "hint": "navigate /settings"
+    },
+    "repoOpenInExplorer": {
+      "label": "레포 폴더 열기 (OS 파일 매니저)",
+      "hint": "⌥O"
+    },
     "repoAutoFetch": {
       "label": "Auto-Fetch 주기 순환 (현재: {current})",
       "hint": "off → 1m → 5m → 15m"
@@ -1399,33 +1452,89 @@
       "label": "Auto-Prune {state} (Fetch 시 prune)",
       "hint": "toggle prune-on-fetch"
     },
-    "branchTab": { "label": "Branch 탭으로 이동", "hint": "⌘B" },
-    "branchNewPr": { "label": "PR 생성 모달", "hint": "⌘N" },
-    "branchRebase": { "label": "Interactive rebase", "hint": "drop / reword / squash / fixup" },
+    "branchTab": {
+      "label": "Branch 탭으로 이동",
+      "hint": "⌘B"
+    },
+    "branchNewPr": {
+      "label": "PR 생성 모달",
+      "hint": "⌘N"
+    },
+    "branchRebase": {
+      "label": "Interactive rebase",
+      "hint": "drop / reword / squash / fixup"
+    },
     "branchSyncTemplate": {
       "label": "Sync template — 다중 레포 cherry-pick",
       "hint": "bulk cherry-pick"
     },
-    "branchBisect": { "label": "Bisect — 잘못된 commit 찾기", "hint": "binary search" },
-    "branchCompare": { "label": "Compare — 두 ref 비교", "hint": "ahead/behind + commits + diff" },
-    "branchConflictDetection": { "label": "Conflict 예측 {state}", "hint": "StatusBar ⚠ toggle" },
+    "branchBisect": {
+      "label": "Bisect — 잘못된 commit 찾기",
+      "hint": "binary search"
+    },
+    "branchCompare": {
+      "label": "Compare — 두 ref 비교",
+      "hint": "ahead/behind + commits + diff"
+    },
+    "branchConflictDetection": {
+      "label": "Conflict 예측 {state}",
+      "hint": "StatusBar ⚠ toggle"
+    },
     "branchSubmoduleAutoUpdate": {
       "label": "Submodule 자동 update {state}",
       "hint": "pull 후 자동 update"
     },
-    "fileStageAll": { "label": "모두 stage", "hint": "⌘⇧S" },
-    "fileUnstageAll": { "label": "모두 unstage", "hint": "⌘⇧U" },
-    "fileStageAndCommit": { "label": "Stage all + Commit", "hint": "⌘⇧Enter" },
-    "fileCommit": { "label": "Commit (현재 메시지)", "hint": "⌘Enter" },
-    "fileFocusMessage": { "label": "메시지 입력창 focus", "hint": "⌘⇧M" },
-    "viewToggleSidebar": { "label": "좌측 사이드바 토글", "hint": "⌘J" },
-    "viewToggleDetail": { "label": "우측 패널 토글", "hint": "⌘K" },
-    "viewTerminal": { "label": "Terminal — 통합 터미널 토글", "hint": "⌘`" },
-    "viewZoomIn": { "label": "Zoom in", "hint": "⌘=" },
-    "viewZoomOut": { "label": "Zoom out", "hint": "⌘-" },
-    "viewZoomReset": { "label": "Zoom reset (14px)", "hint": "⌘0" },
-    "viewThemeToggle": { "label": "다크 / 라이트 모드 토글" },
-    "viewShowDiff": { "label": "선택 commit diff 모달", "hint": "⌘D" },
+    "fileStageAll": {
+      "label": "모두 stage",
+      "hint": "⌘⇧S"
+    },
+    "fileUnstageAll": {
+      "label": "모두 unstage",
+      "hint": "⌘⇧U"
+    },
+    "fileStageAndCommit": {
+      "label": "Stage all + Commit",
+      "hint": "⌘⇧Enter"
+    },
+    "fileCommit": {
+      "label": "Commit (현재 메시지)",
+      "hint": "⌘Enter"
+    },
+    "fileFocusMessage": {
+      "label": "메시지 입력창 focus",
+      "hint": "⌘⇧M"
+    },
+    "viewToggleSidebar": {
+      "label": "좌측 사이드바 토글",
+      "hint": "⌘J"
+    },
+    "viewToggleDetail": {
+      "label": "우측 패널 토글",
+      "hint": "⌘K"
+    },
+    "viewTerminal": {
+      "label": "Terminal — 통합 터미널 토글",
+      "hint": "⌘`"
+    },
+    "viewZoomIn": {
+      "label": "Zoom in",
+      "hint": "⌘="
+    },
+    "viewZoomOut": {
+      "label": "Zoom out",
+      "hint": "⌘-"
+    },
+    "viewZoomReset": {
+      "label": "Zoom reset (14px)",
+      "hint": "⌘0"
+    },
+    "viewThemeToggle": {
+      "label": "다크 / 라이트 모드 토글"
+    },
+    "viewShowDiff": {
+      "label": "선택 commit diff 모달",
+      "hint": "⌘D"
+    },
     "viewDateLocale": {
       "label": "날짜 형식 순환 (현재: {current})",
       "hint": "auto → ko-KR → en-US"
@@ -1434,24 +1543,66 @@
       "label": "아바타 스타일 토글 (현재: {current})",
       "hint": "initial ↔ gravatar"
     },
-    "viewHideLaunchpad": { "label": "Launchpad 메뉴 {state}", "hint": "hide-launchpad toggle" },
+    "viewHideLaunchpad": {
+      "label": "Launchpad 메뉴 {state}",
+      "hint": "hide-launchpad toggle"
+    },
     "viewThemeCopyJson": {
       "label": "Custom theme JSON 복사 (현재 vars)",
       "hint": "clipboard.writeText"
     },
-    "viewThemeReset": { "label": "Custom theme 초기화 (기본 테마 복원)", "hint": "reset" },
-    "viewFullscreen": { "label": "전체화면 토글", "hint": "F11 / ⌃⌘F" },
-    "stashTab": { "label": "Stash 탭으로 이동", "hint": "⌘3" },
-    "historyFile": { "label": "File history (현재 파일)", "hint": "⌘⇧H" },
-    "historyReflog": { "label": "Reflog (HEAD) — 잃은 commit 복구", "hint": "reflog viewer" },
-    "diffToggleInline": { "label": "Inline diff panel 토글", "hint": "⌘⇧D" },
-    "diffPrevHunk": { "label": "Diff 이전 hunk", "hint": "Alt+↑" },
-    "diffNextHunk": { "label": "Diff 다음 hunk", "hint": "Alt+↓" },
-    "aiExplainCurrent": { "label": "✨ 현재 commit 설명", "hint": "⌘D 후 ✨" },
-    "settingsShortcuts": { "label": "키보드 단축키 도움말", "hint": "?" },
-    "settingsCloseModal": { "label": "활성 모달 닫기", "hint": "⌘W" },
-    "settingsProfiles": { "label": "프로파일 관리", "hint": "/settings 의 Profiles" },
-    "settingsForge": { "label": "Forge 계정 관리 (PAT)", "hint": "/settings" },
+    "viewThemeReset": {
+      "label": "Custom theme 초기화 (기본 테마 복원)",
+      "hint": "reset"
+    },
+    "viewFullscreen": {
+      "label": "전체화면 토글",
+      "hint": "F11 / ⌃⌘F"
+    },
+    "stashTab": {
+      "label": "Stash 탭으로 이동",
+      "hint": "⌘3"
+    },
+    "historyFile": {
+      "label": "File history (현재 파일)",
+      "hint": "⌘⇧H"
+    },
+    "historyReflog": {
+      "label": "Reflog (HEAD) — 잃은 commit 복구",
+      "hint": "reflog viewer"
+    },
+    "diffToggleInline": {
+      "label": "Inline diff panel 토글",
+      "hint": "⌘⇧D"
+    },
+    "diffPrevHunk": {
+      "label": "Diff 이전 hunk",
+      "hint": "Alt+↑"
+    },
+    "diffNextHunk": {
+      "label": "Diff 다음 hunk",
+      "hint": "Alt+↓"
+    },
+    "aiExplainCurrent": {
+      "label": "✨ 현재 commit 설명",
+      "hint": "⌘D 후 ✨"
+    },
+    "settingsShortcuts": {
+      "label": "키보드 단축키 도움말",
+      "hint": "?"
+    },
+    "settingsCloseModal": {
+      "label": "활성 모달 닫기",
+      "hint": "⌘W"
+    },
+    "settingsProfiles": {
+      "label": "프로파일 관리",
+      "hint": "/settings 의 Profiles"
+    },
+    "settingsForge": {
+      "label": "Forge 계정 관리 (PAT)",
+      "hint": "/settings"
+    },
     "integrationGithubActions": {
       "label": "🔜 GitHub Actions CI status (v0.4 예정)",
       "hint": "placeholder"
@@ -1512,5 +1663,11 @@
     "openAllInGroupHint": "Enter → 모두 열기",
     "empty": "결과 없음",
     "footer": "↑↓ 탐색 · Enter 선택 (📦 그룹 = 모두 열기) · Esc 닫기 · ⭐ pinned 우선"
+  },
+  "miniSection": {
+    "viewAll": "전체 →",
+    "expandTitle": "{title} 섹션 펴기",
+    "collapseTitle": "{title} 섹션 접기",
+    "moreLabel": "⋯ +{count}개 더 (전체 → 클릭)"
   }
 }
