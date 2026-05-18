@@ -529,6 +529,22 @@
       },
       "futureNote": "v1.x: External diff/merge tool launch, Terminal font/cursor settings."
     },
+    "commitPage": {
+      "title": "Commit",
+      "description": "Auto-push after commit / skip pre-commit hooks / squash default / commit message template. Maps to GitKraken Repo-Specific Preferences Commit (Plan #42 H-4).",
+      "uiOnlyNote": "⚠ This sprint = UI + persistence only. Actual mutation application (push IPC / --no-verify / squash / template substitution) lands in the next sprint (Plan #42 M-1.2).",
+      "pushAfterLabel": "Push after each commit",
+      "pushAfterHint": "Auto-push to origin / tracking branch right after each commit.",
+      "skipHooksLabel": "Skip git hooks by default",
+      "skipHooksHint": "Apply --no-verify by default (bypass pre-commit / commit-msg hooks). Use with care.",
+      "squashLabel": "Squash by default (merge behavior)",
+      "squashHint": "Auto-squash on branch merge (collapse to a single commit). See RepoSpecificForm for details.",
+      "removeCommentsLabel": "Remove comments from commit messages",
+      "removeCommentsHint": "Auto-strip lines starting with # from commit messages.",
+      "templateLabel": "Commit template",
+      "templateHint": "Default message for new commits. Useful for body / footer prefixes (e.g. \"feat({scope}): \\n\\n\\nRefs:\").",
+      "templatePlaceholder": "feat({scope}): \n\nWhy: \nHow: "
+    },
     "encodingPage": {
       "title": "Encoding (Korean-safe)",
       "description": "git-fried's identity-core. UTF-8 first + safe handling of other encodings like Windows CP949, Japanese Shift_JIS (Rust encoding_rs + unicode_normalization).",
@@ -632,6 +648,7 @@
       "conflictPrevention": "Conflict Prevention",
       "lfs": "Git LFS",
       "encoding": "Encoding (Korean-safe)",
+      "commit": "Commit",
       "editor": "Editor / Terminal (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

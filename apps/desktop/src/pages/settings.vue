@@ -30,6 +30,8 @@ import SettingsConflictPrevention from '@/components/SettingsConflictPrevention.
 import SettingsLfs from '@/components/SettingsLfs.vue'
 // Plan #42 H-3 — Encoding identity-core UI (한글 안전 가이드).
 import SettingsEncoding from '@/components/SettingsEncoding.vue'
+// Plan #42 H-4 — Commit Settings (push-after / skip hooks / squash / template).
+import SettingsCommit from '@/components/SettingsCommit.vue'
 import { useUiState } from '@/composables/useUiState'
 
 type Category =
@@ -42,6 +44,7 @@ type Category =
   | 'conflictPrevention'
   | 'lfs'
   | 'encoding'
+  | 'commit'
   | 'maintenance'
   | 'migrate'
   | 'about'
@@ -79,6 +82,9 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       // Plan #42 H-3 — Encoding identity-core 가이드 (한글 안전).
       // RepoSpecificForm 의 i18n.commitEncoding/logOutputEncoding 안내.
       { id: 'encoding', label: 'Encoding (한글 안전)' },
+      // Plan #42 H-4 — Commit Settings (4 toggle + template).
+      // UI/persistence 만, mutation 측 실 적용은 M-1.2.
+      { id: 'commit', label: 'Commit' },
     ],
   },
   {
@@ -132,6 +138,7 @@ const ITEM_I18N_KEY: Record<string, string> = {
   conflictPrevention: 'settings.items.conflictPrevention',
   lfs: 'settings.items.lfs',
   encoding: 'settings.items.encoding',
+  commit: 'settings.items.commit',
   editor: 'settings.items.editor',
   ui: 'settings.items.ui',
   maintenance: 'settings.items.maintenance',
@@ -233,6 +240,9 @@ const buildInfo = computed(() => ({
 
       <!-- Plan #42 H-3 — Encoding 한글 안전 가이드 -->
       <SettingsEncoding v-else-if="active === 'encoding'" />
+
+      <!-- Plan #42 H-4 — Commit 4 toggle + template -->
+      <SettingsCommit v-else-if="active === 'commit'" />
 
       <!-- 유지보수 -->
       <SettingsMaintenance v-else-if="active === 'maintenance'" />

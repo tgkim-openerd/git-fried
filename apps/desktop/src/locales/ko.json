@@ -529,6 +529,22 @@
       },
       "futureNote": "v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정."
     },
+    "commitPage": {
+      "title": "Commit",
+      "description": "Commit 시 자동 push / pre-commit hook skip / squash default / commit message template. GitKraken Repo-Specific Preferences 의 Commit 매핑 (Plan #42 H-4).",
+      "uiOnlyNote": "⚠ 본 sprint = UI + persistence 만. mutation 측 실 적용 (push IPC / --no-verify / squash / template substitution) 은 다음 sprint (Plan #42 M-1.2) 에서.",
+      "pushAfterLabel": "Push after each commit",
+      "pushAfterHint": "Commit 직후 자동 push (origin / 추적 branch).",
+      "skipHooksLabel": "Skip git hooks by default",
+      "skipHooksHint": "기본적으로 --no-verify 적용 (pre-commit / commit-msg hook 우회). 신중히 사용.",
+      "squashLabel": "Squash by default (merge behavior)",
+      "squashHint": "branch merge 시 자동 squash (만 1 commit 합치기). 자세한 동작은 RepoSpecificForm 참조.",
+      "removeCommentsLabel": "Remove comments from commit messages",
+      "removeCommentsHint": "commit message 의 # 시작 주석 줄 자동 제거.",
+      "templateLabel": "Commit template",
+      "templateHint": "신규 commit 시 default message. body / footer 같은 prefix 삽입 (예: \"feat({scope}): \\n\\n\\nRefs:\").",
+      "templatePlaceholder": "feat({scope}): \n\nWhy: \nHow: "
+    },
     "encodingPage": {
       "title": "Encoding (한글 안전)",
       "description": "git-fried 의 identity-core. UTF-8 우선 + Windows CP949 / 일본어 Shift_JIS 등 다른 인코딩 안전 처리 (Rust encoding_rs + unicode_normalization).",
@@ -632,6 +648,7 @@
       "conflictPrevention": "Conflict Prevention",
       "lfs": "Git LFS",
       "encoding": "Encoding (한글 안전)",
+      "commit": "Commit",
       "editor": "에디터 / 터미널 (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

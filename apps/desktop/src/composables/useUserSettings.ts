@@ -26,6 +26,17 @@ export interface GeneralSettings {
    */
   conflictDetectionIntervalMin: number
   /**
+   * Plan #42 H-4 (Sprint c96+) — Commit 옵션 (GitKraken Settings Repo-Specific
+   * Commit 페이지 매핑). UI + persistence 만 본 sprint 진입. mutation 측 실 적용
+   * (push-after-commit IPC / --no-verify flag / squash default / template
+   * substitution) 은 별도 sprint M-1.2.
+   */
+  commitPushAfter: boolean
+  commitSkipHooks: boolean
+  commitSquashByDefault: boolean
+  commitTemplate: string
+  commitRemoveComments: boolean
+  /**
    * v1.0 #26 (UltraPlan plan/31) — Telemetry opt-in (privacy by default).
    * §9 Q8 권장: 미진행 (default false). 사용자 명시 opt-in 시만 Sentry 류 전송.
    * 본 flag false 시 모든 telemetry 비활성 (registerGlobalErrorHandler 도 IPC
@@ -111,6 +122,11 @@ function defaultGeneral(): GeneralSettings {
     autoUpdateSubmodules: false,
     conflictDetection: true,
     conflictDetectionIntervalMin: 5,
+    commitPushAfter: false,
+    commitSkipHooks: false,
+    commitSquashByDefault: false,
+    commitTemplate: '',
+    commitRemoveComments: false,
   }
 }
 
