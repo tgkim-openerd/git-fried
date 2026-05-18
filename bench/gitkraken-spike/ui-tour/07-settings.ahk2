@@ -41,10 +41,15 @@ FindGitKrakenMainWindow() {
             WinGetPos(&x, &y, &w, &h, "ahk_id " . hwnd)
             area := w * h
             FileAppend("  hwnd=" . hwnd . " title='" . title . "' mm=" . mm . " pos=" . x . "," . y . " size=" . w . "x" . h . "`n", LogFile)
-            ; main window 조건: title non-empty, size 큰 것, minimized 도 OK (Restore 가능)
-            if (title != "" && w >= 800 && h >= 600 && area > bestArea) {
-                bestHwnd := hwnd
-                bestArea := area
+            ; main window 조건: title 에 "GitKraken" 포함 (minimized 도 후보 — Restore 후 재측정)
+            ; v2.1 보정 — v2 의 size ≥ 800x600 filter 가 minimized window 거부 결함 해소
+            if (title != "" && InStr(title, "GitKraken")) {
+                ; minimized (mm=-1) 는 area 0 으로 잡히므로 무조건 첫 매치를 best 로
+                ; normal/maximized 는 area 비교
+                if (mm == -1 || area > bestArea) {
+                    bestHwnd := hwnd
+                    bestArea := mm == -1 ? -1 : area
+                }
             }
         } catch as e {
             FileAppend("  hwnd=" . hwnd . " err: " . e.Message . "`n", LogFile)
