@@ -529,6 +529,20 @@
       },
       "futureNote": "v1.x: External diff/merge tool launch, Terminal font/cursor settings."
     },
+    "issueTracker": {
+      "title": "Issue Tracker",
+      "description": "Maps to GitKraken Settings Repo-Specific Preferences Issue Tracker. git-fried provides first-class forge integration (Gitea + GitHub) + external tracker (Linear/Jira/Trello) decision area for v0.5+.",
+      "forgeFirstClassTitle": "First-class forge integration (implemented)",
+      "forgeFirstClassDescription": "Issues for the active repo's forge are read-only in the dedicated IssuesPanel (v0.3 stage).",
+      "giteaSupported": "Gitea — auto-integrated after setting forge_account_id ✓",
+      "githubSupported": "GitHub — auto-integrated after PAT registration ✓",
+      "externalTitle": "External Issue Trackers (skeleton)",
+      "externalDescription": "Linear / Jira / Trello — only the useExternalIssueTracker composable skeleton exists. Mutation, user PAT registration, and UI entry are deferred to v0.5+.",
+      "linearStatus": "Linear — skeleton (mutation pending)",
+      "jiraStatus": "Jira — skeleton (mutation pending)",
+      "trelloStatus": "Trello — skeleton (mutation pending)",
+      "externalDecisionNote": "⚠ git-fried identity (1-dev + first-class forge) — external trackers depend on SaaS + add user PAT. Integration vs rejection decision lives in docs/plan/26-3constraints-identity.md."
+    },
     "commitPage": {
       "title": "Commit",
       "description": "Auto-push after commit / skip pre-commit hooks / squash default / commit message template. Maps to GitKraken Repo-Specific Preferences Commit (Plan #42 H-4).",
@@ -649,6 +663,7 @@
       "lfs": "Git LFS",
       "encoding": "Encoding (Korean-safe)",
       "commit": "Commit",
+      "issueTracker": "Issue Tracker",
       "editor": "Editor / Terminal (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

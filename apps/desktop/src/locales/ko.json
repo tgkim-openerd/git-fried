@@ -529,6 +529,20 @@
       },
       "futureNote": "v1.x 추가: External diff/merge tool launch, Terminal font/cursor 설정."
     },
+    "issueTracker": {
+      "title": "Issue Tracker",
+      "description": "GitKraken Settings Repo-Specific Preferences 의 Issue Tracker 매핑. git-fried 의 forge 1급 (Gitea + GitHub) 통합 + 외부 tracker (Linear/Jira/Trello) v0.5+ 결정 영역.",
+      "forgeFirstClassTitle": "Forge 1급 통합 (구현 완료)",
+      "forgeFirstClassDescription": "현재 active repo 의 forge issue 는 IssuesPanel 의 별도 영역에서 read-only 노출 (v0.3 단계).",
+      "giteaSupported": "Gitea — forge_account_id 설정 후 자동 통합 ✓",
+      "githubSupported": "GitHub — PAT 등록 후 자동 통합 ✓",
+      "externalTitle": "외부 Issue Tracker (skeleton 상태)",
+      "externalDescription": "Linear / Jira / Trello — useExternalIssueTracker composable 의 skeleton 만 존재. mutation 적용 + 사용자 PAT 등록 + UI 진입점은 v0.5+ 결정 영역.",
+      "linearStatus": "Linear — skeleton (mutation 미구현)",
+      "jiraStatus": "Jira — skeleton (mutation 미구현)",
+      "trelloStatus": "Trello — skeleton (mutation 미구현)",
+      "externalDecisionNote": "⚠ git-fried 정체성 (1인 개발 + 1급 forge) — 외부 tracker 는 SaaS 의존 + 사용자 PAT 추가. 통합 vs 거부 결정은 docs/plan/26-3constraints-identity.md 검토 영역."
+    },
     "commitPage": {
       "title": "Commit",
       "description": "Commit 시 자동 push / pre-commit hook skip / squash default / commit message template. GitKraken Repo-Specific Preferences 의 Commit 매핑 (Plan #42 H-4).",
@@ -649,6 +663,7 @@
       "lfs": "Git LFS",
       "encoding": "Encoding (한글 안전)",
       "commit": "Commit",
+      "issueTracker": "Issue Tracker",
       "editor": "에디터 / 터미널 (★ AI CLI)",
       "ui": "UI Customization",
       "maintenance": "gc / fsck / LFS",

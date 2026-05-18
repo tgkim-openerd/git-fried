@@ -32,6 +32,8 @@ import SettingsLfs from '@/components/SettingsLfs.vue'
 import SettingsEncoding from '@/components/SettingsEncoding.vue'
 // Plan #42 H-4 — Commit Settings (push-after / skip hooks / squash / template).
 import SettingsCommit from '@/components/SettingsCommit.vue'
+// Plan #42 M-3 — Issue Tracker Settings (forge 1급 + 외부 tracker 결정 안내).
+import SettingsIssueTracker from '@/components/SettingsIssueTracker.vue'
 import { useUiState } from '@/composables/useUiState'
 
 type Category =
@@ -45,6 +47,7 @@ type Category =
   | 'lfs'
   | 'encoding'
   | 'commit'
+  | 'issueTracker'
   | 'maintenance'
   | 'migrate'
   | 'about'
@@ -85,6 +88,8 @@ const CATEGORY_GROUPS: CategoryGroup[] = [
       // Plan #42 H-4 — Commit Settings (4 toggle + template).
       // UI/persistence 만, mutation 측 실 적용은 M-1.2.
       { id: 'commit', label: 'Commit' },
+      // Plan #42 M-3 — Issue Tracker (forge 1급 + 외부 tracker 결정 안내).
+      { id: 'issueTracker', label: 'Issue Tracker' },
     ],
   },
   {
@@ -139,6 +144,7 @@ const ITEM_I18N_KEY: Record<string, string> = {
   lfs: 'settings.items.lfs',
   encoding: 'settings.items.encoding',
   commit: 'settings.items.commit',
+  issueTracker: 'settings.items.issueTracker',
   editor: 'settings.items.editor',
   ui: 'settings.items.ui',
   maintenance: 'settings.items.maintenance',
@@ -243,6 +249,9 @@ const buildInfo = computed(() => ({
 
       <!-- Plan #42 H-4 — Commit 4 toggle + template -->
       <SettingsCommit v-else-if="active === 'commit'" />
+
+      <!-- Plan #42 M-3 — Issue Tracker forge 1급 안내 -->
+      <SettingsIssueTracker v-else-if="active === 'issueTracker'" />
 
       <!-- 유지보수 -->
       <SettingsMaintenance v-else-if="active === 'maintenance'" />
