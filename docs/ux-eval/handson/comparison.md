@@ -70,8 +70,10 @@
 
 | Plan #42 항목 | commit | 상태 |
 | --- | --- | --- |
-| M-1.2 template prefill + removeComments | `857fa1d` + `93a6e38` (Codex 5차 fix) | △ 부분 (3/5 wire: skipHooks + template + removeComments — pushAfter / squashByDefault 잔여) |
-| M-3 Issue Tracker forge 1급 안내 | `2042f75` | △ (forge 1급 ✓ + 외부 tracker skeleton 결정 안내) |
+| M-1.2 template prefill + removeComments | `857fa1d` + `93a6e38` (Codex 5차 fix) | △ 부분 (3/5 wire 진행) |
+| M-3 Issue Tracker forge 1급 안내 | `2042f75` + `d0d8a5a` (Codex 5차 LOW fix) | △ (forge 1급 ✓ + 외부 skeleton 결정 안내 + actionable button) |
+| **M-1.2 pushAfter wire** | **`9b7faaa`** + **`a0caae4`** (Codex 6차 HIGH fix) | △ 부분 → **4/5 wire 완료** (commitPushAfter → useCommitMutation onSuccess push IPC) |
+| **잔여 1**: M-1.2 squashByDefault | (deferred) | mergeBranch IPC squash 옵션 미지원 → Rust 측 신규 IPC 필요 (M-L) |
 
 ## Sprint c97 잔여 (다음 진입점)
 
