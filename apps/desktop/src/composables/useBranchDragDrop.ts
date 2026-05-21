@@ -85,16 +85,16 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
       try {
         const r = await cherryPickSha(repoId, commitSha, opts.localName(target.name))
         if (r.success) {
-          toast.success('Cherry-pick 완료', target.name)
+          toast.success(t('branchDragDrop.cherryPickSuccess'), target.name)
           invalidate(repoId)
         } else if (r.conflicted) {
           toast.error(t('errors.conflictOccurred'), t('errors.conflictBody'))
           invalidate(repoId)
         } else {
-          toast.error('Cherry-pick 실패', humanizeGitError(r.stderr))
+          toast.error(t('branchDragDrop.cherryPickFailed'), humanizeGitError(r.stderr))
         }
       } catch (e) {
-        toast.error('Cherry-pick 호출 실패', describeError(e))
+        toast.error(t('branchDragDrop.cherryPickCallFailed'), describeError(e))
       }
       return
     }
@@ -129,24 +129,26 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
           )
           if (r.success) {
             toast.success(
-              useSquash ? t('branchActions.toastMergeSquashSuccess') : 'Merge 완료',
+              useSquash
+                ? t('branchActions.toastMergeSquashSuccess')
+                : t('branchDragDrop.mergeSuccess'),
               `${branchName} → ${target.name}`,
             )
           } else if (r.conflicted) {
-            toast.error('Merge 충돌', '변경 패널에서 해결')
+            toast.error(t('branchDragDrop.mergeConflict'), t('branchDragDrop.mergeConflictBody'))
           } else {
-            toast.error('Merge 실패', humanizeGitError(r.stderr))
+            toast.error(t('branchDragDrop.mergeFailed'), humanizeGitError(r.stderr))
           }
           invalidate(repoId)
         } else if (a === 'rebase') {
           await opts.switchAsync(repoId, opts.localName(branchName))
           const r = await rebaseBranch(repoId, opts.localName(target.name))
           if (r.success) {
-            toast.success('Rebase 완료', `${branchName} onto ${target.name}`)
+            toast.success(t('branchDragDrop.rebaseSuccess'), `${branchName} onto ${target.name}`)
           } else if (r.conflicted) {
-            toast.error('Rebase 충돌', '변경 패널에서 해결 후 --continue')
+            toast.error(t('branchDragDrop.rebaseConflict'), t('branchDragDrop.rebaseConflictBody'))
           } else {
-            toast.error('Rebase 실패', humanizeGitError(r.stderr))
+            toast.error(t('branchDragDrop.rebaseFailed'), humanizeGitError(r.stderr))
           }
           invalidate(repoId)
         }

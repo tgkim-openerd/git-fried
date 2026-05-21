@@ -1229,7 +1229,18 @@
     "actionTitle": "Branch drag-drop action",
     "actionMessage": "{source} → {target}\n\nWhich action do you want?",
     "actionMerge": "Merge (switch to target + merge source)",
-    "actionRebase": "Rebase (source onto target)"
+    "actionRebase": "Rebase (source onto target)",
+    "cherryPickSuccess": "Cherry-pick done",
+    "cherryPickFailed": "Cherry-pick failed",
+    "cherryPickCallFailed": "Cherry-pick call failed",
+    "mergeSuccess": "Merge done",
+    "mergeConflict": "Merge conflict",
+    "mergeConflictBody": "Resolve it in the changes panel",
+    "mergeFailed": "Merge failed",
+    "rebaseSuccess": "Rebase done",
+    "rebaseConflict": "Rebase conflict",
+    "rebaseConflictBody": "Resolve in the changes panel, then --continue",
+    "rebaseFailed": "Rebase failed"
   },
   "branch": {
     "title": "Branches",

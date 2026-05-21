@@ -76,8 +76,9 @@ pub async fn status(repo: &Path) -> AppResult<BisectStatus> {
 /// 즉시 좁아진다 (`git bisect start [<bad> [<good>]]`). good 은 bad 가 있을 때만
 /// 유효 (git 제약).
 ///
-/// **보안 (SEC-001)**: bad/good rev 는 `reject_dash_prefix` 거부 + `--end-of-options`
-/// 로 argument injection 방어 (branch.rs / range_diff.rs 와 동일 패턴).
+/// **보안 (SEC-001)**: bad/good rev 는 `reject_dash_prefix` 로 argument injection 방어.
+/// (`git bisect` 는 `--end-of-options` 미지원 — CDX-001 실측 확인. dash-prefix 거부가
+/// 단독으로 injection 을 완전 차단하므로 `--end-of-options` 불필요.)
 pub async fn start(repo: &Path, bad: Option<&str>, good: Option<&str>) -> AppResult<String> {
     let safe_bad = bad
         .map(str::trim)
@@ -97,7 +98,6 @@ pub async fn start(repo: &Path, bad: Option<&str>, good: Option<&str>) -> AppRes
     }
     let mut args: Vec<&str> = vec!["bisect", "start"];
     if let Some(b) = safe_bad {
-        args.push("--end-of-options");
         args.push(b);
         if let Some(g) = safe_good {
             args.push(g);
@@ -124,10 +124,10 @@ pub async fn mark(repo: &Path, m: BisectMark, sha: Option<&str>) -> AppResult<St
         BisectMark::Skip => "skip",
     };
     let mut args: Vec<&str> = vec!["bisect", action];
-    // SEC-002 (pre-existing, 동일 파일 인접 수정) — sha argument injection 방어.
+    // SEC-002 — sha argument injection 방어 (reject_dash_prefix 단독.
+    // `git bisect good/bad/skip` 는 --end-of-options 미지원 — CDX-002 실측 확인).
     if let Some(s) = sha {
         let safe = reject_dash_prefix(s, "sha")?;
-        args.push("--end-of-options");
         args.push(safe);
     }
     let out = git_run(repo, &args, &GitRunOpts::default())

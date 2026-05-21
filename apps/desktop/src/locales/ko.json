@@ -1229,7 +1229,18 @@
     "actionTitle": "브랜치 드래그 작업 선택",
     "actionMessage": "{source} → {target}\n\n어떤 작업을 수행할까요?",
     "actionMerge": "Merge (target 으로 switch + source 머지)",
-    "actionRebase": "Rebase (source 를 target 위로)"
+    "actionRebase": "Rebase (source 를 target 위로)",
+    "cherryPickSuccess": "Cherry-pick 완료",
+    "cherryPickFailed": "Cherry-pick 실패",
+    "cherryPickCallFailed": "Cherry-pick 호출 실패",
+    "mergeSuccess": "Merge 완료",
+    "mergeConflict": "Merge 충돌",
+    "mergeConflictBody": "변경 패널에서 해결",
+    "mergeFailed": "Merge 실패",
+    "rebaseSuccess": "Rebase 완료",
+    "rebaseConflict": "Rebase 충돌",
+    "rebaseConflictBody": "변경 패널에서 해결 후 --continue",
+    "rebaseFailed": "Rebase 실패"
   },
   "branch": {
     "title": "브랜치",

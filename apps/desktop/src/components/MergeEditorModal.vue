@@ -130,7 +130,8 @@ async function attemptClose() {
 }
 
 // UXF-01 — conflict marker 잔재 감지 (라인 시작 7자 마커).
-const CONFLICT_MARKER_RE = /^(<{7}|={7}|>{7})/m
+// CDX-003 — diff3/zdiff3 의 base 섹션 마커 `|||||||` 도 포함.
+const CONFLICT_MARKER_RE = /^(<{7}|\|{7}|={7}|>{7})/m
 
 async function onStage() {
   if (CONFLICT_MARKER_RE.test(resolved.value)) {

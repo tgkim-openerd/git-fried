@@ -61,8 +61,12 @@ export function formatError(e: unknown): string {
  * git CLI / forge / IPC 에러 메시지에서 흔한 패턴을 감지해 한국어 힌트 추가.
  * 원본 메시지 + 줄바꿈 + 가이드.
  */
+/** SEC-001 — toast 본문 raw stderr 길이 상한 (긴 git 내부 경로/ref 목록 노출 억제). */
+const MAX_RAW_LEN = 400
+
 export function humanizeGitError(rawMessage: string): string {
-  const m = rawMessage
+  // 긴 stderr 는 앞부분만 — hint 가 핵심 가이드이므로 raw 는 컨텍스트용으로 충분.
+  const m = rawMessage.length > MAX_RAW_LEN ? `${rawMessage.slice(0, MAX_RAW_LEN)}…` : rawMessage
   let hint: string | null = null
 
   // Pull / Fetch 빈 remote
