@@ -11,8 +11,12 @@ import {
   requestPermission,
   sendNotification,
 } from '@tauri-apps/plugin-notification'
+import { useToast } from '@/composables/useToast'
+import { i18n } from '@/i18n'
 
 let cachedGranted: boolean | null = null
+// A-24/UXF-18 — 권한 거부 안내는 세션당 1회만 (매 알림마다 toast 노출 방지).
+let deniedNoticeShown = false
 
 async function ensurePermission(): Promise<boolean> {
   if (cachedGranted !== null) return cachedGranted
@@ -32,18 +36,34 @@ async function ensurePermission(): Promise<boolean> {
 }
 
 export function useNotification() {
+  const toast = useToast()
+
   /**
-   * 데스크탑 알림 발송. 권한 없으면 silent. window 가 focus 상태면 skip.
+   * 데스크탑 알림 발송. window 가 focus 상태면 skip.
+   * 권한 거부 시 — silent swallow 대신 세션당 1회 toast 안내 (A-24/UXF-18).
    */
   async function notify(title: string, body?: string): Promise<void> {
     // window focus 상태면 toast 가 이미 보이니 OS notification 생략.
     if (typeof document !== 'undefined' && document.hasFocus()) return
     const ok = await ensurePermission()
-    if (!ok) return
+    if (!ok) {
+      if (!deniedNoticeShown) {
+        deniedNoticeShown = true
+        toast.info(
+          i18n.global.t('notification.deniedTitle'),
+          i18n.global.t('notification.deniedBody'),
+        )
+      }
+      return
+    }
     try {
       sendNotification({ title, body })
-    } catch {
-      /* ignore */
+    } catch (e) {
+      // sendNotification 자체 실패도 1회 안내.
+      if (!deniedNoticeShown) {
+        deniedNoticeShown = true
+        toast.info(i18n.global.t('notification.deniedTitle'), String(e))
+      }
     }
   }
 

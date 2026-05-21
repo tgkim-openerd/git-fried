@@ -18,7 +18,7 @@
 import { ref } from 'vue'
 import type { BranchInfo } from '@/api/git'
 import { cherryPickSha, mergeBranch, rebaseBranch } from '@/api/git'
-import { describeError } from '@/api/errors'
+import { describeError, humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useI18n } from 'vue-i18n'
@@ -91,7 +91,7 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
           toast.error(t('errors.conflictOccurred'), t('errors.conflictBody'))
           invalidate(repoId)
         } else {
-          toast.error('Cherry-pick 실패', r.stderr.slice(0, 200))
+          toast.error('Cherry-pick 실패', humanizeGitError(r.stderr))
         }
       } catch (e) {
         toast.error('Cherry-pick 호출 실패', describeError(e))
@@ -134,7 +134,7 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
           } else if (r.conflicted) {
             toast.error('Merge 충돌', '변경 패널에서 해결')
           } else {
-            toast.error('Merge 실패', r.stderr.slice(0, 200))
+            toast.error('Merge 실패', humanizeGitError(r.stderr))
           }
           invalidate(repoId)
         } else if (a === 'r' || a === 'rebase') {
@@ -145,7 +145,7 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
           } else if (r.conflicted) {
             toast.error('Rebase 충돌', '변경 패널에서 해결 후 --continue')
           } else {
-            toast.error('Rebase 실패', r.stderr.slice(0, 200))
+            toast.error('Rebase 실패', humanizeGitError(r.stderr))
           }
           invalidate(repoId)
         }

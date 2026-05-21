@@ -29,7 +29,7 @@ import {
   type RebaseStatus,
   type RebaseRunResult,
 } from '@/api/git'
-import { describeError } from '@/api/errors'
+import { describeError, humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useI18n } from 'vue-i18n'
@@ -109,7 +109,7 @@ export function useInteractiveRebaseFlow(opts: UseInteractiveRebaseFlowOptions) 
           }),
         )
       } else {
-        toast.error(t('interactiveRebase.toastFailed'), res.stderr.slice(0, 200))
+        toast.error(t('interactiveRebase.toastFailed'), humanizeGitError(res.stderr))
       }
     },
     onError: (e) => {

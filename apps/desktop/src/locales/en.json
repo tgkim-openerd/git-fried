@@ -1044,6 +1044,10 @@
     "retry": "↻ Retry",
     "reload": "Reload app"
   },
+  "notification": {
+    "deniedTitle": "Desktop notifications disabled",
+    "deniedBody": "OS notification permission was denied, so background task completion alerts can't be shown. You can allow git-fried notifications in your system settings."
+  },
   "clone": {
     "successTitle": "Clone complete",
     "successAutoRegistered": "{name} auto-registered",

@@ -4,7 +4,7 @@
 // useCommitActions 패턴 재사용.
 
 import type { ContextMenuItem } from '@/components/ContextMenu.vue'
-import { describeError } from '@/api/errors'
+import { describeError, humanizeGitError } from '@/api/errors'
 import {
   addWorktree,
   cherryPickSha,
@@ -196,7 +196,7 @@ export function useBranchActions(getRepoId: () => number | null) {
           t('branchActions.toastMergeConflictBody'),
         )
       } else {
-        toast.error(t('branchActions.toastMergeFail'), r.stderr.slice(0, 200))
+        toast.error(t('branchActions.toastMergeFail'), humanizeGitError(r.stderr))
       }
       invalidate(id)
     } catch (e) {
@@ -227,7 +227,7 @@ export function useBranchActions(getRepoId: () => number | null) {
           t('branchActions.toastRebaseConflictBody'),
         )
       } else {
-        toast.error(t('branchActions.toastRebaseFail'), r.stderr.slice(0, 200))
+        toast.error(t('branchActions.toastRebaseFail'), humanizeGitError(r.stderr))
       }
       invalidate(id)
     } catch (e) {
@@ -251,7 +251,7 @@ export function useBranchActions(getRepoId: () => number | null) {
       if (r.success) {
         toast.success(t('branchActions.toastPushSuccess'), branch.name)
       } else {
-        toast.error(t('branchActions.toastPushFail'), r.stderr.slice(0, 200))
+        toast.error(t('branchActions.toastPushFail'), humanizeGitError(r.stderr))
       }
       invalidate(id)
     } catch (e) {
@@ -360,7 +360,7 @@ export function useBranchActions(getRepoId: () => number | null) {
           t('branchActions.toastCherryConflict'),
           t('branchActions.toastMergeConflictBody'),
         )
-      else toast.error(t('branchActions.toastCherryFail'), r.stderr.slice(0, 200))
+      else toast.error(t('branchActions.toastCherryFail'), humanizeGitError(r.stderr))
       invalidate(id)
     } catch (e) {
       toast.error(t('branchActions.toastCherryCallFail'), describeError(e))
@@ -461,7 +461,7 @@ export function useBranchActions(getRepoId: () => number | null) {
           `${branch.name} → origin/${localBranchName(branch.name)}`,
         )
       } else {
-        toast.error(t('branchActions.toastUpstreamFail'), r.stderr.slice(0, 200))
+        toast.error(t('branchActions.toastUpstreamFail'), humanizeGitError(r.stderr))
       }
       invalidate(id)
     } catch (e) {

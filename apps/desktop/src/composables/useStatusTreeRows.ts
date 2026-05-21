@@ -20,7 +20,7 @@ import { computed, type ComputedRef, type Ref } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { launchMergetool } from '@/api/git'
 import type { FileChange } from '@/types/git'
-import { describeError } from '@/api/errors'
+import { describeError, humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { flattenTree, type FlatTreeRow, type ViewMode } from '@/composables/useStatusTreeView'
@@ -88,7 +88,7 @@ export function useStatusTreeRows(opts: UseStatusTreeRowsOptions) {
       } else {
         toast.error(
           t('status.mergetoolFailedTitle'),
-          res.stderr.slice(0, 200) || `exit ${res.exitCode}`,
+          humanizeGitError(res.stderr) || `exit ${res.exitCode}`,
         )
       }
     },

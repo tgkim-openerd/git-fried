@@ -1044,6 +1044,10 @@
     "retry": "↻ 다시 시도",
     "reload": "앱 새로고침"
   },
+  "notification": {
+    "deniedTitle": "데스크톱 알림 비활성화",
+    "deniedBody": "OS 알림 권한이 거부되어 백그라운드 작업 완료 알림을 표시할 수 없습니다. 시스템 설정에서 git-fried 알림을 허용할 수 있습니다."
+  },
   "clone": {
     "successTitle": "Clone 완료",
     "successAutoRegistered": "{name} 자동 등록됨",
