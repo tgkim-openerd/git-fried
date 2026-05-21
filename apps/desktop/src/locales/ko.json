@@ -847,6 +847,7 @@
     "loading": "불러오는 중...",
     "namePlaceholder": "새 tag 이름 (예: v0.3.0)",
     "annotatedPlaceholder": "annotated 메시지 (비워두면 lightweight)",
+    "targetPlaceholder": "대상 commit / ref (비워두면 HEAD)",
     "annotatedTitle": "annotated tag",
     "noMessage": "(메시지 없음)",
     "pushOriginTitle": "origin 으로 push",

@@ -44,15 +44,22 @@ function invalidate() {
 // === create ===
 const newName = ref('')
 const newMessage = ref('') // 빈 = lightweight, 채워지면 annotated
+const newTarget = ref('') // A-11 — 빈 = HEAD, 채워지면 해당 ref/SHA 에 tag
 const createMut = useMutation({
   mutationFn: () => {
     if (props.repoId == null) throw new Error(t('tag.errNoRepo'))
-    return createTag(props.repoId, newName.value.trim(), null, newMessage.value.trim() || null)
+    return createTag(
+      props.repoId,
+      newName.value.trim(),
+      newTarget.value.trim() || null,
+      newMessage.value.trim() || null,
+    )
   },
   onSuccess: () => {
     toast.success(t('tag.toastCreated'), newName.value)
     newName.value = ''
     newMessage.value = ''
+    newTarget.value = ''
     invalidate()
   },
   onError: (e) => toast.error(t('tag.toastCreateFailed'), describeError(e)),
@@ -142,6 +149,12 @@ const { onTagContextMenu, deleteTagLocal, deleteTagRemote } = useTagInteraction(
       <input
         v-model="newMessage"
         :placeholder="t('tag.annotatedPlaceholder')"
+        class="rounded border border-input bg-background px-2 py-1 text-[11px]"
+      />
+      <!-- A-11 — tag 대상 commit/ref (빈 값 = HEAD) -->
+      <input
+        v-model="newTarget"
+        :placeholder="t('tag.targetPlaceholder')"
         class="rounded border border-input bg-background px-2 py-1 text-[11px]"
       />
       <button

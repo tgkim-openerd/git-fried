@@ -847,6 +847,7 @@
     "loading": "Loading...",
     "namePlaceholder": "New tag name (e.g. v0.3.0)",
     "annotatedPlaceholder": "Annotated message (blank for lightweight)",
+    "targetPlaceholder": "Target commit / ref (blank for HEAD)",
     "annotatedTitle": "annotated tag",
     "noMessage": "(no message)",
     "pushOriginTitle": "Push to origin",
