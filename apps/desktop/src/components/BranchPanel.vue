@@ -59,9 +59,11 @@ const tree = computed(() => {
 const isSearching = computed(() => filterQuery.value.trim().length > 0)
 
 // c79-B — switch/create/delete mutation + handler 통합 composable 위임.
+const newBranchBase = ref('')
 const { onSwitch, onCreate, onDelete, switchAsync, createMut } = useBranchPanelMutations({
   repoId: () => props.repoId,
   newBranchName,
+  newBranchBase,
 })
 
 // === Sprint 22-9 V-7 — hover preview tooltip ===
@@ -222,22 +224,30 @@ async function onExplainBranch(b: BranchInfo) {
       </button>
     </div>
 
-    <!-- 새 브랜치 입력 -->
-    <div class="flex gap-1 border-b border-border px-3 py-2">
+    <!-- 새 브랜치 입력 — B4-07: 이름 + 선택적 base ref -->
+    <div class="flex flex-col gap-1 border-b border-border px-3 py-2">
+      <div class="flex gap-1">
+        <input
+          v-model="newBranchName"
+          :placeholder="t('branch.newPlaceholder')"
+          class="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
+          @keyup.enter="onCreate"
+        />
+        <button
+          type="button"
+          class="rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground disabled:opacity-50"
+          :disabled="!newBranchName.trim() || createMut.isPending.value"
+          @click="onCreate"
+        >
+          +
+        </button>
+      </div>
       <input
-        v-model="newBranchName"
-        :placeholder="t('branch.newPlaceholder')"
-        class="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs"
+        v-model="newBranchBase"
+        :placeholder="t('branch.newBasePlaceholder')"
+        class="rounded-md border border-input bg-background px-2 py-1 text-[11px]"
         @keyup.enter="onCreate"
       />
-      <button
-        type="button"
-        class="rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground disabled:opacity-50"
-        :disabled="!newBranchName.trim() || createMut.isPending.value"
-        @click="onCreate"
-      >
-        +
-      </button>
     </div>
 
     <!-- GitKraken Filter input — leaf name substring 매칭. 비우면 트리 원본 + 사용자 expand 상태 복원. -->

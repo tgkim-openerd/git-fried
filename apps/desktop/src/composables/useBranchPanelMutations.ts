@@ -22,6 +22,8 @@ interface UseBranchPanelMutationsOpts {
   repoId: MaybeRefOrGetter<number | null>
   /** 신규 브랜치 이름 입력 ref — onCreate 성공 시 빈 문자열로 reset (caller 가 v-model) */
   newBranchName: Ref<string>
+  /** B4-07 — 신규 브랜치 base ref 입력 ref (선택, 비우면 현재 HEAD 기준) */
+  newBranchBase?: Ref<string>
 }
 
 /**
@@ -46,9 +48,11 @@ export function useBranchPanelMutations(opts: UseBranchPanelMutationsOpts) {
   })
 
   const createMut = useMutation({
-    mutationFn: ({ id, name }: { id: number; name: string }) => createBranch(id, name),
+    mutationFn: ({ id, name, start }: { id: number; name: string; start?: string }) =>
+      createBranch(id, name, start),
     onSuccess: () => {
       opts.newBranchName.value = ''
+      if (opts.newBranchBase) opts.newBranchBase.value = ''
       invalidate(repoId.value)
     },
     onError: (e) => toast.error(t('branch.toastCreateFailed'), describeError(e)),
@@ -73,7 +77,8 @@ export function useBranchPanelMutations(opts: UseBranchPanelMutationsOpts) {
     if (id == null) return
     const name = opts.newBranchName.value.trim()
     if (!name) return
-    createMut.mutate({ id, name })
+    const start = opts.newBranchBase?.value.trim() || undefined
+    createMut.mutate({ id, name, start })
   }
 
   async function onDelete(b: BranchInfo) {

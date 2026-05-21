@@ -1212,6 +1212,7 @@
     "soloOff": "Solo ✕",
     "soloOffTitle": "Clear Solo",
     "newPlaceholder": "New branch (e.g. feat/foo)",
+    "newBasePlaceholder": "Base ref (optional — current HEAD if empty)",
     "createButton": "+",
     "hideOff": "Unhide",
     "hideOn": "Hide from graph",

@@ -1212,6 +1212,7 @@
     "soloOff": "Solo ✕",
     "soloOffTitle": "Solo 해제",
     "newPlaceholder": "새 브랜치 (예: feat/foo)",
+    "newBasePlaceholder": "기준 ref (선택 — 비우면 현재 HEAD)",
     "createButton": "+",
     "hideOff": "숨김 해제",
     "hideOn": "그래프에서 숨김",

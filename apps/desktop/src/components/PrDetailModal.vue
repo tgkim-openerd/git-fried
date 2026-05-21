@@ -52,6 +52,25 @@ const commentsQuery = useQuery({
   enabled: computed(() => props.open && props.repoId != null && props.number != null),
 })
 
+// A-3 — PR 상세 헤더에 CI 상태 노출 (getPullRequest 응답의 ciStatus 필드).
+function ciLabel(s: 'success' | 'pending' | 'failure'): string {
+  return s === 'success'
+    ? t('pr.ciStatus.passed')
+    : s === 'failure'
+      ? t('pr.ciStatus.failed')
+      : t('pr.ciStatus.pending')
+}
+function ciClass(s: 'success' | 'pending' | 'failure'): string {
+  return s === 'success'
+    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+    : s === 'failure'
+      ? 'bg-rose-500/15 text-danger-rose'
+      : 'bg-amber-500/15 text-warning-amber'
+}
+function ciIcon(s: 'success' | 'pending' | 'failure'): string {
+  return s === 'success' ? '✔' : s === 'failure' ? '✕' : '⏳'
+}
+
 // === Sprint 22-3 V-2: Files Changed tab — Sprint c31 PrFilesTab.vue 로 분리 ===
 // filesQuery / expandedFiles / toggleFileExpand / expandAllFiles / collapseAllFiles /
 // statusBadge 모두 PrFilesTab 내부로 이전. PrDetailModal 은 activeTab 토글만 관리.
@@ -212,6 +231,16 @@ async function onAiReview(): Promise<void> {
           {{ detailQuery.data.value.author.username }} ·
           {{ fmtDate(detailQuery.data.value.createdAt) }}
           · {{ detailQuery.data.value.headBranch }} → {{ detailQuery.data.value.baseBranch }}
+          <span
+            v-if="detailQuery.data.value.ciStatus"
+            :class="[
+              'ml-1 rounded px-1.5 py-0.5 text-[10px] font-medium',
+              ciClass(detailQuery.data.value.ciStatus),
+            ]"
+          >
+            {{ ciIcon(detailQuery.data.value.ciStatus) }}
+            {{ ciLabel(detailQuery.data.value.ciStatus) }}
+          </span>
           <a
             :href="detailQuery.data.value.htmlUrl"
             target="_blank"
