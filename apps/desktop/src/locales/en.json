@@ -488,6 +488,7 @@
     "title": "Settings",
     "navSearchPlaceholder": "Search settings...",
     "navSearchEmpty": "No matching settings",
+    "saved": "Saved",
     "resetAll": "Restore defaults",
     "resetAllTitle": "Restore default settings",
     "resetAllMessage": "Reset all General / UI settings to defaults?\n• Profiles / Forge accounts / repositories are unaffected\n• This cannot be undone",

@@ -10,7 +10,7 @@
 //   - About — 단순 텍스트
 //
 // 영속화: localStorage (DB 통합은 v1.x). Cloud / Org / Marketing 항목은 거부.
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ForgeSetup from '@/components/ForgeSetup.vue'
 import GitKrakenImportModal from '@/components/GitKrakenImportModal.vue'
@@ -39,7 +39,11 @@ import SettingsGitHooks from '@/components/SettingsGitHooks.vue'
 // Plan #42 M-2 — Sparse Checkout repo manager (Sprint c100).
 import SettingsSparseCheckout from '@/components/SettingsSparseCheckout.vue'
 import { useUiState } from '@/composables/useUiState'
-import { resetAllSettings } from '@/composables/useUserSettings'
+import {
+  resetAllSettings,
+  useGeneralSettings,
+  useUiSettingsStore,
+} from '@/composables/useUserSettings'
 import { confirmDialog } from '@/composables/useConfirm'
 
 type Category =
@@ -187,6 +191,20 @@ const filteredGroups = computed(() => {
   })).filter((g) => g.items.length > 0)
 })
 
+// R2-S1 — 설정 변경 시 "저장됨" 피드백 (general/ui 는 deep watch 로 localStorage 자동 영속).
+const showSaved = ref(false)
+let savedTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  [useGeneralSettings(), useUiSettingsStore()],
+  () => {
+    showSaved.value = true
+    clearTimeout(savedTimer)
+    savedTimer = setTimeout(() => (showSaved.value = false), 1800)
+  },
+  { deep: true },
+)
+onBeforeUnmount(() => clearTimeout(savedTimer))
+
 // R6-002 — 설정 전체 기본값 복원.
 async function onResetAll() {
   const ok = await confirmDialog({
@@ -284,7 +302,15 @@ const buildInfo = computed(() => ({
     </nav>
 
     <!-- 우측 콘텐츠 -->
-    <section class="flex-1 overflow-auto p-6">
+    <section class="relative flex-1 overflow-auto p-6">
+      <!-- R2-S1 — 설정 변경 시 저장됨 피드백 (auto-persist 가시화) -->
+      <div
+        v-if="showSaved"
+        class="pointer-events-none absolute right-4 top-4 z-10 rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"
+        role="status"
+      >
+        ✓ {{ t('settings.saved') }}
+      </div>
       <ProfilesSection v-if="active === 'profiles'" />
       <ForgeSetup v-else-if="active === 'forge'" />
 
