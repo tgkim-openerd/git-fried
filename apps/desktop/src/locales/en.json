@@ -1068,6 +1068,10 @@
     "emptyTitle": "No commits yet",
     "emptyDesc": "This repository has no commits yet. Stage files in the changes panel and create your first commit."
   },
+  "bisect": {
+    "badPlaceholder": "Known bad rev (optional — blank to skip)",
+    "goodPlaceholder": "Known good rev (optional — only used with a bad rev)"
+  },
   "clone": {
     "successTitle": "Clone complete",
     "successAutoRegistered": "{name} auto-registered",

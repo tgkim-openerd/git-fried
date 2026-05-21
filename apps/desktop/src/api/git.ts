@@ -529,7 +529,11 @@ export interface BisectStatus {
 }
 export const getBisectStatus = (repoId: number): Promise<BisectStatus> =>
   invoke('bisect_status', { repoId })
-export const bisectStart = (repoId: number): Promise<string> => invoke('bisect_start', { repoId })
+export const bisectStart = (
+  repoId: number,
+  bad?: string | null,
+  good?: string | null,
+): Promise<string> => invoke('bisect_start', { args: { repoId, bad, good } })
 export const bisectMark = (repoId: number, mark: BisectMark, sha?: string): Promise<string> =>
   invoke('bisect_mark', { args: { repoId, mark, sha } })
 export const bisectReset = (repoId: number): Promise<void> => invoke('bisect_reset', { repoId })

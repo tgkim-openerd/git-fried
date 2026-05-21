@@ -17,13 +17,25 @@ pub async fn bisect_status(
     git_bisect::status(&path).await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BisectStartArgs {
+    pub repo_id: i64,
+    /// A-17 — 알려진 bad rev (비우면 미지정).
+    #[serde(default)]
+    pub bad: Option<String>,
+    /// A-17 — 알려진 good rev (bad 가 있을 때만 유효).
+    #[serde(default)]
+    pub good: Option<String>,
+}
+
 #[tauri::command]
 pub async fn bisect_start(
-    repo_id: i64,
+    args: BisectStartArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<String> {
-    let path = repo_path(&state, repo_id).await?;
-    git_bisect::start(&path).await
+    let path = repo_path(&state, args.repo_id).await?;
+    git_bisect::start(&path, args.bad.as_deref(), args.good.as_deref()).await
 }
 
 #[derive(Debug, Deserialize)]

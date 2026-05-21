@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Bisect — binary search 로 잘못된 commit 식별.
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { bisectMark, bisectReset, bisectStart, getBisectStatus } from '@/api/git'
@@ -33,10 +33,13 @@ const statusQuery = useQuery({
   staleTime: STALE_TIME.REALTIME,
 })
 
+// A-17 — 알려진 bad / good rev 입력 (선택). 채우면 탐색 범위 즉시 축소.
+const newBad = ref('')
+const newGood = ref('')
 const startMut = useMutation({
   mutationFn: () => {
     if (repoId.value == null) return Promise.reject(new Error('no repo'))
-    return bisectStart(repoId.value)
+    return bisectStart(repoId.value, newBad.value.trim() || null, newGood.value.trim() || null)
   },
   onSuccess: () => {
     qc.invalidateQueries({ queryKey: ['bisect-status'] })
@@ -101,6 +104,19 @@ async function onReset() {
 
       <!-- 미시작 -->
       <div v-if="statusQuery.data.value && !statusQuery.data.value.inProgress">
+        <!-- A-17 — 알려진 bad / good rev 선택 입력 -->
+        <div class="mb-2 flex flex-col gap-1">
+          <input
+            v-model="newBad"
+            :placeholder="t('bisect.badPlaceholder')"
+            class="rounded border border-input bg-background px-2 py-1 text-[11px]"
+          />
+          <input
+            v-model="newGood"
+            :placeholder="t('bisect.goodPlaceholder')"
+            class="rounded border border-input bg-background px-2 py-1 text-[11px]"
+          />
+        </div>
         <button
           type="button"
           class="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground disabled:opacity-50"

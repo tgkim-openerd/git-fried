@@ -71,8 +71,19 @@ pub async fn status(repo: &Path) -> AppResult<BisectStatus> {
     })
 }
 
-pub async fn start(repo: &Path) -> AppResult<String> {
-    let out = git_run(repo, &["bisect", "start"], &GitRunOpts::default())
+/// bisect 시작. A-17 — 알려진 bad / good rev 를 함께 전달하면 탐색 범위가
+/// 즉시 좁아진다 (`git bisect start [<bad> [<good>]]`). good 은 bad 가 있을 때만
+/// 유효 (git 제약).
+pub async fn start(repo: &Path, bad: Option<&str>, good: Option<&str>) -> AppResult<String> {
+    let mut args: Vec<String> = vec!["bisect".into(), "start".into()];
+    if let Some(b) = bad.map(str::trim).filter(|s| !s.is_empty()) {
+        args.push(b.to_string());
+        if let Some(g) = good.map(str::trim).filter(|s| !s.is_empty()) {
+            args.push(g.to_string());
+        }
+    }
+    let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
+    let out = git_run(repo, &arg_refs, &GitRunOpts::default())
         .await?
         .into_ok()?;
     Ok(out)

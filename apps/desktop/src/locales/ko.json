@@ -1068,6 +1068,10 @@
     "emptyTitle": "커밋이 없습니다",
     "emptyDesc": "이 저장소에는 아직 커밋이 없습니다. 변경 패널에서 파일을 stage 하고 첫 커밋을 만들어 보세요."
   },
+  "bisect": {
+    "badPlaceholder": "알려진 bad rev (선택 — 비우면 미지정)",
+    "goodPlaceholder": "알려진 good rev (선택 — bad 입력 시에만 적용)"
+  },
   "clone": {
     "successTitle": "Clone 완료",
     "successAutoRegistered": "{name} 자동 등록됨",
