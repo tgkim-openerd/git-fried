@@ -3,9 +3,10 @@
 // 3 mutation (addRepoMut / pinMut / bulkFetchMut) + bulkFetch 결과 toast 흐름 통합.
 // caller-decision: bulkResultStore 는 caller (page) 보유, composable 은 mutation 결과 set 만 담당.
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { addRepo, bulkFetch, setRepoPinned } from '@/api/git'
+import { addRepo, bulkFetch, removeRepo, setRepoPinned } from '@/api/git'
 import { describeError, humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { useReposStore } from '@/stores/repos'
 import { useI18n } from 'vue-i18n'
 import type { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 
@@ -18,10 +19,24 @@ export function useRepoManagementMutations(opts: UseRepoManagementMutationsOpts)
   const qc = useQueryClient()
   const toast = useToast()
   const { t } = useI18n()
+  const store = useReposStore()
 
   const addRepoMut = useMutation({
     mutationFn: addRepo,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['repos-all-for-management'] }),
+  })
+
+  // R2-R1 — 저장소 추적 해제 (DB 항목 제거, 디스크 파일은 보존).
+  const removeRepoMut = useMutation({
+    mutationFn: (id: number) => removeRepo(id),
+    onSuccess: (_r, id) => {
+      // 제거된 repo 의 탭 / active 정리.
+      store.closeTab(id)
+      qc.invalidateQueries({ queryKey: ['repos-all-for-management'] })
+      qc.invalidateQueries({ queryKey: ['repos'] })
+      toast.success(t('repos.removeSuccess'), '')
+    },
+    onError: (e) => toast.error(t('repos.removeFailed'), describeError(e)),
   })
 
   const pinMut = useMutation({
@@ -58,5 +73,5 @@ export function useRepoManagementMutations(opts: UseRepoManagementMutationsOpts)
     onError: (e) => toast.error(t('errors.bulkFetchFailed'), describeError(e)),
   })
 
-  return { addRepoMut, pinMut, bulkFetchMut }
+  return { addRepoMut, pinMut, bulkFetchMut, removeRepoMut }
 }

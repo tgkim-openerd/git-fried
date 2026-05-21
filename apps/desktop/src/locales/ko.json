@@ -405,6 +405,8 @@
     "checkoutTagMessage": "Tag '{name}' 를 checkout 할까요?\n(detached HEAD 상태가 됩니다)",
     "removeWorktreeTitle": "Worktree 제거",
     "removeWorktreeMessage": "worktree '{path}' 를 제거할까요?",
+    "untrackRepoTitle": "저장소 추적 해제",
+    "untrackRepoMessage": "'{name}' 을 git-fried 에서 추적 해제할까요?\n• 목록 / 탭에서 제거됩니다\n• 디스크의 실제 git 저장소 파일은 그대로 보존됩니다",
     "closePrTitle": "PR 닫기",
     "closePrMessage": "PR #{number} 을 닫을까요?",
     "mergePrTitle": "PR Merge",
@@ -1850,6 +1852,9 @@
     "emptyDescription": "우상단 [Browse] 또는 [Clone] 으로 시작하세요.",
     "miscGroupLabel": "기타",
     "openInExplorerTitle": "OS 파일 매니저로 열기",
+    "removeTitle": "git-fried 에서 추적 해제 (디스크 파일은 보존)",
+    "removeSuccess": "저장소 추적 해제됨",
+    "removeFailed": "저장소 추적 해제 실패",
     "bulkResultMore": "...외 {n}개 — 📡 버튼으로 전체 보기",
     "bulkFetchResult": "일괄 Fetch: {ok}/{total} 성공 ({failed} 실패)",
     "bulkFetchSuccess": "일괄 Fetch 완료 ({n} 레포)"

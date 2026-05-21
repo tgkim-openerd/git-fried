@@ -26,6 +26,7 @@ import { useI18n } from 'vue-i18n'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 // Sprint c80-1 — 3 mutation 통합 composable 위임.
 import { useRepoManagementMutations } from '@/composables/useRepoManagementMutations'
+import { confirmDialog } from '@/composables/useConfirm'
 import CloneRepoModal from '@/components/CloneRepoModal.vue'
 import BulkFetchResultModal from '@/components/BulkFetchResultModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -103,7 +104,9 @@ const openTabRepos = computed<Repo[]>(() => {
 const favoriteRepos = computed<Repo[]>(() => (allRepos.value ?? []).filter((r) => r.isPinned))
 
 // c80-1 — 3 mutation (addRepo/pin/bulkFetch + bulk 결과 toast) composable 위임.
-const { addRepoMut, pinMut, bulkFetchMut } = useRepoManagementMutations({ bulkResultStore })
+const { addRepoMut, pinMut, bulkFetchMut, removeRepoMut } = useRepoManagementMutations({
+  bulkResultStore,
+})
 
 // === Actions ===
 async function browseAndAdd() {
@@ -120,6 +123,18 @@ async function browseAndAdd() {
 function openRepo(repo: Repo) {
   store.openTab(repo.id)
   goHome()
+}
+
+// R2-R1 — 저장소 추적 해제 (confirm 후 removeRepo IPC).
+async function onRemoveRepo(repo: Repo) {
+  const ok = await confirmDialog({
+    title: t('confirm.untrackRepoTitle'),
+    message: t('confirm.untrackRepoMessage', {
+      name: aliases.resolveLocal(repo.id, repo.name).display,
+    }),
+    danger: true,
+  })
+  if (ok) removeRepoMut.mutate(repo.id)
 }
 
 function repoBranch(id: number): string | null {
@@ -452,6 +467,16 @@ function workspaceName(id: number | null): string {
                   @click.stop="openInExplorer(repo.id)"
                 >
                   📂
+                </button>
+                <!-- R2-R1 — 추적 해제 -->
+                <button
+                  type="button"
+                  class="rounded p-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/15 hover:text-destructive group-hover:opacity-100"
+                  :title="t('repos.removeTitle')"
+                  :disabled="removeRepoMut.isPending.value"
+                  @click.stop="onRemoveRepo(repo)"
+                >
+                  ✕
                 </button>
                 <span
                   v-if="repo.workspaceId != null"

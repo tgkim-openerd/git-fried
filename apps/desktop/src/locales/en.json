@@ -405,6 +405,8 @@
     "checkoutTagMessage": "Checkout tag '{name}'?\n(This will result in detached HEAD)",
     "removeWorktreeTitle": "Remove worktree",
     "removeWorktreeMessage": "Remove worktree '{path}'?",
+    "untrackRepoTitle": "Untrack repository",
+    "untrackRepoMessage": "Untrack '{name}' from git-fried?\n• It is removed from the list and tabs\n• The actual git repository files on disk are kept",
     "closePrTitle": "Close PR",
     "closePrMessage": "Close PR #{number}?",
     "mergePrTitle": "Merge PR",
@@ -1850,6 +1852,9 @@
     "emptyDescription": "Use [Browse] or [Clone] in the top-right to get started.",
     "miscGroupLabel": "Other",
     "openInExplorerTitle": "Open in OS file manager",
+    "removeTitle": "Untrack from git-fried (disk files kept)",
+    "removeSuccess": "Repository untracked",
+    "removeFailed": "Failed to untrack repository",
     "bulkResultMore": "...{n} more — 📡 button to view all",
     "bulkFetchResult": "Bulk fetch: {ok}/{total} succeeded ({failed} failed)",
     "bulkFetchSuccess": "Bulk fetch complete ({n} repos)"
