@@ -1059,6 +1059,10 @@
     "deniedTitle": "Desktop notifications disabled",
     "deniedBody": "OS notification permission was denied, so background task completion alerts can't be shown. You can allow git-fried notifications in your system settings."
   },
+  "graph": {
+    "emptyTitle": "No commits yet",
+    "emptyDesc": "This repository has no commits yet. Stage files in the changes panel and create your first commit."
+  },
   "clone": {
     "successTitle": "Clone complete",
     "successAutoRegistered": "{name} auto-registered",

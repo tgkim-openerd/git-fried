@@ -40,6 +40,7 @@ import {
 } from '@/composables/useCommitGraphLifecycle'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
+import EmptyState from './EmptyState.vue'
 import CommitRefPill from './CommitRefPill.vue'
 import type { GraphRow } from '@/api/git'
 
@@ -331,6 +332,10 @@ void [searchInputRef, moveSelection, headerMenuRef]
         data-testid="commit-graph-skeleton"
       >
         <SkeletonBlock :count="12" height="md" :width-range="[40, 90]" />
+      </div>
+      <!-- B4-10 — unborn / 커밋 0 repo empty state + 첫 커밋 안내 -->
+      <div v-else-if="rows.length === 0" class="flex h-full items-center justify-center p-8">
+        <EmptyState icon="🌱" :title="t('graph.emptyTitle')" :description="t('graph.emptyDesc')" />
       </div>
       <!-- 가상 height -->
       <div v-else :style="{ height: totalHeight + 'px', position: 'relative' }">
