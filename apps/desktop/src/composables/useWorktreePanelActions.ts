@@ -55,6 +55,8 @@ export function useWorktreePanelActions(opts: UseWorktreePanelActionsOpts) {
     mutationFn: ({ p, force }: { p: string; force: boolean }) =>
       removeWorktree(repoId.value!, p, force),
     onSuccess: invalidateWorktrees,
+    // R2-WT3 — remove 실패 (dirty / 권한 등) 시 사용자에게 알림.
+    onError: (e) => toast.error(t('worktree.removeFailed'), describeError(e)),
   })
 
   const pruneMut = useMutation({
@@ -82,13 +84,17 @@ export function useWorktreePanelActions(opts: UseWorktreePanelActionsOpts) {
     onError: (e) => toast.error('Unlock 실패', describeError(e)),
   })
 
-  async function confirmRemove(path: string) {
+  // R2-WT1 — dirty worktree 는 일반 confirm 대신 데이터 손실 경고 + force 제거.
+  async function confirmRemove(wt: { path: string; isDirty: boolean | null }) {
+    const dirty = wt.isDirty === true
     const ok = await confirmDialog({
       title: t('confirm.removeWorktreeTitle'),
-      message: t('confirm.removeWorktreeMessage', { path }),
+      message: dirty
+        ? t('confirm.removeWorktreeDirtyMessage', { path: wt.path })
+        : t('confirm.removeWorktreeMessage', { path: wt.path }),
       danger: true,
     })
-    if (ok) removeMut.mutate({ p: path, force: false })
+    if (ok) removeMut.mutate({ p: wt.path, force: dirty })
   }
 
   async function onLock(path: string) {

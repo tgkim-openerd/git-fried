@@ -126,6 +126,17 @@ async function confirmUntrack(p: string) {
   }
 }
 
+// B4-02 — prune 은 로컬 LFS 캐시를 영구 삭제하므로 confirm 게이트.
+async function onPrune() {
+  if (props.repoId == null) return
+  const ok = await confirmDialog({
+    title: t('confirm.lfsPruneTitle'),
+    message: t('confirm.lfsPruneMessage'),
+    danger: true,
+  })
+  if (ok) pruneMut.mutate()
+}
+
 function fmtSize(b: number | null): string {
   if (b == null) return '?'
   if (b < 1024) return `${b}B`
@@ -160,7 +171,7 @@ function fmtSize(b: number | null): string {
           type="button"
           class="rounded-md border border-input px-2 py-0.5 hover:bg-accent disabled:opacity-50"
           :disabled="!repoId || pruneMut.isPending.value"
-          @click="pruneMut.mutate()"
+          @click="onPrune"
         >
           prune
         </button>

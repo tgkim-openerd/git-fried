@@ -458,7 +458,20 @@
     "createPrAuthTitle": "Insufficient token",
     "createPrAuthMessage": "The current profile may not have PR creation permission.\nContinue anyway? (You may need to add a token if it fails)",
     "forgeSetupTitle": "Reconfigure forge",
-    "forgeSetupMessage": "Overwrite existing forge configuration?"
+    "forgeSetupMessage": "Overwrite existing forge configuration?",
+    "removeWorktreeDirtyMessage": "Worktree '{path}' has uncommitted changes.\n• Force remove (--force) will discard those changes\n• This cannot be undone",
+    "submoduleUpdateTitle": "Submodule update",
+    "submoduleUpdateMessage": "Update all submodules?\n• Submodule working trees change to match .gitmodules",
+    "submoduleSyncTitle": "Submodule sync",
+    "submoduleSyncMessage": "Sync all submodule remote URLs to match .gitmodules?",
+    "bisectResetTitle": "End bisect",
+    "bisectResetMessage": "End the bisect session?\n• HEAD returns to where it was before bisect started",
+    "lfsPruneTitle": "LFS prune",
+    "lfsPruneMessage": "Delete stale locally-cached LFS files?\n• LFS objects not on the remote cannot be recovered\n• This cannot be undone",
+    "rebaseAbortTitle": "Abort rebase",
+    "rebaseAbortMessage": "Abort the in-progress rebase?\n• HEAD returns to its state before the rebase started\n• Conflict resolutions done so far are lost",
+    "stageWithMarkersTitle": "Conflict markers remain",
+    "stageWithMarkersMessage": "The result still contains conflict markers (<<<<<<< / ======= / >>>>>>>).\n• Staging now may commit an unresolved conflict\n• Stage anyway?"
   },
   "settings": {
     "title": "Settings",
@@ -789,6 +802,7 @@
   },
   "worktree": {
     "title": "Worktree",
+    "removeFailed": "Worktree remove failed",
     "pruneAria": "Prune prunable worktrees (disk cleanup)",
     "pathPlaceholder": "New worktree path (e.g. ../proj-feat-abc)",
     "branchPlaceholder": "New branch (optional, -b)",
@@ -926,7 +940,13 @@
     "closePreviewTitle": "Close",
     "empty": "No stashes",
     "applyFileTitle": "Apply only this file to the working tree",
-    "applyFileButton": "✓ Apply only this file"
+    "applyFileButton": "✓ Apply only this file",
+    "applySuccess": "Stash applied",
+    "applySuccessDetail": "stash{'@'}{idx} applied to the working tree",
+    "applyFailed": "Stash apply failed",
+    "popSuccess": "Stash popped",
+    "popSuccessDetail": "stash{'@'}{idx} applied and removed",
+    "popFailed": "Stash pop failed"
   },
   "stashList": {
     "title": "Stashes",
@@ -1001,7 +1021,10 @@
   },
   "submodule": {
     "title": "Submodule",
-    "empty": "No submodules"
+    "empty": "No submodules",
+    "updateFailed": "Submodule update failed",
+    "syncFailed": "Submodule sync failed",
+    "initFailed": "Submodule init failed"
   },
   "clone": {
     "successTitle": "Clone complete",

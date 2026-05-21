@@ -19,6 +19,7 @@ import { useReposStore } from '@/stores/repos'
 import { useAiComposer } from '@/composables/useAiComposer'
 // Sprint c63-B — IRR flow state + 5 mutation + handlers composable 위임.
 import { useInteractiveRebaseFlow } from '@/composables/useInteractiveRebaseFlow'
+import { confirmDialog } from '@/composables/useConfirm'
 import BaseModal from './BaseModal.vue'
 
 const { t } = useI18n()
@@ -42,6 +43,16 @@ const {
   canRun,
   externalOpen,
 } = useInteractiveRebaseFlow({ repoId: () => repoId.value })
+
+// UXF-25 — abort 는 conflict 해소 작업을 버리므로 danger confirm 게이트.
+async function onAbort() {
+  const ok = await confirmDialog({
+    title: t('confirm.rebaseAbortTitle'),
+    message: t('confirm.rebaseAbortMessage'),
+    danger: true,
+  })
+  if (ok) abortMut.mutate()
+}
 
 // === Sprint c34 god 14/N — AI Commit Composer composable 위임 ===
 const aiComp = useAiComposer({
@@ -225,7 +236,7 @@ onUnmounted(() => {
             type="button"
             class="rounded border border-red-500/60 px-3 py-1 text-sm text-danger-rose hover:bg-red-500/10 disabled:opacity-50"
             :disabled="abortMut.isPending.value"
-            @click="abortMut.mutate()"
+            @click="onAbort"
           >
             Abort
           </button>

@@ -9,6 +9,7 @@ import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
 import { useReposStore } from '@/stores/repos'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
+import { confirmDialog } from '@/composables/useConfirm'
 import BaseModal from './BaseModal.vue'
 
 const { t } = useI18n()
@@ -67,6 +68,15 @@ const resetMut = useMutation({
   },
   onError: (e) => toast.error('Bisect reset 실패', describeError(e)),
 })
+
+// A-18 — bisect reset 은 세션을 종료하고 HEAD 를 복귀시키므로 confirm 게이트.
+async function onReset() {
+  const ok = await confirmDialog({
+    title: t('confirm.bisectResetTitle'),
+    message: t('confirm.bisectResetMessage'),
+  })
+  if (ok) resetMut.mutate()
+}
 </script>
 
 <template>
@@ -147,7 +157,7 @@ const resetMut = useMutation({
             type="button"
             class="ml-auto rounded-md border border-input px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent disabled:opacity-50"
             :disabled="resetMut.isPending.value"
-            @click="resetMut.mutate()"
+            @click="onReset"
           >
             Reset (종료)
           </button>

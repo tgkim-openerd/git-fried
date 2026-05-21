@@ -29,8 +29,16 @@ const newBranch = ref('')
 // (현재 worktree 별 repo_id 가 별도가 아니므로 active worktree 추적 무의미 — 시각 highlight 만 유지)
 const selectedPath = ref<string | null>(null)
 
-const { addMut, pruneMut, lockMut, unlockMut, confirmRemove, onLock, onUnlock, onWorktreeDblClick } =
-  useWorktreePanelActions({ repoId: () => props.repoId, newPath, newBranch })
+const {
+  addMut,
+  pruneMut,
+  lockMut,
+  unlockMut,
+  confirmRemove,
+  onLock,
+  onUnlock,
+  onWorktreeDblClick,
+} = useWorktreePanelActions({ repoId: () => props.repoId, newPath, newBranch })
 
 function fmtSize(bytes: number | null): string {
   if (bytes == null) return '?'
@@ -84,7 +92,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
       icon: '🗑',
       destructive: true,
       disabled: t.isMain || t.isLocked,
-      action: () => confirmRemove(t.path),
+      action: () => confirmRemove(t),
     },
   ]
   ctxMenu.value?.openAt(ev, items)
@@ -227,7 +235,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
               :disabled="wt.isLocked"
               :title="wt.isLocked ? t('worktree.removeBlockedTitle') : ''"
               :aria-label="t('worktree.removeAria', { path: wt.path })"
-              @click="confirmRemove(wt.path)"
+              @click="confirmRemove(wt)"
             >
               remove
             </button>

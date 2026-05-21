@@ -49,14 +49,35 @@ export function useStashPanelActions(opts: UseStashPanelActionsOpts) {
 
   async function onApply(idx: number) {
     if (repoId.value == null) return
-    await applyStash(repoId.value, idx).catch((e) => toast.error('Apply 실패', describeError(e)))
-    invalidate(repoId.value)
+    try {
+      await applyStash(repoId.value, idx)
+      invalidate(repoId.value)
+      toast.success(t('stash.applySuccess'), t('stash.applySuccessDetail', { idx }))
+    } catch (e) {
+      // conflict 시 working tree 가 바뀌었을 수 있으므로 invalidate 는 유지하되
+      // 명시적 error toast 로 성공/실패를 구분 (R2-ST2 truthful feedback).
+      invalidate(repoId.value)
+      toast.error(t('stash.applyFailed'), describeError(e))
+    }
   }
 
   async function onPop(idx: number) {
     if (repoId.value == null) return
-    await popStash(repoId.value, idx).catch((e) => toast.error('Pop 실패', describeError(e)))
-    invalidate(repoId.value)
+    // R2-ST1 — pop 은 apply + stash 제거. confirm 게이트.
+    const ok = await confirmDialog({
+      title: t('confirm.popStashTitle'),
+      message: t('confirm.popStashMessage', { idx }),
+      danger: true,
+    })
+    if (!ok) return
+    try {
+      await popStash(repoId.value, idx)
+      invalidate(repoId.value)
+      toast.success(t('stash.popSuccess'), t('stash.popSuccessDetail', { idx }))
+    } catch (e) {
+      invalidate(repoId.value)
+      toast.error(t('stash.popFailed'), describeError(e))
+    }
   }
 
   async function onDrop(idx: number) {

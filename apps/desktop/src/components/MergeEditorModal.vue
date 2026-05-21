@@ -97,6 +97,21 @@ function applyBase() {
   if (conflictQuery.data.value?.base != null) resolved.value = conflictQuery.data.value.base
 }
 
+// UXF-01 — conflict marker 잔재 감지 (라인 시작 7자 마커).
+const CONFLICT_MARKER_RE = /^(<{7}|={7}|>{7})/m
+
+async function onStage() {
+  if (CONFLICT_MARKER_RE.test(resolved.value)) {
+    const ok = await confirmDialog({
+      title: t('confirm.stageWithMarkersTitle'),
+      message: t('confirm.stageWithMarkersMessage'),
+      danger: true,
+    })
+    if (!ok) return
+  }
+  stageMut.mutate()
+}
+
 async function takeFullSide(side: 'ours' | 'theirs') {
   const ok = await confirmDialog({
     title: t('confirm.takeFullSideTitle'),
@@ -237,7 +252,7 @@ async function onAiResolve(): Promise<void> {
         <button
           class="rounded-md bg-primary px-4 py-1.5 text-primary-foreground disabled:opacity-50"
           :disabled="stageMut.isPending.value"
-          @click="stageMut.mutate()"
+          @click="onStage"
         >
           {{ stageMut.isPending.value ? '저장 중...' : '결과로 stage' }}
         </button>

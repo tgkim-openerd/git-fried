@@ -458,7 +458,20 @@
     "createPrAuthTitle": "토큰 부족",
     "createPrAuthMessage": "현재 프로필에 PR 생성 권한이 없습니다.\n계속할까요? (실패 시 토큰 추가 필요)",
     "forgeSetupTitle": "Forge 재설정",
-    "forgeSetupMessage": "기존 forge 설정을 덮어쓸까요?"
+    "forgeSetupMessage": "기존 forge 설정을 덮어쓸까요?",
+    "removeWorktreeDirtyMessage": "worktree '{path}' 에 커밋되지 않은 변경사항이 있습니다.\n• 강제 제거(--force) 하면 해당 변경이 사라집니다\n• 되돌릴 수 없습니다",
+    "submoduleUpdateTitle": "Submodule update",
+    "submoduleUpdateMessage": "모든 submodule 을 update 할까요?\n• submodule working tree 가 .gitmodules 기준으로 변경됩니다",
+    "submoduleSyncTitle": "Submodule sync",
+    "submoduleSyncMessage": "모든 submodule 의 remote URL 을 .gitmodules 기준으로 동기화할까요?",
+    "bisectResetTitle": "Bisect 종료",
+    "bisectResetMessage": "bisect 세션을 종료할까요?\n• HEAD 가 bisect 시작 전 위치로 복귀합니다",
+    "lfsPruneTitle": "LFS prune",
+    "lfsPruneMessage": "로컬에 캐시된 오래된 LFS 파일을 삭제할까요?\n• 원격에 없는 LFS 객체는 복구 불가\n• 되돌릴 수 없습니다",
+    "rebaseAbortTitle": "Rebase 중단",
+    "rebaseAbortMessage": "진행 중인 rebase 를 중단할까요?\n• HEAD 가 rebase 시작 전 상태로 복귀합니다\n• 지금까지의 conflict 해소 작업이 사라집니다",
+    "stageWithMarkersTitle": "충돌 마커 잔재",
+    "stageWithMarkersMessage": "결과에 conflict marker (<<<<<<< / ======= / >>>>>>>) 가 남아 있습니다.\n• 이대로 stage 하면 충돌이 해소되지 않은 채 커밋될 수 있습니다\n• 그래도 stage 할까요?"
   },
   "settings": {
     "title": "설정",
@@ -789,6 +802,7 @@
   },
   "worktree": {
     "title": "Worktree",
+    "removeFailed": "Worktree 제거 실패",
     "pruneAria": "prunable worktree 정리 (디스크 정리)",
     "pathPlaceholder": "새 worktree 경로 (예: ../proj-feat-abc)",
     "branchPlaceholder": "새 브랜치 (선택, -b)",
@@ -926,7 +940,13 @@
     "closePreviewTitle": "닫기",
     "empty": "stash 없음",
     "applyFileTitle": "이 파일만 working tree 에 apply",
-    "applyFileButton": "✓ 이 파일만 apply"
+    "applyFileButton": "✓ 이 파일만 apply",
+    "applySuccess": "Stash apply 완료",
+    "applySuccessDetail": "stash{'@'}{idx} 가 working tree 에 적용됨",
+    "applyFailed": "Stash apply 실패",
+    "popSuccess": "Stash pop 완료",
+    "popSuccessDetail": "stash{'@'}{idx} 적용 + 제거됨",
+    "popFailed": "Stash pop 실패"
   },
   "stashList": {
     "title": "Stashes",
@@ -1001,7 +1021,10 @@
   },
   "submodule": {
     "title": "Submodule",
-    "empty": "서브모듈 없음"
+    "empty": "서브모듈 없음",
+    "updateFailed": "Submodule update 실패",
+    "syncFailed": "Submodule sync 실패",
+    "initFailed": "Submodule init 실패"
   },
   "clone": {
     "successTitle": "Clone 완료",

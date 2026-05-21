@@ -5,6 +5,9 @@ import { useI18n } from 'vue-i18n'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useSubmodules } from '@/composables/useSubmodules'
 import { initSubmodules, syncSubmodules, updateSubmodules } from '@/api/git'
+import { describeError } from '@/api/errors'
+import { useToast } from '@/composables/useToast'
+import { confirmDialog } from '@/composables/useConfirm'
 import EmptyState from './EmptyState.vue'
 import SkeletonBlock from './SkeletonBlock.vue'
 import type { SubmoduleEntry } from '@/api/git'
@@ -13,19 +16,41 @@ const props = defineProps<{ repoId: number | null }>()
 const { data: subs, isFetching: subsFetching } = useSubmodules(() => props.repoId)
 const qc = useQueryClient()
 const { t } = useI18n()
+const toast = useToast()
 
 const initMut = useMutation({
   mutationFn: (id: number) => initSubmodules(id),
   onSuccess: () => qc.invalidateQueries({ queryKey: ['submodules', props.repoId] }),
+  onError: (e) => toast.error(t('submodule.initFailed'), describeError(e)),
 })
 const updateMut = useMutation({
   mutationFn: (args: { id: number; remote: boolean }) => updateSubmodules(args.id, args.remote),
   onSuccess: () => qc.invalidateQueries({ queryKey: ['submodules', props.repoId] }),
+  onError: (e) => toast.error(t('submodule.updateFailed'), describeError(e)),
 })
 const syncMut = useMutation({
   mutationFn: (id: number) => syncSubmodules(id),
   onSuccess: () => qc.invalidateQueries({ queryKey: ['submodules', props.repoId] }),
+  onError: (e) => toast.error(t('submodule.syncFailed'), describeError(e)),
 })
+
+// A-16 — update/sync 는 working tree / remote URL 을 변경하므로 confirm 게이트.
+async function onUpdate() {
+  if (props.repoId == null) return
+  const ok = await confirmDialog({
+    title: t('confirm.submoduleUpdateTitle'),
+    message: t('confirm.submoduleUpdateMessage'),
+  })
+  if (ok) updateMut.mutate({ id: props.repoId, remote: false })
+}
+async function onSync() {
+  if (props.repoId == null) return
+  const ok = await confirmDialog({
+    title: t('confirm.submoduleSyncTitle'),
+    message: t('confirm.submoduleSyncMessage'),
+  })
+  if (ok) syncMut.mutate(props.repoId)
+}
 
 function statusColor(s: SubmoduleEntry['status']): string {
   switch (s) {
@@ -75,7 +100,7 @@ function statusLabel(s: SubmoduleEntry['status']): string {
           type="button"
           class="rounded-md border border-input px-2 py-0.5 hover:bg-accent disabled:opacity-50"
           :disabled="!repoId || updateMut.isPending.value"
-          @click="repoId && updateMut.mutate({ id: repoId, remote: false })"
+          @click="onUpdate"
         >
           update
         </button>
@@ -83,7 +108,7 @@ function statusLabel(s: SubmoduleEntry['status']): string {
           type="button"
           class="rounded-md border border-input px-2 py-0.5 hover:bg-accent disabled:opacity-50"
           :disabled="!repoId || syncMut.isPending.value"
-          @click="repoId && syncMut.mutate(repoId)"
+          @click="onSync"
         >
           sync
         </button>
