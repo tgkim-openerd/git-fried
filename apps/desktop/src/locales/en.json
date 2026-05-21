@@ -923,6 +923,10 @@
     "close": "Close",
     "merging": "Merging...",
     "merge": "Merge",
+    "checkout": "Check out PR branch",
+    "checkoutPending": "Checking out...",
+    "checkoutSuccess": "Checked out the PR branch",
+    "checkoutFailed": "Failed to check out PR branch (a fetch may be required first)",
     "ciStatus": {
       "passed": "CI passed",
       "pending": "CI pending / review requested",

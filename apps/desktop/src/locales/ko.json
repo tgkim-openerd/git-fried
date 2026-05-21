@@ -923,6 +923,10 @@
     "close": "닫기",
     "merging": "머지 중...",
     "merge": "머지",
+    "checkout": "PR 브랜치 체크아웃",
+    "checkoutPending": "체크아웃 중...",
+    "checkoutSuccess": "PR 브랜치로 체크아웃됨",
+    "checkoutFailed": "PR 브랜치 체크아웃 실패 (먼저 fetch 가 필요할 수 있음)",
     "ciStatus": {
       "passed": "CI 통과",
       "pending": "CI 진행 중 / 리뷰 대기",

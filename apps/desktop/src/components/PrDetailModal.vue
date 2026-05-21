@@ -4,8 +4,9 @@
 // v0.x 단계: line 코멘트 (특정 diff 라인) 는 v1.x. 일반 issue-comment 만.
 // 전체 PR review submit (verdict + body) 는 GitHub/Gitea API 직접 호출.
 import { computed, ref, watch } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
-import { getPullRequest, listPrComments } from '@/api/git'
+import { useQuery, useMutation } from '@tanstack/vue-query'
+import { getPullRequest, listPrComments, switchBranch } from '@/api/git'
+import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { formatDateLocalized } from '@/composables/useUserSettings'
@@ -50,6 +51,22 @@ const commentsQuery = useQuery({
     return listPrComments(props.repoId, props.number)
   },
   enabled: computed(() => props.open && props.repoId != null && props.number != null),
+})
+
+// A-2 — PR head 브랜치 체크아웃 (로컬에 tracking 브랜치 생성/전환).
+const invalidateRepo = useInvalidateRepoQueries()
+const checkoutMut = useMutation({
+  mutationFn: () => {
+    const d = detailQuery.data.value
+    if (props.repoId == null || !d) return Promise.reject(new Error('no PR'))
+    return switchBranch(props.repoId, d.headBranch)
+  },
+  onSuccess: () => {
+    invalidateRepo(props.repoId)
+    toast.success(t('pr.checkoutSuccess'), detailQuery.data.value?.headBranch ?? '')
+    emit('close')
+  },
+  onError: (e) => toast.error(t('pr.checkoutFailed'), describeError(e)),
 })
 
 // A-3 — PR 상세 헤더에 CI 상태 노출 (getPullRequest 응답의 ciStatus 필드).
@@ -462,6 +479,17 @@ async function onAiReview(): Promise<void> {
           </select>
         </div>
         <div class="flex items-center gap-2">
+          <!-- A-2 — PR head 브랜치 체크아웃 -->
+          <button
+            v-if="
+              detailQuery.data.value.state === 'open' || detailQuery.data.value.state === 'draft'
+            "
+            class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
+            :disabled="checkoutMut.isPending.value"
+            @click="checkoutMut.mutate()"
+          >
+            {{ checkoutMut.isPending.value ? t('pr.checkoutPending') : t('pr.checkout') }}
+          </button>
           <button
             v-if="detailQuery.data.value.state === 'closed' && !detailQuery.data.value.merged"
             class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
