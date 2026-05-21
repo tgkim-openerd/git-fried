@@ -65,12 +65,10 @@ export function formatError(e: unknown): string {
 }
 
 /**
- * git CLI / forge / IPC 에러 메시지에서 흔한 패턴을 감지해 한국어 힌트 추가.
- * 원본 메시지 + 줄바꿈 + 가이드.
+ * git CLI / forge / IPC 에러 메시지에서 흔한 패턴을 감지해 한국어 힌트 반환 (없으면 null).
+ * 탐지는 전체 메시지 기준 — cap 무관 (CDX SEC-001).
  */
-export function humanizeGitError(rawMessage: string): string {
-  // 패턴 탐지는 전체 메시지 기준 — cap 으로 키워드가 잘리면 hint 누락 (CDX SEC-001 PARTIAL).
-  const m = rawMessage
+function detectGitHint(m: string): string | null {
   let hint: string | null = null
 
   // Pull / Fetch 빈 remote
@@ -149,13 +147,27 @@ export function humanizeGitError(rawMessage: string): string {
       '   - 설정 → Forge 계정 → 만료 토큰 갱신'
   }
 
-  // SEC-001 — 표시용 raw stderr 만 cap (긴 git 경로/ref 노출 억제).
-  //   hint 는 고정 안전 가이드 텍스트라 cap 대상 아님 (유용 정보 보존).
-  const raw = m.length > MAX_RAW_LEN ? `${m.slice(0, MAX_RAW_LEN)}…` : m
+  return hint
+}
+
+/**
+ * raw git stderr → 표시용 메시지 (SEC-001 cap + hint).
+ * 직접 stderr 를 넘기는 호출 전용 — describeError 는 별도 (formatError 가 이미 cap).
+ */
+export function humanizeGitError(rawMessage: string): string {
+  const hint = detectGitHint(rawMessage)
+  // SEC-001 — raw stderr 만 cap (긴 git 경로/ref 노출 억제). hint 는 고정 안전 텍스트라 보존.
+  const raw = rawMessage.length > MAX_RAW_LEN ? `${rawMessage.slice(0, MAX_RAW_LEN)}…` : rawMessage
   return hint ? `${raw}\n\n${hint}` : raw
 }
 
-/** 토스트/alert 용 — formatError + humanizeGitError 통합. */
+/**
+ * 토스트/alert 용 — formatError + hint.
+ * CDX-001 — formatError 가 stderr 만 cap (message 보존). 여기서 재-cap 하지 않아
+ *   AppError.message 가 잘리지 않음.
+ */
 export function describeError(e: unknown): string {
-  return humanizeGitError(formatError(e))
+  const full = formatError(e)
+  const hint = detectGitHint(full)
+  return hint ? `${full}\n\n${hint}` : full
 }

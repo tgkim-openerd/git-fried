@@ -25,8 +25,8 @@ defineEmits<{ action: []; select: []; dblclick: [] }>()
     tabindex="0"
     :title="t('templ.fileRowTitle')"
     @click="$emit('select')"
-    @keydown.enter="$emit('select')"
-    @keydown.space.prevent="$emit('select')"
+    @keydown.enter.self="$emit('select')"
+    @keydown.space.self.prevent="$emit('select')"
     @dblclick="$emit('dblclick')"
     @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', file.path)"
   >

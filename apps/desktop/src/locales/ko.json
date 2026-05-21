@@ -1078,7 +1078,9 @@
   },
   "notification": {
     "deniedTitle": "데스크톱 알림 비활성화",
-    "deniedBody": "OS 알림 권한이 거부되어 백그라운드 작업 완료 알림을 표시할 수 없습니다. 시스템 설정에서 git-fried 알림을 허용할 수 있습니다."
+    "deniedBody": "OS 알림 권한이 거부되어 백그라운드 작업 완료 알림을 표시할 수 없습니다. 시스템 설정에서 git-fried 알림을 허용할 수 있습니다.",
+    "sendFailedTitle": "데스크톱 알림 전송 실패",
+    "sendFailedBody": "권한은 허용되어 있으나 OS 알림 시스템이 알림을 전달하지 못했습니다."
   },
   "graph": {
     "emptyTitle": "커밋이 없습니다",
@@ -1419,7 +1421,8 @@
     "empty": "Open issue 없음",
     "ctxOpenDetail": "상세 보기",
     "ctxOpenBrowser": "브라우저에서 열기",
-    "ctxCopyUrl": "URL 복사"
+    "ctxCopyUrl": "URL 복사",
+    "ctxCopyNumber": "이슈 번호 복사"
   },
   "statusSelection": {
     "pathCopied": "경로 복사"

@@ -352,8 +352,8 @@ watch(
             role="button"
             tabindex="0"
             @click="onBlameRowClick(line.sha)"
-            @keydown.enter="onBlameRowClick(line.sha)"
-            @keydown.space.prevent="onBlameRowClick(line.sha)"
+            @keydown.enter.self="onBlameRowClick(line.sha)"
+            @keydown.space.self.prevent="onBlameRowClick(line.sha)"
           >
             <td
               class="w-16 shrink-0 px-2 text-right text-[10px] text-diff-add/80 hover:text-diff-add"

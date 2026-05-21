@@ -43,8 +43,8 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
         role="button"
         tabindex="0"
         @click="dispatchShortcut('tab6')"
-        @keydown.enter="dispatchShortcut('tab6')"
-        @keydown.space.prevent="dispatchShortcut('tab6')"
+        @keydown.enter.self="dispatchShortcut('tab6')"
+        @keydown.space.self.prevent="dispatchShortcut('tab6')"
       >
         <!-- SB-017 (Phase 4, 2026-05-18) — CI 4 아이콘 (GitKraken parity S9):
              draft (gray D) 최우선, 그 후 ci_status (green/yellow/red), 없으면 미표시. -->

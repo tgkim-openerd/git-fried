@@ -379,8 +379,8 @@ const {
                         role="menuitem"
                         tabindex="0"
                         @click="applySnooze(row, opt)"
-                        @keydown.enter="applySnooze(row, opt)"
-                        @keydown.space.prevent="applySnooze(row, opt)"
+                        @keydown.enter.self="applySnooze(row, opt)"
+                        @keydown.space.self.prevent="applySnooze(row, opt)"
                       >
                         {{ t(opt.label) }}
                       </li>

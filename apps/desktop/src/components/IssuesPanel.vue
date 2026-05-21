@@ -64,7 +64,7 @@ function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
       action: () => void copyText(i.htmlUrl, i.htmlUrl),
     },
     {
-      label: 'Copy issue number',
+      label: t('issues.ctxCopyNumber'),
       icon: '#',
       action: () => void copyText(`#${i.number}`, `#${i.number}`),
     },
@@ -98,8 +98,8 @@ function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
           role="button"
           tabindex="0"
           @click="selected = i"
-          @keydown.enter="selected = i"
-          @keydown.space.prevent="selected = i"
+          @keydown.enter.self="selected = i"
+          @keydown.space.self.prevent="selected = i"
           @contextmenu="onIssueContextMenu($event, i)"
         >
           <div class="flex items-center justify-between">

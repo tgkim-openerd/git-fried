@@ -1078,7 +1078,9 @@
   },
   "notification": {
     "deniedTitle": "Desktop notifications disabled",
-    "deniedBody": "OS notification permission was denied, so background task completion alerts can't be shown. You can allow git-fried notifications in your system settings."
+    "deniedBody": "OS notification permission was denied, so background task completion alerts can't be shown. You can allow git-fried notifications in your system settings.",
+    "sendFailedTitle": "Desktop notification failed",
+    "sendFailedBody": "Permission is granted, but the OS notification system could not deliver the notification."
   },
   "graph": {
     "emptyTitle": "No commits yet",
@@ -1419,7 +1421,8 @@
     "empty": "No open issues",
     "ctxOpenDetail": "Open detail",
     "ctxOpenBrowser": "Open in browser",
-    "ctxCopyUrl": "Copy URL"
+    "ctxCopyUrl": "Copy URL",
+    "ctxCopyNumber": "Copy issue number"
   },
   "statusSelection": {
     "pathCopied": "Path copied"

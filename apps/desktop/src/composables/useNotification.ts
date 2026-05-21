@@ -63,12 +63,12 @@ export function useNotification() {
       await sendNotification({ title, body })
     } catch {
       // SEC MED-2 — sendNotification 실패 시 raw 에러(String(e)) 노출 금지.
-      // 내부 경로/권한 정보가 섞일 수 있어 고정 i18n 메시지만 표시 (세션당 1회).
+      // R6-003 — 권한 거부와 원인이 다르므로 전송 실패 전용 문구 사용 (세션당 1회).
       if (!sendFailNoticeShown) {
         sendFailNoticeShown = true
         toast.info(
-          i18n.global.t('notification.deniedTitle'),
-          i18n.global.t('notification.deniedBody'),
+          i18n.global.t('notification.sendFailedTitle'),
+          i18n.global.t('notification.sendFailedBody'),
         )
       }
     }

@@ -303,8 +303,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 role="button"
                 tabindex="0"
                 @click="onFileClick(row.path, true)"
-                @keydown.enter="onFileClick(row.path, true)"
-                @keydown.space.prevent="onFileClick(row.path, true)"
+                @keydown.enter.self="onFileClick(row.path, true)"
+                @keydown.space.self.prevent="onFileClick(row.path, true)"
                 @contextmenu="onFileContextMenu($event, row.path, true)"
               >
                 <span
@@ -359,8 +359,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               role="button"
               tabindex="0"
               @click="onFileClick(f.path, false)"
-              @keydown.enter="onFileClick(f.path, false)"
-              @keydown.space.prevent="onFileClick(f.path, false)"
+              @keydown.enter.self="onFileClick(f.path, false)"
+              @keydown.space.self.prevent="onFileClick(f.path, false)"
               @dblclick="openFullscreen(f.path, false)"
               @contextmenu="onFileContextMenu($event, f.path, false)"
               @dragstart="
@@ -430,8 +430,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 role="button"
                 tabindex="0"
                 @click="onFileClick(row.path, false)"
-                @keydown.enter="onFileClick(row.path, false)"
-                @keydown.space.prevent="onFileClick(row.path, false)"
+                @keydown.enter.self="onFileClick(row.path, false)"
+                @keydown.space.self.prevent="onFileClick(row.path, false)"
                 @contextmenu="onFileContextMenu($event, row.path, false)"
                 @dragstart="
                   (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.path)
@@ -505,8 +505,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               role="button"
               tabindex="0"
               @click="onFileClick(p, false)"
-              @keydown.enter="onFileClick(p, false)"
-              @keydown.space.prevent="onFileClick(p, false)"
+              @keydown.enter.self="onFileClick(p, false)"
+              @keydown.space.self.prevent="onFileClick(p, false)"
               @dblclick="openFullscreen(p, false)"
               @dragstart="
                 (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)
@@ -543,8 +543,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 role="button"
                 tabindex="0"
                 @click="onFileClick(row.path, false)"
-                @keydown.enter="onFileClick(row.path, false)"
-                @keydown.space.prevent="onFileClick(row.path, false)"
+                @keydown.enter.self="onFileClick(row.path, false)"
+                @keydown.space.self.prevent="onFileClick(row.path, false)"
               >
                 <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">new</span>
                 <span class="flex-1 truncate font-mono text-xs" :title="row.path">{{

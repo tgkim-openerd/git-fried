@@ -507,8 +507,8 @@ void [searchInputRef, moveSelection, headerMenuRef]
             role="button"
             tabindex="0"
             @click="selectRow(commitRowAt(v.index))"
-            @keydown.enter="selectRow(commitRowAt(v.index))"
-            @keydown.space.prevent="selectRow(commitRowAt(v.index))"
+            @keydown.enter.self="selectRow(commitRowAt(v.index))"
+            @keydown.space.self.prevent="selectRow(commitRowAt(v.index))"
             @dblclick="onRowDblClick(commitRowAt(v.index) ?? undefined)"
             @contextmenu="onRowContextMenu($event, commitRowAt(v.index) ?? undefined)"
           >
