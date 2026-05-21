@@ -21,8 +21,12 @@ defineEmits<{ action: []; select: []; dblclick: [] }>()
     class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
     :class="selected ? 'bg-accent ring-1 ring-primary/40' : ''"
     draggable="true"
+    role="button"
+    tabindex="0"
     :title="t('templ.fileRowTitle')"
     @click="$emit('select')"
+    @keydown.enter="$emit('select')"
+    @keydown.space.prevent="$emit('select')"
     @dblclick="$emit('dblclick')"
     @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', file.path)"
   >

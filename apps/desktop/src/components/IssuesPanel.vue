@@ -95,7 +95,11 @@ function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
           v-for="i in issues"
           :key="i.number"
           class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
+          role="button"
+          tabindex="0"
           @click="selected = i"
+          @keydown.enter="selected = i"
+          @keydown.space.prevent="selected = i"
           @contextmenu="onIssueContextMenu($event, i)"
         >
           <div class="flex items-center justify-between">

@@ -371,12 +371,16 @@ const {
                     v-if="snoozeMenuFor === rowKey(row)"
                     class="absolute right-0 top-full z-10 mt-1 w-32 rounded-md border border-border bg-card text-xs shadow-lg"
                   >
-                    <ul class="py-1">
+                    <ul class="py-1" role="menu">
                       <li
                         v-for="opt in SNOOZE_OPTIONS"
                         :key="opt.sec"
-                        class="cursor-pointer px-3 py-1 text-left hover:bg-accent/40"
+                        class="cursor-pointer px-3 py-1 text-left hover:bg-accent/40 focus:bg-accent/40 focus:outline-none"
+                        role="menuitem"
+                        tabindex="0"
                         @click="applySnooze(row, opt)"
+                        @keydown.enter="applySnooze(row, opt)"
+                        @keydown.space.prevent="applySnooze(row, opt)"
                       >
                         {{ t(opt.label) }}
                       </li>

@@ -295,8 +295,11 @@ async function onExplainBranch(b: BranchInfo) {
               dragOverIdx === idx ? 'ring-2 ring-primary/60 bg-primary/10' : '',
             ]"
             draggable="true"
+            role="button"
+            tabindex="0"
             :title="branchHoverTitle(b)"
             @dblclick="onSwitch(b)"
+            @keydown.enter="onSwitch(b)"
             @contextmenu="onBranchContextMenu($event, b)"
             @dragstart="onDragStartBranch(b, $event)"
             @dragover="onDragOverRow(idx, $event)"

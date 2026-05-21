@@ -211,15 +211,18 @@ describe('query wrapper composables', () => {
   })
 
   describe('useInvalidateRepoQueries', () => {
-    it('factory 반환 함수 — 3개 queryKey invalidate (status / log / repos)', async () => {
+    it('factory 반환 함수 — 5개 queryKey invalidate (status / log / repos / graph / branches)', async () => {
       const m = await import('./useStatus')
       invalidateQueriesMock.mockClear()
       const invalidate = m.useInvalidateRepoQueries()
       invalidate(42)
-      expect(invalidateQueriesMock).toHaveBeenCalledTimes(3)
+      // UXF-06 — fetch/pull/push/commit 후 graph·branches 도 함께 갱신.
+      expect(invalidateQueriesMock).toHaveBeenCalledTimes(5)
       expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['status', 42] })
       expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['log', 42] })
       expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['repos'] })
+      expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['graph', 42] })
+      expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ['branches', 42] })
     })
 
     it('repoId null 도 처리 (invalidate 호출 그대로 발화)', async () => {

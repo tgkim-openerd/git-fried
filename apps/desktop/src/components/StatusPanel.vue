@@ -300,7 +300,11 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
                 :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                role="button"
+                tabindex="0"
                 @click="onFileClick(row.path, true)"
+                @keydown.enter="onFileClick(row.path, true)"
+                @keydown.space.prevent="onFileClick(row.path, true)"
                 @contextmenu="onFileContextMenu($event, row.path, true)"
               >
                 <span
@@ -352,7 +356,11 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
               :title="t('status.fullscreenTitle')"
+              role="button"
+              tabindex="0"
               @click="onFileClick(f.path, false)"
+              @keydown.enter="onFileClick(f.path, false)"
+              @keydown.space.prevent="onFileClick(f.path, false)"
               @dblclick="openFullscreen(f.path, false)"
               @contextmenu="onFileContextMenu($event, f.path, false)"
               @dragstart="
@@ -419,7 +427,11 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
                 draggable="true"
+                role="button"
+                tabindex="0"
                 @click="onFileClick(row.path, false)"
+                @keydown.enter="onFileClick(row.path, false)"
+                @keydown.space.prevent="onFileClick(row.path, false)"
                 @contextmenu="onFileContextMenu($event, row.path, false)"
                 @dragstart="
                   (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.path)
@@ -490,7 +502,11 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
               draggable="true"
               :title="t('status.fullscreenTitle')"
+              role="button"
+              tabindex="0"
               @click="onFileClick(p, false)"
+              @keydown.enter="onFileClick(p, false)"
+              @keydown.space.prevent="onFileClick(p, false)"
               @dblclick="openFullscreen(p, false)"
               @dragstart="
                 (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)
@@ -524,7 +540,11 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
                 :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
                 :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
+                role="button"
+                tabindex="0"
                 @click="onFileClick(row.path, false)"
+                @keydown.enter="onFileClick(row.path, false)"
+                @keydown.space.prevent="onFileClick(row.path, false)"
               >
                 <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">new</span>
                 <span class="flex-1 truncate font-mono text-xs" :title="row.path">{{
@@ -562,7 +582,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <span class="flex-1 truncate font-mono">! {{ p }}</span>
               <button
                 type="button"
-                class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+                class="opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
                 :title="t('status.mergetoolTitle')"
                 :disabled="mergetoolMut.isPending.value"
                 @click="onLaunchMergetool(p)"
@@ -571,7 +591,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               </button>
               <button
                 type="button"
-                class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+                class="opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
                 :title="t('status.resolveTitle')"
                 @click="openMerge(p)"
               >
@@ -600,7 +620,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 <span class="flex-1 truncate font-mono" :title="row.path">! {{ row.name }}</span>
                 <button
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+                  class="opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
                   :title="t('status.mergetoolShort')"
                   :disabled="mergetoolMut.isPending.value"
                   @click="onLaunchMergetool(row.path)"
@@ -609,7 +629,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </button>
                 <button
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+                  class="opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
                   :title="t('status.resolveTitle')"
                   @click="openMerge(row.path)"
                 >

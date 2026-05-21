@@ -331,9 +331,13 @@ watch(
           <tr
             v-for="(line, i) in blameQuery.data.value"
             :key="i"
-            class="cursor-pointer border-b border-border/30 hover:bg-accent/30"
+            class="cursor-pointer border-b border-border/30 hover:bg-accent/30 focus:bg-accent/40 focus:outline-none"
             :title="`${line.authorName} · ${line.summary}\n${line.shortSha} — 클릭하면 이 commit 으로 진입`"
+            role="button"
+            tabindex="0"
             @click="onBlameRowClick(line.sha)"
+            @keydown.enter="onBlameRowClick(line.sha)"
+            @keydown.space.prevent="onBlameRowClick(line.sha)"
           >
             <td
               class="w-16 shrink-0 px-2 text-right text-[10px] text-diff-add/80 hover:text-diff-add"

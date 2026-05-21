@@ -53,7 +53,8 @@ describe('invokeWithTimeout', () => {
 
   it('long-running prefix (clone_) → registerOperation 호출', async () => {
     await invoke('clone_repo', { url: 'x' })
-    expect(registerLongOpMock).toHaveBeenCalledWith('clone_repo')
+    // UXF-08 — 라벨이 raw command명 대신 humanLabel 로 변환됨. 호출 여부만 검증.
+    expect(registerLongOpMock).toHaveBeenCalledTimes(1)
     expect(completeLongOpMock).toHaveBeenCalledWith(1)
   })
 

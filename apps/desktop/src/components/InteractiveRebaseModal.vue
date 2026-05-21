@@ -44,6 +44,18 @@ const {
   externalOpen,
 } = useInteractiveRebaseFlow({ repoId: () => repoId.value })
 
+// UXF-20 — drag handle 외 키보드로도 todo 순서 변경 (move up/down).
+function moveTodo(i: number, dir: -1 | 1) {
+  const arr = todo.value
+  const j = i + dir
+  if (j < 0 || j >= arr.length) return
+  const next = [...arr]
+  const tmp = next[i]
+  next[i] = next[j]
+  next[j] = tmp
+  todo.value = next
+}
+
 // UXF-25 — abort 는 conflict 해소 작업을 버리므로 danger confirm 게이트.
 async function onAbort() {
   const ok = await confirmDialog({
@@ -129,6 +141,27 @@ onUnmounted(() => {
           class="flex items-start gap-2 border-b border-border px-3 py-2"
         >
           <span class="rebase-drag mt-1 cursor-grab select-none text-muted-foreground"> ⋮⋮ </span>
+          <!-- UXF-20 — 키보드 reorder 대안 (drag handle 외) -->
+          <div class="mt-0.5 flex flex-col leading-none">
+            <button
+              type="button"
+              class="px-0.5 text-[9px] text-muted-foreground hover:text-foreground disabled:opacity-30"
+              :disabled="i === 0"
+              :aria-label="`commit ${e.sha.slice(0, 7)} 위로 이동`"
+              @click="moveTodo(i, -1)"
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              class="px-0.5 text-[9px] text-muted-foreground hover:text-foreground disabled:opacity-30"
+              :disabled="i === todo.length - 1"
+              :aria-label="`commit ${e.sha.slice(0, 7)} 아래로 이동`"
+              @click="moveTodo(i, 1)"
+            >
+              ▼
+            </button>
+          </div>
           <select
             :value="e.action"
             class="rounded border border-border bg-background px-1 py-0.5 text-xs"
