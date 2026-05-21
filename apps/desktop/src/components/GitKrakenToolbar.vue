@@ -62,6 +62,7 @@ const {
   setPullStrategy,
   pullStrategyLabel,
   pullDropdownOpen,
+  pushDropdownOpen,
 } = useToolbarSyncMutations({
   repoId: () => props.repoId,
   upstream: () => props.upstream,
@@ -120,6 +121,20 @@ function onPullWithStrategy(s: PullStrategy) {
 }
 function onPush() {
   if (props.repoId != null) pushMut.mutate(props.repoId)
+}
+// B4-04 — push 옵션 (force-with-lease / tags) 선택 실행.
+async function onPushWithOption(opt: { forceWithLease?: boolean; tags?: boolean }) {
+  pushDropdownOpen.value = false
+  if (props.repoId == null) return
+  if (opt.forceWithLease) {
+    const ok = await confirmDialog({
+      title: t('confirm.forcePushTitle'),
+      message: t('confirm.forcePushMessage'),
+      danger: true,
+    })
+    if (!ok) return
+  }
+  pushMut.mutate({ id: props.repoId, ...opt })
 }
 function onBranch() {
   if (props.repoId == null) {
@@ -267,23 +282,66 @@ onUnmounted(() => {
             @click="pullDropdownOpen = false"
           />
         </div>
-        <BaseTooltip
-          :text="pushMut.isPending.value ? t('toolbar.pushPending') : 'Push'"
-          kbd="⌘⇧K"
-          placement="bottom"
-        >
-          <button
-            type="button"
-            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
-            :disabled="!repoId || pushMut.isPending.value"
-            @click="onPush"
+        <!-- B4-04 — Push split button (본체 = 일반 push, ▾ = force-with-lease / tags 옵션). -->
+        <div class="relative flex items-center">
+          <BaseTooltip
+            :text="pushMut.isPending.value ? t('toolbar.pushPending') : 'Push'"
+            kbd="⌘⇧K"
+            placement="bottom"
           >
-            <span class="text-base leading-none">⇧</span>
-            <span class="text-[10px] leading-tight">{{
-              pushMut.isPending.value ? '...' : 'Push'
-            }}</span>
-          </button>
-        </BaseTooltip>
+            <button
+              type="button"
+              class="flex flex-col items-center gap-0 rounded-l-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+              :disabled="!repoId || pushMut.isPending.value"
+              @click="onPush"
+            >
+              <span class="text-base leading-none">⇧</span>
+              <span class="text-[10px] leading-tight">{{
+                pushMut.isPending.value ? '...' : 'Push'
+              }}</span>
+            </button>
+          </BaseTooltip>
+          <BaseTooltip :text="t('toolbar.pushOptionsTitle')" placement="bottom">
+            <button
+              type="button"
+              class="flex h-full items-center rounded-r-md border-l border-border/40 px-1 py-0 text-[10px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+              :disabled="!repoId || pushMut.isPending.value"
+              :aria-expanded="pushDropdownOpen"
+              aria-haspopup="menu"
+              @click="pushDropdownOpen = !pushDropdownOpen"
+            >
+              ▾
+            </button>
+          </BaseTooltip>
+          <div
+            v-if="pushDropdownOpen"
+            class="absolute left-0 top-full z-50 mt-0.5 w-56 overflow-hidden rounded-md border border-border bg-popover text-xs shadow-modal"
+            role="menu"
+            @click.stop
+          >
+            <button
+              type="button"
+              class="block w-full px-3 py-1.5 text-left text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              role="menuitem"
+              @click="onPushWithOption({ tags: true })"
+            >
+              {{ t('toolbar.pushTags') }}
+            </button>
+            <button
+              type="button"
+              class="block w-full px-3 py-1.5 text-left text-danger-rose hover:bg-destructive/15"
+              role="menuitem"
+              @click="onPushWithOption({ forceWithLease: true })"
+            >
+              {{ t('toolbar.pushForce') }}
+            </button>
+          </div>
+          <div
+            v-if="pushDropdownOpen"
+            class="fixed inset-0 z-40"
+            @click="pushDropdownOpen = false"
+          />
+        </div>
       </div>
 
       <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />

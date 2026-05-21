@@ -83,12 +83,18 @@ export function useToolbarSyncMutations(opts: UseToolbarSyncMutationsOptions) {
     onError: (e) => toast.error(t('toolbar.pullInvokeFailed'), describeError(e)),
   })
 
+  // B4-04 — push 옵션 (force-with-lease / tags) 노출.
   const pushMut = useMutation({
-    mutationFn: (id: number) =>
-      push({
+    mutationFn: (arg: number | { id: number; forceWithLease?: boolean; tags?: boolean }) => {
+      const id = typeof arg === 'number' ? arg : arg.id
+      const o: { forceWithLease?: boolean; tags?: boolean } = typeof arg === 'number' ? {} : arg
+      return push({
         repoId: id,
         setUpstream: !opts.upstream(),
-      }),
+        forceWithLease: o.forceWithLease,
+        tags: o.tags,
+      })
+    },
     onSuccess: (res) => {
       invalidate(opts.repoId())
       if (res.success) {
@@ -105,6 +111,8 @@ export function useToolbarSyncMutations(opts: UseToolbarSyncMutationsOptions) {
 
   const { pullStrategy, setPullStrategy, pullStrategyLabel } = usePullStrategy()
   const pullDropdownOpen = ref(false)
+  // B4-04 — push 옵션 dropdown 가시성.
+  const pushDropdownOpen = ref(false)
 
   return {
     fetchMut,
@@ -114,5 +122,6 @@ export function useToolbarSyncMutations(opts: UseToolbarSyncMutationsOptions) {
     setPullStrategy,
     pullStrategyLabel,
     pullDropdownOpen,
+    pushDropdownOpen,
   }
 }
