@@ -294,6 +294,20 @@ export function useUiSettingsStore() {
 }
 
 /**
+ * R6-002 — 설정 기본값 복원. general / ui 를 default 로 되돌림 (watch 가 localStorage 동기화).
+ */
+export function resetGeneralSettings(): void {
+  general.value = defaultGeneral()
+}
+export function resetUiSettings(): void {
+  ui.value = defaultUi()
+}
+export function resetAllSettings(): void {
+  resetGeneralSettings()
+  resetUiSettings()
+}
+
+/**
  * Date locale 헬퍼 — settings 의 dateLocale 따른 toLocaleString.
  * `auto` 는 OS 기본 (`undefined` locale).
  */

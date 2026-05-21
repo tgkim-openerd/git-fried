@@ -481,6 +481,11 @@
   },
   "settings": {
     "title": "설정",
+    "navSearchPlaceholder": "설정 검색...",
+    "navSearchEmpty": "일치하는 설정 없음",
+    "resetAll": "기본값 복원",
+    "resetAllTitle": "설정 기본값 복원",
+    "resetAllMessage": "General / UI 설정을 모두 기본값으로 되돌릴까요?\n• 프로필 / Forge 계정 / 저장소는 영향 없음\n• 되돌릴 수 없습니다",
     "forgeSection": {
       "title": "Forge 계정",
       "registeredHeading": "등록된 계정",

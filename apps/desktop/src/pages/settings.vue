@@ -39,6 +39,8 @@ import SettingsGitHooks from '@/components/SettingsGitHooks.vue'
 // Plan #42 M-2 — Sparse Checkout repo manager (Sprint c100).
 import SettingsSparseCheckout from '@/components/SettingsSparseCheckout.vue'
 import { useUiState } from '@/composables/useUiState'
+import { resetAllSettings } from '@/composables/useUserSettings'
+import { confirmDialog } from '@/composables/useConfirm'
 
 type Category =
   | 'profiles'
@@ -170,6 +172,31 @@ const { t } = useI18n()
 
 const active = ref<Category>('profiles')
 
+// R2-S2 — 카테고리 nav 검색 (번역 라벨 substring 매칭).
+const navQuery = ref('')
+const filteredGroups = computed(() => {
+  const q = navQuery.value.trim().toLowerCase()
+  if (!q) return CATEGORY_GROUPS
+  return CATEGORY_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((c) =>
+      t(ITEM_I18N_KEY[c.id] ?? c.label)
+        .toLowerCase()
+        .includes(q),
+    ),
+  })).filter((g) => g.items.length > 0)
+})
+
+// R6-002 — 설정 전체 기본값 복원.
+async function onResetAll() {
+  const ok = await confirmDialog({
+    title: t('settings.resetAllTitle'),
+    message: t('settings.resetAllMessage'),
+    danger: true,
+  })
+  if (ok) resetAllSettings()
+}
+
 // ===== GitKraken 마이그레이션 =====
 const importGkOpen = ref(false)
 
@@ -195,9 +222,22 @@ const buildInfo = computed(() => ({
       class="w-52 shrink-0 overflow-auto border-r border-border bg-card py-4 text-sm"
       :aria-label="t('a11y.ariaLabel.settingsCategory')"
     >
-      <h1 class="px-4 pb-3 text-base font-semibold">{{ t('settings.title') }}</h1>
+      <h1 class="px-4 pb-2 text-base font-semibold">{{ t('settings.title') }}</h1>
+      <!-- R2-S2 — 카테고리 검색 -->
+      <div class="px-3 pb-2">
+        <input
+          v-model="navQuery"
+          type="search"
+          :placeholder="t('settings.navSearchPlaceholder')"
+          class="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+          :aria-label="t('settings.navSearchPlaceholder')"
+        />
+      </div>
+      <p v-if="filteredGroups.length === 0" class="px-4 py-2 text-xs text-muted-foreground">
+        {{ t('settings.navSearchEmpty') }}
+      </p>
       <ul class="flex flex-col gap-1">
-        <li v-for="g in CATEGORY_GROUPS" :key="g.id">
+        <li v-for="g in filteredGroups" :key="g.id">
           <div
             class="px-4 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80"
           >
@@ -231,6 +271,16 @@ const buildInfo = computed(() => ({
           </ul>
         </li>
       </ul>
+      <!-- R6-002 — 설정 기본값 복원 -->
+      <div class="mt-4 border-t border-border px-3 pt-3">
+        <button
+          type="button"
+          class="w-full rounded-md border border-input px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+          @click="onResetAll"
+        >
+          ↺ {{ t('settings.resetAll') }}
+        </button>
+      </div>
     </nav>
 
     <!-- 우측 콘텐츠 -->
