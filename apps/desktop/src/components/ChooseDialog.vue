@@ -7,7 +7,7 @@
 //   const v = await chooseDialog({ title, message, options: [...] })
 //
 // App.vue 에 한 번 마운트 (singleton pattern).
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, watch, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseModal from './BaseModal.vue'
 import { useChooseDialogState } from '@/composables/useConfirm'
@@ -29,7 +29,11 @@ function onChoose(value: string) {
 }
 
 // open 시 첫 옵션 버튼 auto-focus.
-const firstBtn = useTemplateRef<HTMLButtonElement>('firstBtn')
+// CDX-004 — v-for 안 조건부 string ref 모호성 회피: 함수 ref 로 첫 버튼만 명시 캡처.
+const firstBtn = ref<HTMLButtonElement | null>(null)
+function captureFirstBtn(el: Element | ComponentPublicInstance | null) {
+  firstBtn.value = el instanceof HTMLButtonElement ? el : null
+}
 watch(open, async (next) => {
   if (!next) return
   await nextTick()
@@ -60,7 +64,7 @@ watch(open, async (next) => {
         <button
           v-for="(o, i) in opts.options"
           :key="o.value"
-          :ref="i === 0 ? 'firstBtn' : undefined"
+          :ref="i === 0 ? captureFirstBtn : undefined"
           type="button"
           :class="[
             'rounded px-3 py-1 text-sm font-medium',

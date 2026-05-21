@@ -3,7 +3,8 @@
 // `git bisect start / good / bad / skip / reset` 의 얇은 wrapper.
 // state 는 Git 가 자체 관리 (`.git/BISECT_*` 파일).
 
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -74,16 +75,35 @@ pub async fn status(repo: &Path) -> AppResult<BisectStatus> {
 /// bisect 시작. A-17 — 알려진 bad / good rev 를 함께 전달하면 탐색 범위가
 /// 즉시 좁아진다 (`git bisect start [<bad> [<good>]]`). good 은 bad 가 있을 때만
 /// 유효 (git 제약).
+///
+/// **보안 (SEC-001)**: bad/good rev 는 `reject_dash_prefix` 거부 + `--end-of-options`
+/// 로 argument injection 방어 (branch.rs / range_diff.rs 와 동일 패턴).
 pub async fn start(repo: &Path, bad: Option<&str>, good: Option<&str>) -> AppResult<String> {
-    let mut args: Vec<String> = vec!["bisect".into(), "start".into()];
-    if let Some(b) = bad.map(str::trim).filter(|s| !s.is_empty()) {
-        args.push(b.to_string());
-        if let Some(g) = good.map(str::trim).filter(|s| !s.is_empty()) {
-            args.push(g.to_string());
+    let safe_bad = bad
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|b| reject_dash_prefix(b, "bad rev"))
+        .transpose()?;
+    let safe_good = good
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|g| reject_dash_prefix(g, "good rev"))
+        .transpose()?;
+    // CDX-001 — good 만 있고 bad 가 없으면 git 이 범위를 잡지 못함. 명시 거부.
+    if safe_good.is_some() && safe_bad.is_none() {
+        return Err(AppError::validation(
+            "good rev 를 지정하려면 bad rev 도 함께 입력해야 합니다",
+        ));
+    }
+    let mut args: Vec<&str> = vec!["bisect", "start"];
+    if let Some(b) = safe_bad {
+        args.push("--end-of-options");
+        args.push(b);
+        if let Some(g) = safe_good {
+            args.push(g);
         }
     }
-    let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
-    let out = git_run(repo, &arg_refs, &GitRunOpts::default())
+    let out = git_run(repo, &args, &GitRunOpts::default())
         .await?
         .into_ok()?;
     Ok(out)
@@ -104,8 +124,11 @@ pub async fn mark(repo: &Path, m: BisectMark, sha: Option<&str>) -> AppResult<St
         BisectMark::Skip => "skip",
     };
     let mut args: Vec<&str> = vec!["bisect", action];
+    // SEC-002 (pre-existing, 동일 파일 인접 수정) — sha argument injection 방어.
     if let Some(s) = sha {
-        args.push(s);
+        let safe = reject_dash_prefix(s, "sha")?;
+        args.push("--end-of-options");
+        args.push(safe);
     }
     let out = git_run(repo, &args, &GitRunOpts::default())
         .await?

@@ -48,40 +48,51 @@ export function useWorktreePanelActions(opts: UseWorktreePanelActionsOpts) {
       opts.newBranch.value = ''
       invalidateWorktrees()
     },
-    onError: (e) => toast.error('Worktree add 실패', describeError(e)),
+    onError: (e) => toast.error(t('worktree.addFailed'), describeError(e)),
   })
 
+  // TYPE-001 — repoId null guard (addMut 패턴과 통일, `!` non-null assertion 제거).
   const removeMut = useMutation({
-    mutationFn: ({ p, force }: { p: string; force: boolean }) =>
-      removeWorktree(repoId.value!, p, force),
+    mutationFn: ({ p, force }: { p: string; force: boolean }) => {
+      if (repoId.value == null) return Promise.reject(new Error('no repo'))
+      return removeWorktree(repoId.value, p, force)
+    },
     onSuccess: invalidateWorktrees,
     // R2-WT3 — remove 실패 (dirty / 권한 등) 시 사용자에게 알림.
     onError: (e) => toast.error(t('worktree.removeFailed'), describeError(e)),
   })
 
   const pruneMut = useMutation({
-    mutationFn: () => pruneWorktrees(repoId.value!),
+    mutationFn: () => {
+      if (repoId.value == null) return Promise.reject(new Error('no repo'))
+      return pruneWorktrees(repoId.value)
+    },
     onSuccess: invalidateWorktrees,
   })
 
   // C1 — Lock / Unlock
   const lockMut = useMutation({
-    mutationFn: ({ p, reason }: { p: string; reason: string | null }) =>
-      lockWorktree(repoId.value!, p, reason),
+    mutationFn: ({ p, reason }: { p: string; reason: string | null }) => {
+      if (repoId.value == null) return Promise.reject(new Error('no repo'))
+      return lockWorktree(repoId.value, p, reason)
+    },
     onSuccess: () => {
       invalidateWorktrees()
-      toast.success('Worktree 잠금', '')
+      toast.success(t('worktree.lockSuccess'), '')
     },
-    onError: (e) => toast.error('Lock 실패', describeError(e)),
+    onError: (e) => toast.error(t('worktree.lockFailed'), describeError(e)),
   })
 
   const unlockMut = useMutation({
-    mutationFn: (p: string) => unlockWorktree(repoId.value!, p),
+    mutationFn: (p: string) => {
+      if (repoId.value == null) return Promise.reject(new Error('no repo'))
+      return unlockWorktree(repoId.value, p)
+    },
     onSuccess: () => {
       invalidateWorktrees()
-      toast.success('Worktree 잠금 해제', '')
+      toast.success(t('worktree.unlockSuccess'), '')
     },
-    onError: (e) => toast.error('Unlock 실패', describeError(e)),
+    onError: (e) => toast.error(t('worktree.unlockFailed'), describeError(e)),
   })
 
   // R2-WT1 — dirty worktree 는 일반 confirm 대신 데이터 손실 경고 + force 제거.

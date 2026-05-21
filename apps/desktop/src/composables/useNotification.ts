@@ -57,7 +57,8 @@ export function useNotification() {
       return
     }
     try {
-      sendNotification({ title, body })
+      // TYPE-004 — Promise reject 도 catch 로 잡히도록 await.
+      await sendNotification({ title, body })
     } catch (e) {
       // sendNotification 자체 실패도 1회 안내.
       if (!deniedNoticeShown) {

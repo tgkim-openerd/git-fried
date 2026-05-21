@@ -90,7 +90,8 @@ export function useToolbarSyncMutations(opts: UseToolbarSyncMutationsOptions) {
       const o: { forceWithLease?: boolean; tags?: boolean } = typeof arg === 'number' ? {} : arg
       return push({
         repoId: id,
-        setUpstream: !opts.upstream(),
+        // CDX-003 — `git push -u --tags` 는 git 이 거부. tags push 시 setUpstream 비활성.
+        setUpstream: !o.tags && !opts.upstream(),
         forceWithLease: o.forceWithLease,
         tags: o.tags,
       })

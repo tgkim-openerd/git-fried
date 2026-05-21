@@ -9,6 +9,9 @@
     "yearAgo": "{n}년 전"
   },
   "launchpad": {
+    "emptyText": "PR 없음. 워크스페이스 / 필터 / Forge 계정 등록 상태를 확인하세요.",
+    "emptyForgeSettings": "Forge 계정 설정 열기",
+    "emptyRepoMgmt": "저장소 관리",
     "header": {
       "repo": "레포",
       "title": "제목",
@@ -821,6 +824,11 @@
   "worktree": {
     "title": "Worktree",
     "removeFailed": "Worktree 제거 실패",
+    "addFailed": "Worktree 추가 실패",
+    "lockSuccess": "Worktree 잠금",
+    "lockFailed": "Worktree 잠금 실패",
+    "unlockSuccess": "Worktree 잠금 해제",
+    "unlockFailed": "Worktree 잠금 해제 실패",
     "pruneAria": "prunable worktree 정리 (디스크 정리)",
     "pathPlaceholder": "새 worktree 경로 (예: ../proj-feat-abc)",
     "branchPlaceholder": "새 브랜치 (선택, -b)",

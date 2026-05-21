@@ -532,20 +532,20 @@ const {
         v-if="!isFetching && stats.total === 0 && failedRepos.length === 0"
         class="mt-12 text-center text-sm text-muted-foreground"
       >
-        <p>PR 없음. 워크스페이스 / 필터 / Forge 계정 등록 상태를 확인하세요.</p>
+        <p>{{ t('launchpad.emptyText') }}</p>
         <!-- UXF-30 — 빈 상태에 다음 단계 CTA -->
         <div class="mt-3 flex items-center justify-center gap-2">
           <RouterLink
             to="/settings"
             class="rounded-md border border-input px-3 py-1 text-xs hover:bg-accent"
           >
-            Forge 계정 설정 열기
+            {{ t('launchpad.emptyForgeSettings') }}
           </RouterLink>
           <RouterLink
             to="/repositories"
             class="rounded-md border border-input px-3 py-1 text-xs hover:bg-accent"
           >
-            저장소 관리
+            {{ t('launchpad.emptyRepoMgmt') }}
           </RouterLink>
         </div>
       </div>
