@@ -827,6 +827,7 @@
     "title": "Worktree",
     "removeFailed": "Worktree 제거 실패",
     "addFailed": "Worktree 추가 실패",
+    "pruneFailed": "Worktree prune 실패",
     "lockSuccess": "Worktree 잠금",
     "lockFailed": "Worktree 잠금 실패",
     "unlockSuccess": "Worktree 잠금 해제",

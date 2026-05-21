@@ -68,6 +68,8 @@ export function useWorktreePanelActions(opts: UseWorktreePanelActionsOpts) {
       return pruneWorktrees(repoId.value)
     },
     onSuccess: invalidateWorktrees,
+    // ARCH-001 — 형제 mutation (remove/lock/unlock) 과 동일하게 실패 toast.
+    onError: (e) => toast.error(t('worktree.pruneFailed'), describeError(e)),
   })
 
   // C1 — Lock / Unlock

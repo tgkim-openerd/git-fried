@@ -26,42 +26,47 @@ export function isAppErrorKind(e: unknown, kind: string): boolean {
 export const isRateLimitError = (e: unknown): boolean => isAppErrorKind(e, 'rate_limit')
 export const isAuthExpiredError = (e: unknown): boolean => isAppErrorKind(e, 'auth_expired')
 
-/** SEC-001 — toast 본문 raw stderr 길이 상한 (긴 git 내부 경로/ref 목록 노출 억제). */
+/** SEC-001 — toast 본문 길이 상한 (긴 git 내부 경로/ref 목록 노출 억제). */
 const MAX_RAW_LEN = 400
 
-/**
- * 어떤 에러든 사람이 읽을 수 있는 한 줄 메시지로 변환.
- *
- * - Tauri AppError 객체: `[kind] message` 형식
- * - JS Error: `error.message`
- * - 문자열: 그대로
- * - 그 외: JSON.stringify 폴백
- */
-export function formatError(e: unknown): string {
-  if (e == null) return ''
-  if (typeof e === 'string') return e
-  if (e instanceof Error) return e.message
+/** 길이 cap helper. */
+function cap(s: string): string {
+  return s.length > MAX_RAW_LEN ? `${s.slice(0, MAX_RAW_LEN)}…` : s
+}
 
+/**
+ * 어떤 에러든 head(의미 메시지) / stderr(raw git 출력) 두 부분으로 분해.
+ * cap 적용 없음 — hint 탐지는 이 원문 기준 (CDX-001).
+ */
+function errorParts(e: unknown): { head: string; stderr: string } {
+  if (e == null) return { head: '', stderr: '' }
+  if (typeof e === 'string') return { head: e, stderr: '' }
+  if (e instanceof Error) return { head: e.message, stderr: '' }
   if (typeof e === 'object') {
     const obj = e as AppErrorPayload & Record<string, unknown>
     if (typeof obj.message === 'string') {
       const kind = typeof obj.kind === 'string' ? `[${obj.kind}] ` : ''
-      // CDX-001 — stderr 만 cap (message 는 보존). describeError 가 humanizeGitError 로
-      //   전달해도 message 부분은 잘리지 않음.
-      const rawStderr = typeof obj.stderr === 'string' ? obj.stderr.trim() : ''
-      const cappedStderr =
-        rawStderr.length > MAX_RAW_LEN ? `${rawStderr.slice(0, MAX_RAW_LEN)}…` : rawStderr
-      const stderr = cappedStderr ? `\n${cappedStderr}` : ''
-      return `${kind}${obj.message}${stderr}`
+      const stderr = typeof obj.stderr === 'string' ? obj.stderr.trim() : ''
+      return { head: `${kind}${obj.message}`, stderr }
     }
     try {
-      return JSON.stringify(e, null, 2)
+      return { head: JSON.stringify(e, null, 2), stderr: '' }
     } catch {
-      return Object.prototype.toString.call(e)
+      return { head: Object.prototype.toString.call(e), stderr: '' }
     }
   }
+  return { head: String(e), stderr: '' }
+}
 
-  return String(e)
+/**
+ * 어떤 에러든 사람이 읽을 수 있는 메시지로 변환 (표시용 — head/stderr 각각 cap).
+ *
+ * - Tauri AppError 객체: `[kind] message` + stderr
+ * - JS Error: `error.message` / 문자열: 그대로 / 그 외: JSON.stringify 폴백
+ */
+export function formatError(e: unknown): string {
+  const { head, stderr } = errorParts(e)
+  return stderr ? `${cap(head)}\n${cap(stderr)}` : cap(head)
 }
 
 /**
@@ -155,19 +160,19 @@ function detectGitHint(m: string): string | null {
  * 직접 stderr 를 넘기는 호출 전용 — describeError 는 별도 (formatError 가 이미 cap).
  */
 export function humanizeGitError(rawMessage: string): string {
+  // hint 탐지는 cap 전 원문 기준 — 키워드가 400자 이후여도 누락 안 됨 (CDX-001).
   const hint = detectGitHint(rawMessage)
-  // SEC-001 — raw stderr 만 cap (긴 git 경로/ref 노출 억제). hint 는 고정 안전 텍스트라 보존.
-  const raw = rawMessage.length > MAX_RAW_LEN ? `${rawMessage.slice(0, MAX_RAW_LEN)}…` : rawMessage
-  return hint ? `${raw}\n\n${hint}` : raw
+  return hint ? `${cap(rawMessage)}\n\n${hint}` : cap(rawMessage)
 }
 
 /**
- * 토스트/alert 용 — formatError + hint.
- * CDX-001 — formatError 가 stderr 만 cap (message 보존). 여기서 재-cap 하지 않아
- *   AppError.message 가 잘리지 않음.
+ * 토스트/alert 용 — 에러 표시 메시지 + git hint.
+ * CDX-001 — hint 탐지는 uncapped 원문(head+stderr) 기준, 표시는 formatError(각 부분 cap).
  */
 export function describeError(e: unknown): string {
-  const full = formatError(e)
-  const hint = detectGitHint(full)
-  return hint ? `${full}\n\n${hint}` : full
+  const { head, stderr } = errorParts(e)
+  const fullForHint = stderr ? `${head}\n${stderr}` : head
+  const hint = detectGitHint(fullForHint)
+  const display = formatError(e)
+  return hint ? `${display}\n\n${hint}` : display
 }

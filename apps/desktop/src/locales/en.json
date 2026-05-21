@@ -827,6 +827,7 @@
     "title": "Worktree",
     "removeFailed": "Worktree remove failed",
     "addFailed": "Worktree add failed",
+    "pruneFailed": "Worktree prune failed",
     "lockSuccess": "Worktree locked",
     "lockFailed": "Worktree lock failed",
     "unlockSuccess": "Worktree unlocked",
