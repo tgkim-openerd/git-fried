@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { setKoreanLocale } from './helpers'
 
 // Sprint c40 / /analyze LOW 7 후속 — Repositories page e2e (Clone modal +
 // Bulk fetch / 4 액션 버튼).
@@ -9,10 +10,14 @@ import { expect, test } from '@playwright/test'
 //   3) Repository Management 헤더 + table-of-repos 노출
 //
 // 본 spec 은 /repositories 페이지로 직접 navigate (selectFrontendRepo 불필요).
+// 단 한국어 text assertion (Fetch All title) 을 위해 locale='ko' 부트스트랩은 필요
+// (Chromium navigator.language='en-US' → detectInitialLocale 'en' 회피).
 
 test.describe('Repositories page — Clone modal trigger + 4 액션 버튼', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/repositories')
+    await setKoreanLocale(page)
+    await page.reload()
   })
 
   test('헤더 + Clone 버튼 + Browse 버튼 노출', async ({ page }) => {
