@@ -1864,6 +1864,9 @@
     "removeTitle": "git-fried 에서 추적 해제 (디스크 파일은 보존)",
     "removeSuccess": "저장소 추적 해제됨",
     "removeFailed": "저장소 추적 해제 실패",
+    "aliasEditTitle": "별칭 편집 (현재 프로필 기준)",
+    "aliasPromptTitle": "저장소 별칭",
+    "aliasPromptMessage": "'{name}' 의 표시 별칭을 입력하세요.\n비우면 별칭이 제거되고 원래 이름으로 표시됩니다.",
     "bulkResultMore": "...외 {n}개 — 📡 버튼으로 전체 보기",
     "bulkFetchResult": "일괄 Fetch: {ok}/{total} 성공 ({failed} 실패)",
     "bulkFetchSuccess": "일괄 Fetch 완료 ({n} 레포)"

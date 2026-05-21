@@ -26,7 +26,7 @@ import { useI18n } from 'vue-i18n'
 import { useBulkFetchResult } from '@/composables/useBulkFetchResult'
 // Sprint c80-1 — 3 mutation 통합 composable 위임.
 import { useRepoManagementMutations } from '@/composables/useRepoManagementMutations'
-import { confirmDialog } from '@/composables/useConfirm'
+import { confirmDialog, promptDialog } from '@/composables/useConfirm'
 import CloneRepoModal from '@/components/CloneRepoModal.vue'
 import BulkFetchResultModal from '@/components/BulkFetchResultModal.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -123,6 +123,24 @@ async function browseAndAdd() {
 function openRepo(repo: Repo) {
   store.openTab(repo.id)
   goHome()
+}
+
+// R2-R2 — 저장소 별칭 인라인 편집 (현재 프로필 기준).
+async function onEditAlias(repo: Repo) {
+  const current = aliases.activeAliasFor(repo.id) ?? ''
+  const next = await promptDialog({
+    title: t('repos.aliasPromptTitle'),
+    message: t('repos.aliasPromptMessage', { name: repo.name }),
+    defaultValue: current,
+  })
+  if (next === null) return
+  const trimmed = next.trim()
+  const profileId = aliases.activeProfileId.value
+  if (trimmed) {
+    aliases.setMut.mutate({ repoId: repo.id, profileId, alias: trimmed })
+  } else if (current) {
+    aliases.unsetMut.mutate({ repoId: repo.id, profileId })
+  }
 }
 
 // R2-R1 — 저장소 추적 해제 (confirm 후 removeRepo IPC).
@@ -467,6 +485,15 @@ function workspaceName(id: number | null): string {
                   @click.stop="openInExplorer(repo.id)"
                 >
                   📂
+                </button>
+                <!-- R2-R2 — 별칭 편집 -->
+                <button
+                  type="button"
+                  class="rounded p-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                  :title="t('repos.aliasEditTitle')"
+                  @click.stop="onEditAlias(repo)"
+                >
+                  ✎
                 </button>
                 <!-- R2-R1 — 추적 해제 -->
                 <button

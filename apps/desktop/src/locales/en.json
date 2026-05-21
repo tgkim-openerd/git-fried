@@ -1864,6 +1864,9 @@
     "removeTitle": "Untrack from git-fried (disk files kept)",
     "removeSuccess": "Repository untracked",
     "removeFailed": "Failed to untrack repository",
+    "aliasEditTitle": "Edit alias (for current profile)",
+    "aliasPromptTitle": "Repository alias",
+    "aliasPromptMessage": "Enter a display alias for '{name}'.\nLeave empty to remove the alias and show the original name.",
     "bulkResultMore": "...{n} more — 📡 button to view all",
     "bulkFetchResult": "Bulk fetch: {ok}/{total} succeeded ({failed} failed)",
     "bulkFetchSuccess": "Bulk fetch complete ({n} repos)"
