@@ -65,8 +65,8 @@ export function formatError(e: unknown): string {
 const MAX_RAW_LEN = 400
 
 export function humanizeGitError(rawMessage: string): string {
-  // 긴 stderr 는 앞부분만 — hint 가 핵심 가이드이므로 raw 는 컨텍스트용으로 충분.
-  const m = rawMessage.length > MAX_RAW_LEN ? `${rawMessage.slice(0, MAX_RAW_LEN)}…` : rawMessage
+  // 패턴 탐지는 전체 메시지 기준 — cap 으로 키워드가 잘리면 hint 누락 (CDX SEC-001 PARTIAL).
+  const m = rawMessage
   let hint: string | null = null
 
   // Pull / Fetch 빈 remote
@@ -145,7 +145,10 @@ export function humanizeGitError(rawMessage: string): string {
       '   - 설정 → Forge 계정 → 만료 토큰 갱신'
   }
 
-  return hint ? `${m}\n\n${hint}` : m
+  // SEC-001 — 표시용 raw stderr 만 cap (긴 git 경로/ref 노출 억제).
+  //   hint 는 고정 안전 가이드 텍스트라 cap 대상 아님 (유용 정보 보존).
+  const raw = m.length > MAX_RAW_LEN ? `${m.slice(0, MAX_RAW_LEN)}…` : m
+  return hint ? `${raw}\n\n${hint}` : raw
 }
 
 /** 토스트/alert 용 — formatError + humanizeGitError 통합. */
