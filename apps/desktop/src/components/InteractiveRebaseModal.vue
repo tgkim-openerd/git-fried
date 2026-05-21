@@ -20,6 +20,7 @@ import { useAiComposer } from '@/composables/useAiComposer'
 // Sprint c63-B — IRR flow state + 5 mutation + handlers composable 위임.
 import { useInteractiveRebaseFlow } from '@/composables/useInteractiveRebaseFlow'
 import { confirmDialog } from '@/composables/useConfirm'
+import { dispatchShortcut } from '@/composables/useShortcuts'
 import BaseModal from './BaseModal.vue'
 
 const { t } = useI18n()
@@ -54,6 +55,13 @@ function moveTodo(i: number, dir: -1 | 1) {
   next[i] = next[j]
   next[j] = tmp
   todo.value = next
+}
+
+// UXF-15 — conflict 안내를 클릭 가능한 액션으로. 모달을 닫고 변경 패널로 이동.
+// (rebase in-progress 상태는 보존 — 재진입 시 status.inProgress 로 Continue 표시 복원)
+function goResolveConflicts() {
+  close()
+  dispatchShortcut('tab1')
 }
 
 // UXF-25 — abort 는 conflict 해소 작업을 버리므로 danger confirm 게이트.
@@ -238,10 +246,19 @@ onUnmounted(() => {
         <p class="font-semibold text-warning-amber">
           Rebase 진행 중 (step {{ status.currentStep ?? '?' }} / {{ status.totalSteps ?? '?' }})
         </p>
-        <p v-if="status.conflict" class="mt-1 text-xs">
-          충돌 발생: <span class="font-mono">{{ status.stoppedAt?.slice(0, 7) }}</span
-          >. 변경 패널 (⌘1) 에서 conflicted 파일을 해결한 후 [Continue] 클릭.
-        </p>
+        <template v-if="status.conflict">
+          <p class="mt-1 text-xs">
+            충돌 발생: <span class="font-mono">{{ status.stoppedAt?.slice(0, 7) }}</span
+            >. conflicted 파일을 해결한 후 [Continue] 클릭.
+          </p>
+          <button
+            type="button"
+            class="mt-1.5 rounded border border-amber-500/50 px-2 py-1 text-xs font-medium text-warning-amber hover:bg-amber-500/15"
+            @click="goResolveConflicts"
+          >
+            ↗ 충돌 파일 해결하러 가기 (⌘1)
+          </button>
+        </template>
         <p v-else class="mt-1 text-xs">{{ t('interactiveRebase.userInputWaiting') }}</p>
       </div>
       <div

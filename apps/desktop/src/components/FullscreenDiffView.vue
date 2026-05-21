@@ -153,28 +153,36 @@ function onBlameRowClick(sha: string) {
 // Sprint c30 / GitKraken UX (Phase 3) — ESC 닫기.
 //   index.vue 의 onEscKey 가 selectedSha 만 처리 — fullscreen 우선.
 //   여기서 직접 listener 등록 (active 시에만).
-function onEscKey(e: KeyboardEvent) {
-  if (e.key !== 'Escape') return
+function onKey(e: KeyboardEvent) {
   if (fs.current.value == null) return
   // 모달/입력 안에서는 skip
   const ae = document.activeElement
-  if (
+  const inField = !!(
     ae &&
     (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.closest('[role="dialog"]'))
-  ) {
+  )
+  if (e.key === 'Escape') {
+    if (inField) return
+    e.stopPropagation() // index.vue 의 onEscKey 가 selectedSha 도 같이 해제하는 것 차단
+    fs.close()
     return
   }
-  e.stopPropagation() // index.vue 의 onEscKey 가 selectedSha 도 같이 해제하는 것 차단
-  fs.close()
+  // R2-D1 — Alt+↑/↓ hunk 네비게이션 (UI 힌트 "Alt+↑/↓" 와 동작 일치).
+  if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    if (inField) return
+    e.preventDefault()
+    if (e.key === 'ArrowUp') onPrevHunk()
+    else onNextHunk()
+  }
 }
 
 watch(
   fs.current,
   (cur) => {
     if (cur) {
-      window.addEventListener('keydown', onEscKey, { capture: true })
+      window.addEventListener('keydown', onKey, { capture: true })
     } else {
-      window.removeEventListener('keydown', onEscKey, { capture: true })
+      window.removeEventListener('keydown', onKey, { capture: true })
     }
   },
   { immediate: true },
