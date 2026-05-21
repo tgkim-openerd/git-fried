@@ -18,6 +18,7 @@ import {
   registerOperation as registerLongOp,
   completeOperation as completeLongOp,
 } from '@/composables/useLongRunningProgress'
+import { i18n } from '@/i18n'
 
 const DEFAULT_TIMEOUT_MS = 30_000
 const LONG_TIMEOUT_MS = 5 * 60_000
@@ -45,6 +46,23 @@ const RETRY_BACKOFF_MS = 800
 
 function isLongRunning(cmd: string): boolean {
   return LONG_RUNNING_PREFIXES.some((p) => cmd.startsWith(p))
+}
+
+/**
+ * UXF-08 — long-running banner 라벨을 raw IPC command 명 대신
+ * 사람이 읽을 수 있는 작업명으로 변환.
+ */
+function humanLabel(cmd: string): string {
+  const t = i18n.global.t
+  if (cmd.startsWith('clone_')) return t('progress.clone')
+  if (cmd.startsWith('fetch_')) return t('progress.fetch')
+  if (cmd.startsWith('pull')) return t('progress.pull')
+  if (cmd.startsWith('push')) return t('progress.push')
+  if (cmd.startsWith('bulk_')) return t('progress.bulk')
+  if (cmd.startsWith('ai_')) return t('progress.ai')
+  if (cmd.startsWith('maintenance_')) return t('progress.maintenance')
+  if (cmd.startsWith('import_gitkraken')) return t('progress.import')
+  return cmd
 }
 
 function isRetryable(cmd: string): boolean {
@@ -125,10 +143,14 @@ function invokeOnce<T>(
       if (settled) return
       settled = true
       finalize()
+      // UXF-05 — long-running 명령은 timeout 후에도 native git 프로세스가
+      // 계속 실행될 수 있음. 사용자에게 상태 불일치 가능성을 명시.
+      const bgNote = isLongRunning(cmd) ? i18n.global.t('progress.timeoutBackgroundNote') : ''
       reject(
         new Error(
           `IPC timeout: '${cmd}' 가 ${(timeoutMs / 1000).toFixed(0)}초 안에 응답하지 않았습니다. ` +
-            `(작업이 정말 오래 걸린다면 Settings 에서 timeout 늘리거나 git CLI 가 응답 중인지 확인)`,
+            `(작업이 정말 오래 걸린다면 Settings 에서 timeout 늘리거나 git CLI 가 응답 중인지 확인)` +
+            bgNote,
         ),
       )
     }, timeoutMs)
@@ -165,7 +187,8 @@ export function invoke<T>(
   const t = opts?.timeoutMs ?? (long ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
 
   // Long-running banner 등록 (Sprint E-4 / docs/plan/24 §7-1 E-4)
-  const label = opts?.progressLabel === '' ? null : (opts?.progressLabel ?? (long ? cmd : null))
+  const label =
+    opts?.progressLabel === '' ? null : (opts?.progressLabel ?? (long ? humanLabel(cmd) : null))
   const opId = label != null ? registerLongOp(label) : null
 
   const finalize = () => {

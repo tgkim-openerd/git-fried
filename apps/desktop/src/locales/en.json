@@ -471,7 +471,9 @@
     "rebaseAbortTitle": "Abort rebase",
     "rebaseAbortMessage": "Abort the in-progress rebase?\n• HEAD returns to its state before the rebase started\n• Conflict resolutions done so far are lost",
     "stageWithMarkersTitle": "Conflict markers remain",
-    "stageWithMarkersMessage": "The result still contains conflict markers (<<<<<<< / ======= / >>>>>>>).\n• Staging now may commit an unresolved conflict\n• Stage anyway?"
+    "stageWithMarkersMessage": "The result still contains conflict markers (<<<<<<< / ======= / >>>>>>>).\n• Staging now may commit an unresolved conflict\n• Stage anyway?",
+    "exitWithRunningTitle": "Operations still running",
+    "exitWithRunningMessage": "{n} operation(s) are still in progress.\n• Quitting now may interrupt them\n• Quit anyway?"
   },
   "settings": {
     "title": "Settings",
@@ -1025,6 +1027,22 @@
     "updateFailed": "Submodule update failed",
     "syncFailed": "Submodule sync failed",
     "initFailed": "Submodule init failed"
+  },
+  "progress": {
+    "clone": "Clone repository",
+    "fetch": "Fetch",
+    "pull": "Pull",
+    "push": "Push",
+    "bulk": "Bulk operation",
+    "ai": "AI task",
+    "maintenance": "Repository maintenance",
+    "import": "Import GitKraken settings",
+    "timeoutBackgroundNote": " This operation may keep running in the background — re-check its status with a fetch / refresh shortly."
+  },
+  "errorBoundary": {
+    "page": "Page render error",
+    "retry": "↻ Retry",
+    "reload": "Reload app"
   },
   "clone": {
     "successTitle": "Clone complete",

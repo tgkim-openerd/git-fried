@@ -25,5 +25,9 @@ export function useInvalidateRepoQueries() {
     qc.invalidateQueries({ queryKey: ['status', repoId] })
     qc.invalidateQueries({ queryKey: ['log', repoId] })
     qc.invalidateQueries({ queryKey: ['repos'] })
+    // UXF-06 — fetch/pull/push/commit 후 graph·branches 도 함께 갱신.
+    // (invalidate 는 active query 만 refetch — 비활성 시 무비용)
+    qc.invalidateQueries({ queryKey: ['graph', repoId] })
+    qc.invalidateQueries({ queryKey: ['branches', repoId] })
   }
 }

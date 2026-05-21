@@ -163,18 +163,23 @@ useShortcut('focusMessage', () => {
   }
 })
 
+// UXF-21 — stageAll → commit 2단계 중 stageAll 구간 pending 표시 + 중복 클릭 차단.
+const staging = ref(false)
 async function dispatchStageAndCommit() {
-  if (props.repoId == null) return
+  if (props.repoId == null || staging.value) return
   if (!canCommit()) {
     toast.error(t('commitInput.errCommitInvalid'), t('commitInput.errCommitInvalidBody'))
     return
   }
+  staging.value = true
   try {
     await apiStageAll(props.repoId)
     invalidate(props.repoId)
     commitMut.mutate({ noVerify: noVerify.value })
   } catch (e) {
     toast.error(t('commitInput.errStageAllFailed'), describeError(e))
+  } finally {
+    staging.value = false
   }
 }
 useShortcut('stageAndCommit', dispatchStageAndCommit)
@@ -317,7 +322,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
     <button
       type="button"
       class="mt-1 flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:bg-emerald-600/50 disabled:cursor-not-allowed"
-      :disabled="!canCommit() || commitMut.isPending.value"
+      :disabled="!canCommit() || commitMut.isPending.value || staging"
       :title="
         amend
           ? '⌘⇧Enter — 모든 변경 stage + amend (마지막 커밋 덮어쓰기)'
@@ -327,7 +332,17 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
     >
       <span class="text-base leading-none">⤓</span>
       <span>
-        {{ amend ? 'Stage All & Amend' : 'Stage Changes to Commit' }}
+        {{
+          staging
+            ? 'Stage 중...'
+            : commitMut.isPending.value
+              ? amend
+                ? 'Amend 중...'
+                : '커밋 중...'
+              : amend
+                ? 'Stage All & Amend'
+                : 'Stage Changes to Commit'
+        }}
       </span>
       <span class="text-[10px] opacity-75">⌘⇧Enter</span>
     </button>

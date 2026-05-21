@@ -38,6 +38,10 @@ import { useAppShortcuts } from '@/composables/useAppShortcuts'
 import { useI18n } from 'vue-i18n'
 import { useUiSettingsStore } from '@/composables/useUserSettings'
 import { useAutoFetch } from '@/composables/useAutoFetch'
+// R5-005 — 진행 중 작업 있을 때 앱 종료 가드.
+import { useAppExitGuard } from '@/composables/useAppExitGuard'
+// B4-09 — 페이지 렌더 에러 시 blank screen 회피 (component-level fallback).
+import ErrorBoundary from './components/ErrorBoundary.vue'
 import { useReposStore } from '@/stores/repos'
 import { RouterLink, useRouter } from 'vue-router'
 
@@ -49,6 +53,7 @@ const uiSettings = useUiSettingsStore()
 const router = useRouter()
 useDeepLink(router)
 useAutoFetch()
+useAppExitGuard()
 
 // Sprint c75-B — modal 9개 state + open helper + closeAllModals 를 useAppModals 로 분리.
 const {
@@ -165,7 +170,9 @@ useMenuListener()
           </div>
         </template>
       </RepoTabBar>
-      <RouterView class="flex-1 min-h-0 overflow-hidden" />
+      <ErrorBoundary :label="t('errorBoundary.page')">
+        <RouterView class="flex-1 min-h-0 overflow-hidden" />
+      </ErrorBoundary>
       <StatusBar />
     </main>
     <CommandPalette />
