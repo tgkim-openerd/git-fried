@@ -601,6 +601,7 @@
       "title": "Git Hooks",
       "description": "GitKraken Settings Repo-Specific Preferences 의 Git Hooks 매핑. .git/hooks/ 디렉토리 (또는 core.hooksPath override) 의 hook 파일 read-only scan + 표준 hook 28개 enumerate (Plan #42 M-1).",
       "noActiveRepoWarning": "⚠ 활성 레포가 없습니다. Sidebar 에서 레포를 선택하세요.",
+      "goToRepos": "저장소 관리로 이동 →",
       "loadFailed": "Hook list 로드 실패",
       "activeTitle": "Active Hooks (활성 hook 파일)",
       "activeEmpty": "활성 hook 없음",

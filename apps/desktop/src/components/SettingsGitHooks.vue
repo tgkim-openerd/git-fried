@@ -85,12 +85,19 @@ const missingHooks = computed(() =>
       {{ t('settings.gitHooks.description') }}
     </p>
 
-    <p
+    <!-- R2-GH1 — repo 미선택 경고에 저장소 관리 이동 CTA -->
+    <div
       v-if="activeRepoId == null"
       class="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400"
     >
-      {{ t('settings.gitHooks.noActiveRepoWarning') }}
-    </p>
+      <p>{{ t('settings.gitHooks.noActiveRepoWarning') }}</p>
+      <RouterLink
+        to="/repositories"
+        class="mt-1.5 inline-block rounded border border-amber-500/50 px-2 py-0.5 font-medium hover:bg-amber-500/15"
+      >
+        {{ t('settings.gitHooks.goToRepos') }}
+      </RouterLink>
+    </div>
 
     <template v-else>
       <SkeletonBlock v-if="hooksQuery.isFetching.value && !hooksQuery.data.value" :lines="3" />

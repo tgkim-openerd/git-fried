@@ -176,9 +176,12 @@ function workspaceName(id: number | null): string {
 <template>
   <div class="flex h-full flex-col overflow-hidden bg-background">
     <!-- Header bar — 4 액션 버튼 -->
-    <header class="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+    <!-- R2-WR1 — 좁은 윈도우 대응: 헤더 줄바꿈 허용 -->
+    <header
+      class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3"
+    >
       <h1 class="text-lg font-semibold text-foreground">Repository Management</h1>
-      <div class="flex items-center gap-1.5">
+      <div class="flex flex-wrap items-center gap-1.5">
         <button
           type="button"
           class="flex items-center gap-1 rounded-md border border-input bg-card px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50"

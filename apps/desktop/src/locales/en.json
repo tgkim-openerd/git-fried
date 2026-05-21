@@ -601,6 +601,7 @@
       "title": "Git Hooks",
       "description": "Maps to GitKraken Settings Repo-Specific Preferences Git Hooks. Read-only scan of .git/hooks/ (or the core.hooksPath override) + enumeration of 28 standard hooks (Plan #42 M-1).",
       "noActiveRepoWarning": "⚠ No active repo. Select one from the sidebar.",
+      "goToRepos": "Go to Repository Management →",
       "loadFailed": "Failed to load hooks list",
       "activeTitle": "Active Hooks",
       "activeEmpty": "No active hooks",

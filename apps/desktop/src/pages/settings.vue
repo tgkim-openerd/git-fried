@@ -236,8 +236,9 @@ const buildInfo = computed(() => ({
     <!-- Sprint 22-15 M1 — 좌측 카테고리 nav (2-level 6 그룹).
          design §8-1 hard constraint: v1.0 12+ 카테고리 확장 대비.
     -->
+    <!-- R2-WR1 — 좁은 윈도우 대응: nav 폭 단계 축소 -->
     <nav
-      class="w-52 shrink-0 overflow-auto border-r border-border bg-card py-4 text-sm"
+      class="w-40 shrink-0 overflow-auto border-r border-border bg-card py-4 text-sm md:w-48 lg:w-52"
       :aria-label="t('a11y.ariaLabel.settingsCategory')"
     >
       <h1 class="px-4 pb-2 text-base font-semibold">{{ t('settings.title') }}</h1>
