@@ -22,7 +22,7 @@ import { describeError, humanizeGitError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import { useI18n } from 'vue-i18n'
-import { confirmDialog, promptDialog } from '@/composables/useConfirm'
+import { confirmDialog, chooseDialog } from '@/composables/useConfirm'
 // Plan #42 M-1.2 squashByDefault wire (Sprint c98 Codex 7차 audit MED) —
 // drag-drop merge path 도 commitSquashByDefault 적용.
 import { useGeneralSettings } from '@/composables/useUserSettings'
@@ -101,21 +101,22 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
 
     if (branchName && branchName !== target.name) {
       // branch (source) → branch (target). GitKraken UX: drop A onto B = target B 위로.
-      // Sprint c40 후속 review SEC-011/TYPE-002: window.prompt → promptDialog
-      // (a11y / 한글 IME / 일관된 dialog UI).
-      const action = await promptDialog({
+      // UXF-10 — 텍스트 prompt('m | r | cancel') → chooseDialog action sheet (Hick's Law).
+      const action = await chooseDialog({
         title: t('branchDragDrop.actionTitle'),
         message: t('branchDragDrop.actionMessage', {
           source: branchName,
           target: target.name,
         }),
-        defaultValue: 'm',
-        placeholder: 'm | r | cancel',
+        options: [
+          { value: 'merge', label: t('branchDragDrop.actionMerge') },
+          { value: 'rebase', label: t('branchDragDrop.actionRebase') },
+        ],
       })
       if (!action) return
-      const a = action.trim().toLowerCase()
+      const a = action
       try {
-        if (a === 'm' || a === 'merge') {
+        if (a === 'merge') {
           await opts.switchAsync(repoId, opts.localName(target.name))
           // Plan #42 M-1.2 wire — Settings.commitSquashByDefault 적용.
           const useSquash = general.value.commitSquashByDefault
@@ -137,7 +138,7 @@ export function useBranchDragDrop(opts: UseBranchDragDropOptions) {
             toast.error('Merge 실패', humanizeGitError(r.stderr))
           }
           invalidate(repoId)
-        } else if (a === 'r' || a === 'rebase') {
+        } else if (a === 'rebase') {
           await opts.switchAsync(repoId, opts.localName(branchName))
           const r = await rebaseBranch(repoId, opts.localName(target.name))
           if (r.success) {

@@ -23,6 +23,8 @@ import ConfirmDialog from './components/ConfirmDialog.vue'
 import FirstRunWizard from './components/FirstRunWizard.vue'
 // Sprint c38 / plan/29 E5 — window.prompt 대체 (a11y + 한글 IME 안전).
 import PromptDialog from './components/PromptDialog.vue'
+// UXF-10 — 다중 옵션 action sheet (branch drag merge/rebase 선택 등).
+import ChooseDialog from './components/ChooseDialog.vue'
 import StatusBar from './components/StatusBar.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useUiState } from '@/composables/useUiState'
@@ -204,6 +206,7 @@ useMenuListener()
     <CommitSearchModal :open="commitSearchOpen" @close="commitSearchOpen = false" />
     <ConfirmDialog />
     <PromptDialog />
+    <ChooseDialog />
     <!-- v0.4 #2 (UltraPlan plan/31 §9 Q1 절충) — First-run 3-step wizard. -->
     <FirstRunWizard />
   </div>

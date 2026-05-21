@@ -1202,7 +1202,9 @@
   },
   "branchDragDrop": {
     "actionTitle": "Branch drag-drop action",
-    "actionMessage": "{source} → {target}\n\n  m = merge (switch to target + merge source)\n  r = rebase (rebase source onto target)\n  cancel = cancel"
+    "actionMessage": "{source} → {target}\n\nWhich action do you want?",
+    "actionMerge": "Merge (switch to target + merge source)",
+    "actionRebase": "Rebase (source onto target)"
   },
   "branch": {
     "title": "Branches",

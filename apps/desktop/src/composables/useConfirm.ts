@@ -159,3 +159,81 @@ export function __resetPromptDialogForTest() {
   isPromptOpen.value = false
   promptOptions.value = { message: '' }
 }
+
+// ============================================================
+// UXF-10 — chooseDialog (다중 옵션 action sheet)
+// ============================================================
+//
+// confirmDialog(yes/no) / promptDialog(text input) 의 형제. N 개 버튼 중 1 개 선택.
+// `window.prompt('m | r | cancel')` 같은 텍스트 입력 안티패턴 대체 (Hick's Law).
+//
+// API:
+//   const v = await chooseDialog({
+//     title, message,
+//     options: [{ value: 'merge', label: 'Merge' }, { value: 'rebase', label: 'Rebase' }],
+//   })
+//   if (v == null) return  // 취소 / Esc / backdrop
+
+export interface ChooseOption {
+  /** resolve 시 반환값. */
+  value: string
+  /** 버튼 표시 텍스트. */
+  label: string
+  /** destructive 강조 (red). */
+  danger?: boolean
+}
+
+export interface ChooseOptions {
+  /** 제목 (생략 시 i18n 'confirm.title'). */
+  title?: string
+  /** 본문 (필수, \n 줄바꿈 허용). */
+  message: string
+  /** 선택지 (2개 이상). */
+  options: ChooseOption[]
+  /** 취소 버튼 텍스트 (생략 시 i18n 'common.cancel'). */
+  cancelText?: string
+}
+
+const isChooseOpen = ref(false)
+const chooseOptions = ref<ChooseOptions>({ message: '', options: [] })
+let chooseResolver: ((value: string | null) => void) | null = null
+
+/**
+ * Choose dialog 트리거. Promise<string | null> resolve.
+ *  - string: 선택한 option.value.
+ *  - null: 취소 / Esc / backdrop click.
+ */
+export function chooseDialog(opts: ChooseOptions): Promise<string | null> {
+  if (chooseResolver) {
+    chooseResolver(null)
+    chooseResolver = null
+  }
+  return new Promise<string | null>((resolve) => {
+    chooseOptions.value = opts
+    isChooseOpen.value = true
+    chooseResolver = resolve
+  })
+}
+
+/** ChooseDialog 컴포넌트 전용 state 접근. */
+export function useChooseDialogState() {
+  return {
+    isOpen: readonly(isChooseOpen),
+    options: readonly(chooseOptions),
+    resolve(result: string | null) {
+      isChooseOpen.value = false
+      chooseResolver?.(result)
+      chooseResolver = null
+    },
+  }
+}
+
+/** 테스트 전용 — choose state reset. */
+export function __resetChooseDialogForTest() {
+  if (chooseResolver) {
+    chooseResolver(null)
+    chooseResolver = null
+  }
+  isChooseOpen.value = false
+  chooseOptions.value = { message: '', options: [] }
+}

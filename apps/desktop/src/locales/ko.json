@@ -1202,7 +1202,9 @@
   },
   "branchDragDrop": {
     "actionTitle": "브랜치 드래그 작업 선택",
-    "actionMessage": "{source} → {target}\n\n  m = merge (target 으로 switch + source 머지)\n  r = rebase (source 를 target 위로 rebase)\n  cancel = 취소"
+    "actionMessage": "{source} → {target}\n\n어떤 작업을 수행할까요?",
+    "actionMerge": "Merge (target 으로 switch + source 머지)",
+    "actionRebase": "Rebase (source 를 target 위로)"
   },
   "branch": {
     "title": "브랜치",
