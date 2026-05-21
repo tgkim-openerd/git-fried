@@ -22,7 +22,8 @@ const { t } = useI18n()
 
 // A-23 — 플랫폼별 단축키 표기 통일 (mac ⌘/⌥/⇧/⌃ vs Windows·Linux Ctrl/Alt/Shift).
 // 기존: 일부는 dual 표기(⌘P / Ctrl+P), 일부는 mac 전용(⌘Enter) — 혼용.
-const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '')
+// navigator.platform 은 deprecated — userAgent 기반 감지 (Mac UA 는 "Macintosh" 포함).
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent || '')
 const MOD = isMac ? '⌘' : 'Ctrl+'
 const SHIFT = isMac ? '⇧' : 'Shift+'
 const ALT = isMac ? '⌥' : 'Alt+'

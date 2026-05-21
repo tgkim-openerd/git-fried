@@ -194,8 +194,10 @@ const filteredGroups = computed(() => {
 // R2-S1 — 설정 변경 시 "저장됨" 피드백 (general/ui 는 deep watch 로 localStorage 자동 영속).
 const showSaved = ref(false)
 let savedTimer: ReturnType<typeof setTimeout> | undefined
+const generalSettings = useGeneralSettings()
+const uiSettings = useUiSettingsStore()
 watch(
-  [useGeneralSettings(), useUiSettingsStore()],
+  [generalSettings, uiSettings],
   () => {
     showSaved.value = true
     clearTimeout(savedTimer)

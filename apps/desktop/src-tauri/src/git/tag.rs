@@ -6,6 +6,7 @@
 // Release (Forge API 기반) 는 별도 — ReleasesPanel + forge module. Tag 는 순수 git 객체.
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -100,18 +101,25 @@ pub async fn create_tag(
     if name.trim().is_empty() {
         return Err(AppError::validation("tag 이름 비어있음"));
     }
-    let mut args: Vec<String> = vec!["tag".into()];
+    // 보안 (SEC-HIGH / CDX-005) — name/target argument injection 방어
+    // (bisect.rs / branch.rs 와 동일 패턴: reject_dash_prefix + --end-of-options).
+    let safe_name = reject_dash_prefix(name, "tag name")?;
+    let safe_target = target
+        .filter(|s| !s.trim().is_empty())
+        .map(|t| reject_dash_prefix(t, "tag target"))
+        .transpose()?;
+    let mut args: Vec<&str> = vec!["tag"];
     if let Some(m) = message.filter(|s| !s.trim().is_empty()) {
-        args.push("-a".into());
-        args.push("-m".into());
-        args.push(m.to_string());
+        args.push("-a");
+        args.push("-m");
+        args.push(m);
     }
-    args.push(name.to_string());
-    if let Some(t) = target.filter(|s| !s.trim().is_empty()) {
-        args.push(t.to_string());
+    args.push("--end-of-options");
+    args.push(safe_name);
+    if let Some(t) = safe_target {
+        args.push(t);
     }
-    let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
-    git_run(repo, &arg_refs, &GitRunOpts::default())
+    git_run(repo, &args, &GitRunOpts::default())
         .await?
         .into_ok()?;
     Ok(())
@@ -138,9 +146,20 @@ pub async fn annotate_existing_tag(
     if message.trim().is_empty() {
         return Err(AppError::validation("annotation message 비어있음"));
     }
+    // 보안 (SEC-HIGH) — name/commit_sha argument injection 방어.
+    let safe_name = reject_dash_prefix(name, "tag name")?;
+    let safe_sha = reject_dash_prefix(commit_sha, "commit SHA")?;
     git_run(
         repo,
-        &["tag", "-af", name, commit_sha, "-m", message],
+        &[
+            "tag",
+            "-af",
+            "-m",
+            message,
+            "--end-of-options",
+            safe_name,
+            safe_sha,
+        ],
         &GitRunOpts::default(),
     )
     .await?

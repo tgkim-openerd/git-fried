@@ -310,6 +310,7 @@ async function onExplainBranch(b: BranchInfo) {
             :title="branchHoverTitle(b)"
             @dblclick="onSwitch(b)"
             @keydown.enter="onSwitch(b)"
+            @keydown.space.prevent="onSwitch(b)"
             @contextmenu="onBranchContextMenu($event, b)"
             @dragstart="onDragStartBranch(b, $event)"
             @dragover="onDragOverRow(idx, $event)"

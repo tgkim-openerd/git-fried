@@ -59,14 +59,24 @@ export function useNotification() {
     try {
       // TYPE-004 — Promise reject 도 catch 로 잡히도록 await.
       await sendNotification({ title, body })
-    } catch (e) {
-      // sendNotification 자체 실패도 1회 안내.
+    } catch {
+      // SEC MED-2 — sendNotification 실패 시 raw 에러(String(e)) 노출 금지.
+      // 내부 경로/권한 정보가 섞일 수 있어 고정 i18n 메시지만 표시 (세션당 1회).
       if (!deniedNoticeShown) {
         deniedNoticeShown = true
-        toast.info(i18n.global.t('notification.deniedTitle'), String(e))
+        toast.info(
+          i18n.global.t('notification.deniedTitle'),
+          i18n.global.t('notification.deniedBody'),
+        )
       }
     }
   }
 
   return { notify }
+}
+
+/** 테스트 전용 — 모듈 레벨 상태 reset (TYPE-N02). */
+export function __resetNotificationStateForTest(): void {
+  cachedGranted = null
+  deniedNoticeShown = false
 }
