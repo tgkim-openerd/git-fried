@@ -15,8 +15,10 @@ import { useToast } from '@/composables/useToast'
 import { i18n } from '@/i18n'
 
 let cachedGranted: boolean | null = null
-// A-24/UXF-18 — 권한 거부 안내는 세션당 1회만 (매 알림마다 toast 노출 방지).
-let deniedNoticeShown = false
+// A-24/UXF-18 — 안내 toast 는 세션당 1회만 (매 알림마다 노출 방지).
+// TYPE-W01 — 권한 거부와 전송 실패는 원인이 달라 별도 플래그 (한쪽이 다른 쪽을 묵음 처리하지 않도록).
+let permDeniedNoticeShown = false
+let sendFailNoticeShown = false
 
 async function ensurePermission(): Promise<boolean> {
   if (cachedGranted !== null) return cachedGranted
@@ -47,8 +49,8 @@ export function useNotification() {
     if (typeof document !== 'undefined' && document.hasFocus()) return
     const ok = await ensurePermission()
     if (!ok) {
-      if (!deniedNoticeShown) {
-        deniedNoticeShown = true
+      if (!permDeniedNoticeShown) {
+        permDeniedNoticeShown = true
         toast.info(
           i18n.global.t('notification.deniedTitle'),
           i18n.global.t('notification.deniedBody'),
@@ -62,8 +64,8 @@ export function useNotification() {
     } catch {
       // SEC MED-2 — sendNotification 실패 시 raw 에러(String(e)) 노출 금지.
       // 내부 경로/권한 정보가 섞일 수 있어 고정 i18n 메시지만 표시 (세션당 1회).
-      if (!deniedNoticeShown) {
-        deniedNoticeShown = true
+      if (!sendFailNoticeShown) {
+        sendFailNoticeShown = true
         toast.info(
           i18n.global.t('notification.deniedTitle'),
           i18n.global.t('notification.deniedBody'),
@@ -78,5 +80,6 @@ export function useNotification() {
 /** 테스트 전용 — 모듈 레벨 상태 reset (TYPE-N02). */
 export function __resetNotificationStateForTest(): void {
   cachedGranted = null
-  deniedNoticeShown = false
+  permDeniedNoticeShown = false
+  sendFailNoticeShown = false
 }

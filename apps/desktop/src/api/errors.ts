@@ -26,6 +26,9 @@ export function isAppErrorKind(e: unknown, kind: string): boolean {
 export const isRateLimitError = (e: unknown): boolean => isAppErrorKind(e, 'rate_limit')
 export const isAuthExpiredError = (e: unknown): boolean => isAppErrorKind(e, 'auth_expired')
 
+/** SEC-001 — toast 본문 raw stderr 길이 상한 (긴 git 내부 경로/ref 목록 노출 억제). */
+const MAX_RAW_LEN = 400
+
 /**
  * 어떤 에러든 사람이 읽을 수 있는 한 줄 메시지로 변환.
  *
@@ -43,8 +46,12 @@ export function formatError(e: unknown): string {
     const obj = e as AppErrorPayload & Record<string, unknown>
     if (typeof obj.message === 'string') {
       const kind = typeof obj.kind === 'string' ? `[${obj.kind}] ` : ''
-      const stderr =
-        typeof obj.stderr === 'string' && obj.stderr.trim() ? `\n${obj.stderr.trim()}` : ''
+      // CDX-001 — stderr 만 cap (message 는 보존). describeError 가 humanizeGitError 로
+      //   전달해도 message 부분은 잘리지 않음.
+      const rawStderr = typeof obj.stderr === 'string' ? obj.stderr.trim() : ''
+      const cappedStderr =
+        rawStderr.length > MAX_RAW_LEN ? `${rawStderr.slice(0, MAX_RAW_LEN)}…` : rawStderr
+      const stderr = cappedStderr ? `\n${cappedStderr}` : ''
       return `${kind}${obj.message}${stderr}`
     }
     try {
@@ -61,9 +68,6 @@ export function formatError(e: unknown): string {
  * git CLI / forge / IPC 에러 메시지에서 흔한 패턴을 감지해 한국어 힌트 추가.
  * 원본 메시지 + 줄바꿈 + 가이드.
  */
-/** SEC-001 — toast 본문 raw stderr 길이 상한 (긴 git 내부 경로/ref 목록 노출 억제). */
-const MAX_RAW_LEN = 400
-
 export function humanizeGitError(rawMessage: string): string {
   // 패턴 탐지는 전체 메시지 기준 — cap 으로 키워드가 잘리면 hint 누락 (CDX SEC-001 PARTIAL).
   const m = rawMessage

@@ -16,18 +16,29 @@
 //
 // fallback slot 미지정 시 기본 minimal banner.
 import { onErrorCaptured, ref } from 'vue'
+import { invoke } from '@/api/invokeWithTimeout'
+import { buildPayload } from '@/utils/registerGlobalErrorHandler'
 
-defineProps<{
+const props = defineProps<{
   /** 디버그 라벨 (어느 영역 에러인지 식별 — tracing 에 포함). */
   label?: string
 }>()
 
 const error = ref<Error | null>(null)
 
-onErrorCaptured((err) => {
+onErrorCaptured((err, instance, info) => {
   error.value = err instanceof Error ? err : new Error(String(err))
-  // 전역 핸들러로 전파 — registerGlobalErrorHandler 가 toast + invoke tracing.
-  // false 반환 → propagation 차단 (rendered fallback 표시).
+  // CDX-002 — `return false` 가 app.config.errorHandler 전파를 차단하므로
+  //   tracing 보고(report_frontend_error)는 여기서 직접 수행한다.
+  //   사용자 알림은 아래 fallback UI 가 담당 → 전역 toast 는 생략(중복 회피).
+  invoke<void>(
+    'report_frontend_error',
+    buildPayload(err, instance ?? null, `errorBoundary[${props.label ?? '?'}]:${info}`),
+    { timeoutMs: 0, retry: 0, progressLabel: '' },
+  ).catch(() => {
+    // tracing 자체 실패는 swallow (recursive error 회피).
+  })
+  // false 반환 → propagation 차단 (fallback UI 렌더, 전역 toast 미발생).
   return false
 })
 
