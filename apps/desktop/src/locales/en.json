@@ -473,7 +473,11 @@
     "stageWithMarkersTitle": "Conflict markers remain",
     "stageWithMarkersMessage": "The result still contains conflict markers (<<<<<<< / ======= / >>>>>>>).\n• Staging now may commit an unresolved conflict\n• Stage anyway?",
     "exitWithRunningTitle": "Operations still running",
-    "exitWithRunningMessage": "{n} operation(s) are still in progress.\n• Quitting now may interrupt them\n• Quit anyway?"
+    "exitWithRunningMessage": "{n} operation(s) are still in progress.\n• Quitting now may interrupt them\n• Quit anyway?",
+    "discardMergeEditTitle": "Discard merge edits",
+    "discardMergeEditMessage": "Your edited merge result is not saved.\n• Closing will discard your edits\n• Close anyway?",
+    "overwriteMergeResultTitle": "Overwrite result",
+    "overwriteMergeResultMessage": "Overwrite your edited merge result with the selected version?\n• Your edits will be lost"
   },
   "settings": {
     "title": "Settings",

@@ -42,6 +42,9 @@ const conflictQuery = useQuery({
 })
 
 const resolved = ref('')
+// UXF-11/12 — dirty 판정용 원본 (편집 안 한 상태 기준).
+const originalResolved = ref('')
+const isResolvedDirty = computed(() => resolved.value !== originalResolved.value)
 
 // open 또는 query 변경 시 working tree (충돌 마커) 를 result 디폴트로
 watch(
@@ -50,6 +53,7 @@ watch(
     if (cf) {
       // 디폴트는 working (사용자가 conflict marker 보면서 직접 수정)
       resolved.value = cf.working ?? cf.ours ?? cf.theirs ?? ''
+      originalResolved.value = resolved.value
     }
   },
 )
@@ -87,14 +91,42 @@ const sideMut = useMutation({
   onError: (e) => toast.error('Take side 실패', describeError(e)),
 })
 
-function applyOurs() {
-  if (conflictQuery.data.value?.ours != null) resolved.value = conflictQuery.data.value.ours
+// UXF-12 — 편집 결과가 dirty 면 ours/theirs/base 적용 전 confirm (실수 덮어쓰기 방어).
+async function guardOverwrite(): Promise<boolean> {
+  if (!isResolvedDirty.value) return true
+  return confirmDialog({
+    title: t('confirm.overwriteMergeResultTitle'),
+    message: t('confirm.overwriteMergeResultMessage'),
+    danger: true,
+  })
 }
-function applyTheirs() {
-  if (conflictQuery.data.value?.theirs != null) resolved.value = conflictQuery.data.value.theirs
+async function applyOurs() {
+  if (conflictQuery.data.value?.ours == null) return
+  if (!(await guardOverwrite())) return
+  resolved.value = conflictQuery.data.value.ours
 }
-function applyBase() {
-  if (conflictQuery.data.value?.base != null) resolved.value = conflictQuery.data.value.base
+async function applyTheirs() {
+  if (conflictQuery.data.value?.theirs == null) return
+  if (!(await guardOverwrite())) return
+  resolved.value = conflictQuery.data.value.theirs
+}
+async function applyBase() {
+  if (conflictQuery.data.value?.base == null) return
+  if (!(await guardOverwrite())) return
+  resolved.value = conflictQuery.data.value.base
+}
+
+// UXF-11 — 편집 결과 미저장 상태로 닫을 때 confirm.
+async function attemptClose() {
+  if (isResolvedDirty.value) {
+    const ok = await confirmDialog({
+      title: t('confirm.discardMergeEditTitle'),
+      message: t('confirm.discardMergeEditMessage'),
+      danger: true,
+    })
+    if (!ok) return
+  }
+  emit('close')
 }
 
 // UXF-01 — conflict marker 잔재 감지 (라인 시작 7자 마커).
@@ -140,7 +172,7 @@ async function onAiResolve(): Promise<void> {
 </script>
 
 <template>
-  <BaseModal :open="isOpen" panel-class="h-[90vh]" max-width="full" @close="emit('close')">
+  <BaseModal :open="isOpen" panel-class="h-[90vh]" max-width="full" @close="attemptClose">
     <template #header>
       <h2 class="text-sm font-semibold">
         <span class="text-muted-foreground">3-way merge:</span>
@@ -245,7 +277,7 @@ async function onAiResolve(): Promise<void> {
         </span>
         <button
           class="rounded-md border border-input px-3 py-1.5 hover:bg-accent"
-          @click="emit('close')"
+          @click="attemptClose"
         >
           취소
         </button>
