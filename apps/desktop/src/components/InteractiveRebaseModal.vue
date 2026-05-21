@@ -155,7 +155,7 @@ onUnmounted(() => {
               type="button"
               class="px-0.5 text-[9px] text-muted-foreground hover:text-foreground disabled:opacity-30"
               :disabled="i === 0"
-              :aria-label="`commit ${e.sha.slice(0, 7)} 위로 이동`"
+              :aria-label="t('interactiveRebase.moveUp', { sha: e.sha.slice(0, 7) })"
               @click="moveTodo(i, -1)"
             >
               ▲
@@ -164,7 +164,7 @@ onUnmounted(() => {
               type="button"
               class="px-0.5 text-[9px] text-muted-foreground hover:text-foreground disabled:opacity-30"
               :disabled="i === todo.length - 1"
-              :aria-label="`commit ${e.sha.slice(0, 7)} 아래로 이동`"
+              :aria-label="t('interactiveRebase.moveDown', { sha: e.sha.slice(0, 7) })"
               @click="moveTodo(i, 1)"
             >
               ▼
@@ -248,15 +248,14 @@ onUnmounted(() => {
         </p>
         <template v-if="status.conflict">
           <p class="mt-1 text-xs">
-            충돌 발생: <span class="font-mono">{{ status.stoppedAt?.slice(0, 7) }}</span
-            >. conflicted 파일을 해결한 후 [Continue] 클릭.
+            {{ t('interactiveRebase.conflictAt', { sha: status.stoppedAt?.slice(0, 7) ?? '?' }) }}
           </p>
           <button
             type="button"
             class="mt-1.5 rounded border border-amber-500/50 px-2 py-1 text-xs font-medium text-warning-amber hover:bg-amber-500/15"
             @click="goResolveConflicts"
           >
-            ↗ 충돌 파일 해결하러 가기 (⌘1)
+            {{ t('interactiveRebase.goResolve') }}
           </button>
         </template>
         <p v-else class="mt-1 text-xs">{{ t('interactiveRebase.userInputWaiting') }}</p>

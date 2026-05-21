@@ -32,6 +32,7 @@ import { useFileBlame } from '@/composables/useFileHistory'
 import { describeError } from '@/api/errors'
 import { STALE_TIME } from '@/api/queryClient'
 import { useToast } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   repoId: number | null
@@ -39,6 +40,7 @@ const props = defineProps<{
 
 const fs = useFullscreenDiff()
 const toast = useToast()
+const { t } = useI18n()
 
 // Sprint c35 god 16/N — patch query + hunkCount 영역 분리.
 const fsq = useFullscreenDiffQuery(() => props.repoId)
@@ -144,7 +146,7 @@ const blameQuery = useFileBlame(
 function onBlameRowClick(sha: string) {
   // A-10 — 파일 경로 부재 시 silent return 대신 사용자 피드백.
   if (!currentPath.value) {
-    toast.error('blame 커밋 이동 실패', '파일 경로 정보가 없습니다.')
+    toast.error(t('errors.blameJumpNoPath'), t('errors.blameJumpNoPathBody'))
     return
   }
   fs.openCommit(sha, currentPath.value)

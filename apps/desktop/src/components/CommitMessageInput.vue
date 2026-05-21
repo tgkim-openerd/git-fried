@@ -302,17 +302,17 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         type="button"
         class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
         :disabled="!canCommit() || commitMut.isPending.value"
-        :title="amend ? 'Amend (⌘Enter) — 마지막 커밋 덮어쓰기' : 'Commit (⌘Enter)'"
+        :title="amend ? t('commitInput.amendTitle') : t('commitInput.commitTitle')"
         @click="commitWith(noVerify)"
       >
         {{
           commitMut.isPending.value
             ? amend
-              ? 'Amend 중...'
-              : '커밋 중...'
+              ? t('commitInput.amending')
+              : t('commitInput.committing')
             : amend
-              ? 'Amend (⌘Enter)'
-              : 'Commit (⌘Enter)'
+              ? t('commitInput.amendBtn')
+              : t('commitInput.commitBtn')
         }}
       </button>
     </div>
@@ -323,25 +323,21 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       type="button"
       class="mt-1 flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:bg-emerald-600/50 disabled:cursor-not-allowed"
       :disabled="!canCommit() || commitMut.isPending.value || staging"
-      :title="
-        amend
-          ? '⌘⇧Enter — 모든 변경 stage + amend (마지막 커밋 덮어쓰기)'
-          : '⌘⇧Enter — 모든 변경 stage + commit'
-      "
+      :title="amend ? t('commitInput.stageAmendTitle') : t('commitInput.stageCommitTitle')"
       @click="dispatchStageAndCommit"
     >
       <span class="text-base leading-none">⤓</span>
       <span>
         {{
           staging
-            ? 'Stage 중...'
+            ? t('commitInput.staging')
             : commitMut.isPending.value
               ? amend
-                ? 'Amend 중...'
-                : '커밋 중...'
+                ? t('commitInput.amending')
+                : t('commitInput.committing')
               : amend
-                ? 'Stage All & Amend'
-                : 'Stage Changes to Commit'
+                ? t('commitInput.stageAndAmend')
+                : t('commitInput.stageAndCommit')
         }}
       </span>
       <span class="text-[10px] opacity-75">⌘⇧Enter</span>

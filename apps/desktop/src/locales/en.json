@@ -335,6 +335,8 @@
     "unexpected": "Unexpected error",
     "noRepo": "Repo not selected",
     "noRepoBody": "Select a repo first.",
+    "blameJumpNoPath": "Failed to jump to blame commit",
+    "blameJumpNoPathBody": "No file path information available.",
     "branchCreateFailed": "Branch create failed",
     "branchSwitchFailed": "Branch switch failed",
     "copyFailed": "Copy failed",
@@ -1066,7 +1068,8 @@
     "ai": "AI task",
     "maintenance": "Repository maintenance",
     "import": "Import GitKraken settings",
-    "timeoutBackgroundNote": " This operation may keep running in the background — re-check its status with a fetch / refresh shortly."
+    "timeoutBackgroundNote": " This operation may keep running in the background — re-check its status with a fetch / refresh shortly.",
+    "timeout": "IPC timeout: '{cmd}' did not respond within {sec}s. (If the operation genuinely takes long, raise the timeout in Settings or check that the git CLI is responsive)"
   },
   "errorBoundary": {
     "page": "Page render error",
@@ -1320,7 +1323,11 @@
     "toastAbortSuccess": "Rebase aborted",
     "toastAbortFailed": "--abort failed",
     "setupHint": "How many recent commits to edit? (1 ~ 50)",
-    "userInputWaiting": "Waiting for user input (edit action, etc.)."
+    "userInputWaiting": "Waiting for user input (edit action, etc.).",
+    "moveUp": "Move commit {sha} up",
+    "moveDown": "Move commit {sha} down",
+    "conflictAt": "Conflict at {sha}. Resolve the conflicted files, then click [Continue].",
+    "goResolve": "↗ Go resolve conflicted files (⌘1)"
   },
   "lfs": {
     "noChanges": "· No LFS changes"
@@ -1372,7 +1379,18 @@
     "errAiFailed": "AI call failed",
     "errCommitInvalid": "Commit invalid",
     "errCommitInvalidBody": "Empty message or repo not selected",
-    "errStageAllFailed": "Stage all failed"
+    "errStageAllFailed": "Stage all failed",
+    "amending": "Amending...",
+    "committing": "Committing...",
+    "staging": "Staging...",
+    "stageAndAmend": "Stage All & Amend",
+    "stageAndCommit": "Stage Changes to Commit",
+    "commitBtn": "Commit (⌘Enter)",
+    "amendBtn": "Amend (⌘Enter)",
+    "commitTitle": "Commit (⌘Enter)",
+    "amendTitle": "Amend (⌘Enter) — overwrite the last commit",
+    "stageCommitTitle": "⌘⇧Enter — stage all changes + commit",
+    "stageAmendTitle": "⌘⇧Enter — stage all changes + amend (overwrite the last commit)"
   },
   "themeIO": {
     "appliedBody": "Custom CSS variables activated",

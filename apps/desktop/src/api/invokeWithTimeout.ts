@@ -148,9 +148,10 @@ function invokeOnce<T>(
       const bgNote = isLongRunning(cmd) ? i18n.global.t('progress.timeoutBackgroundNote') : ''
       reject(
         new Error(
-          `IPC timeout: '${cmd}' 가 ${(timeoutMs / 1000).toFixed(0)}초 안에 응답하지 않았습니다. ` +
-            `(작업이 정말 오래 걸린다면 Settings 에서 timeout 늘리거나 git CLI 가 응답 중인지 확인)` +
-            bgNote,
+          i18n.global.t('progress.timeout', {
+            cmd,
+            sec: (timeoutMs / 1000).toFixed(0),
+          }) + bgNote,
         ),
       )
     }, timeoutMs)

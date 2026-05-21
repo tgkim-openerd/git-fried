@@ -335,6 +335,8 @@
     "unexpected": "예기치 못한 오류",
     "noRepo": "레포 미선택",
     "noRepoBody": "먼저 레포를 선택하세요.",
+    "blameJumpNoPath": "blame 커밋 이동 실패",
+    "blameJumpNoPathBody": "파일 경로 정보가 없습니다.",
     "branchCreateFailed": "브랜치 생성 실패",
     "branchSwitchFailed": "브랜치 전환 실패",
     "copyFailed": "복사 실패",
@@ -1066,7 +1068,8 @@
     "ai": "AI 작업",
     "maintenance": "저장소 정리",
     "import": "GitKraken 설정 가져오기",
-    "timeoutBackgroundNote": " 이 작업은 백그라운드에서 계속 진행될 수 있습니다 — 잠시 후 fetch / 새로고침으로 상태를 다시 확인하세요."
+    "timeoutBackgroundNote": " 이 작업은 백그라운드에서 계속 진행될 수 있습니다 — 잠시 후 fetch / 새로고침으로 상태를 다시 확인하세요.",
+    "timeout": "IPC timeout: '{cmd}' 가 {sec}초 안에 응답하지 않았습니다. (작업이 정말 오래 걸린다면 Settings 에서 timeout 늘리거나 git CLI 가 응답 중인지 확인)"
   },
   "errorBoundary": {
     "page": "페이지 렌더 오류",
@@ -1320,7 +1323,11 @@
     "toastAbortSuccess": "Rebase 중단됨",
     "toastAbortFailed": "--abort 실패",
     "setupHint": "마지막 몇 개 commit 을 편집할까요? (1 ~ 50)",
-    "userInputWaiting": "사용자 개입 대기 중 (edit 액션 등)."
+    "userInputWaiting": "사용자 개입 대기 중 (edit 액션 등).",
+    "moveUp": "commit {sha} 위로 이동",
+    "moveDown": "commit {sha} 아래로 이동",
+    "conflictAt": "충돌 발생: {sha}. conflicted 파일을 해결한 후 [Continue] 클릭.",
+    "goResolve": "↗ 충돌 파일 해결하러 가기 (⌘1)"
   },
   "lfs": {
     "noChanges": "· LFS 변경 없음"
@@ -1372,7 +1379,18 @@
     "errAiFailed": "AI 호출 실패",
     "errCommitInvalid": "커밋 불가",
     "errCommitInvalidBody": "메시지가 비어있거나 레포 미선택",
-    "errStageAllFailed": "Stage all 실패"
+    "errStageAllFailed": "Stage all 실패",
+    "amending": "Amend 중...",
+    "committing": "커밋 중...",
+    "staging": "Stage 중...",
+    "stageAndAmend": "Stage All & Amend",
+    "stageAndCommit": "Stage Changes to Commit",
+    "commitBtn": "Commit (⌘Enter)",
+    "amendBtn": "Amend (⌘Enter)",
+    "commitTitle": "Commit (⌘Enter)",
+    "amendTitle": "Amend (⌘Enter) — 마지막 커밋 덮어쓰기",
+    "stageCommitTitle": "⌘⇧Enter — 모든 변경 stage + commit",
+    "stageAmendTitle": "⌘⇧Enter — 모든 변경 stage + amend (마지막 커밋 덮어쓰기)"
   },
   "themeIO": {
     "appliedBody": "커스텀 CSS 변수 활성화",

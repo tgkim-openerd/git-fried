@@ -193,7 +193,8 @@ export function useInteractiveRebaseFlow(opts: UseInteractiveRebaseFlowOptions) 
     step.value = 'setup'
     count.value = 5
     refreshStatus().then(() => {
-      if (status.value?.inProgress) {
+      // TYPE-005 — optional chaining 대신 명시 narrowing (status.value non-null 보장).
+      if (status.value && status.value.inProgress) {
         // 이미 진행 중이면 result/conflict 화면으로 점프.
         step.value = 'result'
         lastResult.value = {

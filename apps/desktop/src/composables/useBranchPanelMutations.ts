@@ -8,7 +8,7 @@
 //   - onSwitch (HEAD guard) / onCreate (newName trim guard) / onDelete (force confirm)
 //
 // 패턴 정착 (c60 useStashPopMutation / useStageMutations / usePrMutations 와 동일).
-import { type Ref, type ComputedRef, type MaybeRefOrGetter, toRef } from 'vue'
+import { type Ref, type MaybeRefOrGetter, toRef } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { createBranch, deleteBranch, switchBranch, type BranchInfo } from '@/api/git'
 import { describeError } from '@/api/errors'
@@ -39,7 +39,7 @@ export function useBranchPanelMutations(opts: UseBranchPanelMutationsOpts) {
   const { t } = useI18n()
   const toast = useToast()
   const invalidate = useInvalidateRepoQueries()
-  const repoId = toRef(opts.repoId) as ComputedRef<number | null>
+  const repoId = toRef(opts.repoId)
 
   const switchMut = useMutation({
     mutationFn: ({ id, name }: { id: number; name: string }) => switchBranch(id, name, false),
