@@ -18,15 +18,20 @@ import type { ComputedRef, Ref } from 'vue'
 import type { VirtualItem } from '@tanstack/vue-virtual'
 import type { GraphRow } from '@/api/git'
 
+// A-20 — colorblind 대응 lane 팔레트.
+// 기존 8색은 green/emerald · amber/yellow · sky/cyan 3쌍이 같은 색조라
+// deuteranopia/protanopia 에서 인접 lane 구분 불가. 색조가 겹치지 않는 8색으로 교체
+// (blue / amber / green / magenta / cyan / red / purple / slate — 모두 별개 hue,
+//  light·dark 양쪽에서 mid-luminance 가독).
 const PALETTE = [
-  '#22c55e', // green
-  '#0ea5e9', // sky
+  '#2563eb', // blue
   '#f59e0b', // amber
-  '#a78bfa', // violet
-  '#f43f5e', // rose
-  '#10b981', // emerald
-  '#eab308', // yellow
+  '#16a34a', // green
+  '#db2777', // magenta
   '#06b6d4', // cyan
+  '#dc2626', // red
+  '#9333ea', // purple
+  '#64748b', // slate
 ]
 
 export interface UseGraphCanvasRendererOptions {
