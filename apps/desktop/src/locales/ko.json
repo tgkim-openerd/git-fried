@@ -1352,7 +1352,10 @@
     "btnRetry": "재시도"
   },
   "issues": {
-    "empty": "Open issue 없음"
+    "empty": "Open issue 없음",
+    "ctxOpenDetail": "상세 보기",
+    "ctxOpenBrowser": "브라우저에서 열기",
+    "ctxCopyUrl": "URL 복사"
   },
   "statusSelection": {
     "pathCopied": "경로 복사"

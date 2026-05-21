@@ -48,18 +48,18 @@ function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
   ev.stopPropagation()
   const items: ContextMenuItem[] = [
     {
-      label: 'Open detail',
+      label: t('issues.ctxOpenDetail'),
       icon: '📋',
       action: () => (selected.value = i),
     },
     {
-      label: 'Open in browser',
+      label: t('issues.ctxOpenBrowser'),
       icon: '🔗',
       action: () => window.open(i.htmlUrl, '_blank', 'noopener'),
     },
     { divider: true },
     {
-      label: 'Copy URL',
+      label: t('issues.ctxCopyUrl'),
       icon: '📋',
       action: () => void copyText(i.htmlUrl, i.htmlUrl),
     },

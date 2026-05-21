@@ -10,6 +10,7 @@ import { useReposStore } from '@/stores/repos'
 import { searchCommitsByMessage } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
+import { formatDateLocalized } from '@/composables/useUserSettings'
 import type { CommitSummary } from '@/types/git'
 import { useI18n } from 'vue-i18n'
 // v0.5 #12 (UltraPlan plan/31) — a11y 일관: BaseModal wrap (aria-modal / role=dialog
@@ -171,7 +172,7 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
           <div class="flex-1">
             <div class="line-clamp-2 leading-snug">{{ r.subject }}</div>
             <div class="mt-0.5 text-[10px] opacity-60">
-              {{ r.authorName }} · {{ new Date(r.authorAt * 1000).toLocaleString() }}
+              {{ r.authorName }} · {{ formatDateLocalized(r.authorAt) }}
             </div>
           </div>
         </li>

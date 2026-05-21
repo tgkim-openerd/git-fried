@@ -1352,7 +1352,10 @@
     "btnRetry": "Retry"
   },
   "issues": {
-    "empty": "No open issues"
+    "empty": "No open issues",
+    "ctxOpenDetail": "Open detail",
+    "ctxOpenBrowser": "Open in browser",
+    "ctxCopyUrl": "Copy URL"
   },
   "statusSelection": {
     "pathCopied": "Path copied"
