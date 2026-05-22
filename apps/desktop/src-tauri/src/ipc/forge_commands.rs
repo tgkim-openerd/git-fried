@@ -75,13 +75,17 @@ pub async fn forge_save_token(
     .await
     .map_err(AppError::Db)?;
 
-    Ok(ForgeAccount {
+    let account = ForgeAccount {
         id: row.try_get("id")?,
         forge_kind: row.try_get("forge_kind")?,
         base_url: row.try_get("base_url")?,
         username: row.try_get("username")?,
         keychain_ref: row.try_get("keychain_ref")?,
-    })
+    };
+
+    // plan/43 P2.5 — forge 계정 추가/변경(upsert) 후 자동 매칭 재평가.
+    crate::git::profile_match::reevaluate_after_forge_change(&state.db).await?;
+    Ok(account)
 }
 
 #[tauri::command]
@@ -112,21 +116,45 @@ pub async fn forge_delete_account(
     id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
-    // 먼저 keychain ref 조회 후 삭제
-    if let Some(row) = sqlx::query("SELECT keychain_ref FROM forge_accounts WHERE id = ?")
+    // keychain ref 미리 조회 — 실제 token 삭제는 DB 삭제 성공 후 (iter8 F8-2 순서).
+    let keychain_ref: Option<String> =
+        sqlx::query("SELECT keychain_ref FROM forge_accounts WHERE id = ?")
+            .bind(id)
+            .fetch_optional(&state.db.pool)
+            .await
+            .map_err(AppError::Db)?
+            .map(|r| r.try_get::<String, _>("keychain_ref"))
+            .transpose()?;
+
+    // plan/43 iter7 F7-1 — forge_accounts(id) 참조 FK 둘(profiles/repos)을 DELETE 전 선해제.
+    // 둘 다 RESTRICT 라 참조 중이면 DELETE 가 FK violation 으로 차단됨. 단일 transaction.
+    let mut tx = state.db.pool.begin().await.map_err(AppError::Db)?;
+    sqlx::query(
+        "UPDATE profiles SET default_forge_account_id = NULL WHERE default_forge_account_id = ?",
+    )
+    .bind(id)
+    .execute(&mut *tx)
+    .await
+    .map_err(AppError::Db)?;
+    sqlx::query("UPDATE repos SET forge_account_id = NULL WHERE forge_account_id = ?")
         .bind(id)
-        .fetch_optional(&state.db.pool)
-        .await
-        .map_err(AppError::Db)?
-    {
-        let key: String = row.try_get("keychain_ref")?;
-        let _ = auth::delete_token(&key);
-    }
-    sqlx::query("DELETE FROM forge_accounts WHERE id = ?")
-        .bind(id)
-        .execute(&state.db.pool)
+        .execute(&mut *tx)
         .await
         .map_err(AppError::Db)?;
+    sqlx::query("DELETE FROM forge_accounts WHERE id = ?")
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+        .map_err(AppError::Db)?;
+    tx.commit().await.map_err(AppError::Db)?;
+
+    // iter8 F8-2 — DB 삭제 성공 후 keychain token 삭제 (DB delete 실패 시 token 유실 방지).
+    if let Some(key) = keychain_ref {
+        let _ = auth::delete_token(&key);
+    }
+
+    // plan/43 P2.5 — forge 계정 삭제로 자동 매칭이 어긋난 레포 재평가.
+    crate::git::profile_match::reevaluate_after_forge_change(&state.db).await?;
     Ok(())
 }
 

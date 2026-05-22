@@ -35,7 +35,10 @@ pub async fn update_profile(
     args: UpdateProfileArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Profile> {
-    profiles::update(&state.db.pool, args.id, args.input).await
+    let profile = profiles::update(&state.db.pool, args.id, args.input).await?;
+    // plan/43 P2.5 — default_forge_account_id 변경 시 자동 매칭 재평가 (stale 처리).
+    crate::git::profile_match::reevaluate_after_forge_change(&state.db).await?;
+    Ok(profile)
 }
 
 #[tauri::command]

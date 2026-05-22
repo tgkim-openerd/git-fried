@@ -41,6 +41,15 @@ pub struct AppState {
 impl AppState {
     pub async fn new() -> AppResult<Arc<Self>> {
         let db = storage::Db::open_default().await?;
+        // plan/43 P2.5 — post-migration backfill: 기존 미바인딩 레포 자동 매칭 1회 평가.
+        // best-effort — 실패해도 앱 기동은 막지 않음 (자동 매칭은 부가 기능).
+        if let Err(e) = crate::git::profile_match::backfill_auto_match(&db).await {
+            tracing::warn!(
+                target: "git_fried_lib",
+                error = %e,
+                "profile 자동 매칭 backfill 실패 (무시하고 기동)"
+            );
+        }
         Ok(Arc::new(Self {
             db,
             pty: pty::PtyRegistry::new(),

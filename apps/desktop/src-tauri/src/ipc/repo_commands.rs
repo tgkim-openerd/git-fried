@@ -48,19 +48,19 @@ pub async fn add_repo(
 
     let meta = repo::detect_meta(&canonical)?;
 
-    state
-        .db
-        .add_repo(
-            &canonical_str,
-            args.workspace_id,
-            args.name.as_deref(),
-            meta.default_branch.as_deref(),
-            meta.default_remote.as_deref(),
-            meta.forge_kind,
-            meta.forge_owner.as_deref(),
-            meta.forge_repo.as_deref(),
-        )
-        .await
+    // plan/43 P2.5 — register_repo 단일 진입점 (add_repo + 자동 매칭).
+    crate::git::profile_match::register_repo(
+        &state.db,
+        &canonical_str,
+        args.workspace_id,
+        args.name.as_deref(),
+        meta.default_branch.as_deref(),
+        meta.default_remote.as_deref(),
+        meta.forge_kind,
+        meta.forge_owner.as_deref(),
+        meta.forge_repo.as_deref(),
+    )
+    .await
 }
 
 #[tauri::command]
@@ -171,19 +171,19 @@ pub async fn clone_repo(
         }
     };
 
-    match state
-        .db
-        .add_repo(
-            &canonical_target,
-            args.workspace_id,
-            Some(&name),
-            default_branch.as_deref(),
-            default_remote.as_deref(),
-            forge_kind,
-            forge_owner.as_deref(),
-            forge_repo.as_deref(),
-        )
-        .await
+    // plan/43 P2.5 — clone 자동 등록도 register_repo 단일 진입점 경유 (자동 매칭 포함).
+    match crate::git::profile_match::register_repo(
+        &state.db,
+        &canonical_target,
+        args.workspace_id,
+        Some(&name),
+        default_branch.as_deref(),
+        default_remote.as_deref(),
+        forge_kind,
+        forge_owner.as_deref(),
+        forge_repo.as_deref(),
+    )
+    .await
     {
         Ok(r) => Ok(CloneRepoResult {
             clone: clone_res,
