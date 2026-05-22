@@ -268,6 +268,10 @@ pub fn run() {
             ipc::profile_commands::update_profile,
             ipc::profile_commands::delete_profile,
             ipc::profile_commands::activate_profile,
+            ipc::profile_commands::preview_profile_apply,
+            ipc::profile_commands::apply_profile_binding,
+            ipc::profile_commands::select_default_profile,
+            ipc::profile_commands::clear_profile_binding,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

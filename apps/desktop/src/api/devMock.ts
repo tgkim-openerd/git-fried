@@ -1087,6 +1087,30 @@ const HANDLERS: Record<string, MockHandler> = {
   list_profiles: () => PROFILES,
   forge_list_accounts: () => FORGE_ACCOUNTS,
 
+  // plan/43 P2 — repo↔profile 바인딩
+  preview_profile_apply: () => ({
+    fields: [
+      { key: 'user.name', current: null, newValue: '김태길', conflict: false },
+      { key: 'user.email', current: null, newValue: 'tgkim@opnd.io', conflict: false },
+      { key: 'user.signingkey', current: null, newValue: null, conflict: false },
+    ],
+    hasConflict: false,
+    signingWarning: null,
+  }),
+  apply_profile_binding: (args) => {
+    const a = (args?.args ?? {}) as { repoId?: number; profileId?: number }
+    const repo = REPOS.find((r) => r.id === a.repoId) ?? REPOS[0]
+    return { ...repo, profileId: a.profileId ?? null, profilePinned: true }
+  },
+  select_default_profile: (args) => {
+    const repo = REPOS.find((r) => r.id === (args?.repoId as number)) ?? REPOS[0]
+    return { ...repo, profileId: null, profilePinned: true }
+  },
+  clear_profile_binding: (args) => {
+    const repo = REPOS.find((r) => r.id === (args?.repoId as number)) ?? REPOS[0]
+    return { ...repo, profileId: null, profilePinned: false }
+  },
+
   // Status / Branches / Log
   get_status: () => STATUS,
   list_branches: () => BRANCHES,

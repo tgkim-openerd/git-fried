@@ -582,6 +582,38 @@ export const updateProfile = (id: number, input: ProfileInput): Promise<Profile>
 export const deleteProfile = (id: number): Promise<void> => invoke('delete_profile', { id })
 export const activateProfile = (id: number): Promise<Profile> => invoke('activate_profile', { id })
 
+// === plan/43 P2 — repo↔profile 바인딩 ===
+/** 필드별 현재값 vs 프로필값 diff. */
+export interface ProfileFieldDiff {
+  key: string
+  current: string | null
+  /** 프로필이 적용할 값. null → 프로필 미정의 (SET 안 함, 기존값 보존). */
+  newValue: string | null
+  /** 현재값이 프로필값과 다름 (사용자가 손으로 박은 값일 수 있음). */
+  conflict: boolean
+}
+/** dry-run preview — 실제 기입 없이 diff + 무결성 검사 결과만. */
+export interface ProfileApplyPreview {
+  fields: ProfileFieldDiff[]
+  hasConflict: boolean
+  /** 서명 정합 경고 (commit.gpgsign=true + 서명 키 부재). null → 문제 없음. */
+  signingWarning: string | null
+}
+/** dry-run — 기입 없이 diff/검사 결과만 반환. */
+export const previewProfileApply = (
+  repoId: number,
+  profileId: number,
+): Promise<ProfileApplyPreview> => invoke('preview_profile_apply', { args: { repoId, profileId } })
+/** 특정 프로필 바인딩 — identity 적용 + repos.profile_id 수동 지정(pin). */
+export const applyProfileBinding = (repoId: number, profileId: number): Promise<Repo> =>
+  invoke('apply_profile_binding', { args: { repoId, profileId } })
+/** 명시적 공용 프로필 선택 — profile_id=null, pinned=true. */
+export const selectDefaultProfile = (repoId: number): Promise<Repo> =>
+  invoke('select_default_profile', { repoId })
+/** 바인딩 해제 — profile_id=null, pinned=false (자동 매칭 재개). */
+export const clearProfileBinding = (repoId: number): Promise<Repo> =>
+  invoke('clear_profile_binding', { repoId })
+
 // === Worktree ===
 export interface WorktreeEntry {
   path: string
