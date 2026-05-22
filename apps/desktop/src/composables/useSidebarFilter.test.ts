@@ -18,6 +18,8 @@ function mkRepo(over: Partial<Repo> = {}): Repo {
     isPinned: false,
     forgeAccountId: null,
     sshKeyPath: null,
+    profileId: null,
+    profilePinned: false,
     ...over,
   }
 }

@@ -800,6 +800,7 @@ const PROFILES = [
     sshKeyPath: '~/.ssh/id_ed25519_opnd',
     defaultForgeAccountId: 1,
     isActive: true,
+    isDefault: true,
   },
   {
     id: 2,
@@ -810,6 +811,7 @@ const PROFILES = [
     sshKeyPath: '~/.ssh/id_ed25519',
     defaultForgeAccountId: 2,
     isActive: false,
+    isDefault: false,
   },
 ]
 

@@ -26,7 +26,11 @@ pub struct Profile {
     pub signing_key: Option<String>,
     pub ssh_key_path: Option<String>,
     pub default_forge_account_id: Option<i64>,
+    /// 전역 활성 프로필 (UI 강조). plan/43 이후 activate 가 is_default 와 함께 토글.
     pub is_active: bool,
+    /// plan/43 P1 (D2) — 공용(default) 프로필. 레포 바인딩이 없을 때의 fallback SoT.
+    /// 전역 git config 기입 대상은 오직 이 프로필 (F-04 — activate 가 일원화 토글).
+    pub is_default: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -43,7 +47,7 @@ pub struct ProfileInput {
 pub async fn list_all(pool: &SqlitePool) -> AppResult<Vec<Profile>> {
     let rows = sqlx::query(
         "SELECT id, name, git_user_name, git_user_email, signing_key, ssh_key_path, \
-         default_forge_account_id, is_active FROM profiles ORDER BY name",
+         default_forge_account_id, is_active, is_default FROM profiles ORDER BY name",
     )
     .fetch_all(pool)
     .await
@@ -54,7 +58,7 @@ pub async fn list_all(pool: &SqlitePool) -> AppResult<Vec<Profile>> {
 pub async fn get(pool: &SqlitePool, id: i64) -> AppResult<Profile> {
     let row = sqlx::query(
         "SELECT id, name, git_user_name, git_user_email, signing_key, ssh_key_path, \
-         default_forge_account_id, is_active FROM profiles WHERE id = ?",
+         default_forge_account_id, is_active, is_default FROM profiles WHERE id = ?",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -106,7 +110,7 @@ pub async fn create(pool: &SqlitePool, input: ProfileInput) -> AppResult<Profile
         "INSERT INTO profiles (name, git_user_name, git_user_email, signing_key, ssh_key_path, \
          default_forge_account_id, is_active) VALUES (?, ?, ?, ?, ?, ?, 0) \
          RETURNING id, name, git_user_name, git_user_email, signing_key, ssh_key_path, \
-         default_forge_account_id, is_active",
+         default_forge_account_id, is_active, is_default",
     )
     .bind(&input.name)
     .bind(&input.git_user_name)
@@ -143,7 +147,21 @@ pub async fn update(pool: &SqlitePool, id: i64, input: ProfileInput) -> AppResul
 }
 
 pub async fn delete(pool: &SqlitePool, id: i64) -> AppResult<()> {
+    // plan/43 (F-06) — 공용(is_default) 프로필 삭제 거부. "정확히 1개" 불변식 보호.
+    let prof = get(pool, id).await?;
+    if prof.is_default {
+        return Err(AppError::validation(
+            "공용(default) 프로필은 삭제할 수 없습니다. 다른 프로필을 먼저 공용으로 지정한 뒤 삭제하세요.",
+        ));
+    }
     tracing::info!(target: "git_fried_lib::profiles", id, "delete profile");
+    // plan/43 (iter8 F8-4) — 삭제 전 이 프로필에 바인딩된 레포의 profile_pinned 리셋.
+    // FK `ON DELETE SET NULL` 은 profile_id 만 NULL — pinned 는 별도 리셋해야 auto-match 재개.
+    sqlx::query("UPDATE repos SET profile_pinned = 0 WHERE profile_id = ?")
+        .bind(id)
+        .execute(pool)
+        .await
+        .map_err(AppError::Db)?;
     sqlx::query("DELETE FROM profiles WHERE id = ?")
         .bind(id)
         .execute(pool)
@@ -162,12 +180,15 @@ pub async fn activate(pool: &SqlitePool, id: i64) -> AppResult<Profile> {
     // 가 commit 전 drop 시 자동 rollback 수행 (sqlx 0.8 idiomatic). 본 site 의 2 UPDATE
     // 사이 panic 또는 cancellation 시 단일 active invariant 가 깨지지 않도록 보장.
     // UltraPlan v0.4 B4 (docs/plan/37 §B4) 검증 통과 — explicit guard 추가 불필요.
+    // plan/43 (F-04 / iter2 #2) — activate 가 is_active 와 is_default 를 함께 토글.
+    // is_default = 레포 바인딩 없을 때의 fallback SoT, 전역 git config 기입 대상.
+    // 둘을 일원화해 "전역에 써진 프로필 ≠ fallback 프로필" 모순을 차단.
     let mut tx = pool.begin().await.map_err(AppError::Db)?;
-    sqlx::query("UPDATE profiles SET is_active = 0")
+    sqlx::query("UPDATE profiles SET is_active = 0, is_default = 0")
         .execute(&mut *tx)
         .await
         .map_err(AppError::Db)?;
-    sqlx::query("UPDATE profiles SET is_active = 1 WHERE id = ?")
+    sqlx::query("UPDATE profiles SET is_active = 1, is_default = 1 WHERE id = ?")
         .bind(id)
         .execute(&mut *tx)
         .await
@@ -248,6 +269,7 @@ fn row_to_profile(r: sqlx::sqlite::SqliteRow) -> AppResult<Profile> {
         ssh_key_path: r.try_get("ssh_key_path")?,
         default_forge_account_id: r.try_get("default_forge_account_id")?,
         is_active: r.try_get::<i64, _>("is_active")? != 0,
+        is_default: r.try_get::<i64, _>("is_default")? != 0,
     })
 }
 

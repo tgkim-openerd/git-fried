@@ -26,6 +26,16 @@ export interface Repo {
    * null → Profile.ssh_key_path fallback. string → git -c core.sshCommand 적용.
    */
   sshKeyPath: string | null
+  /**
+   * plan/43 P1 — 레포에 바인딩된 프로필. null → 공용(is_default) 프로필 fallback.
+   * 프로필 삭제 시 FK ON DELETE SET NULL 로 null 복귀.
+   */
+  profileId: number | null
+  /**
+   * plan/43 P1 (D7) — true = 사용자 수동 지정 (자동 매칭이 덮어쓰지 않음).
+   * false = 자동 매칭 대상.
+   */
+  profilePinned: boolean
 }
 
 export interface Workspace {

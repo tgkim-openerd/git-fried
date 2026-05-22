@@ -40,6 +40,12 @@ pub struct Repo {
     /// None → Profile.ssh_key_path fallback. Some(path) → git -c core.sshCommand 적용.
     /// 실 git operation 통합은 git/runner.rs (별도 sprint).
     pub ssh_key_path: Option<String>,
+    /// plan/43 P1 — 레포에 바인딩된 프로필. None → 공용(is_default) 프로필 fallback.
+    /// 프로필 삭제 시 FK `ON DELETE SET NULL` 로 NULL 복귀.
+    pub profile_id: Option<i64>,
+    /// plan/43 P1 (D7) — true = 사용자 수동 지정 (자동 매칭이 덮어쓰지 않음).
+    /// false = 자동 매칭 대상. profile_id 만으론 "미매칭" 과 "수동 공용 선택" 구분 불가.
+    pub profile_pinned: bool,
 }
 
 #[derive(Clone)]
@@ -130,6 +136,18 @@ pub trait DbExt {
     async fn set_repo_forge_account(&self, id: i64, account_id: Option<i64>) -> AppResult<Repo>;
     /// v0.5 #9 — per-repo SSH key path override. None → Profile fallback.
     async fn set_repo_ssh_key_path(&self, id: i64, path: Option<&str>) -> AppResult<Repo>;
+    /// plan/43 P1 — repo↔profile 바인딩 설정. (profile_id, pinned) 조합으로
+    /// apply(Some,true) / auto-match(Some,false) / select-default(None,true) /
+    /// clear(None,false) 4 케이스 모두 표현.
+    async fn set_repo_profile(
+        &self,
+        id: i64,
+        profile_id: Option<i64>,
+        pinned: bool,
+    ) -> AppResult<Repo>;
+    /// plan/43 P1 — 프로필 삭제 전 그 프로필 바인딩 레포의 profile_pinned 를 0 으로 리셋.
+    /// FK `ON DELETE SET NULL` 은 profile_id 만 NULL — pinned 별도 리셋 (auto-match 재개).
+    async fn reset_profile_bindings(&self, profile_id: i64) -> AppResult<()>;
 }
 
 #[async_trait::async_trait]
@@ -254,6 +272,8 @@ impl DbExt for Db {
                 is_pinned: r.try_get::<i64, _>("is_pinned")? != 0,
                 forge_account_id: r.try_get("forge_account_id")?,
                 ssh_key_path: r.try_get("ssh_key_path")?,
+                profile_id: r.try_get("profile_id")?,
+                profile_pinned: r.try_get::<i64, _>("profile_pinned")? != 0,
             });
         }
         Ok(out)
@@ -331,6 +351,8 @@ impl DbExt for Db {
             is_pinned: r.try_get::<i64, _>("is_pinned")? != 0,
             forge_account_id: r.try_get("forge_account_id")?,
             ssh_key_path: r.try_get("ssh_key_path")?,
+            profile_id: r.try_get("profile_id")?,
+            profile_pinned: r.try_get::<i64, _>("profile_pinned")? != 0,
         })
     }
 
@@ -367,6 +389,31 @@ impl DbExt for Db {
             .await
             .map_err(AppError::Db)?;
         self.get_repo(id).await
+    }
+
+    async fn set_repo_profile(
+        &self,
+        id: i64,
+        profile_id: Option<i64>,
+        pinned: bool,
+    ) -> AppResult<Repo> {
+        sqlx::query("UPDATE repos SET profile_id = ?, profile_pinned = ? WHERE id = ?")
+            .bind(profile_id)
+            .bind(if pinned { 1i64 } else { 0i64 })
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::Db)?;
+        self.get_repo(id).await
+    }
+
+    async fn reset_profile_bindings(&self, profile_id: i64) -> AppResult<()> {
+        sqlx::query("UPDATE repos SET profile_pinned = 0 WHERE profile_id = ?")
+            .bind(profile_id)
+            .execute(&self.pool)
+            .await
+            .map_err(AppError::Db)?;
+        Ok(())
     }
 }
 
@@ -666,5 +713,70 @@ mod tests {
         let still = db.get_repo(r.id).await.unwrap();
         assert_eq!(still.workspace_id, None);
         assert_eq!(still.local_path, "/tmp/cascade");
+    }
+
+    // plan/43 P1 — repo↔profile 바인딩 helper + 공용 프로필 삭제 가드 + FK SET NULL.
+    #[tokio::test]
+    async fn test_repo_profile_binding_and_default_guard() {
+        use crate::profiles::{activate, create, delete, ProfileInput};
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = Db::open(tmp.path()).await.unwrap();
+
+        let mk = |name: &str| ProfileInput {
+            name: name.to_string(),
+            git_user_name: None,
+            git_user_email: None,
+            signing_key: None,
+            ssh_key_path: None,
+            default_forge_account_id: None,
+        };
+        let p_default = create(&db.pool, mk("공용")).await.unwrap();
+        let p_other = create(&db.pool, mk("기타")).await.unwrap();
+        // activate → p_default 가 is_default (activate 가 is_active + is_default 일원화 토글).
+        activate(&db.pool, p_default.id).await.unwrap();
+
+        // 공용(is_default) 프로필 삭제 거부 (F-06).
+        assert!(delete(&db.pool, p_default.id).await.is_err());
+
+        // 바인딩 helper — 신규 repo 는 profile_id None / pinned false.
+        let repo = db
+            .add_repo(
+                "/tmp/pb",
+                None,
+                Some("pb"),
+                None,
+                None,
+                ForgeKindLite::Gitea,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        assert_eq!(repo.profile_id, None);
+        assert!(!repo.profile_pinned);
+
+        // set_repo_profile(Some, pinned=true) — 수동 지정.
+        let bound = db
+            .set_repo_profile(repo.id, Some(p_other.id), true)
+            .await
+            .unwrap();
+        assert_eq!(bound.profile_id, Some(p_other.id));
+        assert!(bound.profile_pinned);
+
+        // reset_profile_bindings — pinned 만 0, profile_id 는 보존.
+        db.reset_profile_bindings(p_other.id).await.unwrap();
+        let after_reset = db.get_repo(repo.id).await.unwrap();
+        assert!(!after_reset.profile_pinned);
+        assert_eq!(after_reset.profile_id, Some(p_other.id));
+
+        // 재바인딩(pinned=true) 후 비-default 프로필 삭제 →
+        // delete 핸들러가 pinned 리셋 + FK ON DELETE SET NULL 이 profile_id NULL.
+        db.set_repo_profile(repo.id, Some(p_other.id), true)
+            .await
+            .unwrap();
+        delete(&db.pool, p_other.id).await.unwrap();
+        let after_del = db.get_repo(repo.id).await.unwrap();
+        assert_eq!(after_del.profile_id, None);
+        assert!(!after_del.profile_pinned);
     }
 }

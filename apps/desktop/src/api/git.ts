@@ -563,6 +563,8 @@ export interface Profile {
   sshKeyPath: string | null
   defaultForgeAccountId: number | null
   isActive: boolean
+  /** plan/43 P1 (D2) — 공용(default) 프로필. 레포 바인딩 없을 때의 fallback SoT. */
+  isDefault: boolean
 }
 export interface ProfileInput {
   name: string
