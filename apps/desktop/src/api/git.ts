@@ -1103,6 +1103,16 @@ export const setRepoForgeAccount = (repoId: number, accountId: number | null): P
 export const setRepoSshKeyPath = (repoId: number, path: string | null): Promise<Repo> =>
   invoke('set_repo_ssh_key_path', { args: { repoId, path } })
 
+/**
+ * plan/43 P3 (3a) — 레포 .git/config --local 에 credential.<url>.username 기입.
+ * PAT/password 는 쓰지 않음 — username 힌트만. username=null → 해당 키 unset.
+ */
+export const setRepoCredentialIdentity = (
+  repoId: number,
+  url: string,
+  username: string | null,
+): Promise<void> => invoke('set_repo_credential_identity', { args: { repoId, url, username } })
+
 export const forgeWhoami = (
   forgeKind: 'gitea' | 'github',
   baseUrl: string,

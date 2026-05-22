@@ -1115,6 +1115,7 @@ const HANDLERS: Record<string, MockHandler> = {
     const repo = REPOS.find((r) => r.id === a.repoId) ?? REPOS[0]
     return { ...repo, sshKeyPath: a.path ?? null }
   },
+  set_repo_credential_identity: () => null,
 
   // Status / Branches / Log
   get_status: () => STATUS,

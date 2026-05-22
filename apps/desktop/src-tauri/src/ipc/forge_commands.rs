@@ -337,6 +337,86 @@ pub async fn set_repo_ssh_key_path(
         .await
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetRepoCredentialArgs {
+    pub repo_id: i64,
+    /// credential URL context (예: https://github.com). https 스킴 필수.
+    pub url: String,
+    /// 이 URL 에 쓸 username. None → 해당 키 unset.
+    pub username: Option<String>,
+}
+
+/// plan/43 P3 (3a) — 레포 `.git/config --local` 에 `credential.<url>.username` 기입.
+///
+/// **PAT/password 는 절대 쓰지 않음** — username 만 (외부 helper 의 multi-account 힌트).
+/// 동적 키라 config_local KEYS allowlist 를 우회하므로 IPC 자체에서 url/username 검증 (iter2 #6).
+#[tauri::command]
+pub async fn set_repo_credential_identity(
+    args: SetRepoCredentialArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<()> {
+    use crate::git::path::reject_dash_prefix;
+    use crate::git::runner::{git_run, GitRunOpts};
+
+    // URL 검증 — https 스킴 + 제어문자/공백/quote 차단.
+    let url = args.url.trim();
+    if !url.starts_with("https://") {
+        return Err(AppError::validation(
+            "credential URL 은 https:// 스킴이어야 합니다.",
+        ));
+    }
+    if url.chars().any(|c| c.is_control() || c == ' ' || c == '"') {
+        return Err(AppError::validation(
+            "credential URL 에 허용되지 않는 문자가 있습니다.",
+        ));
+    }
+    reject_dash_prefix(url, "credential url")?;
+
+    let repo = state.db.get_repo(args.repo_id).await?;
+    let path = std::path::Path::new(&repo.local_path);
+    let key = format!("credential.{url}.username");
+    let opts = GitRunOpts::default();
+
+    match args
+        .username
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        Some(username) => {
+            if username.chars().any(|c| c.is_control() || c == '"') {
+                return Err(AppError::validation(
+                    "username 에 허용되지 않는 문자가 있습니다.",
+                ));
+            }
+            reject_dash_prefix(username, "credential username")?;
+            git_run(
+                path,
+                &["config", "--local", "--end-of-options", &key, username],
+                &opts,
+            )
+            .await?
+            .into_ok()?;
+        }
+        None => {
+            // unset — 미존재 시 exit 5, 무시.
+            let _ = git_run(
+                path,
+                &["config", "--local", "--unset", "--end-of-options", &key],
+                &opts,
+            )
+            .await?;
+        }
+    }
+    tracing::info!(
+        target: "git_fried_lib::ipc",
+        repo_id = args.repo_id,
+        "set_repo_credential_identity"
+    );
+    Ok(())
+}
+
 async fn build_client(
     state: &Arc<AppState>,
     kind: &str,

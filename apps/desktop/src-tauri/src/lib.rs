@@ -192,6 +192,7 @@ pub fn run() {
             ipc::forge_commands::forge_delete_account,
             ipc::forge_commands::set_repo_forge_account,
             ipc::forge_commands::set_repo_ssh_key_path,
+            ipc::forge_commands::set_repo_credential_identity,
             ipc::forge_commands::forge_whoami,
             ipc::forge_commands::list_pull_requests,
             ipc::forge_commands::get_pull_request,
