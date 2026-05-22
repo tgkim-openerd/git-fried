@@ -162,10 +162,11 @@ pub async fn forge_delete_account(
 
 /// repo_id 로부터 적절한 ForgeClient 만든다.
 ///
-/// v0.4 #1 (UltraPlan plan/31) — Resolution chain:
+/// Resolution chain (plan/43 P3 — R2-F2/F13 반영):
 ///   1. repos.forge_account_id (per-repo 명시 override)
-///   2. profiles.default_forge_account_id (active Profile)
-///   3. forge_kind first-match (fallback, 기존 호환)
+///   2. 레포 바인딩 프로필(repos.profile_id)의 default_forge_account_id
+///   3. 공용(is_default) 프로필의 default_forge_account_id (F-04 — active 폐기, is_default 일원화)
+///   4. forge_kind first-match (fallback, 기존 호환)
 async fn forge_client_for_repo(
     state: &Arc<AppState>,
     repo_id: i64,
@@ -181,10 +182,13 @@ async fn forge_client_for_repo(
         .clone()
         .ok_or_else(|| AppError::validation("이 레포는 forge repo 가 없습니다."))?;
 
-    // Resolution chain — 1: per-repo override → 2: active Profile default → 3: kind 매칭
+    // Resolution chain — 1: per-repo override → 2: 바인딩 프로필 → 3: 공용 프로필 → 4: kind 매칭
     let explicit_account_id = match r.forge_account_id {
         Some(id) => Some(id),
-        None => active_profile_default_account_id(state).await?,
+        None => match bound_profile_default_account_id(state, r.profile_id).await? {
+            Some(id) => Some(id),
+            None => default_profile_default_account_id(state).await?,
+        },
     };
 
     let (client, _account) = if let Some(id) = explicit_account_id {
@@ -195,11 +199,31 @@ async fn forge_client_for_repo(
     Ok((client, owner, repo))
 }
 
-/// active Profile 의 default_forge_account_id 조회.
-/// None → no active profile / 또는 active profile 에 default 미설정.
-async fn active_profile_default_account_id(state: &Arc<AppState>) -> AppResult<Option<i64>> {
+/// 레포에 바인딩된 프로필(repos.profile_id)의 default_forge_account_id 조회 (plan/43 P3 chain 2단계).
+async fn bound_profile_default_account_id(
+    state: &Arc<AppState>,
+    profile_id: Option<i64>,
+) -> AppResult<Option<i64>> {
+    let Some(pid) = profile_id else {
+        return Ok(None);
+    };
+    let row = sqlx::query("SELECT default_forge_account_id FROM profiles WHERE id = ?")
+        .bind(pid)
+        .fetch_optional(&state.db.pool)
+        .await
+        .map_err(AppError::Db)?;
+    Ok(row.and_then(|r| {
+        r.try_get::<Option<i64>, _>("default_forge_account_id")
+            .ok()
+            .flatten()
+    }))
+}
+
+/// 공용(is_default) 프로필의 default_forge_account_id 조회 (plan/43 P3 chain 3단계).
+/// F-04 — active 가 아니라 is_default (레포 바인딩 없을 때의 fallback SoT) 기준.
+async fn default_profile_default_account_id(state: &Arc<AppState>) -> AppResult<Option<i64>> {
     let row =
-        sqlx::query("SELECT default_forge_account_id FROM profiles WHERE is_active = 1 LIMIT 1")
+        sqlx::query("SELECT default_forge_account_id FROM profiles WHERE is_default = 1 LIMIT 1")
             .fetch_optional(&state.db.pool)
             .await
             .map_err(AppError::Db)?;
@@ -282,6 +306,34 @@ pub async fn set_repo_forge_account(
     state
         .db
         .set_repo_forge_account(args.repo_id, args.account_id)
+        .await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetRepoSshKeyArgs {
+    pub repo_id: i64,
+    /// None → 바인딩 프로필 ssh_key_path fallback. Some(path) → per-repo override.
+    pub path: Option<String>,
+}
+
+/// plan/43 P3 (F-13) — 저장소 별 SSH 키 경로 명시 지정 / 해제.
+///
+/// DB helper(set_repo_ssh_key_path)는 0007 migration 이후 존재했으나 IPC 미연결.
+/// 본 커맨드로 RepoSpecificForm UI 와 연결. 경로는 db helper 가 validate_ssh_key_path 검증.
+#[tauri::command]
+pub async fn set_repo_ssh_key_path(
+    args: SetRepoSshKeyArgs,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<crate::storage::Repo> {
+    tracing::info!(
+        target: "git_fried_lib::ipc",
+        repo_id = args.repo_id,
+        "set_repo_ssh_key_path"
+    );
+    state
+        .db
+        .set_repo_ssh_key_path(args.repo_id, args.path.as_deref())
         .await
 }
 

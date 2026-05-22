@@ -1096,6 +1096,13 @@ export const forgeDeleteAccount = (id: number): Promise<void> =>
 export const setRepoForgeAccount = (repoId: number, accountId: number | null): Promise<Repo> =>
   invoke('set_repo_forge_account', { args: { repoId, accountId } })
 
+/**
+ * plan/43 P3 (F-13) — per-repo SSH 키 경로 override.
+ * path=null → 바인딩 프로필 ssh_key_path fallback. path=string → 본 저장소만 명시.
+ */
+export const setRepoSshKeyPath = (repoId: number, path: string | null): Promise<Repo> =>
+  invoke('set_repo_ssh_key_path', { args: { repoId, path } })
+
 export const forgeWhoami = (
   forgeKind: 'gitea' | 'github',
   baseUrl: string,
