@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Sprint c95+ — 보안 강화 Wave 1~5 (2026-05-26, 6 commits `24fa100..9c46cf3`)** — `/analyze` 4-agent 병렬(3 Claude Explore + 1 Codex Independent) → Codex 6 round audit cycle. 5 Wave 누적 CRIT 1 + HIGH 11 + MED 13 + 회귀 1 모두 해소. cargo test 263→304 (+41 회귀 가드) PASS:
+  - **Wave 1 (`24fa100`)** — `/analyze` 발견 HIGH 5건 + Codex Wave 1 review 추가 5건:
+    - **CRIT-A `git/read_file.rs`** — 절대경로 traversal. `path.contains("..")` 만 검사 + `repo.join(path)` 는 absolute 시 path 가 덮어씀 → arbitrary read. 4단 가드 통합 helper `git/path.rs::validate_repo_relative_path` 신설 (empty / `..` / `is_absolute()` / `/`·`\\` prefix + canonicalize prefix check).
+    - **HIGH-A `git/sync.rs`** — CWE-88 (fetch/pull/push). remote/branch 가 IPC 입력 직접 → `reject_dash_prefix` + `--end-of-options` 양단 가드.
+    - **HIGH-B `git/rebase.rs`** — todo 인젝션. e.sha/e.subject 가 newline/control char 검증 없이 todo 파일 기입 → `\nexec /bin/sh` 주입 가능. `validate_sha()` (hex 7~64자) + `sanitize_subject()` 추가.
+    - **HIGH-C `ipc/pty_commands.rs`** — arbitrary process launch. shell allowlist (POSIX/Windows + meta char 거부) + cwd canonicalize → db.list_repos prefix check.
+    - **HIGH-F `profiles.rs::resolve_ssh_key_for_repo`** — plan/43 SSH 키 sync.rs wire (4단 chain). 기존 모든 sync 가 `GitRunOpts::default()` 만 사용 → ssh_key_path 미적용 (기능 갭) 해소.
+    - **Codex 추가**: `merge.rs` read_conflicted/write_resolved/take_side traversal / rebase base raw 가드 / SSH binding 의도 존중 (`profile_id` 존재 시 default fallback X) / pty TOCTOU (canonical cwd 사용) / read_file rev dash prefix.
+  - **Wave 2 (`9afcee5`)** — TOCTOU + cancel-safe + ai_commands:
+    - **HIGH-D apply_profile_binding TOCTOU** — `AppState` 에 `repo_locks: StdMutex<HashMap<i64, Arc<TokioMutex<()>>>>` + `repo_lock(repo_id)` lazy helper. apply/select/clear_profile_binding 3 함수 모두 직렬화.
+    - **HIGH-E `profile_apply::apply` cancellation safety** — 본체 `apply_inner` 분리, `tokio::spawn` detach. 부모 IPC cancel 되어도 spawned task 가 끝까지 진행 + rollback 보장.
+    - **ai_commands rev validation** — `validate_rev()` (reject_dash_prefix + `..` 차단). 4 handler 모두 검증 + 8 git 호출 모두 `--end-of-options`.
+    - **MED-A useCommitGraphHeader listener leak** — `onScopeDispose` 명시 cleanup (watch else branch 만으론 unmount 시 leak).
+  - **Wave 3 (`6f491f1`)** — Codex R3 audit MED 9건 일괄 가드: `git/diff.rs` (diff/diff_revs/diff_commit) + `git/compare.rs` (compare_refs) + `git/file_history.rs` (file_blame) + `git/remote.rs` (URL protocol allowlist — `ext::`/`local::`/`transport-helper::` 차단) + `git/stash.rs` (apply_stash_file path 가드).
+  - **Wave 4 (`70cdbbf`)** — Codex R4 audit HIGH 1 + MED 4: `git/tag.rs` (delete_tag/push_tag/delete_remote_tag — destructive path 도 create_tag 와 동등) + `git/reflog.rs` (list_reflog) + `git/worktree.rs` (add/remove/lock/unlock — 4 함수) + `git/lfs.rs` (track/untrack — `--` separator).
+  - **Wave 5 (Codex 자체 `53fdb7b` + 회귀 fix `9c46cf3`)** — cherry_pick + reset/revert HIGH 2건. Codex 가 직접 fix + commit 진행 (`cargo check + fmt` 만 검증, `cargo test` 미실행) → `reset.rs` 회귀 1건 (`fatal: option '--end-of-options' must come before non-option arguments`). 부모 회귀 fix: git reset 의 mode (`--soft/--mixed/--hard`) 가 sub-command 처럼 parser 처리 → `--end-of-options` 와 충돌 → mode option 명령에서는 `--end-of-options` 제외, `reject_dash_prefix` 단독으로 가드 (cargo test 304 복귀).
+  - **누적 가드 범위**: CWE-88 (Argument Injection) 17+ git command / CWE-22 (Path Traversal) read_file·merge.rs·stash apply_file / TOCTOU (per-repo async lock 3 handler) / Cancellation safety (`profile_apply::apply` spawn detach) / Listener leak (`useCommitGraphHeader` onScopeDispose) / SSH key wire (`resolve_ssh_key_for_repo` 4단 chain).
+  - **신규 helper**: `git/path.rs::validate_repo_relative_path` (CWE-22 통합) / `git/remote.rs::validate_remote_url` (protocol allowlist) / `profiles::resolve_ssh_key_for_repo` (4단 fallback) / `AppState::repo_lock(repo_id)` (per-repo async Mutex).
+  - **메모리 drift 정정**: `god comp 0` → 실측 35건 ≥200 LOC / `#[instrument] IPC 6` → 실측 0 (`#[tracing::instrument]` 표기 차이) — `analyze_2026_05_26_drift_correction.md` 신설.
+  - **학습 3건**: (1) git mode option (`--soft/--hard/...`) 과 `--end-of-options` 충돌 — 일반 long-option 은 호환, mode option 명령은 제외 / (2) Codex 자율 fix 의 cargo test 검증 게이트 필요 — `cargo check + fmt` 만으로는 회귀 검출 불가 / (3) CWE-88 batch guard 패턴 — git CLI shell-out 모든 IPC 입력 ref/sha/name/url/path 에 `reject_dash_prefix` + 양단 가드 일관 적용.
+  - 상세 분석: [docs/analyze/2026-05-26-104500.md](docs/analyze/2026-05-26-104500.md)
+
 ### Added
 
 - **Sprint c77 — scroll system 자율 fix wave (이미지 + 코덱스 review, 2026-05-12, 3 commits `811f207..953ef7a`)** — 사용자 실제 스크린샷 + 코덱스 second opinion (codex:rescue) 결합으로 발견한 22 의심점 중 즉시 fix 가능 9건 자율 진행:

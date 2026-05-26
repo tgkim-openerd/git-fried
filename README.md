@@ -2,7 +2,7 @@
 
 > **GitHub 개인 + Gitea 회사를 동시에 다루는 한국 풀스택 개발자를 위한, GitKraken 보다 가볍고 정확한 데스크탑 Git 클라이언트.**
 
-상태: **v0.3 release prep** — 598 total commits (sprint c93 누계 main 242) / 94 .vue + 125 composable + 4 page = 223 frontend + 88 Rust 파일 / **8 SQLite migrations** / Cargo test 261 (245 PASS) + bench compile / **vitest 90 / 901 PASS** / TypeScript 0 errors / ESLint v9 flat config 0 / vue-i18n **1343 키 ko·en 대칭**. v1.0 핵심 기능 + GitKraken 12.0 catalog 95% 흡수 완료.
+상태: **v0.3 release prep** — sprint c95+ 보안 강화 Wave 1~5 종료 (CRIT 1 + HIGH 11 + MED 13 해소, Codex 6 round audit) / 102 .vue + 129 composable + 4 page = 235+ frontend + 94 Rust 파일 / **8 SQLite migrations** / **cargo test 304 PASS** / **vitest 912 PASS** / TypeScript 0 errors / ESLint v9 flat config 0 / vue-i18n **1597 키 ko·en 대칭**. v1.0 핵심 기능 + GitKraken 12.0 catalog 95% 흡수 완료.
 
 → **5분 시작**: [docs/QUICK_START.md](docs/QUICK_START.md) — 신규 진입자 1순위
 → [REVIEW.md](REVIEW.md) (현재 진행 현황) / [CHANGELOG.md](CHANGELOG.md)
@@ -98,7 +98,16 @@ v1.0 첫 public release 준비 중 (`docs/plan/19`). EV 인증서 + GitHub Actio
 - **버그**: [GitHub Issues](https://github.com/tgkim/git-fried/issues) `bug` 라벨
 - **기능 요청**: [GitHub Discussions](https://github.com/tgkim/git-fried/discussions) `Ideas`
 - **보안 취약점**: [SECURITY.md](SECURITY.md) 참조 (공개 이슈 금지)
-- **PR**: [CONTRIBUTING.md](CONTRIBUTING.md) — 한글 round-trip 회귀 테스트 통과 필수, `Co-Authored-By: Claude` trailer 금지
+- **PR**: [CONTRIBUTING.md](CONTRIBUTING.md) — 한글 round-trip + CWE-88/22 가드 패턴 (`reject_dash_prefix` / `--end-of-options` / `validate_repo_relative_path`) 준수 필수, `Co-Authored-By: Claude` trailer 금지
+
+### 보안 가드 (Sprint c95+ Wave 1~5, 2026-05-26)
+
+- **CWE-88 (Argument Injection)** — git CLI 17+ subcommand 의 모든 IPC 입력 ref/sha/name/url/path 에 `reject_dash_prefix` + `--end-of-options` 양단 가드 (sync/rebase/merge/cherry_pick/diff/compare/blame/remote/stash/tag/reflog/worktree/lfs/reset/revert/ai_commands 등). 단 `git reset` 의 mode option (`--soft/--mixed/--hard`) 은 parser 충돌로 `--end-of-options` 제외 + `reject_dash_prefix` 단독.
+- **CWE-22 (Path Traversal)** — `read_file` / `merge.rs` (read_conflicted/write_resolved/take_side) / `stash.rs::apply_stash_file` 모두 `git/path.rs::validate_repo_relative_path` 통과 (empty / `..` / absolute / `/`·`\\` prefix + canonicalize prefix check).
+- **CWE-78 protocol allowlist** — `git/remote.rs::validate_remote_url` 가 `ext::` / `local::` / `transport-helper::` 차단, `https/http/git/ssh/git@/file/로컬 path` 만 허용.
+- **TOCTOU** — `AppState::repo_lock(repo_id)` per-repo async Mutex 가 profile binding 3 handler (`apply_profile_binding` / `select_default_profile` / `clear_profile_binding`) 직렬화.
+- **Cancellation safety** — `profile_apply::apply` 본체를 `tokio::spawn` 으로 detach → 부모 IPC cancel 되어도 spawned task 끝까지 + rollback 보장.
+- **SSH key wire** — `profiles::resolve_ssh_key_for_repo` 4단 chain (per-repo override → binding profile → default profile → None) 으로 plan/43 의 SSH key per-repo binding 이 fetch/pull/push 에 자동 적용.
 
 1인 개발 + AI pair (Claude Opus 4.7 1M context) 모델로 운영 — 응답 시간 1주 이상 소요.
 

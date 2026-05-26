@@ -187,6 +187,38 @@ PATH 에 `claude` 가 있으면 ✨ AI 버튼 활성화:
 5. 모든 단계 깨지면 안 됨
 ```
 
+### Sprint c95+ Wave 1~5 보안 가드 동작 변경 (2026-05-26)
+
+다음 입력이 **명시적으로 거부** 됩니다 (이전 버전에서는 통과). 의도된 사용 사례가 아니라면 정상 동작이지만, 자동화 스크립트나 외부 도구 연동 시 사전 확인 권장:
+
+```
+시나리오 A: 절대경로 입력 거부
+- File diff/view 에서 path = "/etc/passwd" 또는 "C:\Windows\System32\hosts" 입력
+- 기대: "절대경로는 허용되지 않습니다 — repo root 기준 상대경로만 가능합니다." 에러
+- 영향 영역: read_file / merge.rs (read_conflicted/write_resolved/take_side) / stash apply_file
+
+시나리오 B: dash-prefix branch/remote 거부
+- branch name 또는 remote name 에 `-D`, `--force`, `--upload-pack=evil` 같은 dash-prefix 입력
+- 기대: "{label} 은 '-' 로 시작할 수 없습니다" 에러
+- 영향 영역: fetch/pull/push/rebase/merge/cherry_pick/diff/compare/blame/remote/stash/tag/reflog/worktree/lfs/reset/revert (17+)
+
+시나리오 C: rebase todo subject 의 newline strip
+- Interactive rebase 의 commit subject 에 "수정\nexec /bin/sh" (실제 newline) 입력
+- 기대: subject 가 "수정 exec /bin/sh" 로 sanitize 되어 todo 인젝션 차단
+
+시나리오 D: pty shell allowlist
+- 통합 터미널 (PTY) 에서 shell 경로에 `/etc/passwd` 또는 임의 binary 시도
+- 기대: "허용되지 않은 shell" 에러 (POSIX/Windows 의 정상 shell — bash/zsh/sh/fish/cmd.exe/powershell.exe/pwsh.exe/wsl.exe 등 — 만 허용)
+- cwd 는 등록된 repo 의 하위경로만 허용
+
+시나리오 E: remote URL protocol allowlist
+- 새 remote add 시 URL = "ext::sh -c 'evil'" 또는 "local::/tmp/repo" 시도
+- 기대: "위험한 remote protocol" 에러
+- 허용: https/http/git/ssh/git@/file/로컬 path
+```
+
+회귀 발견 시 [GitHub Issues](https://github.com/tgkim/git-fried/issues) `security` 라벨.
+
 ---
 
 ## 9. 빌드 트러블슈팅

@@ -43,6 +43,70 @@ bun run tauri:build    # 프로덕션 MSI / NSIS
 - 한글 PR body POST → GET round-trip
 - chcp 949 / 65001 양쪽에서 통과
 
+## 보안 패턴 (Security Patterns) — Sprint c95+ Wave 1~5 (2026-05-26)
+
+새 git CLI shell-out 또는 IPC handler 를 추가할 때 다음 3단 가드 필수:
+
+### 1. CWE-88 (Argument Injection) — git CLI argv
+
+사용자 입력(branch/remote/sha/ref/path 등)을 git argv 에 push 하기 전 **반드시**:
+
+```rust
+use crate::git::path::reject_dash_prefix;
+
+// dash prefix 거부 (`--upload-pack=evil`, `-D` 차단 — CVE-2017-1000117 류)
+let safe_ref = reject_dash_prefix(user_ref, "ref")?;
+
+// argv 구성 시 `--end-of-options` 로 positional 분리 (git 2.24+)
+git_run(repo, &["log", "--pretty=%H", "--end-of-options", safe_ref], &opts).await?;
+```
+
+**예외**: `git reset` 의 mode option (`--soft/--mixed/--hard`) 은 git 이 sub-command 처럼 parser 처리 → `--end-of-options` 와 충돌(`option '--end-of-options' must come before non-option arguments`). 이런 명령은 `reject_dash_prefix` 단독으로만 가드. 같은 패턴: `git branch -D/-d` 류.
+
+**적용 영역**: fetch/pull/push/rebase/merge/cherry_pick/diff/compare/blame/remote/stash/tag/reflog/worktree/lfs/reset/revert/ai_commands (17+).
+
+### 2. CWE-22 (Path Traversal) — repo-relative path
+
+repo 내부 파일을 읽거나 쓸 때:
+
+```rust
+use crate::git::path::validate_repo_relative_path;
+
+// 4단 가드 통합: empty / `..` / absolute (POSIX `/`, Windows `C:\`) / `/`·`\\` prefix
+// + 파일 존재 시 canonicalize 후 repo prefix 확인 (심볼릭 링크 탈출 방어)
+let abs = validate_repo_relative_path(repo, user_path)?;
+std::fs::read(&abs)?;
+```
+
+**적용 영역**: `read_file` / `merge.rs` (read_conflicted / write_resolved / take_side) / `stash::apply_stash_file`.
+
+### 3. CWE-94 (Code Injection) — line-based grammar
+
+rebase todo 같은 line-based 파일에 사용자 입력 기입 시 newline/control char strip:
+
+```rust
+fn sanitize_subject(subject: &str) -> String {
+    // \n, \r, \t, control char → space. trim 후 empty 면 "(no subject)" fallback.
+}
+
+fn validate_sha(sha: &str) -> AppResult<()> {
+    // hex 7~64자 — git abbreviation 부터 SHA-256 full 까지 cover
+}
+```
+
+### Sibling-pattern audit 의무
+
+새 git command 추가 시 `git/` 디렉토리의 같은 동작 (예: 새 commit-ref 다루는 함수) 모두 위 3단 가드 적용 여부 확인. PR 본문에 "sibling audit: {file:line} cover" 명시.
+
+### Codex 자율 fix 시 검증 게이트
+
+Codex CLI 를 통한 자율 fix commit 후 반드시:
+
+- `bun run test:rust` (cargo test) — **`cargo check` 만으로는 회귀 검출 불가**
+- 프로젝트별 frontend test runner (`bun run test`)
+
+근거: Sprint c95+ Wave 5 (commit `53fdb7b`) 에서 Codex 가 `cargo check + fmt` 만 검증하고 commit → reset.rs 의 `--end-of-options` mode 충돌 회귀 발생 (다음 commit `9c46cf3` 에서 부모가 fix).
+
 ## PR 절차
 
 1. fork → 새 branch (예: `fix/foo`, `feat/bar`)
