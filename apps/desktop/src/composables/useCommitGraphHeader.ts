@@ -15,7 +15,7 @@
 //   } = useCommitGraphHeader()
 //
 // LOC 절감: CommitGraph script 220-270 (~50 LOC) → 약 12 LOC destructure.
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useCommitColumns, type CommitColumnId } from '@/composables/useCommitColumns'
 
 export function useCommitGraphHeader() {
@@ -62,6 +62,13 @@ export function useCommitGraphHeader() {
     } else {
       window.removeEventListener('mousedown', onHeaderMenuOutside)
     }
+  })
+
+  // Sprint 2026-05-26 — Codex Wave 1 MED-A 해소 (listener leak).
+  // watch 의 else branch 만으로는 headerMenuOpen=true 상태로 컴포넌트 unmount 시
+  // listener 가 남는다. onScopeDispose 로 보장 cleanup.
+  onScopeDispose(() => {
+    window.removeEventListener('mousedown', onHeaderMenuOutside)
   })
 
   // drag-drop 의 v-model 은 visibleColumns 의 mutated 배열.

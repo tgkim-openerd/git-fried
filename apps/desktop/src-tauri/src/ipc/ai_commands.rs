@@ -7,9 +7,30 @@ use super::repo_path;
 use crate::ai;
 use crate::error::{AppError, AppResult};
 use crate::git::merge as git_merge;
+use crate::git::path::reject_dash_prefix;
 use crate::AppState;
 use serde::Deserialize;
 use std::sync::Arc;
+
+/// Sprint 2026-05-26 — Codex Wave 1 HIGH (ai_commands rev validation).
+/// base..head 또는 sha 가 IPC 입력 직접 → `git log` / `git diff` 의 argv 인젝션 차단.
+///
+/// `reject_dash_prefix` 로 1단계, 추가로 `..` 가 양 끝 또는 내부 중복으로 들어가
+/// 의도 외 rev spec 만드는 케이스 차단.
+fn validate_rev(rev: &str, label: &str) -> AppResult<()> {
+    let trimmed = reject_dash_prefix(rev, label)?;
+    if trimmed.is_empty() {
+        return Err(AppError::validation(format!("{label} 가 비었습니다.")));
+    }
+    // `..` 가 ref 안에 포함된 형태는 git rev 문법 충돌 — `git log base..head` 같이
+    // caller 가 format! 으로 명시 결합한다는 가정. ref 자체에 `..` 있으면 인젝션 의심.
+    if trimmed.contains("..") {
+        return Err(AppError::validation(format!(
+            "{label} 에 '..' 가 포함될 수 없습니다: {trimmed}"
+        )));
+    }
+    Ok(())
+}
 
 // ====== AI subprocess ======
 
@@ -133,13 +154,22 @@ pub async fn ai_code_review(
     if !args.user_approved {
         return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
     }
+    // Sprint 2026-05-26 HIGH (Codex Wave 1) — rev validation.
+    validate_rev(&args.base_branch, "baseBranch")?;
+    validate_rev(&args.head_branch, "headBranch")?;
     let path = repo_path(&state, args.repo_id).await?;
 
     // base..head commits + diff
     let log_arg = format!("{}..{}", args.base_branch, args.head_branch);
     let log = crate::git::runner::git_run(
         &path,
-        &["log", &log_arg, "--pretty=%s", "--reverse"],
+        &[
+            "log",
+            "--pretty=%s",
+            "--reverse",
+            "--end-of-options",
+            &log_arg,
+        ],
         &crate::git::runner::GitRunOpts::default(),
     )
     .await
@@ -154,7 +184,7 @@ pub async fn ai_code_review(
 
     let diff = crate::git::runner::git_run(
         &path,
-        &["diff", "--no-color", &log_arg],
+        &["diff", "--no-color", "--end-of-options", &log_arg],
         &crate::git::runner::GitRunOpts::default(),
     )
     .await
@@ -191,13 +221,21 @@ pub async fn ai_pr_body(
     if !args.user_approved {
         return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
     }
+    validate_rev(&args.base_branch, "baseBranch")?;
+    validate_rev(&args.head_branch, "headBranch")?;
     let path = repo_path(&state, args.repo_id).await?;
 
     // base..head 커밋 subject 목록
     let log_arg = format!("{}..{}", args.base_branch, args.head_branch);
     let log = crate::git::runner::git_run(
         &path,
-        &["log", &log_arg, "--pretty=%s", "--reverse"],
+        &[
+            "log",
+            "--pretty=%s",
+            "--reverse",
+            "--end-of-options",
+            &log_arg,
+        ],
         &crate::git::runner::GitRunOpts::default(),
     )
     .await
@@ -213,7 +251,7 @@ pub async fn ai_pr_body(
     // diff stat
     let stat = crate::git::runner::git_run(
         &path,
-        &["diff", "--stat", &log_arg],
+        &["diff", "--stat", "--end-of-options", &log_arg],
         &crate::git::runner::GitRunOpts::default(),
     )
     .await
@@ -245,12 +283,13 @@ pub async fn ai_explain_commit(
     if !args.user_approved {
         return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
     }
+    validate_rev(&args.sha, "sha")?;
     let path = repo_path(&state, args.repo_id).await?;
 
     // commit subject + diff 추출.
     let subject = crate::git::runner::git_run(
         &path,
-        &["log", "-1", "--pretty=%s", &args.sha],
+        &["log", "-1", "--pretty=%s", "--end-of-options", &args.sha],
         &crate::git::runner::GitRunOpts::default(),
     )
     .await?
@@ -260,7 +299,13 @@ pub async fn ai_explain_commit(
 
     let diff = crate::git::runner::git_run(
         &path,
-        &["show", "--no-color", "--format=", &args.sha],
+        &[
+            "show",
+            "--no-color",
+            "--format=",
+            "--end-of-options",
+            &args.sha,
+        ],
         &crate::git::runner::GitRunOpts::default(),
     )
     .await?
@@ -293,12 +338,20 @@ pub async fn ai_explain_branch(
     if !args.user_approved {
         return Err(AppError::validation("AI 호출 전 송출 승인이 필요합니다."));
     }
+    validate_rev(&args.base_branch, "baseBranch")?;
+    validate_rev(&args.head_branch, "headBranch")?;
     let path = repo_path(&state, args.repo_id).await?;
 
     let log_arg = format!("{}..{}", args.base_branch, args.head_branch);
     let log = crate::git::runner::git_run(
         &path,
-        &["log", &log_arg, "--pretty=%s", "--reverse"],
+        &[
+            "log",
+            "--pretty=%s",
+            "--reverse",
+            "--end-of-options",
+            &log_arg,
+        ],
         &crate::git::runner::GitRunOpts::default(),
     )
     .await
@@ -313,7 +366,7 @@ pub async fn ai_explain_branch(
 
     let stat = crate::git::runner::git_run(
         &path,
-        &["diff", "--stat", &log_arg],
+        &["diff", "--stat", "--end-of-options", &log_arg],
         &crate::git::runner::GitRunOpts::default(),
     )
     .await
@@ -420,9 +473,10 @@ pub async fn ai_composer_plan(
             continue;
         }
         // 각 commit 의 diff 추출 (parent vs commit). truncate 는 prompt 가 처리.
+        // sha 자체는 git log -1 의 출력이라 신뢰 가능, 단 일관성 위해 --end-of-options 추가.
         let diff = crate::git::runner::git_run(
             &path,
-            &["show", "--no-color", "--format=", &sha],
+            &["show", "--no-color", "--format=", "--end-of-options", &sha],
             &crate::git::runner::GitRunOpts::default(),
         )
         .await

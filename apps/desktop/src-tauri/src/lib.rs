@@ -27,7 +27,9 @@ pub mod pty;
 pub mod secret_mask;
 pub mod storage;
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex as StdMutex};
+use tokio::sync::Mutex as TokioMutex;
 
 pub use error::{AppError, AppResult};
 
@@ -36,6 +38,14 @@ pub struct AppState {
     pub db: storage::Db,
     /// 통합 터미널 PTY 세션 (`docs/plan/10 옵션 A`).
     pub pty: pty::PtyRegistry,
+    /// Sprint 2026-05-26 — Codex Wave 1 HIGH-D 해소: per-repo async lock.
+    /// profile binding 같이 (1) DB lookup → (2) git config write 다중 단계 →
+    /// (3) DB write 가 일관성 필요한 multi-step mutation 의 직렬화 도구.
+    ///
+    /// `repo_lock(repo_id)` 가 lazy 생성 + Arc clone 반환. caller 는 `.lock().await` 후
+    /// guard 가 살아있는 동안 다른 mutation 직렬화 보장. lock 자체는 (`)` 만 보유 —
+    /// payload 는 호출처가 보관. lock map 자체 mutation 은 std Mutex (sync, 단순 insert).
+    repo_locks: StdMutex<HashMap<i64, Arc<TokioMutex<()>>>>,
 }
 
 impl AppState {
@@ -53,7 +63,30 @@ impl AppState {
         Ok(Arc::new(Self {
             db,
             pty: pty::PtyRegistry::new(),
+            repo_locks: StdMutex::new(HashMap::new()),
         }))
+    }
+
+    /// 특정 repo 의 직렬화 lock 을 가져온다. 없으면 lazy 생성.
+    ///
+    /// caller 패턴:
+    /// ```ignore
+    /// let lock = state.repo_lock(args.repo_id);
+    /// let _guard = lock.lock().await;  // 해제까지 다른 caller 차단
+    /// // ... TOCTOU-critical section (DB + filesystem multi-step) ...
+    /// ```
+    ///
+    /// **호출처**: ipc/profile_commands::apply_profile_binding (HIGH-D),
+    /// ipc/profile_commands::select_default_profile (대칭 영역).
+    pub fn repo_lock(&self, repo_id: i64) -> Arc<TokioMutex<()>> {
+        let mut locks = self
+            .repo_locks
+            .lock()
+            .expect("repo_locks Mutex poisoned — bug or panic during lock");
+        locks
+            .entry(repo_id)
+            .or_insert_with(|| Arc::new(TokioMutex::new(())))
+            .clone()
     }
 }
 

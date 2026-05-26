@@ -162,7 +162,26 @@ pub async fn preview(repo: &Path, profile: &Profile) -> AppResult<ProfileApplyPr
 /// 프로필 identity 를 레포 `.git/config --local` 에 적용 (all-or-nothing + rollback + provenance).
 ///
 /// 호출 측(IPC)이 preview 로 사용자 확인을 받은 뒤 호출하는 단계.
+///
+/// Sprint 2026-05-26 — Codex Wave 1 HIGH-E 해소: cancellation safety.
+/// 기존 본체는 snapshot → set_local 루프 → verification → provenance 의 await 사이에서
+/// task drop (cancel / abort) 시 rollback 미실행, partial state 남음. 본체를
+/// `tokio::spawn` 으로 detach 해 부모 cancel 과 무관하게 끝까지 진행 + rollback 보장.
+///
+/// 트레이드오프: 부모가 cancel 되어도 spawned task 가 끝날 때까지 git config write 가
+/// 백그라운드에서 계속됨. binding lock (lib.rs::repo_lock) 으로 같은 repo 의 후속 mutation
+/// 직렬화 되므로 race 없음. 잘못된 profile binding 의 race-cancel "복구" 시도는 없으나
+/// partial state 보호가 우선 (Codex Wave 1 HIGH-E).
 pub async fn apply(repo: &Path, profile: &Profile) -> AppResult<()> {
+    let repo_owned = repo.to_path_buf();
+    let profile_owned = profile.clone();
+    tokio::spawn(async move { apply_inner(&repo_owned, &profile_owned).await })
+        .await
+        .map_err(|e| AppError::Internal(format!("profile apply task join 실패: {e}")))?
+}
+
+/// 본체 — `apply` 가 spawn 으로 호출. cancel-safe 보장.
+async fn apply_inner(repo: &Path, profile: &Profile) -> AppResult<()> {
     // ① 값 일괄 검증 — 기입 전 모든 값을 한 번에 검증 (부분 적용 금지).
     let pairs: Vec<(&str, Option<String>)> = MANAGED_KEYS
         .iter()
