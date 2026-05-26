@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Sprint c78~c102 + 2026-05-22 UX — backlog 압축 entry (2026-05-13~22, 메모리 SoT)** — MEMORY pointer 가 SoT, 본 entry 는 chronological condensed view (각 sprint 의 상세는 `~/.claude/projects/.../memory/sprint_*.md` 참조). c89/c90 + c98~c102 일부 commit hash 는 memory pointer 에 fan-out 표기 (필요 시 `git log --oneline` 으로 보강):
-  - c78 — panic_hook + `#[instrument]` IPC 6 (`1814978..09699e8`) — CommitGraph 202→197
+  - c78 — panic_hook + `#[tracing::instrument]` IPC 6 (`1814978..09699e8`) — CommitGraph 202→197 / NOTE: 2026-05-26 메모리 drift correction — `#[instrument]` shorthand alias 는 코드에 0건, `#[tracing::instrument]` full 형식 사용
   - c79 — `/code-review` 8 fix + 잠복 god 3 추출 (`0cd04f2..37262c0`) — Rust 모듈 14→15
   - c80 — 잠복 god comp 5 일괄 (`6db00f6..c192ca8`) — 893→490 LOC (-45%)
   - c81 — UltraPlan v0.4~0.6 (`b1c9d0b..fdb0bc1`) — god ≥150 9→7 / i18n 1298 / per-repo forge override
