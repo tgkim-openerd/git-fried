@@ -22,6 +22,9 @@ import { useGraphSelection } from '@/composables/useGraphSelection'
 import { useGraphCanvasRenderer } from '@/composables/useGraphCanvasRenderer'
 import { useCommitGraphRows } from '@/composables/useCommitGraphRows'
 import { useCommitGraphInteraction } from '@/composables/useCommitGraphInteraction'
+// Sprint c95+ C2 E1 — WIP row hint 에 사용자 WIP note (있으면) 노출. GitKraken 의
+// `WIP: testing stash` 같은 실 message visibility 와 정합.
+import { useWipNote } from '@/composables/useWipNote'
 // Sprint c65 — presentation helpers (bodyFirstLine / refPillClass / authorInitial / authorAvatarBg).
 import { useCommitGraphPresentation } from '@/composables/useCommitGraphPresentation'
 // Sprint c75-A — god comp 회귀 해소 (c74 +48 LOC 영역 분리).
@@ -99,6 +102,14 @@ const {
 const cgRows = useCommitGraphRows({ repoId: () => props.repoId, rows, containerRef })
 const { wipActive, wipRowCount, wipChangeCount, virtualItems, totalHeight } = cgRows
 const { commitRowAt, commitTooltip } = cgRows
+
+// Sprint c95+ C2 E1 — WIP note SOT (사용자가 적어둔 working 의도 한 줄).
+// 있으면 WIP row 옆에 GitKraken 처럼 노출, 없으면 default instructional hint.
+const wipNoteRef = computed(() => {
+  const id = props.repoId
+  if (id == null) return ''
+  return useWipNote(id).value
+})
 
 // Sprint c31 — 검색 composable. drawGraph 는 hoisting 으로 callback 안전.
 const {
@@ -463,7 +474,11 @@ void [searchInputRef, moveSelection, headerMenuRef]
             >
               {{ wipChangeCount }}
             </span>
-            <span class="text-[10px] text-muted-foreground/70">
+            <!-- Sprint c95+ C2 E1 — WIP note 있으면 사용자 메시지 노출 (GitKraken 의 stash subject 와 정합), 없으면 default instructional hint. -->
+            <span v-if="wipNoteRef" class="text-[11px] text-amber-300/90 font-medium">
+              {{ wipNoteRef }}
+            </span>
+            <span v-else class="text-[10px] text-muted-foreground/70">
               (작업 중인 변경 — 클릭하면 우측 staging 패널)
             </span>
           </div>

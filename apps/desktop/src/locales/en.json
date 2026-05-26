@@ -983,7 +983,7 @@
     "popFailed": "Stash pop failed"
   },
   "stashList": {
-    "title": "Stashes",
+    "title": "STASHES",
     "fullTooltip": "Stash panel (⌘3)",
     "noMessage": "(no message)",
     "menuTitle": "More",

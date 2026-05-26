@@ -243,8 +243,10 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
       </div>
 
       <div class="flex-1 overflow-auto px-2 py-2 text-sm">
-        <!-- Staged -->
-        <div v-if="status && status.staged.length > 0" class="mb-3">
+        <!-- Staged — Sprint c95+ C2 G2: 빈 영역 (0개) 도 헤더 표시 (GitKraken parity).
+             기존 v-if="staged.length > 0" 가 빈 상태 hide → 사용자가 stage 후 영역 발견
+             어려움 + GitKraken 의 "Staged Files (0)" 라벨과 정합 안 됨. -->
+        <div v-if="status" class="mb-3">
           <StatusSectionHeader
             title="Staged"
             :count="status.staged.length"
