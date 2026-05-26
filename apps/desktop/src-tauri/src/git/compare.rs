@@ -4,6 +4,7 @@
 // ahead/behind 카운트 (`git rev-list --left-right --count ref1...ref2`).
 
 use crate::error::AppResult;
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -30,10 +31,14 @@ pub struct CompareResult {
 }
 
 /// 두 ref 간 비교 — commits + diff + ahead/behind.
+///
+/// Sprint 2026-05-26 R3 — Codex audit MED: ref1/ref2 가 IPC 입력 직접 → CWE-88 가드.
 pub async fn compare_refs(repo: &Path, ref1: &str, ref2: &str) -> AppResult<CompareResult> {
     if ref1.trim().is_empty() || ref2.trim().is_empty() {
         return Err(crate::error::AppError::validation("ref 비어있음"));
     }
+    let ref1 = reject_dash_prefix(ref1, "ref1")?;
+    let ref2 = reject_dash_prefix(ref2, "ref2")?;
 
     let range = format!("{ref1}..{ref2}");
     // 1) commits — `git log ref1..ref2`
@@ -44,6 +49,7 @@ pub async fn compare_refs(repo: &Path, ref1: &str, ref2: &str) -> AppResult<Comp
             "log",
             "--pretty=format:%H\t%an\t%at\t%s",
             "--no-color",
+            "--end-of-options",
             &range,
         ],
         &GitRunOpts::default(),
@@ -71,7 +77,7 @@ pub async fn compare_refs(repo: &Path, ref1: &str, ref2: &str) -> AppResult<Comp
     // 2) diff — `git diff ref1..ref2`
     let diff = git_run(
         repo,
-        &["diff", "--no-color", &range],
+        &["diff", "--no-color", "--end-of-options", &range],
         &GitRunOpts::default(),
     )
     .await?
@@ -81,7 +87,13 @@ pub async fn compare_refs(repo: &Path, ref1: &str, ref2: &str) -> AppResult<Comp
     let three_dot = format!("{ref1}...{ref2}");
     let counts_out = git_run(
         repo,
-        &["rev-list", "--left-right", "--count", &three_dot],
+        &[
+            "rev-list",
+            "--left-right",
+            "--count",
+            "--end-of-options",
+            &three_dot,
+        ],
         &GitRunOpts::default(),
     )
     .await?

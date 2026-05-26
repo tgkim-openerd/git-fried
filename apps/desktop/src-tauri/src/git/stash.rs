@@ -4,6 +4,7 @@
 // (untracked 포함 여부 등) 가 git CLI 와 미묘히 달라 일관성 위해 통일.
 
 use crate::error::AppResult;
+use crate::git::path::validate_repo_relative_path;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -247,6 +248,10 @@ pub async fn apply_stash_file(repo: &Path, index: usize, path: &str) -> AppResul
     if path.trim().is_empty() {
         return Err(crate::error::AppError::validation("path 비어있음"));
     }
+    // Sprint 2026-05-26 R3 — Codex audit MED: path traversal 가드 (repo 외부 파일을
+    // stash 시점 내용으로 덮어쓰는 케이스 차단). validate_repo_relative_path 가
+    // empty / `..` / 절대경로 / canonical prefix check 통합.
+    let _abs = validate_repo_relative_path(repo, path)?;
     let r = format!("stash@{{{index}}}");
     // 단순 전략: stash 의 그 시점 파일 내용을 working tree 에 직접 복원
     // (`git checkout stash@{n} -- <path>`).

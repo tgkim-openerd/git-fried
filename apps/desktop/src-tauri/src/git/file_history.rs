@@ -7,6 +7,7 @@
 // libgit2 의 blame 은 30배+ 느린 케이스 보고 → CLI 가 정답.
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::reject_dash_prefix;
 use crate::git::repository::CommitSummary;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
@@ -89,11 +90,19 @@ pub async fn file_blame(repo: &Path, path: &str, rev: Option<&str>) -> AppResult
         return Err(AppError::validation("파일 경로가 비었습니다."));
     }
     // Sprint c30 / Phase 8b — rev 가 있으면 인자에 추가. argv 의 -- 뒤가 path.
+    // Sprint 2026-05-26 R3 — Codex audit MED: rev CWE-88 가드.
     let mut args: Vec<&str> = vec!["blame", "--porcelain", "--no-color"];
-    if let Some(r) = rev {
-        if r.trim().is_empty() {
-            return Err(AppError::validation("rev 가 비었습니다."));
+    let rev_safe: Option<&str> = match rev {
+        Some(r) => {
+            if r.trim().is_empty() {
+                return Err(AppError::validation("rev 가 비었습니다."));
+            }
+            Some(reject_dash_prefix(r, "rev")?)
         }
+        None => None,
+    };
+    if let Some(r) = rev_safe {
+        args.push("--end-of-options");
         args.push(r);
     }
     args.push("--");

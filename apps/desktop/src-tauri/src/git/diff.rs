@@ -3,6 +3,7 @@
 // `git diff` plain text 출력을 그대로 사용. 프론트는 CodeMirror 6 으로 렌더.
 
 use crate::error::AppResult;
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -21,6 +22,8 @@ pub struct DiffArgs {
 }
 
 /// working/staged 의 변경 diff (text patch).
+///
+/// Sprint 2026-05-26 R3 — Codex audit MED: rev / path 가 IPC 입력 직접 → CWE-88 가드.
 pub async fn diff(repo: &Path, args: &DiffArgs) -> AppResult<String> {
     let mut a: Vec<String> = vec!["diff".into()];
     if args.staged {
@@ -29,8 +32,14 @@ pub async fn diff(repo: &Path, args: &DiffArgs) -> AppResult<String> {
     if let Some(c) = args.context {
         a.push(format!("-U{c}"));
     }
-    if let Some(rev) = &args.rev {
-        a.push(rev.clone());
+    // rev 가 IPC 입력 직접 — reject_dash_prefix + `--end-of-options` 사용.
+    let rev_safe: Option<String> = match &args.rev {
+        Some(r) => Some(reject_dash_prefix(r, "rev")?.to_string()),
+        None => None,
+    };
+    if let Some(rev) = rev_safe {
+        a.push("--end-of-options".into());
+        a.push(rev);
     }
     a.push("--".into());
     if let Some(p) = &args.path {
@@ -43,10 +52,14 @@ pub async fn diff(repo: &Path, args: &DiffArgs) -> AppResult<String> {
 }
 
 /// 두 커밋(또는 ref) 사이의 diff.
+///
+/// Sprint 2026-05-26 R3 — Codex audit MED: from/to 가 IPC 입력 직접 → CWE-88 가드.
 pub async fn diff_revs(repo: &Path, from: &str, to: &str) -> AppResult<String> {
+    let from = reject_dash_prefix(from, "from")?;
+    let to = reject_dash_prefix(to, "to")?;
     git_run(
         repo,
-        &["diff", &format!("{from}..{to}"), "--"],
+        &["diff", "--end-of-options", &format!("{from}..{to}"), "--"],
         &GitRunOpts::default(),
     )
     .await?
@@ -59,7 +72,10 @@ pub async fn diff_revs(repo: &Path, from: &str, to: &str) -> AppResult<String> {
 ///   - compact: Some(0)  — 변경 라인만
 ///   - default: None     — 컨텍스트 3 라인
 ///   - context: Some(25) — 더 많은 컨텍스트
+///
+/// Sprint 2026-05-26 R3 — Codex audit MED: sha 가 IPC 입력 직접 → CWE-88 가드.
 pub async fn diff_commit(repo: &Path, sha: &str, context: Option<u32>) -> AppResult<String> {
+    let sha = reject_dash_prefix(sha, "sha")?;
     let mut args: Vec<String> = vec![
         "show".into(),
         "--patch-with-stat".into(),
@@ -68,6 +84,7 @@ pub async fn diff_commit(repo: &Path, sha: &str, context: Option<u32>) -> AppRes
     if let Some(c) = context {
         args.push(format!("-U{c}"));
     }
+    args.push("--end-of-options".into());
     args.push(sha.to_string());
     let refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
     git_run(repo, &refs, &GitRunOpts::default())

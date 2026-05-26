@@ -68,11 +68,58 @@ fn parse_remote_v(s: &str) -> Vec<RemoteInfo> {
         .collect()
 }
 
-/// **보안**: name / url dash-prefix 거부 + `--end-of-options`.
-/// CVE-2017-1000117 패턴 (`ssh://-oProxyCommand=...` URL) 차단.
+/// Sprint 2026-05-26 R3 — Codex audit MED: URL protocol allowlist.
+///
+/// git remote URL 은 다양한 transport 지원 — 일부는 임의 명령 실행 위험:
+/// - `ext::<cmd>` — arbitrary command execution (git-remote-ext)
+/// - `local::<path>` — 로컬 path 의 임의 hook 실행
+/// - `transport-helper::<name>` — 임의 helper binary 호출
+///
+/// 허용 protocol: `https://`, `http://`, `git://`, `ssh://`, `git@`(SCP-like), file 경로
+/// (Windows drive 또는 POSIX `/`로 시작) — 정상 git 사용 모두 cover.
+fn validate_remote_url(url: &str) -> AppResult<()> {
+    let trimmed = url.trim();
+    if trimmed.is_empty() {
+        return Err(crate::error::AppError::validation(
+            "remote url 이 비었습니다.",
+        ));
+    }
+    // 위험 protocol 명시 차단.
+    let lower = trimmed.to_lowercase();
+    let blocked_schemes = ["ext::", "local::", "transport-helper::"];
+    for scheme in blocked_schemes {
+        if lower.starts_with(scheme) {
+            return Err(crate::error::AppError::validation(format!(
+                "위험한 remote protocol: {scheme} — 허용 protocol (https/http/git/ssh/git@/file path) 사용",
+            )));
+        }
+    }
+    // 허용 protocol 화이트리스트.
+    let is_known_scheme = lower.starts_with("https://")
+        || lower.starts_with("http://")
+        || lower.starts_with("git://")
+        || lower.starts_with("ssh://")
+        || lower.starts_with("git@") // scp-like (git@host:owner/repo.git)
+        || lower.starts_with("file://")
+        // 로컬 path 허용 (POSIX `/`, Windows `C:\` 또는 `C:/`).
+        || trimmed.starts_with('/')
+        || (trimmed.len() >= 3
+            && trimmed.chars().nth(1) == Some(':')
+            && matches!(trimmed.chars().nth(2), Some('/') | Some('\\')));
+    if !is_known_scheme {
+        return Err(crate::error::AppError::validation(format!(
+            "알 수 없는 remote URL scheme: {trimmed} — https/http/git/ssh/git@host/file path 만 허용",
+        )));
+    }
+    Ok(())
+}
+
+/// **보안**: name / url dash-prefix 거부 + protocol allowlist + `--end-of-options`.
+/// CVE-2017-1000117 패턴 (`ssh://-oProxyCommand=...` URL) + git-remote-ext 차단.
 pub async fn add_remote(repo: &Path, name: &str, url: &str) -> AppResult<()> {
     let safe_name = reject_dash_prefix(name, "remote name")?;
     let safe_url = reject_dash_prefix(url, "remote url")?;
+    validate_remote_url(safe_url)?;
     git_run(
         repo,
         &["remote", "add", "--end-of-options", safe_name, safe_url],
@@ -108,6 +155,7 @@ pub async fn rename_remote(repo: &Path, old_name: &str, new_name: &str) -> AppRe
 pub async fn set_remote_url(repo: &Path, name: &str, url: &str) -> AppResult<()> {
     let safe_name = reject_dash_prefix(name, "remote name")?;
     let safe_url = reject_dash_prefix(url, "remote url")?;
+    validate_remote_url(safe_url)?;
     git_run(
         repo,
         &["remote", "set-url", "--end-of-options", safe_name, safe_url],
