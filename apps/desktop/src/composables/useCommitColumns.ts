@@ -7,7 +7,7 @@
 //   - sha       : shortSha (w-16)
 //   - message   : subject (refs 는 branchTag 에 있으면 message 에서 생략)
 //   - author    : authorName (w-32)
-//   - date      : authorAt 포맷 (w-20)
+//   - date      : authorAt 포맷 (w-28 — Sprint c95+ C2 finding F3: w-20 80px 가 좁아 wrap, 112px 로 확장)
 //   - signed    : GPG ✓ (w-3)
 //
 // branchTag 컬럼이 visible 일 때 message 컬럼은 ref pill 미표시 (중복 회피).
@@ -46,7 +46,8 @@ export const ALL_COLUMNS: CommitColumnDef[] = [
   { id: 'sha', label: 'SHA', widthClass: 'w-16 shrink-0', widthPx: 64 },
   { id: 'message', label: 'Message', widthClass: 'flex-1 min-w-0', widthPx: null },
   { id: 'author', label: 'Author', widthClass: 'w-32 shrink-0', widthPx: 128 },
-  { id: 'date', label: 'Date', widthClass: 'w-20 shrink-0', widthPx: 80 },
+  // Sprint c95+ C2 finding F3: w-20 (80px) → w-28 (112px) — date 한글 + 시간 포맷 wrap 방지.
+  { id: 'date', label: 'Date', widthClass: 'w-28 shrink-0', widthPx: 112 },
   { id: 'signed', label: '✓', widthClass: 'w-3 shrink-0', widthPx: 12 },
 ]
 
