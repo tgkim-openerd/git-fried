@@ -4,6 +4,7 @@
 // 27.template_work-dir → N개 회사 레포로 cherry-pick 전파.
 
 use crate::error::AppResult;
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use crate::storage::{Db, DbExt};
 use serde::{Deserialize, Serialize};
@@ -113,7 +114,21 @@ async fn cherry_pick_one(
     if no_commit {
         args.push("-n".into());
     }
-    args.push(sha.to_string());
+    let safe_sha = match reject_dash_prefix(sha, "sha") {
+        Ok(s) => s,
+        Err(e) => {
+            return CherryPickResult {
+                repo_id,
+                repo_name,
+                success: false,
+                stdout: String::new(),
+                stderr: e.to_string(),
+                conflicted: false,
+            };
+        }
+    };
+    args.push("--end-of-options".into());
+    args.push(safe_sha.to_string());
 
     let argr: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
     let out = match git_run(path, &argr, &GitRunOpts::default()).await {

@@ -1,6 +1,7 @@
 // git reset (soft / mixed / hard) — 위험 액션, UI 에서 type-to-confirm.
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -35,9 +36,14 @@ pub async fn reset(path: &Path, mode: ResetMode, target: &str) -> AppResult<()> 
         danger,
         "reset 시작"
     );
-    let result = git_run(path, &["reset", mode_arg, target], &GitRunOpts::default())
-        .await?
-        .into_ok();
+    let safe_target = reject_dash_prefix(target, "reset target")?;
+    let result = git_run(
+        path,
+        &["reset", mode_arg, "--end-of-options", &safe_target],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok();
     let elapsed_ms = started.elapsed().as_millis() as u64;
     match &result {
         Ok(_) => {
@@ -341,7 +347,9 @@ pub async fn revert(path: &Path, sha: &str, no_commit: bool) -> AppResult<()> {
     if no_commit {
         args.push("--no-commit");
     }
-    args.push(sha);
+    let safe_sha = reject_dash_prefix(sha, "sha")?;
+    args.push("--end-of-options");
+    args.push(&safe_sha);
     git_run(path, &args, &GitRunOpts::default())
         .await?
         .into_ok()?;
