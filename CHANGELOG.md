@@ -33,6 +33,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sprint c78~c102 + 2026-05-22 UX — backlog 압축 entry (2026-05-13~22, 메모리 SoT)** — MEMORY pointer 가 SoT, 본 entry 는 chronological condensed view (각 sprint 의 상세는 `~/.claude/projects/.../memory/sprint_*.md` 참조). c89/c90 + c98~c102 일부 commit hash 는 memory pointer 에 fan-out 표기 (필요 시 `git log --oneline` 으로 보강):
+  - c78 — panic_hook + `#[instrument]` IPC 6 (`1814978..09699e8`) — CommitGraph 202→197
+  - c79 — `/code-review` 8 fix + 잠복 god 3 추출 (`0cd04f2..37262c0`) — Rust 모듈 14→15
+  - c80 — 잠복 god comp 5 일괄 (`6db00f6..c192ca8`) — 893→490 LOC (-45%)
+  - c81 — UltraPlan v0.4~0.6 (`b1c9d0b..fdb0bc1`) — god ≥150 9→7 / i18n 1298 / per-repo forge override
+  - c82~c88 — UltraPlan v0.1→v1.0 (`0c86e90..413113a`) — 7 round audit / SEC-201/202 + D-AI-001 Critical 3 fix / vite 5.4→6.4.2 / SEC-301 GIT_SSH_COMMAND
+  - c91~c93 — Sidebar GitKraken DIFF + Phase A/B (`f558aa7..705fc34`) — SB-001/002/007/008/009 자율 5 / Pattern 20+21 toolkit / i18n 1311→1343
+  - c94 — Sidebar microgap 자율 진행 (`4ec7560..ace68a0`) — 38 backlog 중 9 해소 (SB-013/015/017/018/028/030/049/050/012/051)
+  - c95 — SB-033 Annotate tag + SB-014 Smart Visibility composable (`56cffd3..306245e`) — vitest 906→912 / i18n 1353→1360
+  - c95+ continuation — Vision Cross-Validation + race condition + toolchain — 7 commit + 4 분석 보고서 / GitKraken AHK PoC v2.1~v4
+  - c96 — Plan #42 H-1~H-4 + Settings nav (`dbcdd45..6b6a353`) — 4 신규 SettingsXxx.vue / 절대 parity ✓ 4→6 / i18n 1360→1401
+  - c97~c98 — Commit Options 5/5 wire (skipHooks/template/removeComments/pushAfter/squashByDefault) + M-3 Issue Tracker — Commit Options △→✓ / parity ✓ 6→7
+  - c99 — Git Hooks manager — Rust git/hooks.rs 196 LOC + IPC list_git_hooks (28 표준 hook + .sample 분류)
+  - c100 — Sparse Checkout — Rust git/sparse.rs ~260 LOC + IPC 5 / 절대 parity ✓ 7→**8** / i18n 1436→1469
+  - c101 — SB-NEW-1 Status bar parity — StatusBar.vue 라이선스 FREE + v0.3.0 / OSS MIT identity-core 강조
+  - c102 — SB-NEW-2~5 일괄 ✓ 격상 — Top toolbar/Sidebar counts/Path-Tree/Tab close 모두 **이미 구현** finding / parity 67%→77%
+  - 2026-05-22 UX — Flow Friction 백로그 + code-review 수렴 (`d69dadd..6f86a14`, 33 commit) — Laws of UX 30원칙 7라운드 R7 0 수렴 → C1~C10 ~80건 / 8라운드 /code-review 0 수렴 (Codex 페어 누적 ~44 fix) / Codex 가 cargo 912 PASS 못 잡은 `git bisect --end-of-options` 회귀 검출 / vitest 912 / i18n 1597 대칭 / e2e 50/51
+
 - **Sprint c77 — scroll system 자율 fix wave (이미지 + 코덱스 review, 2026-05-12, 3 commits `811f207..953ef7a`)** — 사용자 실제 스크린샷 + 코덱스 second opinion (codex:rescue) 결합으로 발견한 22 의심점 중 즉시 fix 가능 9건 자율 진행:
   - **c77-A main.css scrollbar 7 폴리시** (`811f207`): border 3→2px (HiDPI 짝수 + visual 6→8px) / thumb alpha 0.4→0.5 idle / 0.6→0.7 hover / 0.75→0.85 active / track transparent→alpha 0.04 (page-up/down 클릭 affordance) / `::-webkit-scrollbar-button { display: none }` (WebKitGTK 잔존 차단) / 작은 영역 8px 차별화 (`.repo-tab-strip` / `.mini-list-scroll` selector hook).
   - **c77-B virtualizer overscan viewport-aware + 무한 스크롤 cool-down** (`ee207b7`): overscan = `max(viewportBased, rowsBased)` (작은 viewport 171% 비대 해소) + `COOLDOWN_MS 100` (vue-query isFetching microtask gap 동안 중복 STEP +500 trigger 차단).
