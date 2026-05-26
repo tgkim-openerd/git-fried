@@ -61,6 +61,50 @@ pub fn nfc_normalize_path(s: &str) -> String {
     nfc_normalize(s)
 }
 
+/// Sprint 2026-05-26 — CRIT-A / CRITICAL #1 (Codex Wave 1) 공통 가드.
+///
+/// `repo` 기준 상대경로 `path` 를 검증한 후 join 한 absolute path 를 반환.
+/// 4단 가드: empty / `..` / 절대경로 / `/` 또는 `\` prefix.
+/// 추가: 파일이 존재하면 canonicalize 후 repo prefix 확인 (심볼릭 링크 탈출 방어).
+///
+/// **호출처**: git/read_file.rs (CRIT-A), git/merge.rs (read_conflicted/write_resolved).
+pub fn validate_repo_relative_path(
+    repo: &std::path::Path,
+    path: &str,
+) -> crate::error::AppResult<std::path::PathBuf> {
+    use crate::error::AppError;
+    if path.trim().is_empty() {
+        return Err(AppError::validation("파일 경로가 비었습니다."));
+    }
+    if path.contains("..") {
+        return Err(AppError::validation(
+            "상대경로 traversal (..) 은 허용되지 않습니다.",
+        ));
+    }
+    let p = std::path::Path::new(path);
+    if p.is_absolute() {
+        return Err(AppError::validation(
+            "절대경로는 허용되지 않습니다 — repo root 기준 상대경로만 가능합니다.",
+        ));
+    }
+    if path.starts_with('\\') || path.starts_with('/') {
+        return Err(AppError::validation("루트 접두 경로는 허용되지 않습니다."));
+    }
+    let abs = repo.join(path);
+    // 파일이 존재할 때만 canonicalize 후 prefix 확인. 미존재 파일은 caller 의 IO error 가
+    // 정상 흐름 (예: write_resolved 가 새 파일 생성하는 경우).
+    if abs.exists() {
+        let canonical_file = abs.canonicalize().map_err(AppError::Io)?;
+        let canonical_repo = repo.canonicalize().map_err(AppError::Io)?;
+        if !canonical_file.starts_with(&canonical_repo) {
+            return Err(AppError::validation(
+                "파일이 repo root 외부를 가리킵니다 (심볼릭 링크 탈출 의심).",
+            ));
+        }
+    }
+    Ok(abs)
+}
+
 /// `-` prefix 입력을 거부하는 가드 — git CLI 인자 인젝션 (CWE-88) 방어용.
 ///
 /// **목적**: 사용자가 제공하는 branch / remote / tag / ref / file path 를 git CLI 에

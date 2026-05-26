@@ -11,6 +11,7 @@
 //   - edit / exec 사용자 액션 은 v1.x.
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitOutput, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -108,6 +109,55 @@ pub(crate) async fn run_interactive_with_editor(
     run_interactive_internal(repo, base, todo, Some(editor_template)).await
 }
 
+/// sha 가 git 객체 ID 형식 (hex 7~64자) 인지 검증.
+///
+/// Sprint 2026-05-26 — HIGH-B 해소:
+/// rebase todo 파일은 line-based grammar 라 sha 에 newline/공백/control char
+/// 가 들어가면 `pick <sha>\nexec /bin/sh` 같은 추가 command 주입 가능.
+/// git 의 abbreviation 최소 7자, full SHA-256 64자 까지 cover.
+fn validate_sha(sha: &str) -> AppResult<()> {
+    if sha.is_empty() {
+        return Err(AppError::validation("sha 가 비었습니다."));
+    }
+    if sha.len() < 7 || sha.len() > 64 {
+        return Err(AppError::validation(format!(
+            "sha 길이가 유효하지 않습니다 ({}자) — 7~64자 hex 만 허용.",
+            sha.len()
+        )));
+    }
+    if !sha.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err(AppError::validation(format!(
+            "sha 가 hex 문자가 아닙니다: {sha}"
+        )));
+    }
+    Ok(())
+}
+
+/// rebase todo subject 의 newline/control char 를 공백으로 치환.
+///
+/// rebase todo 파일은 line-based — `\n` 또는 `\r` 이 추가 command 주입 벡터.
+/// 추가로 `\t` 와 다른 control char (NULL, ESC 등) 도 normalize.
+/// Codex Wave 1 review #12 — all-control subject 가 empty 가 되면 git 이 거부 →
+/// fallback placeholder 로 git todo parse 실패 방지.
+fn sanitize_subject(subject: &str) -> String {
+    let cleaned: String = subject
+        .chars()
+        .map(|c| {
+            if c == '\n' || c == '\r' || c == '\t' || (c.is_control() && c != ' ') {
+                ' '
+            } else {
+                c
+            }
+        })
+        .collect();
+    let trimmed = cleaned.trim().to_string();
+    if trimmed.is_empty() {
+        "(no subject)".to_string()
+    } else {
+        trimmed
+    }
+}
+
 async fn run_interactive_internal(
     repo: &Path,
     base: &str,
@@ -120,26 +170,33 @@ async fn run_interactive_internal(
     if base.trim().is_empty() {
         return Err(AppError::validation("base 가 비어있습니다."));
     }
+    // Codex Wave 1 review HIGH — base 가 raw 로 `git rebase -i <base>` argv 에 들어가므로
+    // dash prefix 거부. ref/SHA 양쪽 다 hex 만 강요하면 `main`/`origin/main` 거부되어 UX 손상 →
+    // dash prefix 만 차단 + `--end-of-options` 로 추가 방어.
+    let base = reject_dash_prefix(base, "base")?;
 
     // 1. reword 메시지 임시 파일들 (rebase 끝날 때까지 alive 유지).
     let mut msg_files: Vec<NamedTempFile> = Vec::new();
 
-    // 2. todo 라인 빌드.
+    // 2. todo 라인 빌드 — Sprint 2026-05-26 HIGH-B 해소:
+    //    sha 는 hex 검증, subject 는 newline/control strip.
     let mut lines: Vec<String> = Vec::with_capacity(todo.len());
     for e in todo {
+        validate_sha(&e.sha)?;
+        let safe_subject = sanitize_subject(&e.subject);
         match e.action {
             RebaseAction::Drop => {
                 // git 은 todo 에서 빠진 commit 도 drop 으로 처리하지만, 명시적으로 적어둔다.
-                lines.push(format!("drop {} {}", e.sha, e.subject));
+                lines.push(format!("drop {} {}", e.sha, safe_subject));
             }
             RebaseAction::Pick => {
-                lines.push(format!("pick {} {}", e.sha, e.subject));
+                lines.push(format!("pick {} {}", e.sha, safe_subject));
             }
             RebaseAction::Squash => {
-                lines.push(format!("squash {} {}", e.sha, e.subject));
+                lines.push(format!("squash {} {}", e.sha, safe_subject));
             }
             RebaseAction::Fixup => {
-                lines.push(format!("fixup {} {}", e.sha, e.subject));
+                lines.push(format!("fixup {} {}", e.sha, safe_subject));
             }
             RebaseAction::Reword => {
                 let new_msg = e.new_message.as_deref().ok_or_else(|| {
@@ -153,7 +210,7 @@ async fn run_interactive_internal(
                 tmp.write_all(new_msg.as_bytes()).map_err(AppError::Io)?;
                 tmp.flush().map_err(AppError::Io)?;
                 let msg_path = path_for_shell(tmp.path());
-                lines.push(format!("pick {} {}", e.sha, e.subject));
+                lines.push(format!("pick {} {}", e.sha, safe_subject));
                 lines.push(format!(
                     "exec git commit --amend -F \"{msg_path}\" --no-edit"
                 ));
@@ -195,7 +252,7 @@ async fn run_interactive_internal(
         ],
         ..Default::default()
     };
-    let out = git_run(repo, &["rebase", "-i", base], &opts).await?;
+    let out = git_run(repo, &["rebase", "-i", "--end-of-options", base], &opts).await?;
 
     // todo_file / msg_files 는 여기까지 살아있다가 함수 종료 시 drop → 자동 삭제.
     drop(todo_file);
@@ -308,6 +365,84 @@ pub async fn rebase_skip(repo: &Path) -> AppResult<GitOutput> {
 mod tests {
     use super::*;
     use crate::git::runner::git_run;
+
+    // Sprint 2026-05-26 — HIGH-B 회귀 가드 (rebase todo 인젝션).
+
+    #[test]
+    fn validate_sha_accepts_hex_7_to_64() {
+        assert!(validate_sha("abcdef1").is_ok()); // 7자
+        assert!(validate_sha("abcdef1234567890").is_ok()); // 16자
+        assert!(validate_sha(&"a".repeat(40)).is_ok()); // SHA-1 full
+        assert!(validate_sha(&"a".repeat(64)).is_ok()); // SHA-256 full
+    }
+
+    #[test]
+    fn validate_sha_rejects_too_short() {
+        assert!(validate_sha("abc123").is_err()); // 6자
+        assert!(validate_sha("").is_err());
+    }
+
+    #[test]
+    fn validate_sha_rejects_too_long() {
+        assert!(validate_sha(&"a".repeat(65)).is_err());
+    }
+
+    #[test]
+    fn validate_sha_rejects_non_hex() {
+        assert!(validate_sha("xyz1234").is_err());
+        assert!(validate_sha("abc\nexec").is_err());
+        assert!(validate_sha("abc def1").is_err()); // 공백
+    }
+
+    #[test]
+    fn sanitize_subject_strips_newline() {
+        assert_eq!(
+            sanitize_subject("hello\nexec /bin/sh"),
+            "hello exec /bin/sh"
+        );
+        assert_eq!(sanitize_subject("a\r\nb"), "a  b");
+    }
+
+    #[test]
+    fn sanitize_subject_strips_control_chars() {
+        assert_eq!(sanitize_subject("a\tb"), "a b");
+        assert_eq!(sanitize_subject("a\u{0007}b"), "a b"); // BEL
+        assert_eq!(sanitize_subject("a\u{001b}[31mb"), "a [31mb"); // ESC stripped
+    }
+
+    #[test]
+    fn sanitize_subject_preserves_unicode() {
+        assert_eq!(sanitize_subject("한글 커밋 메시지"), "한글 커밋 메시지");
+        assert_eq!(sanitize_subject("emoji 🎉"), "emoji 🎉");
+    }
+
+    #[tokio::test]
+    async fn run_interactive_rejects_newline_in_subject() {
+        // 실제 git invocation 없이도 validate_sha + sanitize 단계에서 거부되거나
+        // sanitize 되어야 함. 본 테스트는 빈 sha 거부 확인.
+        let bad = vec![RebaseTodoEntry {
+            action: RebaseAction::Pick,
+            sha: "".to_string(),
+            subject: "fine\nexec evil".to_string(),
+            new_message: None,
+        }];
+        let result = run_interactive(Path::new("/tmp"), "main", &bad).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn run_interactive_rejects_non_hex_sha() {
+        let bad = vec![RebaseTodoEntry {
+            action: RebaseAction::Pick,
+            sha: "not-a-sha\nexec evil".to_string(),
+            subject: "fine".to_string(),
+            new_message: None,
+        }];
+        let result = run_interactive(Path::new("/tmp"), "main", &bad).await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("sha"), "expected sha guard, got: {msg}");
+    }
 
     async fn init_test_repo() -> (tempfile::TempDir, std::path::PathBuf) {
         let tmp = tempfile::TempDir::new().unwrap();

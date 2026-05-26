@@ -3,8 +3,13 @@
 // 모두 git CLI shell-out — libgit2 는 인증 핸들링이 까다롭고 (SSH agent /
 // credential manager 우회), 사용자 시스템 git 의 credential helper 를
 // 그대로 활용하는 게 안전 + 일관.
+//
+// Sprint 2026-05-26 — HIGH-A 해소:
+// remote / branch 는 IPC 입력 직접 → reject_dash_prefix + --end-of-options
+// 양단 가드 (CWE-88). git 2.24+ `--end-of-options` 사용.
 
 use crate::error::AppResult;
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitOutput, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -29,14 +34,25 @@ impl From<GitOutput> for SyncResult {
     }
 }
 
-/// 모든 remote 에서 fetch.
-pub async fn fetch_all(repo: &Path) -> AppResult<SyncResult> {
+/// `Option<&str>` SSH 키 → `GitRunOpts` 빌더.
+///
+/// Sprint 2026-05-26 — HIGH-F 해소: plan/43 의 SSH 키 binding 이
+/// fetch/pull/push 시 GIT_SSH_COMMAND 에 적용되도록 wire.
+fn opts_with_ssh(ssh_key_path: Option<&str>) -> GitRunOpts {
+    GitRunOpts {
+        ssh_key_path: ssh_key_path.map(String::from),
+        ..GitRunOpts::default()
+    }
+}
+
+/// 모든 remote 에서 fetch. `ssh_key_path` Some 시 GIT_SSH_COMMAND 적용.
+pub async fn fetch_all(repo: &Path, ssh_key_path: Option<&str>) -> AppResult<SyncResult> {
     let started = std::time::Instant::now();
-    tracing::debug!(target: "git_fried_lib::sync", repo = %repo.display(), "fetch_all 시작");
+    tracing::debug!(target: "git_fried_lib::sync", repo = %repo.display(), ssh_key = ssh_key_path.is_some(), "fetch_all 시작");
     let out = git_run(
         repo,
         &["fetch", "--all", "--prune", "--tags"],
-        &GitRunOpts::default(),
+        &opts_with_ssh(ssh_key_path),
     )
     .await?;
     let elapsed_ms = started.elapsed().as_millis() as u64;
@@ -48,12 +64,13 @@ pub async fn fetch_all(repo: &Path) -> AppResult<SyncResult> {
     Ok(out.into())
 }
 
-/// 특정 remote 에서 fetch.
-pub async fn fetch(repo: &Path, remote: &str) -> AppResult<SyncResult> {
+/// 특정 remote 에서 fetch. `ssh_key_path` Some 시 GIT_SSH_COMMAND 적용.
+pub async fn fetch(repo: &Path, remote: &str, ssh_key_path: Option<&str>) -> AppResult<SyncResult> {
+    let remote = reject_dash_prefix(remote, "remote")?;
     let out = git_run(
         repo,
-        &["fetch", "--prune", "--tags", remote],
-        &GitRunOpts::default(),
+        &["fetch", "--prune", "--tags", "--end-of-options", remote],
+        &opts_with_ssh(ssh_key_path),
     )
     .await?;
     Ok(out.into())
@@ -73,11 +90,13 @@ pub struct PullOpts {
 }
 
 /// pull (== fetch + merge | rebase). 디폴트는 사용자 `pull.rebase` 설정 따름.
+/// `ssh_key_path` Some 시 GIT_SSH_COMMAND 적용.
 pub async fn pull(
     repo: &Path,
     remote: Option<&str>,
     branch: Option<&str>,
     opts: PullOpts,
+    ssh_key_path: Option<&str>,
 ) -> AppResult<SyncResult> {
     let started = std::time::Instant::now();
     let strategy = if opts.rebase {
@@ -106,13 +125,21 @@ pub async fn pull(
     } else if opts.no_rebase {
         args.push("--no-rebase");
     }
-    if let Some(r) = remote {
+    // Sprint 2026-05-26 HIGH-A — CWE-88 가드: positional 인자 분리 + dash prefix 거부.
+    let remote_safe: Option<&str> = remote
+        .map(|r| reject_dash_prefix(r, "remote"))
+        .transpose()?;
+    let branch_safe: Option<&str> = branch
+        .map(|b| reject_dash_prefix(b, "branch"))
+        .transpose()?;
+    if let Some(r) = remote_safe {
+        args.push("--end-of-options");
         args.push(r);
-        if let Some(b) = branch {
+        if let Some(b) = branch_safe {
             args.push(b);
         }
     }
-    let out = git_run(repo, &args, &GitRunOpts::default()).await?;
+    let out = git_run(repo, &args, &opts_with_ssh(ssh_key_path)).await?;
     let elapsed_ms = started.elapsed().as_millis() as u64;
     if out.exit_code == Some(0) {
         tracing::info!(target: "git_fried_lib::sync", repo = %repo.display(), strategy, elapsed_ms, "pull 완료");
@@ -139,6 +166,7 @@ pub async fn push(
     remote: Option<&str>,
     branch: Option<&str>,
     opts: PushOpts,
+    ssh_key_path: Option<&str>,
 ) -> AppResult<SyncResult> {
     let started = std::time::Instant::now();
     tracing::debug!(
@@ -161,13 +189,21 @@ pub async fn push(
     if opts.force_with_lease {
         args.push("--force-with-lease");
     }
-    if let Some(r) = remote {
+    // Sprint 2026-05-26 HIGH-A — CWE-88 가드: positional 인자 분리 + dash prefix 거부.
+    let remote_safe: Option<&str> = remote
+        .map(|r| reject_dash_prefix(r, "remote"))
+        .transpose()?;
+    let branch_safe: Option<&str> = branch
+        .map(|b| reject_dash_prefix(b, "branch"))
+        .transpose()?;
+    if let Some(r) = remote_safe {
+        args.push("--end-of-options");
         args.push(r);
-        if let Some(b) = branch {
+        if let Some(b) = branch_safe {
             args.push(b);
         }
     }
-    let out = git_run(repo, &args, &GitRunOpts::default()).await?;
+    let out = git_run(repo, &args, &opts_with_ssh(ssh_key_path)).await?;
     let elapsed_ms = started.elapsed().as_millis() as u64;
     if out.exit_code == Some(0) {
         tracing::info!(target: "git_fried_lib::sync", repo = %repo.display(), elapsed_ms, "push 완료");
@@ -175,4 +211,90 @@ pub async fn push(
         tracing::warn!(target: "git_fried_lib::sync", repo = %repo.display(), elapsed_ms, exit_code = ?out.exit_code, "push 실패");
     }
     Ok(out.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Sprint 2026-05-26 — HIGH-A 회귀 가드 (sync.rs CWE-88).
+
+    #[tokio::test]
+    async fn fetch_rejects_dash_remote() {
+        let result = fetch(Path::new("/tmp"), "--upload-pack=evil", None).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("remote"));
+    }
+
+    #[tokio::test]
+    async fn pull_rejects_dash_remote() {
+        let result = pull(
+            Path::new("/tmp"),
+            Some("--upload-pack=evil"),
+            None,
+            PullOpts::default(),
+            None,
+        )
+        .await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("remote"));
+    }
+
+    #[tokio::test]
+    async fn pull_rejects_dash_branch() {
+        let result = pull(
+            Path::new("/tmp"),
+            Some("origin"),
+            Some("--force"),
+            PullOpts::default(),
+            None,
+        )
+        .await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("branch"));
+    }
+
+    #[tokio::test]
+    async fn push_rejects_dash_remote() {
+        let result = push(
+            Path::new("/tmp"),
+            Some("-D"),
+            None,
+            PushOpts::default(),
+            None,
+        )
+        .await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("remote"));
+    }
+
+    #[tokio::test]
+    async fn push_rejects_dash_branch() {
+        let result = push(
+            Path::new("/tmp"),
+            Some("origin"),
+            Some("--force"),
+            PushOpts::default(),
+            None,
+        )
+        .await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("branch"));
+    }
+
+    // Sprint 2026-05-26 — HIGH-F 회귀 가드 (SSH 키 wire).
+    #[test]
+    fn opts_with_ssh_passes_through() {
+        let opts = opts_with_ssh(Some("/home/me/.ssh/id_ed25519"));
+        assert_eq!(
+            opts.ssh_key_path.as_deref(),
+            Some("/home/me/.ssh/id_ed25519")
+        );
+    }
+
+    #[test]
+    fn opts_with_ssh_none_is_default() {
+        let opts = opts_with_ssh(None);
+        assert!(opts.ssh_key_path.is_none());
+    }
 }

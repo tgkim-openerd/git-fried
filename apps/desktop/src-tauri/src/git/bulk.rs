@@ -50,14 +50,21 @@ pub async fn bulk_fetch(
     let sem = Arc::new(Semaphore::new(BULK_NETWORK_CONCURRENCY));
     let mut handles = Vec::with_capacity(repos.len());
 
+    // Sprint 2026-05-26 HIGH-F — SSH key per-repo resolve (spawn 전에).
+    // resolve 자체는 DB 질의 — spawn 안에서 호출하면 동시성 만큼 DB connection 점유.
+    // pre-resolve 후 (path, ssh_key) 페어로 spawn 시 SSH key wire 보장.
     for r in repos {
-        let path = PathBuf::from(r.local_path);
         let id = r.id;
-        let name = r.name;
+        let name = r.name.clone();
+        let path = PathBuf::from(r.local_path.clone());
+        let ssh = crate::profiles::resolve_ssh_key_for_repo(&db.pool, &r)
+            .await
+            .ok()
+            .flatten();
         let sem = sem.clone();
         handles.push(tokio::spawn(async move {
             let _permit = sem.acquire_owned().await.expect("semaphore");
-            let res = git_sync::fetch_all(&path).await;
+            let res = git_sync::fetch_all(&path, ssh.as_deref()).await;
             BulkResult {
                 repo_id: id,
                 repo_name: name,

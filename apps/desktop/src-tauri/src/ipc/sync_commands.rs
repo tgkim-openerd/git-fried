@@ -5,9 +5,16 @@
 use super::repo_path;
 use crate::error::AppResult;
 use crate::git::{bulk as git_bulk, status as git_status, sync as git_sync};
+use crate::storage::db::DbExt;
 use crate::AppState;
 use serde::Deserialize;
 use std::sync::Arc;
+
+/// Sprint 2026-05-26 HIGH-F — SSH key resolver wrapper.
+async fn resolve_ssh_key(state: &AppState, repo_id: i64) -> AppResult<Option<String>> {
+    let repo = state.db.get_repo(repo_id).await?;
+    crate::profiles::resolve_ssh_key_for_repo(&state.db.pool, &repo).await
+}
 
 // ====== Sync (push / pull / fetch) ======
 
@@ -18,7 +25,8 @@ pub async fn fetch_all(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_sync::SyncResult> {
     let path = repo_path(&state, repo_id).await?;
-    git_sync::fetch_all(&path).await
+    let ssh = resolve_ssh_key(state.inner(), repo_id).await?;
+    git_sync::fetch_all(&path, ssh.as_deref()).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -55,7 +63,15 @@ pub async fn pull(
         ff_only: args.ff_only,
         no_rebase: args.no_rebase,
     };
-    git_sync::pull(&path, args.remote.as_deref(), args.branch.as_deref(), opts).await
+    let ssh = resolve_ssh_key(state.inner(), args.repo_id).await?;
+    git_sync::pull(
+        &path,
+        args.remote.as_deref(),
+        args.branch.as_deref(),
+        opts,
+        ssh.as_deref(),
+    )
+    .await
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,6 +107,7 @@ pub async fn push(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_sync::SyncResult> {
     let path = repo_path(&state, args.repo_id).await?;
+    let ssh = resolve_ssh_key(state.inner(), args.repo_id).await?;
     git_sync::push(
         &path,
         args.remote.as_deref(),
@@ -100,6 +117,7 @@ pub async fn push(
             set_upstream: args.set_upstream,
             tags: args.tags,
         },
+        ssh.as_deref(),
     )
     .await
 }

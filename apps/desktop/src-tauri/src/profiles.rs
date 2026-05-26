@@ -68,6 +68,48 @@ pub async fn get(pool: &SqlitePool, id: i64) -> AppResult<Profile> {
     row_to_profile(row)
 }
 
+/// Sprint 2026-05-26 — HIGH-F (SSH 키 wire 연결) 해소를 위한 SoT resolver.
+///
+/// 우선순위 chain (plan/43 P2/P3):
+///   1. `Repo.ssh_key_path` (per-repo override) — 명시 None 일 수 없음 (per-repo 는 unset = NULL)
+///   2. `Repo.profile_id` 가 Some 이면 **그 binding 으로 종료** — profile.ssh_key_path 가
+///      None 이면 그 의도 (no-key) 를 존중. default 로 fallback 하지 **않음**.
+///   3. `Repo.profile_id` 가 None 인 경우만 `is_default=true` Profile fallback.
+///   4. 최종 None — git 의 ~/.ssh/config 또는 ssh-agent 자체 흐름.
+///
+/// **호출처**: ipc/sync_commands (fetch/pull/push) + git/bulk (multi-repo fetch).
+/// 결과 path 는 git/runner.rs 에서 GIT_SSH_COMMAND env 로 자동 적용 (이미 구현).
+///
+/// **Codex Wave 1 review HIGH (2026-05-26)**: binding profile 의 ssh_key_path=None 시
+/// default fallback 으로 떨어지면 사용자가 명시한 binding 의도를 무시. 본 함수는 binding
+/// 이 존재하면 그 결정으로 종료한다.
+pub async fn resolve_ssh_key_for_repo(
+    pool: &SqlitePool,
+    repo: &crate::storage::db::Repo,
+) -> AppResult<Option<String>> {
+    // 1. per-repo override.
+    if let Some(p) = &repo.ssh_key_path {
+        return Ok(Some(p.clone()));
+    }
+    // 2. binding profile — 존재 시 그 profile 의 결정으로 종료 (Some/None 모두).
+    if let Some(pid) = repo.profile_id {
+        if let Ok(profile) = get(pool, pid).await {
+            return Ok(profile.ssh_key_path);
+        }
+        // profile_id 가 존재하나 lookup 실패 — error 보고하지 않고 fallback 진행 (관용).
+    }
+    // 3. binding 없을 때만 default(공용) profile fallback.
+    let row = sqlx::query("SELECT ssh_key_path FROM profiles WHERE is_default = 1 LIMIT 1")
+        .fetch_optional(pool)
+        .await
+        .map_err(AppError::Db)?;
+    if let Some(r) = row {
+        let p: Option<String> = r.try_get("ssh_key_path").map_err(AppError::Db)?;
+        return Ok(p);
+    }
+    Ok(None)
+}
+
 /// SEC-301-FU (plan v0.9) + code-review SEC-001/SEC-002/SEC-004 — SSH key path 가
 /// GIT_SSH_COMMAND env value 로 들어가므로 shell injection 차단. **pub** 으로 다른 storage
 /// 경로 (db.rs::set_repo_ssh_key_path 등) 에서도 호출 가능.

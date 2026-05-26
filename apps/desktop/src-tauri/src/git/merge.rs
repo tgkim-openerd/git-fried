@@ -9,6 +9,7 @@
 // working tree 의 파일은 git 의 conflict marker (<<<<<<< / ======= / >>>>>>>) 포함.
 
 use crate::error::{AppError, AppResult};
+use crate::git::path::validate_repo_relative_path;
 use crate::git::runner::{git_run, GitRunOpts};
 use git2::Repository;
 use serde::{Deserialize, Serialize};
@@ -29,6 +30,9 @@ pub struct ConflictedFile {
 }
 
 pub fn read_conflicted(path: &Path, file_path: &str) -> AppResult<ConflictedFile> {
+    // Codex Wave 1 CRITICAL #1 — file_path traversal 가드.
+    let wt_path = validate_repo_relative_path(path, file_path)?;
+
     let repo = Repository::open(path).map_err(AppError::Git)?;
     let index = repo.index().map_err(AppError::Git)?;
 
@@ -57,8 +61,7 @@ pub fn read_conflicted(path: &Path, file_path: &str) -> AppResult<ConflictedFile
         }
     }
 
-    // working tree 파일 (conflict marker 포함)
-    let wt_path = path.join(file_path);
+    // working tree 파일 (conflict marker 포함) — 검증된 wt_path 사용.
     let working = std::fs::read_to_string(&wt_path).ok();
 
     Ok(ConflictedFile {
@@ -72,7 +75,8 @@ pub fn read_conflicted(path: &Path, file_path: &str) -> AppResult<ConflictedFile
 
 /// 충돌 해결된 내용을 working tree 에 쓰고 stage 추가.
 pub async fn write_resolved(path: &Path, file_path: &str, content: &str) -> AppResult<()> {
-    let wt_path = path.join(file_path);
+    // Codex Wave 1 CRITICAL #1 — file_path traversal 가드.
+    let wt_path = validate_repo_relative_path(path, file_path)?;
     if let Some(parent) = wt_path.parent() {
         std::fs::create_dir_all(parent).map_err(AppError::Io)?;
     }
@@ -118,6 +122,9 @@ pub enum SideTake {
 }
 
 pub async fn take_side(path: &Path, file_path: &str, side: SideTake) -> AppResult<()> {
+    // Codex Wave 1 CRITICAL #1 (cascade) — file_path traversal 가드.
+    // 검증 후 wt_path 자체는 사용하지 않지만 git argv 에 들어가는 file_path 의 안전성 보장.
+    let _wt = validate_repo_relative_path(path, file_path)?;
     let arg = match side {
         SideTake::Ours => "--ours",
         SideTake::Theirs => "--theirs",
