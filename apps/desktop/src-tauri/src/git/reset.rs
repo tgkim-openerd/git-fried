@@ -37,9 +37,13 @@ pub async fn reset(path: &Path, mode: ResetMode, target: &str) -> AppResult<()> 
         "reset 시작"
     );
     let safe_target = reject_dash_prefix(target, "reset target")?;
+    // git reset 의 mode (--soft/--mixed/--hard) 와 `--end-of-options` 가 git 2.36+ 에서
+    // 충돌 (`option '--end-of-options' must come before non-option arguments`) — mode 가
+    // sub-command 처럼 처리되어 parser 가 `--end-of-options` 를 misplace 로 판정.
+    // reject_dash_prefix 가드만으로 충분 (mode 가 이미 fixed option).
     let result = git_run(
         path,
-        &["reset", mode_arg, "--end-of-options", &safe_target],
+        &["reset", mode_arg, &safe_target],
         &GitRunOpts::default(),
     )
     .await?
