@@ -168,18 +168,35 @@ pub async fn annotate_existing_tag(
 }
 
 /// 로컬 tag 삭제. 원격은 별도 push_tag(--delete) 또는 delete_remote_tag.
+///
+/// Sprint 2026-05-26 R4 — Codex audit HIGH: name 가 IPC 입력 직접 → CWE-88 가드.
+/// create_tag / annotate_existing_tag 는 이미 가드 적용 — destructive path 도 동등.
 pub async fn delete_tag(repo: &Path, name: &str) -> AppResult<()> {
-    git_run(repo, &["tag", "-d", name], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    let safe_name = reject_dash_prefix(name, "tag name")?;
+    git_run(
+        repo,
+        &["tag", "-d", "--end-of-options", safe_name],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
     Ok(())
 }
 
 /// `git push <remote> <name>` — 단일 tag push.
+///
+/// Sprint 2026-05-26 R4 — Codex audit HIGH: remote + name CWE-88 가드.
 pub async fn push_tag(repo: &Path, remote: &str, name: &str) -> AppResult<()> {
+    let safe_remote = reject_dash_prefix(remote, "remote")?;
+    let safe_name = reject_dash_prefix(name, "tag name")?;
     git_run(
         repo,
-        &["push", remote, &format!("refs/tags/{name}")],
+        &[
+            "push",
+            "--end-of-options",
+            safe_remote,
+            &format!("refs/tags/{safe_name}"),
+        ],
         &GitRunOpts::default(),
     )
     .await?
@@ -188,10 +205,20 @@ pub async fn push_tag(repo: &Path, remote: &str, name: &str) -> AppResult<()> {
 }
 
 /// `git push <remote> --delete <name>` — 원격 tag 삭제.
+///
+/// Sprint 2026-05-26 R4 — Codex audit HIGH: remote + name CWE-88 가드.
 pub async fn delete_remote_tag(repo: &Path, remote: &str, name: &str) -> AppResult<()> {
+    let safe_remote = reject_dash_prefix(remote, "remote")?;
+    let safe_name = reject_dash_prefix(name, "tag name")?;
     git_run(
         repo,
-        &["push", remote, "--delete", &format!("refs/tags/{name}")],
+        &[
+            "push",
+            "--delete",
+            "--end-of-options",
+            safe_remote,
+            &format!("refs/tags/{safe_name}"),
+        ],
         &GitRunOpts::default(),
     )
     .await?

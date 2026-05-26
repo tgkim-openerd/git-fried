@@ -10,6 +10,7 @@
 // `git reflog` 출력 파싱이 가장 안정적 (in-process libgit2 의 reflog API 보다 정확).
 
 use crate::error::AppResult;
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -30,12 +31,21 @@ pub struct ReflogEntry {
 }
 
 pub async fn list_reflog(repo: &Path, ref_name: &str, limit: usize) -> AppResult<Vec<ReflogEntry>> {
+    // Sprint 2026-05-26 R4 — Codex audit MED: ref_name CWE-88 가드.
+    let safe_ref = reject_dash_prefix(ref_name, "ref_name")?;
     let limit_arg = format!("-n{limit}");
     // %H | %gd (HEAD@{0}) | %gs (subject) | %ct (committer time)
     let format = "--format=%H\x1f%gd\x1f%gs\x1f%ct";
     let out = git_run(
         repo,
-        &["reflog", "--no-color", &limit_arg, format, ref_name],
+        &[
+            "reflog",
+            "--no-color",
+            &limit_arg,
+            format,
+            "--end-of-options",
+            safe_ref,
+        ],
         &GitRunOpts::default(),
     )
     .await?

@@ -4,6 +4,7 @@
 // git CLI 가 git-lfs 를 호출 (smudge/clean filter 자동).
 
 use crate::error::AppResult;
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -109,16 +110,29 @@ pub async fn install(repo: &Path) -> AppResult<()> {
 }
 
 pub async fn track(repo: &Path, pattern: &str) -> AppResult<()> {
-    git_run(repo, &["lfs", "track", pattern], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    // Sprint 2026-05-26 R4 — Codex audit MED: pattern CWE-88 가드. git-lfs 가
+    // `--end-of-options` 지원 시 함께 사용 (newer git-lfs 2.x+).
+    let safe_pattern = reject_dash_prefix(pattern, "pattern")?;
+    git_run(
+        repo,
+        &["lfs", "track", "--", safe_pattern],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
     Ok(())
 }
 
 pub async fn untrack(repo: &Path, pattern: &str) -> AppResult<()> {
-    git_run(repo, &["lfs", "untrack", pattern], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    // Sprint 2026-05-26 R4 — Codex audit MED: pattern CWE-88 가드.
+    let safe_pattern = reject_dash_prefix(pattern, "pattern")?;
+    git_run(
+        repo,
+        &["lfs", "untrack", "--", safe_pattern],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
     Ok(())
 }
 

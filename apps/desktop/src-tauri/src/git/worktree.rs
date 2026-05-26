@@ -6,6 +6,7 @@
 //   - 디스크 사용량 시각화 + 점유 상태 표시 필요
 
 use crate::error::AppResult;
+use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -191,16 +192,31 @@ pub struct AddWorktreeOpts {
 }
 
 pub async fn add_worktree(repo: &Path, opts: &AddWorktreeOpts) -> AppResult<()> {
+    // Sprint 2026-05-26 R4 — Codex audit MED: path / branch / start_point CWE-88 가드.
+    let safe_path = reject_dash_prefix(&opts.path, "path")?.to_string();
+    let safe_create_branch: Option<String> = match &opts.create_branch {
+        Some(b) => Some(reject_dash_prefix(b, "createBranch")?.to_string()),
+        None => None,
+    };
+    let safe_branch: Option<String> = match &opts.branch {
+        Some(b) => Some(reject_dash_prefix(b, "branch")?.to_string()),
+        None => None,
+    };
+    let safe_start_point: Option<String> = match &opts.start_point {
+        Some(sp) => Some(reject_dash_prefix(sp, "startPoint")?.to_string()),
+        None => None,
+    };
     let mut args: Vec<String> = vec!["worktree".into(), "add".into()];
-    if let Some(b) = &opts.create_branch {
+    if let Some(b) = safe_create_branch {
         args.push("-b".into());
-        args.push(b.clone());
+        args.push(b);
     }
-    args.push(opts.path.clone());
-    if let Some(b) = &opts.branch {
-        args.push(b.clone());
-    } else if let Some(sp) = &opts.start_point {
-        args.push(sp.clone());
+    args.push("--end-of-options".into());
+    args.push(safe_path);
+    if let Some(b) = safe_branch {
+        args.push(b);
+    } else if let Some(sp) = safe_start_point {
+        args.push(sp);
     }
     let r: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
     git_run(repo, &r, &GitRunOpts::default()).await?.into_ok()?;
@@ -208,11 +224,14 @@ pub async fn add_worktree(repo: &Path, opts: &AddWorktreeOpts) -> AppResult<()> 
 }
 
 pub async fn remove_worktree(repo: &Path, path: &str, force: bool) -> AppResult<()> {
+    // Sprint 2026-05-26 R4 — Codex audit MED: path CWE-88 가드.
+    let safe_path = reject_dash_prefix(path, "path")?;
     let mut args: Vec<&str> = vec!["worktree", "remove"];
     if force {
         args.push("--force");
     }
-    args.push(path);
+    args.push("--end-of-options");
+    args.push(safe_path);
     git_run(repo, &args, &GitRunOpts::default())
         .await?
         .into_ok()?;
@@ -231,11 +250,20 @@ pub async fn prune_worktrees(repo: &Path) -> AppResult<()> {
 /// Lock 된 worktree 는 prune / remove 가 거부됨. 외장 디스크의 worktree 가
 /// disconnect 됐을 때 의도치 않게 정리되는 것 방지.
 pub async fn lock_worktree(repo: &Path, path: &str, reason: Option<&str>) -> AppResult<()> {
-    let mut args: Vec<&str> = vec!["worktree", "lock", path];
-    if let Some(r) = reason.filter(|s| !s.trim().is_empty()) {
+    // Sprint 2026-05-26 R4 — Codex audit MED: path CWE-88 가드. reason 은 git --reason 의
+    // value 라 자체 인젝션 위험 낮으나 일관성 위해 dash prefix 거부.
+    let safe_path = reject_dash_prefix(path, "path")?;
+    let safe_reason: Option<&str> = match reason.filter(|s| !s.trim().is_empty()) {
+        Some(r) => Some(reject_dash_prefix(r, "reason")?),
+        None => None,
+    };
+    let mut args: Vec<&str> = vec!["worktree", "lock"];
+    if let Some(r) = safe_reason {
         args.push("--reason");
         args.push(r);
     }
+    args.push("--end-of-options");
+    args.push(safe_path);
     git_run(repo, &args, &GitRunOpts::default())
         .await?
         .into_ok()?;
@@ -243,9 +271,15 @@ pub async fn lock_worktree(repo: &Path, path: &str, reason: Option<&str>) -> App
 }
 
 pub async fn unlock_worktree(repo: &Path, path: &str) -> AppResult<()> {
-    git_run(repo, &["worktree", "unlock", path], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    // Sprint 2026-05-26 R4 — Codex audit MED: path CWE-88 가드.
+    let safe_path = reject_dash_prefix(path, "path")?;
+    git_run(
+        repo,
+        &["worktree", "unlock", "--end-of-options", safe_path],
+        &GitRunOpts::default(),
+    )
+    .await?
+    .into_ok()?;
     Ok(())
 }
 
