@@ -19,31 +19,55 @@
 - [ ] **P4 Launchpad** (멀티 repo 한눈에 보기)
 - [ ] **P5 Hotkey list** (모든 단축키)
 
-### Within each page: button matrix
-- [ ] Sidebar 섹션 (LOCAL/REMOTE/WORKTREES/STASHES/CLOUD PATCHES/PR/TAGS)
-  - [ ] LMB: expand/collapse + item select
-  - [ ] RMB: context menu (per item)
-  - [ ] Hover: tooltip
-- [ ] Top toolbar 버튼
-  - [ ] Pull / Push / Fetch (LMB + RMB dropdown)
-  - [ ] Branch / Merge / Rebase (modal)
-  - [ ] Stash / Pop / Undo / Redo
-- [ ] Graph area
-  - [ ] commit row LMB (detail)
-  - [ ] commit row RMB (context menu)
-  - [ ] column header LMB (sort)
-  - [ ] column header RMB (column toggle)
-- [ ] Commit Detail Sidebar
-  - [ ] file LMB (diff)
-  - [ ] file RMB (context menu)
-  - [ ] subject area (copy/etc)
-- [ ] Status bar
-  - [ ] branch label LMB/RMB
-  - [ ] ahead/behind LMB/RMB
-  - [ ] license/version LMB
+### Within each page: button matrix (P1 Workspaces / Repository main view)
+
+**Priority 1 (가장 critical workflow)**:
+- [ ] **B1** Toolbar Pull LMB — pull 동작 + 결과 dialog
+- [ ] **B2** Toolbar Pull ▼ dropdown — Pull / Pull Rebase / Pull FF Only 옵션
+- [ ] **B3** Toolbar Push LMB
+- [ ] **B4** Toolbar Branch LMB — branch create modal
+- [ ] **B5** Toolbar Stash LMB — stash push modal/dialog
+- [ ] **B6** Toolbar Pop LMB — stash pop confirm
+- [ ] **B7** Sidebar `LOCAL` header LMB — expand/collapse (이미 expanded? collapse 시도)
+- [ ] **B8** Sidebar `LOCAL` header RMB — context menu (있는 경우)
+- [ ] **B9** Sidebar branch `main` row LMB (active 라 별 동작?)
+- [ ] **B10** Sidebar branch `feature/branch-a` row LMB — switch?
+- [ ] **B11** Sidebar branch `feature/branch-a` row RMB — context menu (rename / delete / merge 등)
+- [ ] **B12** Sidebar `STASHES` header LMB
+- [ ] **B13** Sidebar stash row RMB — apply / pop / drop
+- [ ] **B14** Sidebar `TAGS` header LMB
+- [ ] **B15** Sidebar tag row RMB — push tag / delete tag
+
+**Priority 2 (Graph + commit detail)**:
+- [ ] **B16** Graph WIP row LMB — working tree 열림
+- [ ] **B17** Graph commit row LMB — commit detail 사이드바
+- [ ] **B18** Graph commit row RMB — context menu (cherry-pick / reset / revert / tag here)
+- [ ] **B19** Graph column header LMB — sort?
+- [ ] **B20** Graph column header RMB — column toggle / order
+- [ ] **B21** Commit detail file LMB — diff view
+- [ ] **B22** Commit detail file RMB — context menu (open external / blame / history)
+- [ ] **B23** Commit detail subject — copy / edit?
+
+**Priority 3 (Right panel + status bar + top nav)**:
+- [ ] **B24** Right panel `STAGED` header LMB — collapse
+- [ ] **B25** Right panel `Stage All Changes` button
+- [ ] **B26** Right panel unstaged file LMB — diff
+- [ ] **B27** Right panel unstaged file RMB
+- [ ] **B28** Right panel Path/Tree segmented click
+- [ ] **B29** Status bar branch label
+- [ ] **B30** Status bar ahead/behind indicators
+- [ ] **B31** Top nav 회사/홈/레포/Launchpad/설정 (5 nav button)
+- [ ] **B32** RepoTabBar `+` new repo / `✕` close / ⋯ overflow
 
 ### Sub-modals (button click 결과 발생 → 탐색 큐 추가)
-- (cycle 진행 중 추가)
+- (cycle 진행 중 추가 — 각 button click 시 modal/dialog 발생 시 그 안의 모든 button 도 enumerate)
+
+### Cycle 진행 방식
+1. button N click (양쪽 동시)
+2. 양쪽 캡처 (PrintWindow)
+3. Codex Vision pair diff
+4. finding fix (가능 시)
+5. 다음 button
 
 ## Cycle Log
 
