@@ -155,7 +155,7 @@ function toggleExpanded(idx: number) {
           </button>
           <button
             type="button"
-            class="text-muted-foreground hover:text-foreground"
+            class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
             :aria-label="t('common.close')"
             @click="$emit('close')"
           >

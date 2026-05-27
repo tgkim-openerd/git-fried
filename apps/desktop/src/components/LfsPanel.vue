@@ -153,7 +153,7 @@ function fmtSize(b: number | null): string {
       <div class="flex gap-1 text-xs">
         <button
           type="button"
-          class="rounded-md border border-input px-2 py-0.5 hover:bg-accent disabled:opacity-50"
+          class="rounded-md border border-input px-2.5 py-1 min-h-[24px] hover:bg-accent disabled:opacity-50"
           :disabled="!repoId || fetchMut.isPending.value"
           @click="fetchMut.mutate()"
         >
@@ -161,7 +161,7 @@ function fmtSize(b: number | null): string {
         </button>
         <button
           type="button"
-          class="rounded-md border border-input px-2 py-0.5 hover:bg-accent disabled:opacity-50"
+          class="rounded-md border border-input px-2.5 py-1 min-h-[24px] hover:bg-accent disabled:opacity-50"
           :disabled="!repoId || pullMut.isPending.value"
           @click="pullMut.mutate()"
         >
@@ -169,7 +169,7 @@ function fmtSize(b: number | null): string {
         </button>
         <button
           type="button"
-          class="rounded-md border border-input px-2 py-0.5 hover:bg-accent disabled:opacity-50"
+          class="rounded-md border border-input px-2.5 py-1 min-h-[24px] hover:bg-accent disabled:opacity-50"
           :disabled="!repoId || pruneMut.isPending.value"
           @click="onPrune"
         >
@@ -207,7 +207,7 @@ function fmtSize(b: number | null): string {
           <span class="font-mono text-xs">{{ p }}</span>
           <button
             type="button"
-            class="opacity-0 group-hover:opacity-100 text-[10px] text-destructive hover:underline"
+            class="rounded px-2 py-1 min-h-[24px] text-xs text-destructive opacity-0 hover:bg-destructive/10 focus-visible:opacity-100 group-hover:opacity-100"
             @click="confirmUntrack(p)"
           >
             untrack

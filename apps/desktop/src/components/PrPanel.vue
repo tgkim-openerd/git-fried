@@ -166,12 +166,12 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
       <div class="flex items-center justify-between gap-2">
         <h3 class="text-sm font-semibold">{{ t('pr.title') }}</h3>
         <div class="flex items-center gap-2">
-          <div class="flex gap-1 text-[10px]">
+          <div class="flex gap-1 text-xs">
             <button
               v-for="s in [null, 'open', 'closed'] as (PrState | null)[]"
               :key="String(s)"
               type="button"
-              class="rounded px-1.5 py-0.5"
+              class="rounded px-2 py-1 min-h-[24px]"
               :class="
                 stateFilter === s ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
               "
@@ -184,7 +184,7 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
           </div>
           <button
             type="button"
-            class="rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            class="rounded-md bg-primary px-2.5 py-1 min-h-[24px] text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
             :disabled="!repoId"
             :aria-label="t('pr.newPrAria')"
             @click="createOpen = true"

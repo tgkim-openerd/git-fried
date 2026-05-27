@@ -146,23 +146,23 @@ const previewFiles = computed(() =>
             </span>
           </div>
           <div class="truncate text-xs">{{ s.message }}</div>
-          <div class="mt-1 flex gap-1 text-[11px]">
+          <div class="mt-1 flex gap-1 text-xs">
             <button
-              class="hover:underline"
+              class="rounded px-2 py-1 min-h-[24px] hover:bg-accent/40"
               :aria-label="`stash@{${s.index}} diff 보기`"
               @click="onShow(s.index)"
             >
               show
             </button>
             <button
-              class="hover:underline"
+              class="rounded px-2 py-1 min-h-[24px] hover:bg-accent/40"
               :aria-label="`stash@{${s.index}} apply (working tree 에 적용)`"
               @click="onApply(s.index)"
             >
               apply
             </button>
             <button
-              class="hover:underline"
+              class="rounded px-2 py-1 min-h-[24px] hover:bg-accent/40"
               :aria-label="`stash@{${s.index}} pop (apply + 제거)`"
               @click="onPop(s.index)"
             >
@@ -170,7 +170,7 @@ const previewFiles = computed(() =>
             </button>
             <!-- Sprint c38 / plan/29 E3 — stash → 새 브랜치로 복원. -->
             <button
-              class="hover:underline"
+              class="rounded px-2 py-1 min-h-[24px] hover:bg-accent/40"
               :title="t('stash.toBranchTitle')"
               :aria-label="t('stash.toBranchAria', { idx: s.index })"
               @click="onStashToBranch(s.index)"
@@ -178,7 +178,7 @@ const previewFiles = computed(() =>
               → branch
             </button>
             <button
-              class="hover:underline"
+              class="rounded px-2 py-1 min-h-[24px] hover:bg-accent/40"
               :title="t('stash.editMessageButtonTitle')"
               :aria-label="t('stash.editMessageTitle', { idx: s.index })"
               @click="onEditMessage(s.index, s.message)"
@@ -186,7 +186,7 @@ const previewFiles = computed(() =>
               edit msg
             </button>
             <button
-              class="hover:underline text-destructive"
+              class="rounded px-2 py-1 min-h-[24px] text-destructive hover:bg-destructive/10"
               :aria-label="t('stash.dropAria', { idx: s.index })"
               @click="onDrop(s.index)"
             >
@@ -216,7 +216,7 @@ const previewFiles = computed(() =>
         </span>
         <button
           type="button"
-          class="text-xs"
+          class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
           :aria-label="t('stash.closePreviewAria')"
           :title="t('stash.closePreviewTitle')"
           @click="previewText = null"
@@ -236,7 +236,7 @@ const previewFiles = computed(() =>
           </span>
           <button
             type="button"
-            class="rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-accent/60"
+            class="rounded border border-border px-2 py-1 min-h-[24px] text-xs hover:bg-accent/60"
             :title="t('stash.applyFileTitle')"
             @click="onApplyFile(f.fileName)"
           >

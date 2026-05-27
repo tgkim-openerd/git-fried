@@ -315,14 +315,14 @@ async function onAiReview(): Promise<void> {
         <div class="mt-1 flex justify-end gap-2">
           <button
             type="button"
-            class="rounded-md border border-input px-3 py-1 text-xs hover:bg-accent"
+            class="rounded-md border border-input px-3 py-1.5 min-h-[28px] text-xs hover:bg-accent"
             :title="t('pr.suggestionToggleTitle')"
             @click="suggestionOpen = !suggestionOpen"
           >
             {{ suggestionOpen ? t('pr.suggestionClose') : t('pr.suggestionOpen') }}
           </button>
           <button
-            class="rounded-md border border-input px-3 py-1 text-xs hover:bg-accent disabled:opacity-50"
+            class="rounded-md border border-input px-3 py-1.5 min-h-[28px] text-xs hover:bg-accent disabled:opacity-50"
             :disabled="!newComment.trim() || addCommentMut.isPending.value"
             @click="addCommentMut.mutate()"
           >
@@ -371,14 +371,14 @@ async function onAiReview(): Promise<void> {
         <div class="mt-2 flex justify-end gap-2">
           <button
             type="button"
-            class="rounded border border-border px-2 py-1 text-xs hover:bg-muted/40"
+            class="rounded border border-border px-2.5 py-1.5 min-h-[28px] text-xs hover:bg-muted/40"
             @click="suggestionOpen = false"
           >
             {{ t('pr.suggestionCancel') }}
           </button>
           <button
             type="button"
-            class="rounded bg-violet-500 px-3 py-1 text-xs text-white hover:opacity-90 disabled:opacity-50"
+            class="rounded bg-violet-500 px-3 py-1.5 min-h-[28px] text-xs text-white hover:opacity-90 disabled:opacity-50"
             :disabled="
               !sugPath.trim() ||
               sugLine == null ||
@@ -403,7 +403,7 @@ async function onAiReview(): Promise<void> {
           <button
             v-if="availableCli"
             type="button"
-            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-1 text-[10px] text-ai-violet hover:bg-violet-500/20 disabled:opacity-50"
+            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2.5 py-1.5 min-h-[28px] text-xs text-ai-violet hover:bg-violet-500/20 disabled:opacity-50"
             :disabled="aiReviewMut.isPending.value"
             :title="t('pr.aiReviewTitle', { cli: availableCli })"
             @click="onAiReview()"
@@ -416,7 +416,7 @@ async function onAiReview(): Promise<void> {
             v-for="v in ['comment', 'approve', 'request_changes'] as ReviewVerdict[]"
             :key="v"
             type="button"
-            class="rounded-md border border-input px-2 py-1"
+            class="rounded-md border border-input px-2.5 py-1.5 min-h-[28px]"
             :class="
               verdict === v
                 ? v === 'approve'
@@ -445,7 +445,7 @@ async function onAiReview(): Promise<void> {
         />
         <div class="mt-1 flex justify-end">
           <button
-            class="rounded-md bg-primary px-3 py-1 text-xs text-primary-foreground disabled:opacity-50"
+            class="rounded-md bg-primary px-3 py-1.5 min-h-[28px] text-xs text-primary-foreground disabled:opacity-50"
             :disabled="reviewMut.isPending.value"
             @click="reviewMut.mutate()"
           >
@@ -484,7 +484,7 @@ async function onAiReview(): Promise<void> {
             v-if="
               detailQuery.data.value.state === 'open' || detailQuery.data.value.state === 'draft'
             "
-            class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
+            class="rounded-md border border-input px-3 py-1.5 min-h-[32px] hover:bg-accent disabled:opacity-50"
             :disabled="checkoutMut.isPending.value"
             @click="checkoutMut.mutate()"
           >
@@ -492,7 +492,7 @@ async function onAiReview(): Promise<void> {
           </button>
           <button
             v-if="detailQuery.data.value.state === 'closed' && !detailQuery.data.value.merged"
-            class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
+            class="rounded-md border border-input px-3 py-1.5 min-h-[32px] hover:bg-accent disabled:opacity-50"
             :disabled="reopenMut.isPending.value"
             @click="reopenMut.mutate()"
           >
@@ -502,7 +502,7 @@ async function onAiReview(): Promise<void> {
             v-if="
               detailQuery.data.value.state === 'open' || detailQuery.data.value.state === 'draft'
             "
-            class="rounded-md border border-input px-3 py-1 hover:bg-accent disabled:opacity-50"
+            class="rounded-md border border-input px-3 py-1.5 min-h-[32px] hover:bg-accent disabled:opacity-50"
             :disabled="closeMut.isPending.value"
             @click="onClose"
           >
@@ -510,7 +510,7 @@ async function onAiReview(): Promise<void> {
           </button>
           <button
             v-if="detailQuery.data.value.state === 'open'"
-            class="rounded-md bg-violet-500 px-4 py-1 text-white disabled:opacity-50"
+            class="rounded-md bg-violet-500 px-4 py-1.5 min-h-[32px] text-white disabled:opacity-50"
             :disabled="mergeMut.isPending.value"
             @click="onMerge"
           >

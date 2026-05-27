@@ -100,19 +100,19 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
             <span class="font-mono text-xs font-semibold">{{ r.name }}</span>
             <div class="flex gap-1 text-[11px]">
               <button
-                class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
+                class="rounded border border-border px-2.5 py-1 min-h-[28px] text-xs hover:bg-accent/40"
                 @click="startRename(r.name)"
               >
                 {{ t('remote.rename') }}
               </button>
               <button
-                class="rounded border border-border px-2 py-0.5 hover:bg-accent/40"
+                class="rounded border border-border px-2.5 py-1 min-h-[28px] text-xs hover:bg-accent/40"
                 @click="startUrlChange(r)"
               >
                 {{ t('remote.changeUrl') }}
               </button>
               <button
-                class="rounded border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
+                class="rounded border border-destructive/40 px-2.5 py-1 min-h-[28px] text-xs text-destructive hover:bg-destructive/10"
                 @click="removeRemoteSafely(r.name)"
               >
                 {{ t('remote.remove') }}
@@ -141,7 +141,7 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
             />
             <button
               type="submit"
-              class="rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground"
+              class="rounded bg-primary px-2.5 py-1 min-h-[28px] text-xs text-primary-foreground"
               :disabled="
                 !renameNew.trim() || renameNew.trim() === renameTarget || renameMut.isPending.value
               "
@@ -150,7 +150,7 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
             </button>
             <button
               type="button"
-              class="rounded border border-border px-2 py-0.5 text-[11px]"
+              class="rounded border border-border px-2.5 py-1 min-h-[28px] text-xs"
               @click="renameTarget = null"
             >
               {{ t('remote.cancel') }}
@@ -170,14 +170,14 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
             />
             <button
               type="submit"
-              class="rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground"
+              class="rounded bg-primary px-2.5 py-1 min-h-[28px] text-xs text-primary-foreground"
               :disabled="!urlNew.trim() || urlMut.isPending.value"
             >
               {{ t('remote.save') }}
             </button>
             <button
               type="button"
-              class="rounded border border-border px-2 py-0.5 text-[11px]"
+              class="rounded border border-border px-2.5 py-1 min-h-[28px] text-xs"
               @click="urlTarget = null"
             >
               {{ t('remote.cancel') }}

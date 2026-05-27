@@ -180,7 +180,7 @@ onUnmounted(() => {
         >
           <button
             type="button"
-            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            class="flex flex-col items-center gap-0 rounded-md px-2.5 py-1.5 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
             :disabled="!repoId || undoMut.isPending.value"
             @click="onUndo"
           >
@@ -197,7 +197,7 @@ onUnmounted(() => {
         >
           <button
             type="button"
-            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            class="flex flex-col items-center gap-0 rounded-md px-2.5 py-1.5 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
             :disabled="!repoId || redoMut.isPending.value"
             @click="onRedo"
           >
@@ -209,7 +209,7 @@ onUnmounted(() => {
         </BaseTooltip>
       </div>
 
-      <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
+      <span class="mx-1 h-10 w-px bg-border" aria-hidden="true" />
 
       <!-- [sync] Pull (with strategy ▾) / Push -->
       <div class="flex items-center gap-0.5">
@@ -226,7 +226,7 @@ onUnmounted(() => {
           >
             <button
               type="button"
-              class="flex flex-col items-center gap-0 rounded-l-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+              class="flex flex-col items-center gap-0 rounded-l-md px-2.5 py-1.5 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
               :disabled="!repoId || pullMut.isPending.value"
               @click="onPull"
             >
@@ -239,7 +239,7 @@ onUnmounted(() => {
           <BaseTooltip :text="t('toolbar.pullStrategyTitle')" placement="bottom">
             <button
               type="button"
-              class="flex h-full items-center rounded-r-md border-l border-border/40 px-1 py-0 text-[10px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+              class="flex h-full min-h-[40px] min-w-[24px] items-center justify-center rounded-r-md border-l border-border/40 px-2 py-0 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
               :disabled="!repoId || pullMut.isPending.value"
               :aria-expanded="pullDropdownOpen"
               aria-haspopup="menu"
@@ -291,7 +291,7 @@ onUnmounted(() => {
           >
             <button
               type="button"
-              class="flex flex-col items-center gap-0 rounded-l-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+              class="flex flex-col items-center gap-0 rounded-l-md px-2.5 py-1.5 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
               :disabled="!repoId || pushMut.isPending.value"
               @click="onPush"
             >
@@ -304,7 +304,7 @@ onUnmounted(() => {
           <BaseTooltip :text="t('toolbar.pushOptionsTitle')" placement="bottom">
             <button
               type="button"
-              class="flex h-full items-center rounded-r-md border-l border-border/40 px-1 py-0 text-[10px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+              class="flex h-full min-h-[40px] min-w-[24px] items-center justify-center rounded-r-md border-l border-border/40 px-2 py-0 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
               :disabled="!repoId || pushMut.isPending.value"
               :aria-expanded="pushDropdownOpen"
               aria-haspopup="menu"
@@ -344,14 +344,14 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
+      <span class="mx-1 h-10 w-px bg-border" aria-hidden="true" />
 
       <!-- [branch] Branch / Stash / Pop -->
       <div class="flex items-center gap-0.5">
         <BaseTooltip :text="t('toolbar.branchTitle')" kbd="⌘B" placement="bottom">
           <button
             type="button"
-            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            class="flex flex-col items-center gap-0 rounded-md px-2.5 py-1.5 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
             :disabled="!repoId"
             @click="onBranch"
           >
@@ -371,7 +371,7 @@ onUnmounted(() => {
         >
           <button
             type="button"
-            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            class="flex flex-col items-center gap-0 rounded-md px-2.5 py-1.5 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
             :disabled="!repoId || !hasChanges || stashMut.isPending.value"
             @click="onStash"
           >
@@ -393,7 +393,7 @@ onUnmounted(() => {
         >
           <button
             type="button"
-            class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            class="flex flex-col items-center gap-0 rounded-md px-2.5 py-1.5 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
             :disabled="!repoId || stashCount === 0 || popMut.isPending.value"
             @click="onPop"
           >
@@ -406,13 +406,13 @@ onUnmounted(() => {
         </BaseTooltip>
       </div>
 
-      <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
+      <span class="mx-1 h-10 w-px bg-border" aria-hidden="true" />
 
       <!-- [shell] Terminal -->
       <BaseTooltip :text="t('toolbar.terminalToggle')" kbd="⌘`" placement="bottom">
         <button
           type="button"
-          class="flex flex-col items-center gap-0 rounded-md px-2 py-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          class="flex flex-col items-center gap-0 rounded-md px-2.5 py-1.5 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           @click="onTerminal"
         >
           <span class="text-base leading-none">▸_</span>
@@ -420,7 +420,7 @@ onUnmounted(() => {
         </button>
       </BaseTooltip>
 
-      <span class="mx-1 h-7 w-px bg-border" aria-hidden="true" />
+      <span class="mx-1 h-10 w-px bg-border" aria-hidden="true" />
 
       <!-- Fetch — secondary, label only (Pull 옆 ▾ 대체 — 단순화) -->
       <BaseTooltip
@@ -430,7 +430,7 @@ onUnmounted(() => {
       >
         <button
           type="button"
-          class="rounded-md px-2 py-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+          class="rounded-md px-3 py-2 min-h-[40px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-transparent"
           :disabled="!repoId || fetchMut.isPending.value"
           @click="onFetch"
         >

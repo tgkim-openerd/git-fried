@@ -268,7 +268,7 @@ const buildInfo = computed(() => ({
             <li v-for="c in g.items" :key="c.id">
               <button
                 type="button"
-                class="w-full px-4 py-1 pl-6 text-left text-[13px]"
+                class="w-full px-4 py-1.5 pl-6 min-h-[32px] text-left text-[13px]"
                 :class="[
                   c.futureRelease
                     ? 'cursor-not-allowed text-muted-foreground/50'
@@ -296,7 +296,7 @@ const buildInfo = computed(() => ({
       <div class="mt-4 border-t border-border px-3 pt-3">
         <button
           type="button"
-          class="w-full rounded-md border border-input px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+          class="w-full rounded-md border border-input px-2.5 py-1.5 min-h-[28px] text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
           @click="onResetAll"
         >
           ↺ {{ t('settings.resetAll') }}
@@ -372,7 +372,7 @@ const buildInfo = computed(() => ({
           </p>
           <button
             type="button"
-            class="mt-3 rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:opacity-90"
+            class="mt-3 rounded bg-primary px-3 py-1.5 min-h-[28px] text-xs text-primary-foreground hover:opacity-90"
             @click="importGkOpen = true"
           >
             GitKraken 가져오기

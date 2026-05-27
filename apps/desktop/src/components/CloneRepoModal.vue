@@ -230,7 +230,7 @@ const canSubmit = computed(
       <!-- 고급 옵션 -->
       <button
         type="button"
-        class="mt-4 text-xs text-muted-foreground hover:underline"
+        class="mt-4 inline-flex items-center rounded px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40"
         @click="showAdvanced = !showAdvanced"
       >
         {{ showAdvanced ? '▾' : '▸' }} {{ t('clone.advancedToggle') }}
@@ -308,14 +308,14 @@ const canSubmit = computed(
       <div class="flex justify-end gap-2 text-xs">
         <button
           type="button"
-          class="rounded border border-border px-3 py-1 hover:bg-muted/40"
+          class="rounded border border-border px-3 py-1.5 min-h-[32px] hover:bg-muted/40"
           @click="close"
         >
           취소
         </button>
         <button
           type="button"
-          class="rounded bg-primary px-3 py-1 text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          class="rounded bg-primary px-3 py-1.5 min-h-[32px] text-primary-foreground hover:opacity-90 disabled:opacity-50"
           :disabled="!canSubmit"
           @click="cloneMut.mutate()"
         >

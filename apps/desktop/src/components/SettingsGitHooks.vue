@@ -152,7 +152,7 @@ const missingHooks = computed(() =>
                 <button
                   v-if="h.standard"
                   type="button"
-                  class="rounded border border-input bg-background px-1.5 py-0.5 text-[10px] hover:bg-accent/40 disabled:opacity-50"
+                  class="rounded border border-input bg-background px-2 py-1 min-h-[24px] text-xs hover:bg-accent/40 disabled:opacity-50"
                   :disabled="deactivateMut.isPending.value"
                   :title="t('settings.gitHooks.deactivateButtonTitle', { name: h.name })"
                   @click="deactivateMut.mutate(h.name)"
@@ -185,7 +185,7 @@ const missingHooks = computed(() =>
               <span class="font-mono">{{ h.name }}</span>
               <button
                 type="button"
-                class="rounded border border-input bg-background px-1.5 py-0.5 text-[10px] hover:bg-accent/40 disabled:opacity-50"
+                class="rounded border border-input bg-background px-2 py-1 min-h-[24px] text-xs hover:bg-accent/40 disabled:opacity-50"
                 :disabled="activateMut.isPending.value"
                 :title="t('settings.gitHooks.activateButtonTitle', { name: h.name })"
                 @click="activateMut.mutate(h.name)"

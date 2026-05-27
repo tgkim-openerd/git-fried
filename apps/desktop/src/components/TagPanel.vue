@@ -159,7 +159,7 @@ const { onTagContextMenu, deleteTagLocal, deleteTagRemote } = useTagInteraction(
       />
       <button
         type="submit"
-        class="self-end rounded bg-primary px-2 py-0.5 text-[11px] text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        class="self-end rounded bg-primary px-2.5 py-1 min-h-[28px] text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
         :disabled="!newName.trim() || createMut.isPending.value"
       >
         {{ t('tag.createButton') }}
@@ -224,9 +224,9 @@ const { onTagContextMenu, deleteTagLocal, deleteTagRemote } = useTagInteraction(
             {{ t('tag.ctxHint') }}
           </p>
         </div>
-        <div class="mt-1 flex gap-2 text-[11px]">
+        <div class="mt-1 flex gap-2 text-xs">
           <button
-            class="hover:underline"
+            class="rounded px-2 py-1 min-h-[24px] hover:bg-accent/40"
             :title="t('tag.pushOriginTitle')"
             :aria-label="t('tag.pushAria', { name: tg.name })"
             @click.stop="pushMut.mutate(tg.name)"
@@ -234,14 +234,14 @@ const { onTagContextMenu, deleteTagLocal, deleteTagRemote } = useTagInteraction(
             push
           </button>
           <button
-            class="hover:underline text-destructive"
+            class="rounded px-2 py-1 min-h-[24px] text-destructive hover:bg-destructive/10"
             :aria-label="t('tag.delLocalAria', { name: tg.name })"
             @click.stop="deleteTagLocal(tg.name)"
           >
             del local
           </button>
           <button
-            class="hover:underline text-destructive"
+            class="rounded px-2 py-1 min-h-[24px] text-destructive hover:bg-destructive/10"
             :aria-label="t('tag.delRemoteAria', { name: tg.name })"
             @click.stop="deleteTagRemote(tg.name)"
           >

@@ -127,7 +127,7 @@ const { onStashContextMenu } = useStashInteraction({
         <!-- S-4+S-5: ⋯ overflow → ContextMenu (apply/pop/copy SHA/drop). hover 시 노출. -->
         <button
           type="button"
-          class="shrink-0 opacity-0 group-hover:opacity-100 rounded px-1 text-[11px] text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+          class="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 rounded px-1 text-[11px] text-muted-foreground hover:bg-accent/40 hover:text-foreground"
           :title="t('stashList.menuTitle')"
           :aria-label="t('stashList.menuAriaLabel', { idx: s.index })"
           @click.stop="onStashContextMenu($event, s)"

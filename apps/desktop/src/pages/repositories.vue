@@ -252,7 +252,7 @@ function workspaceName(id: number | null): string {
           v-for="m in ['directory', 'org', 'forge'] as GroupMode[]"
           :key="m"
           type="button"
-          class="rounded border border-input px-2 py-1"
+          class="rounded border border-input px-2.5 py-1.5 min-h-[28px]"
           :class="
             groupMode === m
               ? 'bg-accent text-accent-foreground font-semibold'
@@ -267,7 +267,7 @@ function workspaceName(id: number | null): string {
       <div class="flex items-center gap-1 text-xs text-muted-foreground">
         <button
           type="button"
-          class="rounded border border-input px-2 py-1 hover:bg-accent/40 disabled:opacity-50"
+          class="rounded border border-input px-2.5 py-1.5 min-h-[28px] text-xs hover:bg-accent/40 disabled:opacity-50"
           :disabled="groups.length === 0 || allCollapsed"
           :title="t('repos.collapseAllTitle', { n: groups.length })"
           @click="collapseAll"
@@ -276,7 +276,7 @@ function workspaceName(id: number | null): string {
         </button>
         <button
           type="button"
-          class="rounded border border-input px-2 py-1 hover:bg-accent/40 disabled:opacity-50"
+          class="rounded border border-input px-2.5 py-1.5 min-h-[28px] text-xs hover:bg-accent/40 disabled:opacity-50"
           :disabled="groups.length === 0 || collapsedKeys.size === 0"
           :title="t('repos.expandAllTitle', { n: groups.length })"
           @click="expandAll"
@@ -358,8 +358,9 @@ function workspaceName(id: number | null): string {
             </button>
             <button
               type="button"
-              class="rounded text-xs text-amber-500 hover:opacity-80"
+              class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-xs text-amber-500 hover:bg-accent/40 hover:opacity-80"
               :title="`'${repo.name}' Unpin`"
+              :aria-label="`'${repo.name}' Unpin`"
               @click.stop="pinMut.mutate({ id: repo.id, pinned: false })"
             >
               ☆
@@ -427,7 +428,7 @@ function workspaceName(id: number | null): string {
               <button
                 v-if="g.label && g.repos.length > 0"
                 type="button"
-                class="rounded p-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                class="rounded min-h-[24px] min-w-[24px] px-2 py-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
                 :title="t('repos.openGroupAllTitle', { label: g.label, n: g.repos.length })"
                 :aria-label="t('repos.openGroupAllAriaLabel', { label: g.label })"
                 @click.stop.prevent="openGroupAll(g)"
@@ -445,13 +446,14 @@ function workspaceName(id: number | null): string {
                 <!-- Phase 11-4 — nested button HTML 위반 회피: pin 은 sibling, 행 본체는 div + click. -->
                 <button
                   type="button"
-                  class="text-xs"
+                  class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-xs hover:bg-accent/40"
                   :class="
                     repo.isPinned
                       ? 'text-amber-500'
                       : 'text-muted-foreground/40 group-hover:text-muted-foreground hover:text-amber-500'
                   "
                   :title="repo.isPinned ? 'Unpin' : 'Pin'"
+                  :aria-label="repo.isPinned ? `${repo.name} Unpin` : `${repo.name} Pin`"
                   @click.stop="pinMut.mutate({ id: repo.id, pinned: !repo.isPinned })"
                 >
                   {{ repo.isPinned ? '⭐' : '☆' }}
@@ -483,8 +485,9 @@ function workspaceName(id: number | null): string {
                 </button>
                 <button
                   type="button"
-                  class="rounded p-1 text-xs opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
+                  class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-xs opacity-0 transition-opacity hover:bg-accent focus-visible:opacity-100 group-hover:opacity-100"
                   :title="t('repos.openInExplorerTitle')"
+                  :aria-label="t('repos.openInExplorerTitle')"
                   @click.stop="openInExplorer(repo.id)"
                 >
                   📂
@@ -492,8 +495,9 @@ function workspaceName(id: number | null): string {
                 <!-- R2-R2 — 별칭 편집 -->
                 <button
                   type="button"
-                  class="rounded p-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                  class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
                   :title="t('repos.aliasEditTitle')"
+                  :aria-label="t('repos.aliasEditTitle')"
                   @click.stop="onEditAlias(repo)"
                 >
                   ✎
@@ -501,8 +505,9 @@ function workspaceName(id: number | null): string {
                 <!-- R2-R1 — 추적 해제 -->
                 <button
                   type="button"
-                  class="rounded p-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/15 hover:text-destructive group-hover:opacity-100"
+                  class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-xs text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/15 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
                   :title="t('repos.removeTitle')"
+                  :aria-label="t('repos.removeTitle')"
                   :disabled="removeRepoMut.isPending.value"
                   @click.stop="onRemoveRepo(repo)"
                 >

@@ -328,7 +328,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </button>
                 <button
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                   title="unstage"
                   :aria-label="`'${row.path}' unstage`"
                   @click.stop="onUnstageOne(row.path)"
@@ -375,7 +375,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <span class="flex-1 truncate font-mono text-xs">{{ f.path }}</span>
               <button
                 type="button"
-                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="file history / blame"
                 :aria-label="`'${f.path}' history / blame`"
                 @click.stop="openHistory(f.path)"
@@ -384,7 +384,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               </button>
               <button
                 type="button"
-                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="discard"
                 :aria-label="t('status.discardAria', { path: f.path })"
                 @click.stop="onDiscardOne(f.path)"
@@ -402,7 +402,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               </button>
               <button
                 type="button"
-                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 title="stage"
                 :aria-label="`'${f.path}' stage`"
                 @click.stop="onStageOne(f.path)"
@@ -449,7 +449,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </span>
                 <button
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                   title="file history / blame"
                   :aria-label="`'${row.path}' history / blame`"
                   @click.stop="openHistory(row.path)"
@@ -458,7 +458,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </button>
                 <button
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                   title="discard"
                   :aria-label="t('status.discardAria', { path: row.path })"
                   @click.stop="onDiscardOne(row.path)"
@@ -476,7 +476,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </button>
                 <button
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                   title="stage"
                   :aria-label="`'${row.path}' stage`"
                   @click.stop="onStageOne(row.path)"
@@ -518,7 +518,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <span class="flex-1 truncate font-mono text-xs">{{ p }}</span>
               <button
                 type="button"
-                class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                 @click.stop="onStageOne(p)"
               >
                 +
@@ -554,7 +554,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 }}</span>
                 <button
                   type="button"
-                  class="opacity-0 group-hover:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                  class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
                   title="stage"
                   :aria-label="`'${row.path}' stage`"
                   @click.stop="onStageOne(row.path)"

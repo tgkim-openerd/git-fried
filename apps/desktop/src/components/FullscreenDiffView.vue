@@ -217,7 +217,7 @@ watch(
           v-for="m in VIEW_MODES"
           :key="m.value"
           type="button"
-          class="rounded px-1.5 py-0.5 text-[10px]"
+          class="rounded px-2 py-1 min-h-[24px] text-xs"
           :class="
             viewMode === m.value
               ? 'bg-accent text-accent-foreground font-semibold'
@@ -234,7 +234,7 @@ watch(
       <!-- Sprint c30 / GitKraken UX (Phase 6a) — History modal (Blame 은 inline view 로 이동) -->
       <button
         type="button"
-        class="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+        class="rounded border border-border px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
         title="History — 파일 commit 이력 (full modal)"
         aria-label="File history"
         data-testid="fullscreen-diff-history"
@@ -247,7 +247,7 @@ watch(
       <div class="flex items-center gap-0.5">
         <button
           type="button"
-          class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
+          class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] px-2 py-1 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
           :disabled="hunkNavDisabled"
           title="이전 hunk (Alt+↑)"
           aria-label="이전 hunk"
@@ -265,7 +265,7 @@ watch(
         </span>
         <button
           type="button"
-          class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
+          class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] px-2 py-1 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
           :disabled="hunkNavDisabled"
           title="다음 hunk (Alt+↓)"
           aria-label="다음 hunk"
@@ -278,7 +278,7 @@ watch(
 
       <button
         type="button"
-        class="rounded px-2 py-0.5 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+        class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
         title="닫기 (ESC)"
         aria-label="fullscreen diff 닫기"
         data-testid="fullscreen-diff-close"

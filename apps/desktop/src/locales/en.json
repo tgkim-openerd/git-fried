@@ -20,7 +20,8 @@
       "status": "Status",
       "updated": "Updated"
     },
-    "snoozedHint": "{n} snoozed (tab to switch)"
+    "snoozedHint": "{n} snoozed (tab to switch)",
+    "deleteSavedView": "Delete saved view: {name}"
   },
   "a11y": {
     "ariaLabel": {
@@ -58,6 +59,7 @@
     "copy": "Copy",
     "open": "Open",
     "remove": "Remove",
+    "add": "Add",
     "apply": "Apply",
     "back": "Back",
     "next": "Next",

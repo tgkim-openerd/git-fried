@@ -127,7 +127,7 @@ function onKeydown(e: KeyboardEvent) {
               <button
                 v-if="showCloseButton"
                 type="button"
-                class="shrink-0 text-muted-foreground hover:text-foreground"
+                class="flex shrink-0 items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
                 aria-label="닫기"
                 @click="emit('close')"
               >

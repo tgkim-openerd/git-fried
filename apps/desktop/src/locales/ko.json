@@ -20,7 +20,8 @@
       "status": "상태",
       "updated": "갱신"
     },
-    "snoozedHint": "{n}개 snoozed (탭 전환)"
+    "snoozedHint": "{n}개 snoozed (탭 전환)",
+    "deleteSavedView": "저장된 view 삭제: {name}"
   },
   "a11y": {
     "ariaLabel": {
@@ -58,6 +59,7 @@
     "copy": "복사",
     "open": "열기",
     "remove": "제거",
+    "add": "추가",
     "apply": "적용",
     "back": "뒤로",
     "next": "다음",

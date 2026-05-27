@@ -150,7 +150,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
         <button
           v-if="sha"
           type="button"
-          class="rounded bg-muted/40 px-1.5 py-0.5 font-mono text-xs hover:bg-accent/40"
+          class="rounded bg-muted/40 px-2 py-1 min-h-[24px] font-mono text-xs hover:bg-accent/40"
           title="SHA 복사 (full)"
           aria-label="SHA 복사"
           @click="copySha"
@@ -166,7 +166,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
         <button
           v-if="sha"
           type="button"
-          class="flex items-center gap-1 rounded border border-input bg-card px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-card"
+          class="flex items-center gap-1 rounded border border-input bg-card px-2.5 py-1 min-h-[28px] text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:hover:bg-card"
           :disabled="!ai.available.value || explainMut.isPending.value"
           :title="
             ai.available.value
@@ -295,7 +295,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
             >
               <button
                 type="button"
-                class="rounded px-1.5 py-0.5"
+                class="rounded px-2 py-1 min-h-[24px] min-w-[28px]"
                 :class="
                   viewMode === 'path'
                     ? 'bg-accent text-accent-foreground font-semibold'
@@ -309,7 +309,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
               </button>
               <button
                 type="button"
-                class="rounded px-1.5 py-0.5"
+                class="rounded px-2 py-1 min-h-[24px] min-w-[28px]"
                 :class="
                   viewMode === 'tree'
                     ? 'bg-accent text-accent-foreground font-semibold'

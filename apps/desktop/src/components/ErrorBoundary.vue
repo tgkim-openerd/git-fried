@@ -66,7 +66,7 @@ function retry() {
         </div>
         <button
           type="button"
-          class="shrink-0 rounded border border-current px-2 py-0.5 text-[10px] hover:bg-current/10"
+          class="shrink-0 rounded border border-current px-2.5 py-1 min-h-[28px] text-xs hover:bg-current/10"
           @click="retry"
         >
           ↻ 재시도

@@ -217,7 +217,7 @@ async function onAiResolve(): Promise<void> {
         >
           <span class="text-xs font-semibold">🟦 OURS (현재 브랜치)</span>
           <button
-            class="text-[10px] text-muted-foreground hover:text-foreground"
+            class="rounded px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
             @click="applyOurs"
           >
             → 결과로 복사
@@ -237,7 +237,7 @@ async function onAiResolve(): Promise<void> {
           <span class="text-xs font-semibold text-diff-add">✓ RESULT (편집)</span>
           <button
             v-if="conflictQuery.data.value?.base != null"
-            class="text-[10px] text-muted-foreground hover:text-foreground"
+            class="rounded px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
             @click="applyBase"
           >
             base 사용
@@ -257,7 +257,7 @@ async function onAiResolve(): Promise<void> {
         >
           <span class="text-xs font-semibold">🟪 THEIRS (들어오는)</span>
           <button
-            class="text-[10px] text-muted-foreground hover:text-foreground"
+            class="rounded px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
             @click="applyTheirs"
           >
             → 결과로 복사

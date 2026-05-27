@@ -136,7 +136,7 @@ watch(
         :key="g.key"
         type="button"
         :data-testid="`project-tab-${g.label}`"
-        class="group flex shrink-0 cursor-pointer items-center gap-1 rounded-t border border-b-0 border-border px-2 py-0.5 text-[11px] hover:bg-accent/40"
+        class="group flex shrink-0 cursor-pointer items-center gap-1 rounded-t border border-b-0 border-border px-2.5 py-1 min-h-[28px] text-xs hover:bg-accent/40"
         :class="
           activeGroup?.key === g.key
             ? 'bg-card text-foreground font-semibold'
@@ -167,7 +167,7 @@ watch(
       >
         <button
           type="button"
-          class="ml-1 shrink-0 rounded border border-dashed border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+          class="ml-1 shrink-0 rounded border border-dashed border-border px-2 py-1 min-h-[24px] min-w-[24px] text-xs text-muted-foreground hover:bg-accent/40"
           @click="$emit('openSwitcher')"
         >
           ▾ {{ overflowHiddenCount }}+
@@ -176,7 +176,7 @@ watch(
       <BaseTooltip :text="t('tabs.newRepoTooltip')" kbd="⌘T" placement="bottom">
         <button
           type="button"
-          class="ml-1 shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-accent/40"
+          class="ml-1 shrink-0 rounded border border-border px-2 py-1 min-h-[24px] min-w-[24px] text-xs text-muted-foreground hover:bg-accent/40"
           :aria-label="t('templ.newRepoTab')"
           @click="$emit('openSwitcher')"
         >
@@ -207,7 +207,7 @@ watch(
           v-for="id in activeGroupTabs"
           :key="id"
           :data-tab-id="id"
-          class="tab-handle group flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border/60 px-2 py-0.5 text-[11px] hover:bg-accent/40"
+          class="tab-handle group flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border/60 px-2.5 py-1 min-h-[28px] text-xs hover:bg-accent/40"
           :class="
             store.activeRepoId === id
               ? 'bg-accent text-accent-foreground font-semibold'
@@ -221,7 +221,7 @@ watch(
           <span class="truncate" :class="tabLabelClass(id)">{{ tabLabel(id) }}</span>
           <button
             type="button"
-            class="rounded text-muted-foreground opacity-50 hover:bg-destructive/40 hover:text-destructive-foreground hover:opacity-100"
+            class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-muted-foreground opacity-50 hover:bg-destructive/40 hover:text-destructive-foreground hover:opacity-100 focus-visible:opacity-100"
             :title="t('tabs.closeTab', { label: tabLabel(id) })"
             :aria-label="t('tabs.closeTab', { label: tabLabel(id) })"
             @click="close(id, $event)"

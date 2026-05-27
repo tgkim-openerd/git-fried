@@ -85,7 +85,7 @@ function worktreeName(path: string): string {
           <button
             v-else
             type="button"
-            class="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100"
+            class="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
             :title="t('worktree.miniLockTitle')"
             @click="onLock(w.path)"
           >

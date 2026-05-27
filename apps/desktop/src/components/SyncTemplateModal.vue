@@ -150,10 +150,16 @@ function repoName(id: number): string {
             대상 레포 ({{ selectedIds.size }} 선택)
           </label>
           <div class="flex gap-2 text-[11px]">
-            <button class="text-muted-foreground hover:underline" @click="selectAll">
+            <button
+              class="rounded px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40"
+              @click="selectAll"
+            >
               {{ t('syncTemplate.selectAll') }}
             </button>
-            <button class="text-muted-foreground hover:underline" @click="clearAll">
+            <button
+              class="rounded px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40"
+              @click="clearAll"
+            >
               {{ t('syncTemplate.clearAll') }}
             </button>
           </div>

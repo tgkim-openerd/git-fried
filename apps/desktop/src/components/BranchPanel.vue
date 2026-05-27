@@ -339,7 +339,7 @@ async function onExplainBranch(b: BranchInfo) {
             <!-- Solo 토글 -->
             <button
               type="button"
-              class="text-[10px] opacity-0 group-hover:opacity-100"
+              class="text-[10px] opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
               :class="
                 soloRef === b.name
                   ? 'opacity-100 text-orange-700 dark:text-orange-500'
@@ -357,7 +357,7 @@ async function onExplainBranch(b: BranchInfo) {
             <button
               v-if="ai.available.value"
               type="button"
-              class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground"
+              class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground"
               :title="`✨ ${ai.available.value} 로 브랜치 설명`"
               :aria-label="`'${b.name}' AI 설명 (${ai.available.value})`"
               @click.stop="onExplainBranch(b)"
@@ -367,7 +367,7 @@ async function onExplainBranch(b: BranchInfo) {
             <button
               v-if="!b.isHead && b.kind === 'local'"
               type="button"
-              class="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-destructive"
+              class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-[10px] text-muted-foreground hover:text-destructive"
               title="삭제"
               :aria-label="`로컬 브랜치 '${b.name}' 삭제`"
               @click.stop="onDelete(b)"

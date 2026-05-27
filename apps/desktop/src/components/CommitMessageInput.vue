@@ -200,7 +200,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       <div class="flex items-center gap-2 text-xs">
         <button
           type="button"
-          class="rounded-md border border-input px-2 py-0.5"
+          class="rounded-md border border-input px-2.5 py-1 min-h-[24px]"
           :class="mode === 'conventional' ? 'bg-accent text-accent-foreground' : ''"
           aria-label="Conventional Commits 모드 (type/scope/subject)"
           :aria-pressed="mode === 'conventional'"
@@ -210,7 +210,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         </button>
         <button
           type="button"
-          class="rounded-md border border-input px-2 py-0.5"
+          class="rounded-md border border-input px-2.5 py-1 min-h-[24px]"
           :class="mode === 'free' ? 'bg-accent text-accent-foreground' : ''"
           :aria-label="t('a11y.ariaLabel.commitMessageFree')"
           :aria-pressed="mode === 'free'"
@@ -225,7 +225,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         v-if="availableCli"
         type="button"
         data-testid="compose-with-ai"
-        class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
+        class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2.5 py-1 min-h-[28px] text-xs font-medium text-violet-700 dark:text-violet-500 hover:bg-violet-500/20 disabled:opacity-50"
         :disabled="!repoId || aiMut.isPending.value"
         :title="`${availableCli} CLI 로 staged diff 분석 → commit 메시지 생성`"
         :aria-label="`Compose with AI (${availableCli})`"
@@ -300,7 +300,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       </div>
       <button
         type="button"
-        class="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50"
+        class="rounded-md bg-primary px-3 py-1.5 min-h-[28px] text-xs font-medium text-primary-foreground disabled:opacity-50"
         :disabled="!canCommit() || commitMut.isPending.value"
         :title="amend ? t('commitInput.amendTitle') : t('commitInput.commitTitle')"
         @click="commitWith(noVerify)"
@@ -360,7 +360,8 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         </span>
         <button
           type="button"
-          class="text-muted-foreground hover:text-foreground"
+          class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+          :aria-label="t('common.close')"
           @click="cmtMut.clearLastResult()"
         >
           ✕
@@ -377,14 +378,14 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       <div class="mt-2 flex justify-end gap-2">
         <button
           type="button"
-          class="rounded-md border border-rose-500/40 px-2 py-1 text-danger-rose hover:bg-rose-500/10"
+          class="rounded-md border border-rose-500/40 px-2.5 py-1.5 min-h-[28px] text-danger-rose hover:bg-rose-500/10"
           @click="commitWith(true)"
         >
           ⚠ --no-verify 로 강제 commit
         </button>
         <button
           type="button"
-          class="rounded-md border border-input px-2 py-1 hover:bg-accent"
+          class="rounded-md border border-input px-2.5 py-1.5 min-h-[28px] hover:bg-accent"
           @click="commitWith(noVerify)"
         >
           재시도

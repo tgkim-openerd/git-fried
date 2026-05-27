@@ -105,7 +105,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
       <h3 class="text-sm font-semibold">{{ t('worktree.title') }}</h3>
       <button
         type="button"
-        class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent disabled:opacity-50"
+        class="rounded-md border border-input px-2.5 py-1 min-h-[28px] text-xs hover:bg-accent disabled:opacity-50"
         :disabled="!repoId || pruneMut.isPending.value"
         :aria-label="t('worktree.pruneAria')"
         @click="pruneMut.mutate()"
@@ -212,7 +212,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
             <button
               v-if="!wt.isLocked"
               type="button"
-              class="text-[10px] text-warning-amber hover:underline"
+              class="rounded px-2 py-1 min-h-[24px] text-xs text-warning-amber hover:bg-accent/40"
               :disabled="lockMut.isPending.value"
               :aria-label="t('worktree.lockAria', { path: wt.path })"
               @click="onLock(wt.path)"
@@ -222,7 +222,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
             <button
               v-else
               type="button"
-              class="text-[10px] text-warning-amber hover:underline"
+              class="rounded px-2 py-1 min-h-[24px] text-xs text-warning-amber hover:bg-accent/40"
               :disabled="unlockMut.isPending.value"
               :aria-label="t('worktree.unlockAria', { path: wt.path })"
               @click="onUnlock(wt.path)"
@@ -231,7 +231,7 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
             </button>
             <button
               type="button"
-              class="text-[10px] text-destructive hover:underline"
+              class="rounded px-2 py-1 min-h-[24px] text-xs text-destructive hover:bg-destructive/10"
               :disabled="wt.isLocked"
               :title="wt.isLocked ? t('worktree.removeBlockedTitle') : ''"
               :aria-label="t('worktree.removeAria', { path: wt.path })"

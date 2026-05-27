@@ -144,7 +144,7 @@ const {
             v-for="s in [null, 'open', 'closed', 'merged'] as (PrState | null)[]"
             :key="String(s)"
             type="button"
-            class="rounded-md border border-input px-2 py-0.5"
+            class="rounded-md border border-input px-2.5 py-1 min-h-[28px] text-xs"
             :class="
               stateFilter === s ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
             "
@@ -159,8 +159,9 @@ const {
         </label>
         <button
           type="button"
-          class="rounded-md border border-input px-2 py-0.5 hover:bg-accent disabled:opacity-50"
+          class="flex items-center justify-center rounded-md border border-input min-h-[28px] min-w-[28px] px-2.5 py-1 text-xs hover:bg-accent disabled:opacity-50"
           :disabled="isFetching"
+          :aria-label="t('common.refresh')"
           @click="refetch()"
         >
           {{ isFetching ? '...' : '↻' }}
@@ -182,7 +183,7 @@ const {
           v-for="h in FILTER_HELPERS"
           :key="h.label"
           type="button"
-          class="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+          class="rounded border border-border px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40"
           :title="`'${h.insert}' 추가`"
           @click="appendFilter(h.insert)"
         >
@@ -191,7 +192,7 @@ const {
         <button
           v-if="searchQuery"
           type="button"
-          class="rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] text-destructive hover:bg-destructive/10"
+          class="rounded border border-destructive/40 px-2 py-1 min-h-[24px] text-xs text-destructive hover:bg-destructive/10"
           @click="searchQuery = ''"
         >
           ✕ clear
@@ -206,7 +207,7 @@ const {
           v-for="t in ['active', 'pinned', 'snoozed'] as Tab[]"
           :key="t"
           type="button"
-          class="rounded px-2 py-0.5"
+          class="rounded px-2.5 py-1 min-h-[28px] text-xs"
           :class="
             tab === t
               ? 'bg-accent text-accent-foreground font-semibold'
@@ -226,30 +227,38 @@ const {
 
       <div class="ml-auto flex items-center gap-1">
         <span class="text-muted-foreground">View:</span>
-        <button
+        <div
           v-for="v in savedViews.views.value"
           :key="v.id"
-          type="button"
-          class="group rounded border border-border px-1.5 py-0.5 hover:bg-accent/40"
-          @click="applyView(v)"
+          class="group flex items-center rounded border border-border hover:bg-accent/40"
         >
-          {{ v.name }}
-          <span
-            class="ml-1 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100"
-            @click.stop="savedViews.deleteMut.mutate(v.id)"
-            >✕</span
+          <button
+            type="button"
+            class="rounded-l px-2 py-1 min-h-[24px] text-xs"
+            @click="applyView(v)"
           >
-        </button>
+            {{ v.name }}
+          </button>
+          <button
+            type="button"
+            class="flex items-center justify-center rounded-r min-h-[24px] min-w-[24px] px-1 text-[11px] text-muted-foreground opacity-0 hover:bg-destructive/20 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+            :aria-label="t('launchpad.deleteSavedView', { name: v.name })"
+            @click.stop="savedViews.deleteMut.mutate(v.id)"
+          >
+            ✕
+          </button>
+        </div>
         <input
           v-model="newViewName"
           placeholder="현재 필터 저장"
-          class="w-32 rounded border border-input bg-background px-1.5 py-0.5"
+          class="w-32 rounded border border-input bg-background px-2 py-1 min-h-[28px] text-xs"
           @keyup.enter="saveCurrentView"
         />
         <button
           v-if="newViewName.trim()"
           type="button"
-          class="rounded border border-border px-1.5 py-0.5 hover:bg-accent/40"
+          class="flex items-center justify-center rounded border border-border min-h-[24px] min-w-[24px] px-2 py-1 text-xs hover:bg-accent/40"
+          :aria-label="t('common.add')"
           @click="saveCurrentView"
         >
           +

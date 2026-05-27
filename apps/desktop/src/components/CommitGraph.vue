@@ -222,7 +222,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
         >
           <button
             type="button"
-            class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
+            class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] px-2 py-1 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
             :disabled="zoomOutDisabled"
             :aria-label="`그래프 column 축소 (현재 width: ${graphWidth}px)`"
             @click="zoomOut"
@@ -231,7 +231,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
           </button>
           <button
             type="button"
-            class="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
+            class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] px-2 py-1 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-40"
             :disabled="zoomInDisabled"
             :aria-label="`그래프 column 확대 (현재 width: ${graphWidth}px)`"
             @click="zoomIn"
@@ -251,7 +251,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
           </span>
           <button
             type="button"
-            class="text-xs text-muted-foreground hover:text-foreground"
+            class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] p-1 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
             :aria-label="t('a11y.ariaLabel.searchClose')"
             @click="closeSearch"
           >
@@ -261,7 +261,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
         <button
           v-else
           type="button"
-          class="rounded-md border border-input px-2 py-0.5 text-xs hover:bg-accent"
+          class="flex items-center justify-center rounded-md border border-input min-h-[28px] min-w-[28px] px-2.5 py-1 text-xs hover:bg-accent"
           title="⌘F / Ctrl+F"
           aria-label="commit 검색 열기 (⌘F / Ctrl+F)"
           @click="openSearch"
@@ -276,7 +276,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
 
     <!-- 컬럼 헤더 (drag reorder + 우클릭 토글 메뉴) -->
     <div
-      class="relative flex items-center border-b border-border bg-muted/40 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground"
+      class="relative flex items-center border-b border-border bg-muted/40 px-2 py-1.5 min-h-[28px] text-[11px] uppercase tracking-wider text-muted-foreground"
       @contextmenu="openHeaderMenu"
     >
       <!-- 그래프 sticky 좌측 placeholder -->

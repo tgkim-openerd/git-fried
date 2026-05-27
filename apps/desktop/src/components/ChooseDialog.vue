@@ -56,7 +56,7 @@ watch(open, async (next) => {
       <div class="flex flex-wrap justify-end gap-2">
         <button
           type="button"
-          class="rounded border border-input px-3 py-1 text-sm hover:bg-accent"
+          class="rounded border border-input px-3 py-1.5 min-h-[32px] text-sm hover:bg-accent"
           @click="onCancel"
         >
           {{ cancelText }}
@@ -67,7 +67,7 @@ watch(open, async (next) => {
           :ref="i === 0 ? captureFirstBtn : undefined"
           type="button"
           :class="[
-            'rounded px-3 py-1 text-sm font-medium',
+            'rounded px-3 py-1.5 min-h-[32px] text-sm font-medium',
             o.danger
               ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
               : 'bg-primary text-primary-foreground hover:bg-primary/90',

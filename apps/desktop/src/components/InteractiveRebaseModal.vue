@@ -153,7 +153,7 @@ onUnmounted(() => {
           <div class="mt-0.5 flex flex-col leading-none">
             <button
               type="button"
-              class="px-0.5 text-[9px] text-muted-foreground hover:text-foreground disabled:opacity-30"
+              class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] px-1 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
               :disabled="i === 0"
               :aria-label="t('interactiveRebase.moveUp', { sha: e.sha.slice(0, 7) })"
               @click="moveTodo(i, -1)"
@@ -162,7 +162,7 @@ onUnmounted(() => {
             </button>
             <button
               type="button"
-              class="px-0.5 text-[9px] text-muted-foreground hover:text-foreground disabled:opacity-30"
+              class="flex items-center justify-center rounded min-h-[24px] min-w-[24px] px-1 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground disabled:opacity-30"
               :disabled="i === todo.length - 1"
               :aria-label="t('interactiveRebase.moveDown', { sha: e.sha.slice(0, 7) })"
               @click="moveTodo(i, 1)"
@@ -172,7 +172,7 @@ onUnmounted(() => {
           </div>
           <select
             :value="e.action"
-            class="rounded border border-border bg-background px-1 py-0.5 text-xs"
+            class="rounded border border-border bg-background px-2 py-1 min-h-[28px] text-xs"
             :class="
               e.action === 'drop'
                 ? 'text-danger-rose line-through'
