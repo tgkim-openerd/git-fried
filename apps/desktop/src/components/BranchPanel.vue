@@ -153,7 +153,7 @@ async function onExplainBranch(b: BranchInfo) {
           v-for="k in ['local', 'remote', 'all'] as const"
           :key="k"
           type="button"
-          class="rounded px-1.5 py-0.5"
+          class="inline-flex min-h-[24px] items-center rounded px-1.5 py-0.5"
           :class="filterKind === k ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
           :aria-label="t('branch.filterAriaLabel', { kind: k })"
           :aria-pressed="filterKind === k"
@@ -163,7 +163,7 @@ async function onExplainBranch(b: BranchInfo) {
         </button>
         <button
           type="button"
-          class="rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
+          class="inline-flex min-h-[24px] min-w-[24px] items-center justify-center rounded border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent/40"
           :title="t('branch.remoteManage')"
           :aria-label="t('branch.remoteManage')"
           @click="remoteManageOpen = true"
@@ -186,7 +186,7 @@ async function onExplainBranch(b: BranchInfo) {
       <span>{{ t('branch.hideLabel') }}</span>
       <button
         type="button"
-        class="rounded border border-border px-1.5 hover:bg-accent/40"
+        class="inline-flex min-h-[24px] items-center rounded border border-border px-1.5 hover:bg-accent/40"
         :title="t('branch.hideAllRemotesTitle')"
         @click="bulkHide('remote')"
       >
@@ -194,7 +194,7 @@ async function onExplainBranch(b: BranchInfo) {
       </button>
       <button
         type="button"
-        class="rounded border border-border px-1.5 hover:bg-accent/40"
+        class="inline-flex min-h-[24px] items-center rounded border border-border px-1.5 hover:bg-accent/40"
         :title="t('branch.hideAllLocalTitle')"
         @click="bulkHide('branch')"
       >
@@ -204,7 +204,7 @@ async function onExplainBranch(b: BranchInfo) {
       <button
         v-if="hiddenSet.size > 0"
         type="button"
-        class="rounded border border-border px-1.5 hover:bg-accent/40"
+        class="inline-flex min-h-[24px] items-center rounded border border-border px-1.5 hover:bg-accent/40"
         :title="t('branch.restoreTitle')"
         @click="unhideAll()"
       >
@@ -213,7 +213,7 @@ async function onExplainBranch(b: BranchInfo) {
       <button
         v-if="soloRef"
         type="button"
-        class="rounded border border-orange-500 px-1.5 text-orange-700 dark:text-orange-500 hover:bg-orange-500/10"
+        class="inline-flex min-h-[24px] items-center rounded border border-orange-500 px-1.5 text-orange-700 dark:text-orange-500 hover:bg-orange-500/10"
         :title="t('branch.soloOffTitle')"
         @click="setSolo(null)"
       >
