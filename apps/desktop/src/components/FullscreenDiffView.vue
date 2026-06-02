@@ -98,6 +98,8 @@ const VIEW_MODES: ReadonlyArray<{ value: ViewMode; label: string; aria: string }
   { value: 'blame', label: 'Blame', aria: 'Blame View — inline line-by-line author' },
 ]
 const viewMode = ref<ViewMode>('diff')
+// E2 (plan #44) — 'file' view 에서 gutter blame 토글 (GitLens 스타일 좌측 gutter).
+const blameInFile = ref<boolean>(false)
 function setViewMode(m: ViewMode) {
   viewMode.value = m
 }
@@ -134,9 +136,18 @@ const currentRev = computed(() => {
   const cur = fs.current.value
   return cur && cur.source === 'commit' ? cur.sha : null
 })
+// E2 (Codex MED fix) — gutter blame 는 commit snapshot 일 때만 활성.
+// WIP/staged 는 표시 content(index)와 blame(working tree)의 rev 가 어긋날 수 있어 제외
+// (commit source 면 file·blame 둘 다 rev=sha → 라인 정합 보장).
+const isCommitSource = computed(() => fs.current.value?.source === 'commit')
 const blameQuery = useFileBlame(
   () => props.repoId,
-  () => (viewMode.value === 'blame' ? currentPath.value : null),
+  // E2 — 'blame' 전용 view 외에 'file' view 의 gutter blame 토글 시에도 fetch.
+  () =>
+    viewMode.value === 'blame' ||
+    (viewMode.value === 'file' && blameInFile.value && isCommitSource.value)
+      ? currentPath.value
+      : null,
   currentRev,
 )
 
@@ -231,6 +242,24 @@ watch(
         </button>
       </div>
 
+      <!-- E2 (plan #44) — 'file' view gutter blame 토글 (GitLens 스타일) -->
+      <button
+        v-if="viewMode === 'file' && isCommitSource"
+        type="button"
+        class="rounded border px-2 py-1 min-h-[24px] text-xs"
+        :class="
+          blameInFile
+            ? 'border-accent bg-accent text-accent-foreground font-semibold'
+            : 'border-border text-muted-foreground hover:text-foreground'
+        "
+        :aria-pressed="blameInFile"
+        aria-label="Gutter blame 토글"
+        data-testid="fullscreen-file-blame-toggle"
+        @click="blameInFile = !blameInFile"
+      >
+        ⎇ Blame
+      </button>
+
       <!-- Sprint c30 / GitKraken UX (Phase 6a) — History modal (Blame 은 inline view 로 이동) -->
       <button
         type="button"
@@ -315,6 +344,7 @@ watch(
         class="flex-1 overflow-auto"
         :content="fileQuery.data.value"
         :path="currentPath ?? ''"
+        :blame="blameInFile && isCommitSource ? blameQuery.data.value : null"
       />
     </template>
 
