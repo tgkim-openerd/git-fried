@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Sprint C14 G2 — Author filter dropdown (`docs/plan/14 §8`).
 // Sprint 22-2 CM-2 — row 우클릭 메뉴 (CommitGraph 와 동일 — useCommitActions 재사용).
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { getLog } from '@/api/git'
@@ -80,6 +80,33 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
     }),
   )
 }
+
+// === B8 (plan #44) — commit row 키보드 접근 (roving tabindex) ===
+// 무가상화 200행이라 per-row tabindex=0 은 tab-stop 폭증 → 하나만 0, ↑↓ 이동, Enter = showDiff.
+const focusedIdx = ref<number>(0)
+const tbodyRef = useTemplateRef<HTMLTableSectionElement>('tbodyRef')
+watch(filteredCommits, () => {
+  if (focusedIdx.value >= filteredCommits.value.length) focusedIdx.value = 0
+})
+function focusRow(idx: number) {
+  tbodyRef.value?.querySelectorAll<HTMLElement>('tr[data-commit-row]')[idx]?.focus()
+}
+function onRowKeydown(e: KeyboardEvent, i: number, sha: string) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    const n = Math.min(filteredCommits.value.length - 1, i + 1)
+    focusedIdx.value = n
+    focusRow(n)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    const n = Math.max(0, i - 1)
+    focusedIdx.value = n
+    focusRow(n)
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    emit('showDiff', sha)
+  }
+}
 </script>
 
 <template>
@@ -127,13 +154,18 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
             <th class="px-3 py-2 text-left font-normal w-10"></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody ref="tbodyRef">
           <tr
-            v-for="c in filteredCommits"
+            v-for="(c, i) in filteredCommits"
             :key="c.sha"
-            class="border-t border-border hover:bg-accent/50"
+            data-commit-row
+            :tabindex="i === focusedIdx ? 0 : -1"
+            :aria-label="`${c.shortSha} ${c.subject}`"
+            class="border-t border-border hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             @dblclick="emit('showDiff', c.sha)"
             @contextmenu="onRowContextMenu($event, c)"
+            @focus="focusedIdx = i"
+            @keydown="onRowKeydown($event, i, c.sha)"
           >
             <td class="px-3 py-1.5 font-mono text-xs text-muted-foreground">
               {{ c.shortSha }}
