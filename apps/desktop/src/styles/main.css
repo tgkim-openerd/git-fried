@@ -56,7 +56,7 @@
     --diff-delete: 0 72% 45%; /* rose-700 light, rose-500 dark */
     --diff-rename: 271 76% 45%; /* violet-700 light */
     --ai-violet: 271 80% 45%; /* AI 버튼 violet */
-    --warning-amber: 38 92% 38%; /* amber-700 light (warning 보다 진함) */
+    --warning-amber: 38 92% 32%; /* C7 (plan #44): amber-700(38%) 은 white 위 3.60:1 AA fail → 32%=4.84:1 AA pass */
     --danger-rose: 0 72% 45%; /* rose-700 light (destructive 보다 분리) */
 
     --border: 240 5.9% 90%;
