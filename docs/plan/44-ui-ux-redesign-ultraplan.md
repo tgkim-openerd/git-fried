@@ -391,8 +391,9 @@ D1‖D2 (규모 gate)                                [Phase 4]
 
 ## 10. 다음 단계 (구현 sprint 진입점)
 
-> **구현 현황 (2026-06-02 sprint — Codex 페어, 12 commit `1928ef2..b699f3c`, origin+upstream 동기)**
+> **구현 현황 (2026-06-02 sprint — Codex 페어, 14 commit `1928ef2..a399b12`, origin+upstream 동기)**
 > 본 plan 은 검토·리서치 산출물로 작성됐고, 이후 actionable·benefit-검증 항목을 sprint 로 구현 완료.
+> **결론: plan #44 는 이 개인 도구 스코프에서 완료** (Codex 방향성 자문 확정) — 잔여는 driver/POC 대기.
 >
 > | 항목 | 상태 | 비고 |
 > | --- | --- | --- |
@@ -405,6 +406,8 @@ D1‖D2 (규모 gate)                                [Phase 4]
 > | E1 global search | ✅ 구현 | Rust `unified_search` 4-scope(cargo 310) + GlobalSearchModal FE |
 > | E2 gutter blame | ✅ 구현 | FileViewer CodeMirror gutter, commit-source gate(Codex MED) |
 > | E4 merge editor | ✅ 구현(v1) | MergeResultEditor CodeMirror + conflict-line 강조. 2-pane MergeView 는 후속 |
+> | E3 PR diff-line 코멘트 | ✅ 구현 | `a399b12`. DiffViewer gated comment gutter + buildNewLineMap(parser test 7) → sugPath/sugLine prefill. Codex CONFIRM 1~6 + MED(trailing-newline phantom) fix. forge line=RIGHT/new-file 확인 |
+> | E6 service integration | ⊘ N/A | forge 경로 전부 배선(scaffold-without-caller 0). SettingsPluginIntegration placeholder 는 외부도구 미래기능(greenfield, "v0.5 예정") — wire-up 대상 아님 |
 > | F1/F2/F3/F5 | ✅ (이전 sprint) | quick-win |
 > | **C4 input 상태** | ❌ **DROP** | benefit gate — adoption surface 0(aria-invalid 0/input-border error-state 0). speculative |
 > | C3 Button primitive | ⏸ defer | 버튼 이미 WCAG 충족, 간접(dev DRY) 이점뿐 + 40+ site "한 번에 금지" → 리디자인 driver 시 전용 sprint |
