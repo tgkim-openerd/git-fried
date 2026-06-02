@@ -1293,6 +1293,94 @@ const HANDLERS: Record<string, MockHandler> = {
 
   // GitKraken importer
   import_gitkraken_detect: () => null,
+
+  // === Detail/diff fixtures — 2026-06-02 UI audit 보강 (modal 렌더용) ===
+  // 아래 command 들은 VOID_PREFIXES 에서 undefined 로 stub 되어 PrDetail/MergeEditor/Compare/
+  // FileHistory/Blame 모달이 렌더되지 않았다. 실 데이터 부여 (mock 레이어 전용, 프로덕션 불변).
+  get_pull_request: (args) => {
+    const n = (args?.args as { number?: number } | undefined)?.number
+    return PRS.find((p) => p.number === n) ?? PRS[0]
+  },
+  read_conflicted: (args) => {
+    const path =
+      (args?.args as { path?: string } | undefined)?.path ??
+      'apps/desktop/src/components/StatusPanel.vue'
+    return {
+      path,
+      base: 'const version = "0.2.0"\nconst title = "git-fried"\n',
+      ours: 'const version = "0.3.0" // 우리(HEAD) 변경\nconst title = "git-fried"\n',
+      theirs: 'const version = "0.2.0"\nconst title = "git-fried Desktop" // 그들(origin) 변경\n',
+      working:
+        '<<<<<<< HEAD\nconst version = "0.3.0" // 우리(HEAD) 변경\nconst title = "git-fried"\n=======\nconst version = "0.2.0"\nconst title = "git-fried Desktop" // 그들(origin) 변경\n>>>>>>> origin/main\n',
+    }
+  },
+  compare_refs: () => ({
+    commits: COMMIT_SUMMARIES.slice(0, 3).map((c) => ({
+      sha: c.sha,
+      author: c.authorName,
+      authorAt: c.authorAt,
+      summary: c.subject,
+    })),
+    diff: SAMPLE_DIFF,
+    leftCount: 3,
+    rightCount: 1,
+  }),
+  // AI 결과 fixture — AiResultModal 렌더용 (ai_ 는 VOID_PREFIXES 였음, HANDLERS 우선)
+  ai_explain_commit: () => ({
+    success: true,
+    text: '## 변경 요약\n이 커밋은 한글 commit subject 의 visual width 를 CJK=2 / ASCII=1 로 계산하는 `visualWidth()` 헬퍼를 도입한다.\n\n- `subjectLength`(문자 수) → `subjectVisualWidth`(시각 폭) 로 교체\n- 50/72 임계값을 시각 폭 기준으로 재적용 (amber/destructive 경고)\n\n**영향**: 한글 커밋 메시지의 길이 경고가 GitHub 렌더와 일치.',
+    stderr: '',
+    tookMs: 1840,
+  }),
+  ai_commit_message: () => ({
+    success: true,
+    text: 'feat(status): 한글 commit subject visual-width 경고\n\nCJK=2 / ASCII=1 로 시각 폭 계산해 50/72 임계값 적용.',
+    stderr: '',
+    tookMs: 1520,
+  }),
+  ai_code_review: () => ({
+    success: true,
+    text: '## 리뷰\n- LGTM: visualWidth 로직 정확 (surrogate pair 미고려는 follow-up)\n- nit: 매직넘버 0xAC00 등 상수화 권장',
+    stderr: '',
+    tookMs: 2100,
+  }),
+  ai_resolve_conflict: () => ({
+    success: true,
+    text: 'const version = "0.3.0"\nconst title = "git-fried"',
+    stderr: '',
+    tookMs: 1320,
+  }),
+  ai_explain_branch: () => ({
+    success: true,
+    text: 'feature/plan-23-design-system: 디자인 토큰 추출 + Repository-Specific 설정 골격.',
+    stderr: '',
+    tookMs: 1600,
+  }),
+  ai_stash_message: () => ({
+    success: true,
+    text: 'WIP: design-context md 3종 작성 중',
+    stderr: '',
+    tookMs: 980,
+  }),
+  ai_pr_body: () => ({
+    success: true,
+    text: '## 요약\n- visualWidth 헬퍼\n## 테스트\n- vitest 통과',
+    stderr: '',
+    tookMs: 1750,
+  }),
+
+  get_file_history: () => COMMIT_SUMMARIES.slice(0, 8),
+  get_file_blame: () =>
+    COMMIT_SUMMARIES.slice(0, 6).map((c, i) => ({
+      sha: c.sha,
+      shortSha: c.shortSha,
+      authorName: c.authorName,
+      authorAt: c.authorAt,
+      summary: c.subject,
+      originalLine: i + 1,
+      finalLine: i + 1,
+      content: '// ' + (i + 1) + ': ' + c.subject.slice(0, 48),
+    })),
 }
 
 // 응답 없는 command 들 (mutation, void) — 빈 응답으로 무시
@@ -1345,12 +1433,7 @@ const VOID_PREFIXES = [
   'close_pr',
   'reopen_pr',
   'list_pr_comments',
-  'get_pull_request',
   'create_pull_request',
-  'compare_refs',
-  'get_file_history',
-  'get_file_blame',
-  'read_conflicted',
   'write_resolved',
   'take_side',
   'launch_mergetool',
