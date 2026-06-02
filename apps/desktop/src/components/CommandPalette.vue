@@ -7,6 +7,7 @@
 // Sprint c31 god comp 분리 2/N — 명령 catalog + 헬퍼는 useCommandCatalog 로 분리.
 // 본 컴포넌트는 open / filter / keyboard nav / UI rendering 만 담당.
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 import { useI18n } from 'vue-i18n'
 import {
   CATEGORY_LABELS,
@@ -20,6 +21,9 @@ const { t } = useI18n()
 const { allCommands } = useCommandCatalog()
 
 const open = ref(false)
+// A2 (plan #44) — dialog focus-trap: 열릴 때 첫 focusable focus + Tab 순환 + 닫힐 때 직전 focus 복원.
+const paletteRef = ref<HTMLElement | null>(null)
+useFocusTrap(paletteRef, open)
 const filter = ref('')
 const selected = ref(0)
 
@@ -147,7 +151,13 @@ onUnmounted(() => {
       class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-32"
       @click.self="open = false"
     >
-      <div class="w-[600px] max-w-[90vw] rounded-lg border border-border bg-card shadow-xl">
+      <div
+        ref="paletteRef"
+        role="dialog"
+        aria-modal="true"
+        aria-label="명령 팔레트"
+        class="w-[600px] max-w-[90vw] rounded-lg border border-border bg-card shadow-xl"
+      >
         <input
           v-model="filter"
           autofocus
