@@ -15,6 +15,7 @@ import { useToast } from '@/composables/useToast'
 import { useAiResolveConflict } from '@/composables/useAiResolveConflict'
 import { useInvalidateRepoQueries } from '@/composables/useStatus'
 import BaseModal from './BaseModal.vue'
+import MergeResultEditor from './MergeResultEditor.vue'
 import { useI18n } from 'vue-i18n'
 import { confirmDialog } from '@/composables/useConfirm'
 
@@ -243,11 +244,8 @@ async function onAiResolve(): Promise<void> {
             base 사용
           </button>
         </header>
-        <textarea
-          v-model="resolved"
-          spellcheck="false"
-          class="flex-1 resize-none bg-background p-2 font-mono text-2xs outline-none"
-        />
+        <!-- E4 — result 편집기를 CodeMirror 로 (줄 번호 + conflict marker 강조). -->
+        <MergeResultEditor v-model="resolved" :path="path" class="min-h-0 flex-1" />
       </div>
 
       <!-- theirs -->
