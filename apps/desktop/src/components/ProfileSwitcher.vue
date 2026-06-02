@@ -68,7 +68,7 @@ async function pick(id: number) {
       @keydown.esc="open = false"
     >
       <div
-        class="border-b border-border px-3 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+        class="border-b border-border px-3 py-1.5 text-3xs uppercase tracking-wider text-muted-foreground"
       >
         프로파일
       </div>
@@ -85,7 +85,7 @@ async function pick(id: number) {
               <span v-if="p.isActive" class="text-diff-add">●</span>
               {{ p.name }}
             </span>
-            <span class="text-[10px] text-muted-foreground">
+            <span class="text-3xs text-muted-foreground">
               {{ p.gitUserEmail || '(이메일 없음)' }}
             </span>
           </div>
@@ -99,7 +99,7 @@ async function pick(id: number) {
           에서 추가.
         </li>
       </ul>
-      <div class="border-t border-border px-3 py-1.5 text-right text-[10px]">
+      <div class="border-t border-border px-3 py-1.5 text-right text-3xs">
         <RouterLink
           to="/settings"
           class="text-muted-foreground hover:text-foreground"

@@ -130,7 +130,7 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
   >
     <div class="flex items-center justify-between">
       <h2 class="sr-only">Commit message 검색</h2>
-      <label class="flex items-center gap-1 text-[11px] opacity-80">
+      <label class="flex items-center gap-1 text-2xs opacity-80">
         <input v-model="caseInsensitive" type="checkbox" />
         대소문자 무시
       </label>
@@ -168,10 +168,10 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
           @click="copySha(r.sha)"
           @mouseenter="selectedIdx = i"
         >
-          <span class="font-mono text-[10px] opacity-70">{{ r.shortSha }}</span>
+          <span class="font-mono text-3xs opacity-70">{{ r.shortSha }}</span>
           <div class="flex-1">
             <div class="line-clamp-2 leading-snug">{{ r.subject }}</div>
-            <div class="mt-0.5 text-[10px] opacity-60">
+            <div class="mt-0.5 text-3xs opacity-60">
               {{ r.authorName }} · {{ formatDateLocalized(r.authorAt) }}
             </div>
           </div>
@@ -179,7 +179,7 @@ onMounted(() => window.addEventListener('keydown', onKeydown))
       </ul>
     </div>
 
-    <div class="mt-2 flex items-center justify-between text-[10px] opacity-60">
+    <div class="mt-2 flex items-center justify-between text-3xs opacity-60">
       <span>{{ results.length }}개 결과 (max 50)</span>
       <span>Enter = SHA 복사 · Esc = 닫기</span>
     </div>

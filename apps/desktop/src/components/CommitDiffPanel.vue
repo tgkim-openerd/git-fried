@@ -53,12 +53,12 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
       class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-1.5"
     >
       <div class="flex items-center gap-2 font-mono text-xs">
-        <span class="rounded bg-emerald-500/15 px-1.5 text-[10px] font-bold text-diff-add">
+        <span class="rounded bg-emerald-500/15 px-1.5 text-3xs font-bold text-diff-add">
           INLINE DIFF
         </span>
         <span>commit</span>
         <span v-if="sha" class="text-muted-foreground">{{ sha.slice(0, 12) }}</span>
-        <span v-if="cd.isFetching.value" class="text-[10px] text-muted-foreground">
+        <span v-if="cd.isFetching.value" class="text-3xs text-muted-foreground">
           {{ t('common.loading') }}
         </span>
       </div>
@@ -94,7 +94,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
         </div>
 
         <!-- 4-mode toggle -->
-        <div class="flex gap-0.5 rounded-md border border-border bg-muted/40 p-0.5 text-[10px]">
+        <div class="flex gap-0.5 rounded-md border border-border bg-muted/40 p-0.5 text-3xs">
           <button
             v-for="m in MODES"
             :key="m"
@@ -115,7 +115,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
         <div v-if="sha" class="flex items-center gap-1 border-l border-border pl-1">
           <button
             type="button"
-            class="rounded border border-border px-1.5 py-0.5 text-[11px] hover:bg-accent/40"
+            class="rounded border border-border px-1.5 py-0.5 text-2xs hover:bg-accent/40"
             title="cherry-pick"
             @click="cd.onCherryPick"
           >
@@ -123,7 +123,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
           </button>
           <button
             type="button"
-            class="rounded border border-border px-1.5 py-0.5 text-[11px] hover:bg-accent/40"
+            class="rounded border border-border px-1.5 py-0.5 text-2xs hover:bg-accent/40"
             title="revert (새 commit 생성)"
             @click="cd.onRevert"
           >
@@ -132,7 +132,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
           <div class="flex items-center gap-0.5 rounded border border-border bg-muted/40 p-0.5">
             <select
               v-model="cd.resetMode.value"
-              class="rounded bg-transparent px-1 text-[10px] text-muted-foreground focus:outline-none"
+              class="rounded bg-transparent px-1 text-3xs text-muted-foreground focus:outline-none"
               title="Reset 모드"
             >
               <option value="soft">soft</option>
@@ -141,7 +141,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
             </select>
             <button
               type="button"
-              class="rounded px-1 py-0.5 text-[11px] hover:bg-accent/40"
+              class="rounded px-1 py-0.5 text-2xs hover:bg-accent/40"
               :class="cd.resetMode.value === 'hard' ? 'text-destructive' : ''"
               title="HEAD reset to this commit"
               @click="cd.onReset"
@@ -154,7 +154,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
         <button
           v-if="sha && cd.ai.available.value"
           type="button"
-          class="rounded border border-border px-1.5 py-0.5 text-[11px] hover:bg-accent/40 disabled:opacity-50"
+          class="rounded border border-border px-1.5 py-0.5 text-2xs hover:bg-accent/40 disabled:opacity-50"
           :disabled="cd.explainMut.isPending.value"
           :title="`✨ ${cd.ai.available.value} 로 설명`"
           @click="cd.explain"
@@ -164,7 +164,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
         <!-- Phase 14-1 — diff fullscreen toggle (graph hide / restore). -->
         <button
           type="button"
-          class="rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent/40"
+          class="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground hover:bg-accent/40"
           :aria-label="
             maximized ? 'diff fullscreen 해제 (graph 표시)' : 'diff fullscreen (graph 숨김)'
           "
@@ -179,7 +179,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
         </button>
         <button
           type="button"
-          class="rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent/40"
+          class="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground hover:bg-accent/40"
           aria-label="inline diff 닫기"
           title="닫기 (ESC)"
           @click="emit('close')"

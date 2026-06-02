@@ -260,7 +260,7 @@ const buildInfo = computed(() => ({
       <ul class="flex flex-col gap-1">
         <li v-for="g in filteredGroups" :key="g.id">
           <div
-            class="px-4 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80"
+            class="px-4 pt-2 pb-0.5 text-3xs font-bold uppercase tracking-wider text-muted-foreground/80"
           >
             {{ t(GROUP_I18N_KEY[g.id] ?? g.label) }}
           </div>
@@ -383,7 +383,7 @@ const buildInfo = computed(() => ({
           </button>
         </div>
 
-        <p class="text-[10px] text-muted-foreground">
+        <p class="text-3xs text-muted-foreground">
           v1.x 추가 후보: Sourcetree / Fork / GitUp / SmartGit.
         </p>
       </div>
@@ -413,7 +413,7 @@ const buildInfo = computed(() => ({
           <li>Sidebar: {{ buildInfo.sidebarVisible ? 'visible' : 'hidden' }}</li>
           <li>Detail panel: {{ buildInfo.detailVisible ? 'visible' : 'hidden' }}</li>
         </ul>
-        <p class="text-[10px] text-muted-foreground">
+        <p class="text-3xs text-muted-foreground">
           ? 키보드 단축키 도움말. ⌘P Command Palette. ⌘\` Terminal.
         </p>
       </div>

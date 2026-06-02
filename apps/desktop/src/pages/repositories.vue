@@ -222,7 +222,7 @@ function workspaceName(id: number | null): string {
           📡
           <span
             v-if="bulkResultFailedCount > 0"
-            class="absolute -right-1 -top-1 rounded-full bg-amber-500 px-1 text-[9px] font-bold text-white"
+            class="absolute -right-1 -top-1 rounded-full bg-amber-500 px-1 text-4xs font-bold text-white"
           >
             {{ bulkResultFailedCount > 99 ? '99+' : bulkResultFailedCount }}
           </span>
@@ -295,7 +295,7 @@ function workspaceName(id: number | null): string {
       <section v-if="openTabRepos.length > 0" class="mb-4">
         <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Open repositories
-          <span class="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">
+          <span class="ml-1 rounded bg-muted px-1.5 py-0.5 text-3xs">
             {{ openTabRepos.length }}
           </span>
         </h2>
@@ -333,7 +333,7 @@ function workspaceName(id: number | null): string {
       <section v-if="favoriteRepos.length > 0" class="mb-4">
         <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           ⭐ Favorites
-          <span class="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">
+          <span class="ml-1 rounded bg-muted px-1.5 py-0.5 text-3xs">
             {{ favoriteRepos.length }}
           </span>
         </h2>
@@ -376,11 +376,11 @@ function workspaceName(id: number | null): string {
         >
           <span>
             All repositories
-            <span class="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">
+            <span class="ml-1 rounded bg-muted px-1.5 py-0.5 text-3xs">
               {{ filteredRepos.length }}
             </span>
           </span>
-          <span v-if="isFetching" class="text-[10px] normal-case">{{ t('repos.loading') }}</span>
+          <span v-if="isFetching" class="text-3xs normal-case">{{ t('repos.loading') }}</span>
         </h2>
 
         <LoadingSpinner
@@ -411,7 +411,7 @@ function workspaceName(id: number | null): string {
               <span class="flex flex-1 items-center gap-2 truncate">
                 <!-- Sprint c50 — design-verify Critical 1: native <details> marker 가 flex summary 에서 가려져
                      명시 ▼/▶ 추가 (isOpen 으로 양방향 동기화 — Pattern 10). -->
-                <span class="w-3 text-[10px] text-muted-foreground">{{
+                <span class="w-3 text-3xs text-muted-foreground">{{
                   isOpen(g.key) ? '▼' : '▶'
                 }}</span>
                 <span v-if="g.label">📦 {{ g.label }}</span>
@@ -419,7 +419,7 @@ function workspaceName(id: number | null): string {
                   t('repos.miscGroupLabel')
                 }}</span>
                 <span
-                  class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground"
+                  class="rounded bg-muted px-1.5 py-0.5 text-3xs font-normal text-muted-foreground"
                 >
                   {{ g.repos.length }}
                 </span>
@@ -469,7 +469,7 @@ function workspaceName(id: number | null): string {
                   </span>
                   <span
                     v-if="repo.forgeKind !== 'unknown'"
-                    class="rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+                    class="rounded bg-muted px-1.5 text-3xs uppercase tracking-wider text-muted-foreground"
                   >
                     {{ repo.forgeKind }}
                   </span>
@@ -515,7 +515,7 @@ function workspaceName(id: number | null): string {
                 </button>
                 <span
                   v-if="repo.workspaceId != null"
-                  class="hidden text-[10px] text-muted-foreground/70 sm:inline"
+                  class="hidden text-3xs text-muted-foreground/70 sm:inline"
                   :title="`workspace: ${workspaceName(repo.workspaceId)}`"
                 >
                   {{ workspaceName(repo.workspaceId) }}

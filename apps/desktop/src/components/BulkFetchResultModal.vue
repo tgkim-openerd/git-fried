@@ -34,7 +34,7 @@ function fmtTime(ms: number): string {
     <template #header>
       <h2 class="text-sm font-semibold">
         📡 일괄 Fetch 결과
-        <span v-if="last" class="ml-2 text-[11px] text-muted-foreground">
+        <span v-if="last" class="ml-2 text-2xs text-muted-foreground">
           {{ fmtTime(last.ranAt) }} · {{ okCount }}/{{ last.results.length }} 성공
           <span v-if="failedCount > 0" class="ml-1 text-warning-amber">
             · {{ failedCount }} 실패
@@ -67,10 +67,10 @@ function fmtTime(ms: number): string {
             <td class="px-2 py-1">
               <pre
                 v-if="!r.success && r.error"
-                class="whitespace-pre-wrap break-all font-mono text-[10px] text-muted-foreground"
+                class="whitespace-pre-wrap break-all font-mono text-3xs text-muted-foreground"
                 >{{ humanizeGitError(r.error) }}</pre
               >
-              <span v-else-if="r.success" class="text-[10px] text-muted-foreground"> fetched </span>
+              <span v-else-if="r.success" class="text-3xs text-muted-foreground"> fetched </span>
             </td>
           </tr>
         </tbody>

@@ -62,7 +62,7 @@ const { t } = useI18n()
         />
       </div>
     </div>
-    <p class="text-[10px] text-muted-foreground">
+    <p class="text-3xs text-muted-foreground">
       {{
         t('settings.pluginIntegration.roadmapNote', { file: 'docs/plan/05-roadmap-v0.1-v1.0.md' })
       }}

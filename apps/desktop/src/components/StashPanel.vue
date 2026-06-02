@@ -88,7 +88,7 @@ const previewFiles = computed(() =>
     >
       <h3 class="text-sm font-semibold">
         {{ t('stash.title') }}
-        <span v-if="collapsedNew" class="ml-1 text-[10px] font-normal text-muted-foreground">
+        <span v-if="collapsedNew" class="ml-1 text-3xs font-normal text-muted-foreground">
           {{ t('stash.newFormCollapsed') }}
         </span>
       </h3>
@@ -141,7 +141,7 @@ const previewFiles = computed(() =>
         <li v-for="s in stashes" :key="s.index" class="group rounded px-2 py-1 hover:bg-accent/40">
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs">stash@{{ '{' }}{{ s.index }}{{ '}' }}</span>
-            <span class="text-[10px] text-muted-foreground">
+            <span class="text-3xs text-muted-foreground">
               {{ formatDateLocalized(s.createdAt) }}
             </span>
           </div>
@@ -230,8 +230,8 @@ const previewFiles = computed(() =>
           :key="f.fileName"
           class="flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
         >
-          <span class="flex-1 truncate font-mono text-[11px]">{{ f.fileName }}</span>
-          <span class="text-[10px] text-muted-foreground">
+          <span class="flex-1 truncate font-mono text-2xs">{{ f.fileName }}</span>
+          <span class="text-3xs text-muted-foreground">
             {{ f.hunks.length }} hunk{{ f.hunks.length === 1 ? '' : 's' }}
           </span>
           <button
@@ -247,7 +247,7 @@ const previewFiles = computed(() =>
       <!-- Sprint 22-9 V-8 — raw <pre> → CodeMirror DiffViewer 로 교체 (V-5 StatusPanel 패턴 일치).
            Diff mode toggle (compact/default/split) 은 showStash IPC 의 contextLines 파라미터 추가 필요 → v0.2 단계.
       -->
-      <details class="text-[11px]" open>
+      <details class="text-2xs" open>
         <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
           unified diff (CodeMirror)
         </summary>

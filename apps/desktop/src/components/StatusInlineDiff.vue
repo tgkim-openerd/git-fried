@@ -68,7 +68,7 @@ function onNextHunk() {
     <div class="flex items-center justify-between border-b border-border bg-card px-3 py-1.5">
       <div class="flex min-w-0 items-center gap-2 text-xs">
         <span
-          class="shrink-0 rounded px-1.5 text-[10px] font-bold"
+          class="shrink-0 rounded px-1.5 text-3xs font-bold"
           :class="
             isStaged ? 'bg-emerald-500/20 text-diff-add' : 'bg-amber-500/20 text-warning-amber'
           "
@@ -77,7 +77,7 @@ function onNextHunk() {
         </span>
         <span class="truncate font-mono">{{ path }}</span>
       </div>
-      <div class="flex shrink-0 items-center gap-1 text-[11px]">
+      <div class="flex shrink-0 items-center gap-1 text-2xs">
         <!-- Sprint c25-4 §5 — Hunk ↑↓ 네비게이션 (1-hunk 이하면 disabled) -->
         <div class="flex items-center gap-0.5 rounded border border-border bg-muted/30 px-0.5">
           <BaseTooltip

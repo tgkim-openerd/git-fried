@@ -43,7 +43,7 @@ const EDITOR_OPTIONS: { kind: ExternalEditorKind; labelKey: string }[] = [
       <label class="mt-1 flex items-start justify-between gap-3 text-xs">
         <div class="flex flex-col gap-0.5">
           <span class="font-medium">{{ t('settings.editor.external.label') }}</span>
-          <span class="text-[10px] text-muted-foreground">
+          <span class="text-3xs text-muted-foreground">
             {{ t('settings.editor.external.hint') }}
           </span>
         </div>
@@ -69,7 +69,7 @@ const EDITOR_OPTIONS: { kind: ExternalEditorKind; labelKey: string }[] = [
       <li>{{ t('settings.editor.diffModeRow') }}</li>
       <li>{{ t('settings.editor.terminalRow') }}</li>
     </ul>
-    <p class="text-[10px] text-muted-foreground">
+    <p class="text-3xs text-muted-foreground">
       {{ t('settings.editor.futureNote') }}
     </p>
   </div>

@@ -89,7 +89,7 @@ defineExpose({ subjectRef })
           :style="{ width: `${subjectPct}%` }"
         ></div>
       </div>
-      <div class="flex items-center justify-between text-[10px] text-muted-foreground">
+      <div class="flex items-center justify-between text-3xs text-muted-foreground">
         <span>{{ t('templ.ccBuilderHint') }}</span>
         <span
           :class="{

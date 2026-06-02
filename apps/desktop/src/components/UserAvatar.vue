@@ -64,7 +64,7 @@ const sizeCls = computed(() => props.sizeClass ?? 'w-5 h-5')
       sizeCls,
       'inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white align-middle',
       /* c58 P3-5 보강 — 한글 2글자 시 font 축소 + tracking-tight (uppercase 제거 — 한글에 무의미) */
-      initial.length >= 2 ? 'text-[8px] tracking-tighter' : 'text-[10px] uppercase',
+      initial.length >= 2 ? 'text-[8px] tracking-tighter' : 'text-3xs uppercase',
     ]"
     :style="useImage ? undefined : { backgroundColor: hashColor }"
     :title="username"

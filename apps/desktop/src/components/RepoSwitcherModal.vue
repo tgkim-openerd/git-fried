@@ -124,10 +124,10 @@ function onKeydown(e: KeyboardEvent) {
             <span class="flex items-center gap-2">
               <span>📦</span>
               <span class="flex-1 truncate normal-case">{{ row.group.label }}</span>
-              <span class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-normal">
+              <span class="rounded bg-muted px-1.5 py-0.5 text-3xs font-normal">
                 {{ row.group.repos.length }}
               </span>
-              <span class="text-[10px] font-normal text-muted-foreground">
+              <span class="text-3xs font-normal text-muted-foreground">
                 {{ t('switcher.openAllInGroupHint') }}
               </span>
             </span>
@@ -157,24 +157,24 @@ function onKeydown(e: KeyboardEvent) {
                 </span>
                 <span
                   v-if="aliases.resolveLocal(row.repo.id, row.repo.name).aliased"
-                  class="text-[10px] text-muted-foreground"
+                  class="text-3xs text-muted-foreground"
                   :title="`원본: ${row.repo.name}`"
                 >
                   ({{ row.repo.name }})
                 </span>
                 <span
                   v-if="row.repo.forgeKind !== 'unknown'"
-                  class="rounded bg-muted px-1.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+                  class="rounded bg-muted px-1.5 text-3xs uppercase tracking-wider text-muted-foreground"
                 >
                   {{ row.repo.forgeKind }}
                 </span>
               </span>
-              <span class="shrink-0 text-[10px] text-muted-foreground">
+              <span class="shrink-0 text-3xs text-muted-foreground">
                 {{ row.repo.defaultBranch || '?' }}
               </span>
             </div>
             <div
-              class="truncate font-mono text-[10px] text-muted-foreground"
+              class="truncate font-mono text-3xs text-muted-foreground"
               :class="row.group.label ? 'pl-0' : ''"
             >
               {{ row.repo.localPath }}
@@ -185,7 +185,7 @@ function onKeydown(e: KeyboardEvent) {
           {{ t('switcher.empty') }}
         </li>
       </ul>
-      <div class="border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+      <div class="border-t border-border px-3 py-1.5 text-3xs text-muted-foreground">
         {{ t('switcher.footer') }}
       </div>
     </div>

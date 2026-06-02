@@ -49,7 +49,7 @@ const general = useGeneralSettings()
       </span>
       <input v-model="general.rememberTabs" type="checkbox" disabled />
     </label>
-    <p class="-mt-3 text-[10px] text-muted-foreground">
+    <p class="-mt-3 text-3xs text-muted-foreground">
       {{ t('settings.general.rememberTabsNote') }}
     </p>
 
@@ -83,7 +83,7 @@ const general = useGeneralSettings()
       <input v-model="general.autoUpdateSubmodules" type="checkbox" />
     </label>
 
-    <p class="text-[10px] text-muted-foreground">
+    <p class="text-3xs text-muted-foreground">
       {{ t('settings.general.futureNote') }}
     </p>
   </div>

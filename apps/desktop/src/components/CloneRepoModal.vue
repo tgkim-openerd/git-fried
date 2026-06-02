@@ -198,13 +198,13 @@ const canSubmit = computed(
         </label>
       </div>
 
-      <p v-if="targetPath" class="mt-1 text-[10px] text-muted-foreground">
+      <p v-if="targetPath" class="mt-1 text-3xs text-muted-foreground">
         {{ t('clone.targetPathLabel') }} <span class="font-mono">{{ targetPath }}</span>
       </p>
 
       <!-- Sprint c38 / plan/29 E4 — Preset 라디오 (4축 + custom). -->
       <fieldset class="mt-4 rounded border border-border bg-muted/10 p-2">
-        <legend class="px-1 text-[10px] font-medium text-muted-foreground">
+        <legend class="px-1 text-3xs font-medium text-muted-foreground">
           {{ t('clone.presetLegend') }}
         </legend>
         <div class="grid grid-cols-2 gap-1 text-xs sm:grid-cols-5">
@@ -243,13 +243,13 @@ const canSubmit = computed(
         <label class="block">
           <span class="text-xs font-medium">
             E1 Sparse-checkout cone paths
-            <span class="ml-1 text-[10px] text-muted-foreground">(1줄 1path)</span>
+            <span class="ml-1 text-3xs text-muted-foreground">(1줄 1path)</span>
           </span>
           <textarea
             v-model="sparseText"
             rows="3"
             placeholder="apps/desktop&#10;packages/shared"
-            class="mt-1 w-full rounded border border-input bg-background px-2 py-1 font-mono text-[11px]"
+            class="mt-1 w-full rounded border border-input bg-background px-2 py-1 font-mono text-2xs"
           />
         </label>
 
@@ -286,14 +286,14 @@ const canSubmit = computed(
         <label class="block">
           <span class="text-xs font-medium">
             {{ t('clone.filterLabel') }}
-            <span class="ml-1 text-[10px] text-muted-foreground">
+            <span class="ml-1 text-3xs text-muted-foreground">
               {{ t('clone.filterHint') }}
             </span>
           </span>
           <input
             v-model="filter"
             placeholder="blob:none"
-            class="mt-1 w-full rounded border border-input bg-background px-2 py-1 font-mono text-[11px]"
+            class="mt-1 w-full rounded border border-input bg-background px-2 py-1 font-mono text-2xs"
           />
         </label>
 

@@ -69,7 +69,7 @@ function setTheme(v: 'dark' | 'light') {
           class="rounded border border-border bg-muted/20 px-3 py-2"
         >
           <div class="text-xs font-semibold">{{ t(h.keyTitle) }}</div>
-          <div class="mt-0.5 text-[11px] text-muted-foreground">{{ t(h.keyBody) }}</div>
+          <div class="mt-0.5 text-2xs text-muted-foreground">{{ t(h.keyBody) }}</div>
         </li>
       </ul>
     </section>
@@ -103,7 +103,7 @@ function setTheme(v: 'dark' | 'light') {
           ☾ {{ t('wizard.theme.dark') }}
         </button>
       </div>
-      <p class="text-[10px] text-muted-foreground">
+      <p class="text-3xs text-muted-foreground">
         {{ t('wizard.theme.systemHint') }}
       </p>
     </section>

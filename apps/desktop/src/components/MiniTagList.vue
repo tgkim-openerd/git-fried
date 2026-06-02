@@ -83,7 +83,7 @@ function onTagClick(sha: string): void {
         :placeholder="t('tagList.filterPlaceholder')"
         :aria-label="t('tagList.filterAriaLabel')"
         data-testid="mini-tag-filter"
-        class="w-full rounded border border-input bg-background px-1.5 py-0.5 text-[10px] outline-none focus:border-primary"
+        class="w-full rounded border border-input bg-background px-1.5 py-0.5 text-3xs outline-none focus:border-primary"
       />
     </div>
     <BranchTreeView
@@ -94,7 +94,7 @@ function onTagClick(sha: string): void {
     >
       <template #default="{ data }: { data: TagInfo }">
         <div
-          class="flex items-center gap-1 px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40 rounded"
+          class="flex items-center gap-1 px-1 py-1 text-2xs text-muted-foreground hover:bg-accent/40 rounded"
           :class="[
             data.commitSha ? 'cursor-pointer' : '',
             isHidden(data.name) ? 'opacity-40 line-through' : '',
@@ -103,7 +103,7 @@ function onTagClick(sha: string): void {
           :title="data.subject ?? `tag ${data.name}`"
           @click="data.commitSha && onTagClick(data.commitSha)"
         >
-          <span class="shrink-0 w-3 text-center text-[9px]">{{ data.annotated ? '🏷' : '·' }}</span>
+          <span class="shrink-0 w-3 text-center text-4xs">{{ data.annotated ? '🏷' : '·' }}</span>
           <span class="flex-1 truncate font-mono">
             {{ data.name.split('/').pop() }}
           </span>

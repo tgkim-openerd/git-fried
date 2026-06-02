@@ -73,7 +73,7 @@ const hangulRatioPct = computed(() => {
   <section class="rounded-md border border-border bg-card p-4">
     <header class="mb-3 flex items-center gap-2">
       <span class="text-base font-semibold">{{ t('identityCard.title') }}</span>
-      <span class="text-[10px] text-muted-foreground">(plan/26 — 3 constraints 정체성)</span>
+      <span class="text-3xs text-muted-foreground">(plan/26 — 3 constraints 정체성)</span>
     </header>
 
     <ul class="grid grid-cols-3 gap-3 text-xs">
@@ -81,10 +81,10 @@ const hangulRatioPct = computed(() => {
       <li class="rounded border border-border bg-muted/20 p-3">
         <div class="mb-1 text-2xl">🇰🇷</div>
         <div class="text-sm font-semibold">{{ t('identityCard.koreanSafe') }}</div>
-        <div class="mt-1 text-[11px] text-muted-foreground">
+        <div class="mt-1 text-2xs text-muted-foreground">
           UTF-8 강제 + NFC normalize + file-based commit body
         </div>
-        <div class="mt-2 text-[10px]">
+        <div class="mt-2 text-3xs">
           <template v-if="hangulScanned > 0">
             한글 commit:
             <span class="font-mono font-semibold text-diff-add">{{ hangulCommitCount }}</span>
@@ -99,10 +99,10 @@ const hangulRatioPct = computed(() => {
       <li class="rounded border border-border bg-muted/20 p-3">
         <div class="mb-1 text-2xl">🦊</div>
         <div class="text-sm font-semibold">Gitea first-class</div>
-        <div class="mt-1 text-[11px] text-muted-foreground">
+        <div class="mt-1 text-2xs text-muted-foreground">
           PR / Workspaces / Launchpad / Issues / Releases — Gitea 1순위
         </div>
-        <div class="mt-2 flex gap-3 text-[10px]">
+        <div class="mt-2 flex gap-3 text-3xs">
           <span>
             Gitea
             <span class="font-mono font-semibold text-emerald-700 dark:text-emerald-500">
@@ -120,10 +120,10 @@ const hangulRatioPct = computed(() => {
       <li class="rounded border border-border bg-muted/20 p-3">
         <div class="mb-1 text-2xl">✨</div>
         <div class="text-sm font-semibold">AI CLI subprocess</div>
-        <div class="mt-1 text-[11px] text-muted-foreground">
+        <div class="mt-1 text-2xs text-muted-foreground">
           Claude / Codex CLI 자체 호출 — 자체 LLM 인프라 없음, 외부 송출 명시 confirm
         </div>
-        <div class="mt-2 flex flex-wrap gap-1 text-[10px]">
+        <div class="mt-2 flex flex-wrap gap-1 text-3xs">
           <span
             class="rounded px-1.5 py-0.5"
             :class="
@@ -151,7 +151,7 @@ const hangulRatioPct = computed(() => {
       </li>
     </ul>
 
-    <p class="mt-3 text-[10px] text-muted-foreground">
+    <p class="mt-3 text-3xs text-muted-foreground">
       자세한 5분 onboarding은
       <a href="#" class="underline hover:text-foreground">docs/QUICK_START.md</a>
       참조. dogfood 통계는 v0.4 에 wiring 예정.

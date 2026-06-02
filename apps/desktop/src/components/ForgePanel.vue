@@ -21,7 +21,7 @@ const TAB_LABELS: Record<ForgeTab, string> = {
 
 <template>
   <section class="flex h-full flex-col border-l border-border bg-card">
-    <nav class="flex border-b border-border text-[10px]">
+    <nav class="flex border-b border-border text-3xs">
       <button
         v-for="t in ['pr', 'issues', 'releases', 'tags'] as ForgeTab[]"
         :key="t"

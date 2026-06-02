@@ -91,7 +91,7 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
         <select
           v-if="uniqueAuthors.length > 1"
           v-model="authorFilter"
-          class="rounded border border-input bg-background px-2 py-0.5 text-[11px]"
+          class="rounded border border-input bg-background px-2 py-0.5 text-2xs"
           :title="`${t('commitTable.colAuthor')} filter (${uniqueAuthors.length})`"
         >
           <option :value="null">{{ t('commitTable.allAuthors') }}</option>
@@ -142,7 +142,7 @@ function onRowContextMenu(ev: MouseEvent, c: CommitSummary) {
               <span>{{ c.subject }}</span>
               <span
                 v-if="refsLabel(c)"
-                class="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                class="ml-2 rounded bg-muted px-1.5 py-0.5 text-3xs text-muted-foreground"
               >
                 {{ refsLabel(c) }}
               </span>

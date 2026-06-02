@@ -185,7 +185,7 @@ onUnmounted(() => {
             @click="onUndo"
           >
             <span class="text-base leading-none">↶</span>
-            <span class="text-[10px] leading-tight">{{
+            <span class="text-3xs leading-tight">{{
               undoMut.isPending.value ? '...' : 'Undo'
             }}</span>
           </button>
@@ -202,7 +202,7 @@ onUnmounted(() => {
             @click="onRedo"
           >
             <span class="text-base leading-none">↷</span>
-            <span class="text-[10px] leading-tight">{{
+            <span class="text-3xs leading-tight">{{
               redoMut.isPending.value ? '...' : 'Redo'
             }}</span>
           </button>
@@ -231,7 +231,7 @@ onUnmounted(() => {
               @click="onPull"
             >
               <span class="text-base leading-none">⇩</span>
-              <span class="text-[10px] leading-tight">{{
+              <span class="text-3xs leading-tight">{{
                 pullMut.isPending.value ? '...' : 'Pull'
               }}</span>
             </button>
@@ -268,11 +268,11 @@ onUnmounted(() => {
             >
               <span>
                 Pull
-                <span class="ml-1 font-mono text-[10px] text-muted-foreground">
+                <span class="ml-1 font-mono text-3xs text-muted-foreground">
                   ({{ pullStrategyLabel(s) }})
                 </span>
               </span>
-              <span v-if="pullStrategy === s" class="text-[9px]">●</span>
+              <span v-if="pullStrategy === s" class="text-4xs">●</span>
             </button>
           </div>
           <!-- click-outside backdrop -->
@@ -296,7 +296,7 @@ onUnmounted(() => {
               @click="onPush"
             >
               <span class="text-base leading-none">⇧</span>
-              <span class="text-[10px] leading-tight">{{
+              <span class="text-3xs leading-tight">{{
                 pushMut.isPending.value ? '...' : 'Push'
               }}</span>
             </button>
@@ -356,7 +356,7 @@ onUnmounted(() => {
             @click="onBranch"
           >
             <span class="text-base leading-none">⎇</span>
-            <span class="text-[10px] leading-tight">Branch</span>
+            <span class="text-3xs leading-tight">Branch</span>
           </button>
         </BaseTooltip>
         <BaseTooltip
@@ -376,7 +376,7 @@ onUnmounted(() => {
             @click="onStash"
           >
             <span class="text-base leading-none">⤓</span>
-            <span class="text-[10px] leading-tight">{{
+            <span class="text-3xs leading-tight">{{
               stashMut.isPending.value ? '...' : 'Stash'
             }}</span>
           </button>
@@ -398,7 +398,7 @@ onUnmounted(() => {
             @click="onPop"
           >
             <span class="text-base leading-none">⤒</span>
-            <span class="text-[10px] leading-tight">
+            <span class="text-3xs leading-tight">
               {{ popMut.isPending.value ? '...' : 'Pop' }}
               <span v-if="stashCount > 0" class="ml-0.5 text-diff-add">{{ stashCount }}</span>
             </span>
@@ -416,7 +416,7 @@ onUnmounted(() => {
           @click="onTerminal"
         >
           <span class="text-base leading-none">▸_</span>
-          <span class="text-[10px] leading-tight">Terminal</span>
+          <span class="text-3xs leading-tight">Terminal</span>
         </button>
       </BaseTooltip>
 

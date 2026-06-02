@@ -37,13 +37,13 @@ function fmtDate(unix: number): string {
       <h2 v-if="release" class="text-sm font-semibold">
         <span
           v-if="release.draft"
-          class="mr-1 rounded bg-amber-500/30 px-1 py-0.5 text-[10px] text-warning-amber"
+          class="mr-1 rounded bg-amber-500/30 px-1 py-0.5 text-3xs text-warning-amber"
         >
           draft
         </span>
         <span
           v-if="release.prerelease"
-          class="mr-1 rounded bg-violet-500/30 px-1 py-0.5 text-[10px] text-violet-700 dark:text-violet-500"
+          class="mr-1 rounded bg-violet-500/30 px-1 py-0.5 text-3xs text-violet-700 dark:text-violet-500"
         >
           pre
         </span>
@@ -64,7 +64,7 @@ function fmtDate(unix: number): string {
         >{{ release.bodyMd || '(changelog 없음)' }}</pre
       >
 
-      <p class="mt-3 text-[10px] text-muted-foreground">
+      <p class="mt-3 text-3xs text-muted-foreground">
         💡 asset list / 다운로드 / signature 검증은 v1.x.
       </p>
     </div>

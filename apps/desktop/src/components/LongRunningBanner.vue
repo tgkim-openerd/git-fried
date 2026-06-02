@@ -77,10 +77,10 @@ const stageClasses = computed(() => {
       />
       <div class="flex-1 leading-relaxed">
         <div class="font-semibold">{{ stageMessage }}</div>
-        <div class="mt-0.5 truncate font-mono text-[10px] opacity-80">
+        <div class="mt-0.5 truncate font-mono text-3xs opacity-80">
           {{ oldest.label }} · {{ formatElapsed(oldest.elapsedMs) }}
         </div>
-        <div v-if="extraCount > 0" class="mt-0.5 text-[10px] opacity-70">
+        <div v-if="extraCount > 0" class="mt-0.5 text-3xs opacity-70">
           외 {{ extraCount }}개 작업 진행 중
         </div>
       </div>
@@ -94,7 +94,7 @@ const stageClasses = computed(() => {
       v-if="showDohertyMicro"
       role="status"
       aria-live="polite"
-      class="fixed right-4 top-14 z-30 flex items-center gap-2 rounded-md border border-border bg-card/80 px-2 py-1 text-[10px] text-muted-foreground shadow backdrop-blur"
+      class="fixed right-4 top-14 z-30 flex items-center gap-2 rounded-md border border-border bg-card/80 px-2 py-1 text-3xs text-muted-foreground shadow backdrop-blur"
     >
       <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
       <span>처리 중{{ dohertyCount > 1 ? ` · ${dohertyCount}` : '' }}</span>

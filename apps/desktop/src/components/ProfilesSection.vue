@@ -109,7 +109,7 @@ async function onActivate(p: Profile) {
 <template>
   <section class="rounded-md border border-border p-3">
     <h3 class="mb-2 text-sm font-semibold">{{ t('settings.profilesSection.title') }}</h3>
-    <p class="mb-2 text-[11px] text-muted-foreground">
+    <p class="mb-2 text-2xs text-muted-foreground">
       {{ t('settings.profilesSection.description') }}
     </p>
 
@@ -122,7 +122,7 @@ async function onActivate(p: Profile) {
         <span class="flex items-center gap-2">
           <span :class="p.isActive ? 'text-diff-add' : 'text-muted-foreground'">●</span>
           <span :class="p.isActive ? 'font-semibold' : ''">{{ p.name }}</span>
-          <span class="text-[10px] text-muted-foreground">
+          <span class="text-3xs text-muted-foreground">
             {{ p.gitUserName }} &lt;{{ p.gitUserEmail || '?' }}&gt;
           </span>
         </span>

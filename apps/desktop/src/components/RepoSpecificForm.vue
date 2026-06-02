@@ -266,7 +266,7 @@ const gpgsignBool = computed({
         <label class="mt-1 flex items-start justify-between gap-3 text-xs">
           <div class="flex flex-col gap-0.5">
             <span class="font-medium">{{ t('repoIdentity.forgeAccount.label') }}</span>
-            <span class="text-[10px] text-muted-foreground">
+            <span class="text-3xs text-muted-foreground">
               {{ t('repoIdentity.forgeAccount.hint') }}
             </span>
           </div>
@@ -285,7 +285,7 @@ const gpgsignBool = computed({
         </label>
         <p
           v-if="effectiveOverrideBanner"
-          class="mt-2 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400"
+          class="mt-2 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-2xs text-amber-700 dark:text-amber-400"
           role="status"
         >
           ⚠ {{ t('repoIdentity.forgeAccount.overrideActive') }}
@@ -308,7 +308,7 @@ const gpgsignBool = computed({
       </fieldset>
 
       <div class="flex items-center justify-end gap-2 pt-2">
-        <span v-if="dirty" class="text-[11px] text-warning-amber">{{
+        <span v-if="dirty" class="text-2xs text-warning-amber">{{
           t('repoConfig.dirtyLabel')
         }}</span>
         <button

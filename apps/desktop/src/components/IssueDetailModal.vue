@@ -42,7 +42,7 @@ function stateColor(s: string): string {
   >
     <template #header>
       <h2 v-if="issue" class="text-sm font-semibold">
-        <span :class="['mr-2 text-[10px] uppercase', stateColor(issue.state)]">
+        <span :class="['mr-2 text-3xs uppercase', stateColor(issue.state)]">
           {{ issue.state }}
         </span>
         <span class="font-mono">#{{ issue.number }}</span>
@@ -70,7 +70,7 @@ function stateColor(s: string): string {
         <span
           v-for="l in issue.labels"
           :key="l.name"
-          class="rounded px-1.5 py-0.5 text-[10px]"
+          class="rounded px-1.5 py-0.5 text-3xs"
           :style="{ backgroundColor: l.color + '33', color: l.color }"
         >
           {{ l.name }}
@@ -82,7 +82,7 @@ function stateColor(s: string): string {
         >{{ issue.bodyMd || '(본문 없음)' }}</pre
       >
 
-      <p class="mt-3 text-[10px] text-muted-foreground">
+      <p class="mt-3 text-3xs text-muted-foreground">
         💡 코멘트 스레드 / state change / labels 는 v1.x.
       </p>
     </div>

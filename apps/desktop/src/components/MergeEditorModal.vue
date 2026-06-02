@@ -224,7 +224,7 @@ async function onAiResolve(): Promise<void> {
           </button>
         </header>
         <pre
-          class="flex-1 overflow-auto bg-muted/10 p-2 font-mono text-[11px] text-muted-foreground"
+          class="flex-1 overflow-auto bg-muted/10 p-2 font-mono text-2xs text-muted-foreground"
           >{{ conflictQuery.data.value?.ours ?? '(없음)' }}</pre
         >
       </div>
@@ -246,7 +246,7 @@ async function onAiResolve(): Promise<void> {
         <textarea
           v-model="resolved"
           spellcheck="false"
-          class="flex-1 resize-none bg-background p-2 font-mono text-[11px] outline-none"
+          class="flex-1 resize-none bg-background p-2 font-mono text-2xs outline-none"
         />
       </div>
 
@@ -264,7 +264,7 @@ async function onAiResolve(): Promise<void> {
           </button>
         </header>
         <pre
-          class="flex-1 overflow-auto bg-muted/10 p-2 font-mono text-[11px] text-muted-foreground"
+          class="flex-1 overflow-auto bg-muted/10 p-2 font-mono text-2xs text-muted-foreground"
           >{{ conflictQuery.data.value?.theirs ?? '(없음)' }}</pre
         >
       </div>

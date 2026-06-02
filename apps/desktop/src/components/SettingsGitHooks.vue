@@ -131,7 +131,7 @@ const missingHooks = computed(() =>
                 <span class="font-mono">{{ h.name }}</span>
                 <span
                   v-if="!h.standard"
-                  class="rounded bg-amber-500/20 px-1 text-[10px] text-amber-700 dark:text-amber-300"
+                  class="rounded bg-amber-500/20 px-1 text-3xs text-amber-700 dark:text-amber-300"
                   :title="t('settings.gitHooks.nonStandardHint')"
                 >
                   {{ t('settings.gitHooks.nonStandardLabel') }}
@@ -139,14 +139,14 @@ const missingHooks = computed(() =>
                 <!-- Codex 8차 HIGH — non-executable hook 은 git 이 ignore. 사용자 안내. -->
                 <span
                   v-if="!h.executable"
-                  class="rounded bg-red-500/20 px-1 text-[10px] text-red-700 dark:text-red-300"
+                  class="rounded bg-red-500/20 px-1 text-3xs text-red-700 dark:text-red-300"
                   :title="t('settings.gitHooks.notExecutableHint')"
                 >
                   {{ t('settings.gitHooks.notExecutableLabel') }}
                 </span>
               </span>
               <span class="flex items-center gap-2">
-                <span class="text-[11px] text-muted-foreground">
+                <span class="text-2xs text-muted-foreground">
                   {{ h.size != null ? `${h.size} bytes` : '' }}
                 </span>
                 <button

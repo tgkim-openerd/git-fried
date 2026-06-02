@@ -150,11 +150,11 @@ watch(
         @click="onActivateProject(g)"
         @contextmenu="onProjectContextMenu($event, g)"
       >
-        <span class="text-[10px]">{{ g.isSolo ? '📁' : '📦' }}</span>
+        <span class="text-3xs">{{ g.isSolo ? '📁' : '📦' }}</span>
         <span class="truncate max-w-[180px]">{{ g.label }}</span>
         <span
           v-if="!g.isSolo && g.tabIds.length > 1"
-          class="rounded bg-muted px-1 text-[9px] text-muted-foreground"
+          class="rounded bg-muted px-1 text-4xs text-muted-foreground"
         >
           {{ g.tabIds.length }}
         </span>

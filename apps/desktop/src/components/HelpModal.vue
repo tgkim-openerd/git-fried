@@ -139,7 +139,7 @@ const groups = computed<Group[]>(() => [
             class="grid grid-cols-[160px_1fr] items-center gap-3"
           >
             <kbd
-              class="rounded-md border border-border bg-muted/40 px-2 py-0.5 text-center font-mono text-[11px]"
+              class="rounded-md border border-border bg-muted/40 px-2 py-0.5 text-center font-mono text-2xs"
             >
               {{ s.keys }}
             </kbd>

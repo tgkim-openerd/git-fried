@@ -80,7 +80,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
             <span>{{ item.label }}</span>
           </span>
           <span class="flex items-center gap-2">
-            <span v-if="item.shortcut" class="font-mono text-[11px] text-muted-foreground">
+            <span v-if="item.shortcut" class="font-mono text-2xs text-muted-foreground">
               {{ item.shortcut }}
             </span>
             <span v-if="item.submenu" class="text-muted-foreground">›</span>
@@ -124,7 +124,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
             <span v-if="sub.icon" class="w-4 text-center">{{ sub.icon }}</span>
             <span>{{ sub.label }}</span>
           </span>
-          <span v-if="sub.shortcut" class="font-mono text-[11px] text-muted-foreground">
+          <span v-if="sub.shortcut" class="font-mono text-2xs text-muted-foreground">
             {{ sub.shortcut }}
           </span>
         </button>

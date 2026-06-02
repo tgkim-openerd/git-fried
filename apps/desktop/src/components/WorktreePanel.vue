@@ -205,9 +205,9 @@ function onWorktreeContextMenu(ev: MouseEvent, t: WorktreeItem) {
               >
               <span class="ml-1 font-mono">{{ wt.branch || $t('worktree.detached') }}</span>
             </span>
-            <span class="text-[10px] text-muted-foreground">{{ fmtSize(wt.sizeBytes) }}</span>
+            <span class="text-3xs text-muted-foreground">{{ fmtSize(wt.sizeBytes) }}</span>
           </div>
-          <div class="truncate font-mono text-[10px] text-muted-foreground">{{ wt.path }}</div>
+          <div class="truncate font-mono text-3xs text-muted-foreground">{{ wt.path }}</div>
           <div v-if="!wt.isMain" class="mt-1 flex justify-end gap-2">
             <button
               v-if="!wt.isLocked"

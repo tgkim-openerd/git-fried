@@ -157,7 +157,7 @@ async function onSwitchBranch(name: string, isHead: boolean) {
       <template #default="{ data }: { data: BranchInfo }">
         <button
           type="button"
-          class="group flex w-full items-center gap-1 px-1 py-1 text-[11px]"
+          class="group flex w-full items-center gap-1 px-1 py-1 text-2xs"
           @contextmenu="onBranchContextMenu($event, data)"
           :class="[
             data.isHead
@@ -190,11 +190,11 @@ async function onSwitchBranch(name: string, isHead: boolean) {
           <!-- Sprint c38 fix HIGH-2 — 다른 worktree 점유 표시 (branch 옆 🔗) -->
           <span
             v-if="occupiedMap.has(data.name) && !data.isHead"
-            class="text-[10px] text-warning-amber"
+            class="text-3xs text-warning-amber"
             :title="t('branchList.occupiedBadgeTitle', { path: occupiedMap.get(data.name) ?? '' })"
             >🔗</span
           >
-          <span v-if="data.ahead || data.behind" class="text-[9px]">
+          <span v-if="data.ahead || data.behind" class="text-4xs">
             <span v-if="data.ahead" class="text-diff-add">↑{{ data.ahead }}</span>
             <span v-if="data.behind" class="ml-0.5 text-danger-rose">↓{{ data.behind }}</span>
           </span>

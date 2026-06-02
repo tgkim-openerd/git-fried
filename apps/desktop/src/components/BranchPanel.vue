@@ -144,14 +144,11 @@ async function onExplainBranch(b: BranchInfo) {
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <h3 class="text-sm font-semibold">
         {{ t('branch.title') }}
-        <span
-          v-if="soloRef"
-          class="ml-1 text-[10px] font-normal text-orange-700 dark:text-orange-500"
-        >
+        <span v-if="soloRef" class="ml-1 text-3xs font-normal text-orange-700 dark:text-orange-500">
           {{ t('branch.soloIndicator', { name: soloRef }) }}
         </span>
       </h3>
-      <div class="flex gap-1 text-[10px]">
+      <div class="flex gap-1 text-3xs">
         <button
           v-for="k in ['local', 'remote', 'all'] as const"
           :key="k"
@@ -184,7 +181,7 @@ async function onExplainBranch(b: BranchInfo) {
 
     <!-- Hide/Solo 컨트롤 (필터 별 일괄) -->
     <div
-      class="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1 text-[10px] text-muted-foreground"
+      class="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1 text-3xs text-muted-foreground"
     >
       <span>{{ t('branch.hideLabel') }}</span>
       <button
@@ -245,7 +242,7 @@ async function onExplainBranch(b: BranchInfo) {
       <input
         v-model="newBranchBase"
         :placeholder="t('branch.newBasePlaceholder')"
-        class="rounded-md border border-input bg-background px-2 py-1 text-[11px]"
+        class="rounded-md border border-input bg-background px-2 py-1 text-2xs"
         @keyup.enter="onCreate"
       />
     </div>
@@ -317,16 +314,16 @@ async function onExplainBranch(b: BranchInfo) {
             @dragleave="onDragLeaveRow(idx)"
             @drop="onDropOnBranch(b, $event)"
           >
-            <span class="w-3 text-[10px]">{{ b.isHead ? '●' : '' }}</span>
+            <span class="w-3 text-3xs">{{ b.isHead ? '●' : '' }}</span>
             <span class="flex-1 truncate font-mono text-xs">{{ b.name.split('/').pop() }}</span>
-            <span v-if="b.ahead || b.behind" class="text-[10px]">
+            <span v-if="b.ahead || b.behind" class="text-3xs">
               <span v-if="b.ahead" class="text-diff-add">↑{{ b.ahead }}</span>
               <span v-if="b.behind" class="ml-0.5 text-danger-rose">↓{{ b.behind }}</span>
             </span>
             <!-- Hide 토글 (eye icon) — 항상 보이되 hidden 일 때 닫힌 눈 -->
             <button
               type="button"
-              class="text-[11px] opacity-30 group-hover:opacity-100"
+              class="text-2xs opacity-30 group-hover:opacity-100"
               :class="isHidden(b.name) ? 'opacity-100 text-muted-foreground' : ''"
               :title="isHidden(b.name) ? '숨김 해제' : '그래프에서 숨김'"
               :aria-label="
@@ -339,7 +336,7 @@ async function onExplainBranch(b: BranchInfo) {
             <!-- Solo 토글 -->
             <button
               type="button"
-              class="text-[10px] opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              class="text-3xs opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
               :class="
                 soloRef === b.name
                   ? 'opacity-100 text-orange-700 dark:text-orange-500'
@@ -357,7 +354,7 @@ async function onExplainBranch(b: BranchInfo) {
             <button
               v-if="ai.available.value"
               type="button"
-              class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground"
+              class="text-3xs text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-foreground"
               :title="`✨ ${ai.available.value} 로 브랜치 설명`"
               :aria-label="`'${b.name}' AI 설명 (${ai.available.value})`"
               @click.stop="onExplainBranch(b)"
@@ -367,7 +364,7 @@ async function onExplainBranch(b: BranchInfo) {
             <button
               v-if="!b.isHead && b.kind === 'local'"
               type="button"
-              class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-[10px] text-muted-foreground hover:text-destructive"
+              class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-3xs text-muted-foreground hover:text-destructive"
               title="삭제"
               :aria-label="`로컬 브랜치 '${b.name}' 삭제`"
               @click.stop="onDelete(b)"

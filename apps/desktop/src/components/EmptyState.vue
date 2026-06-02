@@ -39,7 +39,7 @@ withDefaults(
     <p
       v-if="description"
       class="text-muted-foreground"
-      :class="size === 'sm' ? 'text-[10px]' : 'text-xs'"
+      :class="size === 'sm' ? 'text-3xs' : 'text-xs'"
     >
       {{ description }}
     </p>

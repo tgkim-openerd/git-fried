@@ -31,7 +31,7 @@ defineEmits<{ action: []; select: []; dblclick: [] }>()
     @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', file.path)"
   >
     <span
-      :class="['shrink-0 w-12 text-[10px] uppercase font-bold', color]"
+      :class="['shrink-0 w-12 text-3xs uppercase font-bold', color]"
       :aria-label="`${label} ${file.path}`"
       role="status"
       >{{ label }}</span

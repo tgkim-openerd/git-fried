@@ -275,7 +275,7 @@ onUnmounted(() => {
 
       <pre
         v-if="lastResult?.stderr"
-        class="max-h-48 overflow-auto rounded border border-border bg-muted/40 p-2 text-[11px] text-muted-foreground"
+        class="max-h-48 overflow-auto rounded border border-border bg-muted/40 p-2 text-2xs text-muted-foreground"
         >{{ lastResult.stderr }}</pre
       >
 

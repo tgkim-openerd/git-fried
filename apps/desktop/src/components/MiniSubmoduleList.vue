@@ -95,7 +95,7 @@ function statusColor(s: SubmoduleEntry): string {
       <li
         v-for="s in filtered"
         :key="`ms-${s.path}`"
-        class="group flex items-center gap-1 rounded px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40 hover:text-foreground cursor-pointer"
+        class="group flex items-center gap-1 rounded px-1 py-1 text-2xs text-muted-foreground hover:bg-accent/40 hover:text-foreground cursor-pointer"
         :title="
           t('submoduleList.itemTitle', {
             path: s.path,
@@ -106,12 +106,12 @@ function statusColor(s: SubmoduleEntry): string {
         @dblclick="openAsRepo(s)"
         @contextmenu="onSubmoduleContextMenu($event, s)"
       >
-        <span class="shrink-0 w-3 text-center text-[10px]" :class="statusColor(s)">
+        <span class="shrink-0 w-3 text-center text-3xs" :class="statusColor(s)">
           {{ statusIcon(s) }}
         </span>
         <span class="flex-1 truncate font-mono">{{ s.path }}</span>
         <!-- M-5: sha inline (7 char) — 동기화 상태 즉시 확인 -->
-        <span v-if="s.sha" class="shrink-0 font-mono text-[9px] text-muted-foreground/60">
+        <span v-if="s.sha" class="shrink-0 font-mono text-4xs text-muted-foreground/60">
           {{ s.sha.slice(0, 7) }}
         </span>
       </li>

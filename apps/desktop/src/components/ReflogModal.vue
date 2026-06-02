@@ -181,7 +181,7 @@ function onRowContextMenu(ev: MouseEvent, e: ReflogEntry) {
     </div>
 
     <table class="w-full text-xs">
-      <thead class="sticky top-0 bg-card text-[10px] text-muted-foreground">
+      <thead class="sticky top-0 bg-card text-3xs text-muted-foreground">
         <tr>
           <th class="px-3 py-1.5 text-left font-normal w-24">ref</th>
           <th class="px-3 py-1.5 text-left font-normal w-16">SHA</th>

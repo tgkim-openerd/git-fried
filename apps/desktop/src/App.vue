@@ -127,7 +127,7 @@ useMenuListener()
            기존 36px 헤더 row 절약 → vertical 공간 확보. -->
       <RepoTabBar @open-switcher="repoSwitcherOpen = true">
         <template #trailing>
-          <div class="flex items-center gap-2 px-2 text-[11px]">
+          <div class="flex items-center gap-2 px-2 text-2xs">
             <ProfileSwitcher />
             <span class="mx-0.5 text-muted-foreground">·</span>
             <RouterLink
@@ -162,7 +162,7 @@ useMenuListener()
             </RouterLink>
             <button
               type="button"
-              class="ml-1 rounded border border-input px-1.5 py-0.5 text-[10px] hover:bg-accent"
+              class="ml-1 rounded border border-input px-1.5 py-0.5 text-3xs hover:bg-accent"
               :title="theme === 'dark' ? t('nav.themeToLight') : t('nav.themeToDark')"
               :aria-label="t('nav.themeAriaLabel')"
               @click="toggle"

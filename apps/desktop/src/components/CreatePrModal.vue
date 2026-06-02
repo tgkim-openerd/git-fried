@@ -145,7 +145,7 @@ const titleLength = computed(() => title.value.length)
           placeholder="feat: 한글 제목 OK"
           class="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
         />
-        <div class="mt-0.5 text-right text-[10px] text-muted-foreground">{{ titleLength }}/72</div>
+        <div class="mt-0.5 text-right text-3xs text-muted-foreground">{{ titleLength }}/72</div>
       </div>
 
       <!-- body + AI -->
@@ -155,7 +155,7 @@ const titleLength = computed(() => title.value.length)
           <button
             v-if="availableCli"
             type="button"
-            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-[10px] text-ai-violet hover:bg-violet-500/20 disabled:opacity-50"
+            class="rounded-md border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-3xs text-ai-violet hover:bg-violet-500/20 disabled:opacity-50"
             :disabled="!head || !base || aiBodyMut.isPending.value"
             :title="`${availableCli} CLI 가 ${head} → ${base} commits 분석 후 본문 생성`"
             @click="onAiBody()"

@@ -101,7 +101,7 @@ function fmtSha(sha: string | null): string {
 
 <template>
   <section class="flex h-full flex-col bg-background">
-    <header class="border-b border-border bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground">
+    <header class="border-b border-border bg-muted/30 px-3 py-1 text-2xs text-muted-foreground">
       <code>{{ rev1 || '?' }}...{{ rev2 || '?' }}</code> {{ t('rangeDiff.headerSuffix') }}
       <span v-if="entries.length"> ({{ entries.length }} {{ t('rangeDiff.entriesSuffix') }})</span>
     </header>
@@ -142,7 +142,7 @@ function fmtSha(sha: string | null): string {
           <code class="text-muted-foreground">{{ fmtSha(e.rightSha) }}</code>
           <span class="ml-1 flex-1 truncate font-mono">{{ e.summary }}</span>
         </div>
-        <details v-if="e.status === '!' && e.patchDiff" class="ml-7 mt-1 text-[11px]">
+        <details v-if="e.status === '!' && e.patchDiff" class="ml-7 mt-1 text-2xs">
           <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
             {{ t('rangeDiff.interDiffSummary') }}
           </summary>

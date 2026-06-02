@@ -60,7 +60,7 @@ function retry() {
         <div class="flex-1 min-w-0">
           <div class="font-semibold">{{ label ?? 'Component error' }}</div>
           <pre
-            class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] opacity-80"
+            class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-3xs opacity-80"
             >{{ error.message }}</pre
           >
         </div>

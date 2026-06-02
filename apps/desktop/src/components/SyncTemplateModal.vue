@@ -119,7 +119,7 @@ function repoName(id: number): string {
           :placeholder="t('templ.syncTemplateShaPlaceholder')"
           class="w-full rounded-md border border-input bg-background px-3 py-1.5 font-mono text-sm"
         />
-        <p class="mt-1 text-[10px] text-muted-foreground">
+        <p class="mt-1 text-3xs text-muted-foreground">
           source repo (template_work-dir 등) 가 활성이고 그 commit 이 존재해야 합니다. 현재 앱은
           source repo 의 commit graph 가 같이 있다고 가정.
         </p>
@@ -149,7 +149,7 @@ function repoName(id: number): string {
           <label class="text-xs text-muted-foreground">
             대상 레포 ({{ selectedIds.size }} 선택)
           </label>
-          <div class="flex gap-2 text-[11px]">
+          <div class="flex gap-2 text-2xs">
             <button
               class="rounded px-2 py-1 min-h-[24px] text-xs text-muted-foreground hover:bg-accent/40"
               @click="selectAll"
@@ -173,12 +173,12 @@ function repoName(id: number): string {
             >
               <input :checked="selectedIds.has(r.id)" type="checkbox" @change="toggle(r.id)" />
               <span class="font-medium">{{ r.name }}</span>
-              <span class="ml-auto text-[10px] text-muted-foreground">
+              <span class="ml-auto text-3xs text-muted-foreground">
                 {{ r.defaultBranch || '?' }}
               </span>
               <span
                 v-if="r.forgeKind !== 'unknown'"
-                class="rounded bg-muted px-1 text-[9px] uppercase"
+                class="rounded bg-muted px-1 text-4xs uppercase"
               >
                 {{ r.forgeKind }}
               </span>
@@ -210,7 +210,7 @@ function repoName(id: number): string {
             </div>
             <pre
               v-if="!r.success"
-              class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap text-[10px] text-muted-foreground"
+              class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap text-3xs text-muted-foreground"
               >{{ r.stderr || r.stdout }}</pre
             >
           </li>

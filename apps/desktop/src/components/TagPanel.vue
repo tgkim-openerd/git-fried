@@ -131,7 +131,7 @@ const { onTagContextMenu, deleteTagLocal, deleteTagRemote } = useTagInteraction(
   <div class="flex h-full flex-col">
     <header class="flex items-center justify-between border-b border-border px-3 py-2">
       <h2 class="text-xs font-semibold">Tags</h2>
-      <span v-if="tagsQuery.isFetching.value" class="text-[10px] text-muted-foreground">{{
+      <span v-if="tagsQuery.isFetching.value" class="text-3xs text-muted-foreground">{{
         t('tag.loading')
       }}</span>
     </header>
@@ -149,13 +149,13 @@ const { onTagContextMenu, deleteTagLocal, deleteTagRemote } = useTagInteraction(
       <input
         v-model="newMessage"
         :placeholder="t('tag.annotatedPlaceholder')"
-        class="rounded border border-input bg-background px-2 py-1 text-[11px]"
+        class="rounded border border-input bg-background px-2 py-1 text-2xs"
       />
       <!-- A-11 — tag 대상 commit/ref (빈 값 = HEAD) -->
       <input
         v-model="newTarget"
         :placeholder="t('tag.targetPlaceholder')"
-        class="rounded border border-input bg-background px-2 py-1 text-[11px]"
+        class="rounded border border-input bg-background px-2 py-1 text-2xs"
       />
       <button
         type="submit"
@@ -177,50 +177,44 @@ const { onTagContextMenu, deleteTagLocal, deleteTagRemote } = useTagInteraction(
       >
         <div class="flex items-center justify-between gap-2">
           <span class="font-mono text-xs font-semibold">
-            <span class="mr-1 text-[10px] text-muted-foreground">
+            <span class="mr-1 text-3xs text-muted-foreground">
               {{ expandedTag === tg.name ? '▼' : '▸' }}
             </span>
             {{ tg.name }}
             <span
               v-if="tg.annotated"
-              class="ml-1 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground"
+              class="ml-1 rounded bg-muted px-1 py-0.5 text-3xs text-muted-foreground"
               :title="t('tag.annotatedTitle')"
             >
               {{ t('tag.annotatedBadge') }}
             </span>
           </span>
-          <span class="text-[10px] text-muted-foreground">
+          <span class="text-3xs text-muted-foreground">
             {{ fmt(tg.taggerAt) }}
           </span>
         </div>
-        <div
-          v-if="tg.subject"
-          class="truncate text-[11px] text-muted-foreground"
-          :title="tg.subject"
-        >
+        <div v-if="tg.subject" class="truncate text-2xs text-muted-foreground" :title="tg.subject">
           {{ tg.subject }}
         </div>
-        <div class="mt-1 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+        <div class="mt-1 flex flex-wrap gap-2 text-3xs text-muted-foreground">
           <span class="font-mono">{{ tg.commitSha?.slice(0, 8) ?? '?' }}</span>
           <span v-if="tg.taggerName">{{ tg.taggerName }}</span>
         </div>
         <!-- Sprint 22-4 V-4: 펼침 영역 (annotated msg + 전체 SHA + 액션 힌트) -->
         <div
           v-if="expandedTag === tg.name"
-          class="mt-2 rounded border border-border bg-muted/30 p-2 text-[11px]"
+          class="mt-2 rounded border border-border bg-muted/30 p-2 text-2xs"
           @click.stop
         >
           <div class="mb-1 flex items-center gap-2 text-muted-foreground">
             <span class="font-semibold">{{ tg.annotated ? 'annotated' : 'lightweight' }}</span>
             <span v-if="tg.commitSha" class="font-mono">{{ tg.commitSha }}</span>
           </div>
-          <pre
-            v-if="tg.subject"
-            class="whitespace-pre-wrap font-mono text-[11px] text-foreground"
-            >{{ tg.subject }}</pre
-          >
+          <pre v-if="tg.subject" class="whitespace-pre-wrap font-mono text-2xs text-foreground">{{
+            tg.subject
+          }}</pre>
           <div v-else class="italic text-muted-foreground">{{ t('tag.noMessage') }}</div>
-          <p class="mt-2 text-[10px] text-muted-foreground">
+          <p class="mt-2 text-3xs text-muted-foreground">
             {{ t('tag.ctxHint') }}
           </p>
         </div>

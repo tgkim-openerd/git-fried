@@ -120,11 +120,11 @@ function statusLabel(s: SubmoduleEntry['status']): string {
         <li v-for="s in subs" :key="s.path" class="rounded px-2 py-1.5 hover:bg-accent/40">
           <div class="flex items-center justify-between">
             <span class="truncate font-mono text-xs">{{ s.path }}</span>
-            <span :class="['text-[10px]', statusColor(s.status)]">
+            <span :class="['text-3xs', statusColor(s.status)]">
               {{ statusLabel(s.status) }}
             </span>
           </div>
-          <div v-if="s.sha" class="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+          <div v-if="s.sha" class="mt-0.5 truncate font-mono text-3xs text-muted-foreground">
             {{ s.sha }}
           </div>
         </li>

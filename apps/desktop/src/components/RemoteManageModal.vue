@@ -98,7 +98,7 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
         >
           <div class="flex items-center justify-between gap-2">
             <span class="font-mono text-xs font-semibold">{{ r.name }}</span>
-            <div class="flex gap-1 text-[11px]">
+            <div class="flex gap-1 text-2xs">
               <button
                 class="rounded border border-border px-2.5 py-1 min-h-[28px] text-xs hover:bg-accent/40"
                 @click="startRename(r.name)"
@@ -119,7 +119,7 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
               </button>
             </div>
           </div>
-          <div class="mt-1 text-[11px] text-muted-foreground">
+          <div class="mt-1 text-2xs text-muted-foreground">
             <div>
               fetch: <span class="font-mono">{{ r.fetchUrl ?? '—' }}</span>
             </div>
@@ -165,7 +165,7 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
           >
             <input
               v-model="urlNew"
-              class="flex-1 rounded border border-input bg-background px-2 py-0.5 font-mono text-[11px]"
+              class="flex-1 rounded border border-input bg-background px-2 py-0.5 font-mono text-2xs"
               :placeholder="t('remote.newUrl')"
             />
             <button
@@ -198,7 +198,7 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
           <input
             v-model="addUrl"
             :placeholder="t('remote.urlPlaceholder')"
-            class="rounded border border-input bg-background px-2 py-1 font-mono text-[11px]"
+            class="rounded border border-input bg-background px-2 py-1 font-mono text-2xs"
           />
           <button
             type="submit"

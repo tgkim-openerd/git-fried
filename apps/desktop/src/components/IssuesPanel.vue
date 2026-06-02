@@ -104,10 +104,10 @@ function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
         >
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs text-muted-foreground">#{{ i.number }}</span>
-            <span class="text-[10px] text-muted-foreground">{{ fmtDate(i.updatedAt) }}</span>
+            <span class="text-3xs text-muted-foreground">{{ fmtDate(i.updatedAt) }}</span>
           </div>
           <div class="truncate text-sm">{{ i.title }}</div>
-          <div class="text-[11px] text-muted-foreground">
+          <div class="text-2xs text-muted-foreground">
             <UserAvatar
               :username="i.author.username"
               :avatar-url="i.author.avatarUrl"
@@ -119,7 +119,7 @@ function onIssueContextMenu(ev: MouseEvent, i: ForgeIssue) {
             <span
               v-for="l in i.labels"
               :key="l.name"
-              class="rounded px-1 py-0.5 text-[10px]"
+              class="rounded px-1 py-0.5 text-3xs"
               :style="{ backgroundColor: l.color + '33', color: l.color }"
             >
               {{ l.name }}

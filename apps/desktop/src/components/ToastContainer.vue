@@ -63,7 +63,7 @@ function kindIcon(kind: ToastKind): string {
                 <!-- Sprint 22-12 Q-6 — dedup count badge ("같은 메시지 +N") -->
                 <span
                   v-if="toast.count > 1"
-                  class="shrink-0 rounded-full bg-current/20 px-1.5 text-[10px] font-bold tabular-nums"
+                  class="shrink-0 rounded-full bg-current/20 px-1.5 text-3xs font-bold tabular-nums"
                   :title="`같은 메시지 ${toast.count}회 누적 (1초 내 dedup)`"
                   :aria-label="`${toast.count}회 누적`"
                 >
@@ -72,7 +72,7 @@ function kindIcon(kind: ToastKind): string {
               </div>
               <pre
                 v-if="toast.message"
-                class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] opacity-90"
+                class="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-2xs opacity-90"
                 >{{ toast.message }}</pre
               >
             </div>

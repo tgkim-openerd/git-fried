@@ -38,7 +38,7 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
       <li
         v-for="p in miniPrs"
         :key="`mp-${p.number}`"
-        class="flex cursor-pointer items-center gap-1 rounded px-1 py-1 text-[11px] hover:bg-accent/30"
+        class="flex cursor-pointer items-center gap-1 rounded px-1 py-1 text-2xs hover:bg-accent/30"
         :title="`#${p.number} ${p.title}\nby ${p.author.username} — ${p.headBranch} → ${p.baseBranch}`"
         role="button"
         tabindex="0"
@@ -50,7 +50,7 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
              draft (gray D) 최우선, 그 후 ci_status (green/yellow/red), 없으면 미표시. -->
         <span
           v-if="p.draft"
-          class="shrink-0 text-[10px] text-muted-foreground"
+          class="shrink-0 text-3xs text-muted-foreground"
           :title="t('pr.ciStatus.draft')"
           :aria-label="t('pr.ciStatus.draft')"
         >
@@ -58,7 +58,7 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
         </span>
         <span
           v-else-if="p.ciStatus === 'success'"
-          class="shrink-0 text-[10px] text-diff-add"
+          class="shrink-0 text-3xs text-diff-add"
           :title="t('pr.ciStatus.passed')"
           :aria-label="t('pr.ciStatus.passed')"
         >
@@ -66,7 +66,7 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
         </span>
         <span
           v-else-if="p.ciStatus === 'pending'"
-          class="shrink-0 text-[10px] text-warning-amber"
+          class="shrink-0 text-3xs text-warning-amber"
           :title="t('pr.ciStatus.pending')"
           :aria-label="t('pr.ciStatus.pending')"
         >
@@ -74,19 +74,19 @@ const moreCount = computed(() => Math.max(0, (prs.value?.length ?? 0) - miniPrs.
         </span>
         <span
           v-else-if="p.ciStatus === 'failure'"
-          class="shrink-0 text-[10px] text-danger-rose"
+          class="shrink-0 text-3xs text-danger-rose"
           :title="t('pr.ciStatus.failed')"
           :aria-label="t('pr.ciStatus.failed')"
         >
           ✕
         </span>
-        <span class="shrink-0 font-mono text-[10px] text-muted-foreground"> #{{ p.number }} </span>
+        <span class="shrink-0 font-mono text-3xs text-muted-foreground"> #{{ p.number }} </span>
         <span class="flex-1 truncate">{{ p.title }}</span>
-        <span v-if="p.comments > 0" class="text-[9px] text-muted-foreground">
+        <span v-if="p.comments > 0" class="text-4xs text-muted-foreground">
           💬{{ p.comments }}
         </span>
       </li>
-      <li v-if="moreCount > 0" class="px-1 py-0.5 text-[10px] text-muted-foreground">
+      <li v-if="moreCount > 0" class="px-1 py-0.5 text-3xs text-muted-foreground">
         {{ t('miniSection.moreLabel', { count: moreCount }) }}
       </li>
     </ul>

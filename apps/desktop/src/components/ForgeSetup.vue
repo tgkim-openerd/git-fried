@@ -93,7 +93,7 @@ async function onDelete(a: ForgeAccount) {
           class="flex items-center justify-between rounded px-2 py-1 hover:bg-accent/40"
         >
           <span>
-            <span class="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase">
+            <span class="rounded bg-muted px-1.5 py-0.5 text-3xs uppercase">
               {{ a.forgeKind }}
             </span>
             <span class="ml-2 font-mono text-xs">{{ a.baseUrl }}</span>
@@ -185,7 +185,7 @@ async function onDelete(a: ForgeAccount) {
           </button>
         </div>
       </div>
-      <p class="mt-2 text-[10px] text-muted-foreground">
+      <p class="mt-2 text-3xs text-muted-foreground">
         {{ t('settings.forgeSection.tokenStorageNote') }}
       </p>
     </section>

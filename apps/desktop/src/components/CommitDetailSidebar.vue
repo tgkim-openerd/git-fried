@@ -159,7 +159,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
         </button>
       </div>
       <div class="flex items-center gap-1.5">
-        <span v-if="cd.isFetching.value" class="text-[10px] text-muted-foreground">
+        <span v-if="cd.isFetching.value" class="text-3xs text-muted-foreground">
           불러오는 중...
         </span>
         <!-- Phase 13-2 — Explain commit (GitKraken parity). AI CLI 미설치 시 disabled. -->
@@ -205,7 +205,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
         <div class="space-y-1.5 rounded-md border border-border bg-muted/10 p-2 text-xs">
           <div class="flex items-center gap-2">
             <span
-              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-3xs font-bold text-white"
               :class="authorAvatarBg(commit.authorName)"
               :title="commit.authorEmail"
               :aria-label="`작성자: ${commit.authorName} (${commit.authorEmail})`"
@@ -216,7 +216,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
               <div class="truncate text-xs font-medium" :title="commit.authorEmail">
                 {{ commit.authorName }}
               </div>
-              <div class="text-[10px] text-muted-foreground">
+              <div class="text-3xs text-muted-foreground">
                 authored {{ fmtDate(commit.authorAt) }}
               </div>
             </div>
@@ -224,14 +224,14 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
           <!-- committer date 별도 표시 (CommitSummary 가 committer name 미제공 — date 만) -->
           <div
             v-if="commit.committerAt !== commit.authorAt"
-            class="ml-8 text-[10px] text-muted-foreground"
+            class="ml-8 text-3xs text-muted-foreground"
           >
             committed {{ fmtDate(commit.committerAt) }}
           </div>
         </div>
 
         <!-- meta — parents / refs (GitKraken 처럼 한 그룹) -->
-        <div class="space-y-1 text-[10px] text-muted-foreground">
+        <div class="space-y-1 text-3xs text-muted-foreground">
           <div v-if="commit.parentShas.length > 0" class="flex flex-wrap items-center gap-1">
             <span class="uppercase tracking-wider"
               >parent{{ commit.parentShas.length > 1 ? 's' : '' }}:</span
@@ -286,11 +286,11 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
           <div
             class="sticky top-0 z-10 -mx-3 mb-1 flex items-center justify-between border-b border-border bg-card px-3 py-1"
           >
-            <span class="text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span class="text-3xs uppercase tracking-wider text-muted-foreground">
               {{ fileStats.files }} modified
             </span>
             <div
-              class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5 text-[10px]"
+              class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5 text-3xs"
               title="파일 목록 표시 모드"
             >
               <button
@@ -335,7 +335,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
               <span :class="['shrink-0 w-3 text-center', changeColor(f.change)]">
                 {{ changeIcon(f.change) }}
               </span>
-              <span class="flex-1 truncate font-mono text-[11px]">{{ f.path }}</span>
+              <span class="flex-1 truncate font-mono text-2xs">{{ f.path }}</span>
             </li>
           </ul>
 
@@ -348,10 +348,10 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
                 :title="`디렉토리 ${row.path}`"
                 @click="toggleDir(row.path)"
               >
-                <span class="text-[10px] text-muted-foreground">
+                <span class="text-3xs text-muted-foreground">
                   {{ row.collapsed ? '▶' : '▼' }}
                 </span>
-                <span class="font-mono text-[11px] text-muted-foreground">{{ row.name }}/</span>
+                <span class="font-mono text-2xs text-muted-foreground">{{ row.name }}/</span>
               </li>
               <li
                 v-else
@@ -363,7 +363,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
                 <span :class="['shrink-0 w-3 text-center', changeColor(row.meta.change)]">
                   {{ changeIcon(row.meta.change) }}
                 </span>
-                <span class="flex-1 truncate font-mono text-[11px]">{{
+                <span class="flex-1 truncate font-mono text-2xs">{{
                   row.path.split('/').pop()
                 }}</span>
               </li>
@@ -380,7 +380,7 @@ const { ai, explainOpen, explainContent, explainError, explainMut, onExplainComm
 
         <!-- Phase 1 — action button 없음 (좌측 inline diff 에서 cherry-pick/revert/reset 사용).
              Phase 13-2 — AI commit 설명은 헤더 우상단 [✨ Explain] 버튼에서. -->
-        <p class="text-[10px] text-muted-foreground">
+        <p class="text-3xs text-muted-foreground">
           💡 cherry-pick / revert / reset 은 좌측 inline diff 의 toolbar 에서 사용하세요.
         </p>
       </div>

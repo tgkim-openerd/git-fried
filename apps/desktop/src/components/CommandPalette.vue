@@ -175,7 +175,7 @@ onUnmounted(() => {
           <template v-for="g in groupedDisplay" :key="g.category">
             <div
               v-if="g.label"
-              class="px-3 py-1 text-[10px] uppercase tracking-wider text-muted-foreground"
+              class="px-3 py-1 text-3xs uppercase tracking-wider text-muted-foreground"
             >
               {{ g.label }}
             </div>
@@ -195,7 +195,7 @@ onUnmounted(() => {
               >
                 <div class="flex items-center justify-between">
                   <span>{{ c.label }}</span>
-                  <span class="text-[10px] text-muted-foreground">{{ c.hint || '' }}</span>
+                  <span class="text-3xs text-muted-foreground">{{ c.hint || '' }}</span>
                 </div>
               </li>
             </ul>
@@ -207,7 +207,7 @@ onUnmounted(() => {
             결과 없음
           </p>
         </div>
-        <div class="border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+        <div class="border-t border-border px-3 py-1.5 text-3xs text-muted-foreground">
           ↑↓ 탐색 · Enter 실행 · Esc 닫기 · 카테고리: Repo / Branch / File / View / Stash / History
           / AI / Settings
         </div>

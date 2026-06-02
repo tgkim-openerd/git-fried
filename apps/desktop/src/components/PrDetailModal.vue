@@ -188,7 +188,7 @@ async function onAiReview(): Promise<void> {
     <template #header>
       <h2 class="text-sm font-semibold">
         <span v-if="detailQuery.data.value">
-          <span :class="['mr-2 text-[10px] uppercase', stateColor(detailQuery.data.value.state)]">
+          <span :class="['mr-2 text-3xs uppercase', stateColor(detailQuery.data.value.state)]">
             {{ detailQuery.data.value.state }}
           </span>
           <span class="font-mono">#{{ number }}</span>
@@ -211,7 +211,7 @@ async function onAiReview(): Promise<void> {
         @click="activeTab = 'conversation'"
       >
         💬 Conversation
-        <span class="ml-1 text-[10px] text-muted-foreground">
+        <span class="ml-1 text-3xs text-muted-foreground">
           {{ commentsQuery.data.value?.length ?? 0 }}
         </span>
       </button>
@@ -251,7 +251,7 @@ async function onAiReview(): Promise<void> {
           <span
             v-if="detailQuery.data.value.ciStatus"
             :class="[
-              'ml-1 rounded px-1.5 py-0.5 text-[10px] font-medium',
+              'ml-1 rounded px-1.5 py-0.5 text-3xs font-medium',
               ciClass(detailQuery.data.value.ciStatus),
             ]"
           >
@@ -268,7 +268,7 @@ async function onAiReview(): Promise<void> {
           </a>
         </div>
         <pre
-          class="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded border border-border bg-muted/30 p-2 font-mono text-[11px]"
+          class="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded border border-border bg-muted/30 p-2 font-mono text-2xs"
           >{{ detailQuery.data.value.bodyMd || t('pr.bodyEmpty') }}</pre
         >
       </div>
@@ -283,7 +283,7 @@ async function onAiReview(): Promise<void> {
           :key="c.id"
           class="rounded border border-border bg-muted/20 p-2"
         >
-          <div class="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div class="flex items-center justify-between text-2xs text-muted-foreground">
             <span class="flex items-center gap-1">
               <UserAvatar
                 :username="c.author.username"
@@ -365,7 +365,7 @@ async function onAiReview(): Promise<void> {
           rows="2"
           class="mt-2 w-full rounded border border-input bg-background px-2 py-1 text-xs"
         />
-        <p class="mt-1 text-[10px] text-muted-foreground">
+        <p class="mt-1 text-3xs text-muted-foreground">
           {{ t('pr.suggestionFooterHint') }}
         </p>
         <div class="mt-2 flex justify-end gap-2">

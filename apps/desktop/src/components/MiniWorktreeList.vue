@@ -68,10 +68,10 @@ function worktreeName(path: string): string {
       <li
         v-for="w in miniWorktrees"
         :key="`mw-${w.path}`"
-        class="group flex items-center gap-1 rounded px-1 py-1 text-[11px]"
+        class="group flex items-center gap-1 rounded px-1 py-1 text-2xs"
         :title="`${w.path}${w.branch ? ' [' + w.branch + ']' : ''}${w.isLocked ? ' (locked)' : ''}`"
       >
-        <span class="shrink-0 w-3 text-center text-[10px]">
+        <span class="shrink-0 w-3 text-center text-3xs">
           <span v-if="w.isMain" class="text-warning-amber" title="main worktree">★</span>
           <button
             v-else-if="w.isLocked"
@@ -95,13 +95,13 @@ function worktreeName(path: string): string {
         <span class="flex-1 truncate font-mono">{{ worktreeName(w.path) }}</span>
         <span
           v-if="w.branch"
-          class="truncate text-[9px] text-muted-foreground"
+          class="truncate text-4xs text-muted-foreground"
           :style="{ maxWidth: '80px' }"
         >
           {{ w.branch }}
         </span>
       </li>
-      <li v-if="moreCount > 0" class="px-1 py-0.5 text-[10px] text-muted-foreground">
+      <li v-if="moreCount > 0" class="px-1 py-0.5 text-3xs text-muted-foreground">
         {{ t('miniSection.moreLabel', { count: moreCount }) }}
       </li>
     </ul>

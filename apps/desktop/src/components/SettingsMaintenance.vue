@@ -37,7 +37,7 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
           @click="gcMut.mutate(false)"
         >
           git gc
-          <span class="ml-1 text-[10px] text-muted-foreground">
+          <span class="ml-1 text-3xs text-muted-foreground">
             {{ t('settings.maintenanceSection.gcHint') }}
           </span>
         </button>
@@ -56,7 +56,7 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
           @click="fsckMut.mutate()"
         >
           git fsck --full
-          <span class="ml-1 text-[10px] text-muted-foreground">
+          <span class="ml-1 text-3xs text-muted-foreground">
             {{ t('settings.maintenanceSection.fsckHint') }}
           </span>
         </button>
@@ -67,7 +67,7 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
           @click="lfsInstallMut.mutate()"
         >
           git lfs install
-          <span class="ml-1 text-[10px] text-muted-foreground">
+          <span class="ml-1 text-3xs text-muted-foreground">
             {{ t('settings.maintenanceSection.lfsInstallHint') }}
           </span>
         </button>
@@ -84,7 +84,7 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
         <h3 class="text-xs font-semibold">
           {{ maintLabel }}
           <span
-            class="ml-1 text-[10px]"
+            class="ml-1 text-3xs"
             :class="maintResult.success ? 'text-green-600' : 'text-red-600'"
           >
             exit={{ maintResult.exitCode ?? '?' }}
@@ -92,18 +92,18 @@ const { gcMut, fsckMut, lfsInstallMut, maintLabel, maintResult, confirmAggressiv
         </h3>
         <pre
           v-if="maintResult.stdout"
-          class="mt-1 max-h-48 overflow-auto rounded bg-muted/30 p-2 font-mono text-[10px]"
+          class="mt-1 max-h-48 overflow-auto rounded bg-muted/30 p-2 font-mono text-3xs"
           >{{ maintResult.stdout }}</pre
         >
         <pre
           v-if="maintResult.stderr"
-          class="mt-1 max-h-48 overflow-auto rounded bg-amber-500/10 p-2 font-mono text-[10px] text-amber-700 dark:text-amber-400"
+          class="mt-1 max-h-48 overflow-auto rounded bg-amber-500/10 p-2 font-mono text-3xs text-amber-700 dark:text-amber-400"
           >{{ maintResult.stderr }}</pre
         >
       </div>
     </div>
 
-    <p class="text-[10px] text-muted-foreground">
+    <p class="text-3xs text-muted-foreground">
       {{ t('settings.maintenanceSection.futureNote') }}
     </p>
   </div>

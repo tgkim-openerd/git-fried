@@ -241,7 +241,7 @@ const {
           </button>
           <button
             type="button"
-            class="flex items-center justify-center rounded-r min-h-[24px] min-w-[24px] px-1 text-[11px] text-muted-foreground opacity-0 hover:bg-destructive/20 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+            class="flex items-center justify-center rounded-r min-h-[24px] min-w-[24px] px-1 text-2xs text-muted-foreground opacity-0 hover:bg-destructive/20 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
             :aria-label="t('launchpad.deleteSavedView', { name: v.name })"
             @click.stop="savedViews.deleteMut.mutate(v.id)"
           >
@@ -278,7 +278,7 @@ const {
       <section v-if="tab === 'active' && activeNotSnoozedRows.length" class="mb-6">
         <h2 class="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
           PR ({{ activeNotSnoozedRows.length }})
-          <span v-if="stats.snoozed > 0" class="ml-2 text-[10px] normal-case">
+          <span v-if="stats.snoozed > 0" class="ml-2 text-3xs normal-case">
             💤 {{ t('launchpad.snoozedHint', { n: stats.snoozed }) }}
           </span>
         </h2>
@@ -338,7 +338,7 @@ const {
                   </a>
                   <template v-for="l in row.pr.labels" :key="l.name">
                     <span
-                      class="ml-1 rounded px-1 py-0.5 text-[10px]"
+                      class="ml-1 rounded px-1 py-0.5 text-3xs"
                       :style="{
                         backgroundColor: l.color + '33',
                         color: l.color,
@@ -358,13 +358,13 @@ const {
                     {{ row.pr.author.username }}
                   </span>
                 </td>
-                <td class="truncate px-2 py-1 font-mono text-[10px] text-muted-foreground">
+                <td class="truncate px-2 py-1 font-mono text-3xs text-muted-foreground">
                   {{ row.pr.headBranch }}
                 </td>
-                <td :class="['px-2 py-1 text-[10px] uppercase', stateColor(row.pr.state)]">
+                <td :class="['px-2 py-1 text-3xs uppercase', stateColor(row.pr.state)]">
                   {{ row.pr.state }}
                 </td>
-                <td class="px-2 py-1 text-[10px] text-muted-foreground">
+                <td class="px-2 py-1 text-3xs text-muted-foreground">
                   {{ fmtDate(row.pr.updatedAt) }}
                 </td>
                 <td class="relative px-2 py-1 text-center">
@@ -432,7 +432,7 @@ const {
             >
               {{ row.pr.title }}
             </a>
-            <span :class="['text-[10px] uppercase', stateColor(row.pr.state)]">
+            <span :class="['text-3xs uppercase', stateColor(row.pr.state)]">
               {{ row.pr.state }}
             </span>
           </li>
@@ -469,7 +469,7 @@ const {
             >
               {{ row.pr.title }}
             </a>
-            <span class="text-[10px] text-sky-500">
+            <span class="text-3xs text-sky-500">
               {{ fmtRemaining(meta.snoozeRemaining(row.pr) ?? 0) }} 남음
             </span>
           </li>
@@ -531,7 +531,7 @@ const {
             </span>
           </li>
         </ul>
-        <p class="mt-1 text-[10px] text-muted-foreground">
+        <p class="mt-1 text-3xs text-muted-foreground">
           힌트: forge 계정 (PAT) 미등록이거나 forge_kind=unknown 인 레포는 자동 skip 됩니다. 설정 →
           Forge 계정 에서 등록.
         </p>

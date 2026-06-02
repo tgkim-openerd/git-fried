@@ -44,12 +44,10 @@ function onToggle() {
     :title="t('status.dirToggleTitle', { path })"
     @click="onToggle"
   >
-    <span :class="['text-[10px]', variant === 'destructive' ? '' : 'text-muted-foreground']">
+    <span :class="['text-3xs', variant === 'destructive' ? '' : 'text-muted-foreground']">
       {{ collapsed ? '▶' : '▼' }}
     </span>
-    <span
-      :class="['font-mono text-[11px]', variant === 'destructive' ? '' : 'text-muted-foreground']"
-    >
+    <span :class="['font-mono text-2xs', variant === 'destructive' ? '' : 'text-muted-foreground']">
       {{ name }}/
     </span>
   </li>

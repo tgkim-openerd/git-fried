@@ -91,7 +91,7 @@ const totalDeletions = computed(
     </div>
 
     <template v-else-if="filesQuery.data.value">
-      <div class="mb-2 flex items-center justify-between text-[10px]">
+      <div class="mb-2 flex items-center justify-between text-3xs">
         <span class="text-muted-foreground">
           {{ filesQuery.data.value.length }} files / +{{ totalAdditions }} / -{{ totalDeletions }}
         </span>
@@ -128,11 +128,11 @@ const totalDeletions = computed(
             :aria-expanded="expandedFiles.has(f.path)"
             @click="toggleFileExpand(f.path)"
           >
-            <span class="text-[10px] text-muted-foreground">
+            <span class="text-3xs text-muted-foreground">
               {{ expandedFiles.has(f.path) ? '▼' : '▸' }}
             </span>
             <span
-              class="rounded px-1.5 text-[10px] font-bold"
+              class="rounded px-1.5 text-3xs font-bold"
               :class="statusBadge(f.status).cls"
               :title="f.status"
             >
@@ -144,11 +144,11 @@ const totalDeletions = computed(
               </span>
               {{ f.path }}
             </span>
-            <span class="text-[10px] text-diff-add">+{{ f.additions }}</span>
-            <span class="text-[10px] text-diff-delete">-{{ f.deletions }}</span>
+            <span class="text-3xs text-diff-add">+{{ f.additions }}</span>
+            <span class="text-3xs text-diff-delete">-{{ f.deletions }}</span>
           </button>
           <div v-if="expandedFiles.has(f.path)" class="border-t border-border">
-            <div v-if="!f.patch" class="p-3 text-center text-[11px] text-muted-foreground">
+            <div v-if="!f.patch" class="p-3 text-center text-2xs text-muted-foreground">
               이 파일은 너무 커서 forge 가 patch 를 생략했습니다 (binary 또는 large file).
               <a
                 v-if="detailHtmlUrl"

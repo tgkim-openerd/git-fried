@@ -183,7 +183,7 @@ function toggleExpanded(idx: number) {
         class="mb-2 rounded border border-border"
         @contextmenu="onHunkContextMenu($event, hIdx)"
       >
-        <div class="flex items-center justify-between bg-muted/30 px-2 py-1 text-[11px]">
+        <div class="flex items-center justify-between bg-muted/30 px-2 py-1 text-2xs">
           <button
             type="button"
             class="flex-1 truncate text-left text-muted-foreground hover:text-foreground"
@@ -198,7 +198,7 @@ function toggleExpanded(idx: number) {
           <button
             v-if="selected.get(hIdx)?.size"
             type="button"
-            class="ml-1 rounded border border-amber-500/40 px-1.5 py-0.5 text-[10px] text-warning-amber hover:bg-amber-500/20 disabled:opacity-50"
+            class="ml-1 rounded border border-amber-500/40 px-1.5 py-0.5 text-3xs text-warning-amber hover:bg-amber-500/20 disabled:opacity-50"
             :disabled="applyMut.isPending.value"
             :title="staged ? t('hunkStage.lineUnstageTitle') : t('hunkStage.lineStageTitle')"
             @click="applySelectedLines(hIdx)"
@@ -207,7 +207,7 @@ function toggleExpanded(idx: number) {
           </button>
           <button
             type="button"
-            class="ml-1 rounded border border-border px-1.5 py-0.5 text-[10px] hover:bg-accent/40 disabled:opacity-50"
+            class="ml-1 rounded border border-border px-1.5 py-0.5 text-3xs hover:bg-accent/40 disabled:opacity-50"
             :disabled="applyMut.isPending.value"
             @click="applyHunk(hIdx)"
           >
@@ -239,7 +239,7 @@ function toggleExpanded(idx: number) {
             >
           </div>
           <div
-            class="flex items-center gap-2 border-t border-border bg-muted/20 px-2 py-0.5 text-[10px] text-muted-foreground"
+            class="flex items-center gap-2 border-t border-border bg-muted/20 px-2 py-0.5 text-3xs text-muted-foreground"
           >
             <button type="button" class="hover:text-foreground" @click="selectAllLines(hIdx)">
               {{ t('hunkStage.selectAllLines') }}

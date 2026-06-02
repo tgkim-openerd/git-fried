@@ -99,10 +99,10 @@ function fmtDate(unix: number): string {
           >
             <div class="flex items-center justify-between">
               <span class="font-mono text-muted-foreground">{{ c.shortSha }}</span>
-              <span class="text-[10px] text-muted-foreground">{{ fmtDate(c.authorAt) }}</span>
+              <span class="text-3xs text-muted-foreground">{{ fmtDate(c.authorAt) }}</span>
             </div>
             <div class="truncate">{{ c.subject }}</div>
-            <div class="text-[10px] text-muted-foreground">{{ c.authorName }}</div>
+            <div class="text-3xs text-muted-foreground">{{ c.authorName }}</div>
           </li>
           <li
             v-if="!history.isFetching.value && (history.data.value?.length ?? 0) === 0"
@@ -147,16 +147,16 @@ function fmtDate(unix: number): string {
             :key="i"
             class="border-b border-border/50 hover:bg-accent/20"
           >
-            <td class="w-16 shrink-0 px-2 text-right text-[10px] text-muted-foreground">
+            <td class="w-16 shrink-0 px-2 text-right text-3xs text-muted-foreground">
               {{ line.shortSha }}
             </td>
             <td
-              class="w-28 shrink-0 px-1 truncate text-[10px] text-muted-foreground"
+              class="w-28 shrink-0 px-1 truncate text-3xs text-muted-foreground"
               :title="line.summary"
             >
               {{ line.authorName }}
             </td>
-            <td class="w-12 shrink-0 px-1 text-right text-[10px] text-muted-foreground">
+            <td class="w-12 shrink-0 px-1 text-right text-3xs text-muted-foreground">
               {{ line.finalLine }}
             </td>
             <td class="px-2 whitespace-pre">{{ line.content }}</td>

@@ -163,9 +163,7 @@ function swap() {
     <div v-else class="flex flex-1 overflow-hidden">
       <!-- 좌: commit list (ref1..ref2) -->
       <aside class="w-80 shrink-0 overflow-auto border-r border-border bg-muted/20">
-        <header
-          class="border-b border-border bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground"
-        >
+        <header class="border-b border-border bg-muted/30 px-3 py-1 text-2xs text-muted-foreground">
           <code>{{ ref1 || '?' }}..{{ ref2 || '?' }}</code> {{ t('compare.commitsHeader') }} ({{
             data?.commits.length ?? 0
           }})
@@ -191,12 +189,12 @@ function swap() {
               <code class="text-muted-foreground">
                 {{ c.sha.slice(0, 7) }}
               </code>
-              <span class="text-[10px] text-muted-foreground">
+              <span class="text-3xs text-muted-foreground">
                 {{ formatDateLocalized(c.authorAt) }}
               </span>
             </div>
             <div class="mt-0.5 truncate font-mono">{{ c.summary }}</div>
-            <div class="text-[10px] text-muted-foreground">
+            <div class="text-3xs text-muted-foreground">
               {{ c.author }}
             </div>
           </li>
@@ -208,7 +206,7 @@ function swap() {
 
       <!-- 우: diff text -->
       <main class="flex-1 overflow-auto bg-background">
-        <pre v-if="data?.diff" class="m-0 whitespace-pre-wrap p-3 font-mono text-[11px]">{{
+        <pre v-if="data?.diff" class="m-0 whitespace-pre-wrap p-3 font-mono text-2xs">{{
           data.diff
         }}</pre>
         <p v-else-if="data && !data.diff" class="p-6 text-center text-xs text-muted-foreground">

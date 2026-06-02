@@ -175,7 +175,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
       </div>
       <!-- Sprint c25-2.1 — Path / Tree 토글 (Modified 섹션에 적용) -->
       <div
-        class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5 text-[10px]"
+        class="flex items-center gap-0.5 rounded border border-border bg-muted/30 p-0.5 text-3xs"
       >
         <BaseTooltip :text="t('status.viewModePathTooltip')" placement="bottom">
           <button
@@ -226,7 +226,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
             v-model="fileFilter"
             type="text"
             :placeholder="t('status.filterPlaceholder')"
-            class="w-full rounded border border-input bg-background px-2 py-1 text-[11px]"
+            class="w-full rounded border border-input bg-background px-2 py-1 text-2xs"
             :aria-label="t('status.filterAria')"
           />
           <button
@@ -275,7 +275,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <template #extra>
                 <button
                   type="button"
-                  class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                  class="text-3xs text-muted-foreground/70 hover:text-foreground"
                   :title="t('status.hunkUnstageTooltip')"
                   :aria-label="t('status.hunkUnstageAria', { path: f.path })"
                   @click.stop="openHunk(f.path, true)"
@@ -309,9 +309,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 @keydown.space.self.prevent="onFileClick(row.path, true)"
                 @contextmenu="onFileContextMenu($event, row.path, true)"
               >
-                <span
-                  :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.meta.status)]"
-                >
+                <span :class="['shrink-0 w-12 text-3xs uppercase', statusColor(row.meta.status)]">
                   {{ statusLabel(row.meta.status) }}
                 </span>
                 <span class="flex-1 truncate font-mono text-xs" :title="row.path">
@@ -319,7 +317,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </span>
                 <button
                   type="button"
-                  class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                  class="text-3xs text-muted-foreground/70 hover:text-foreground"
                   title="Hunk-level unstage"
                   :aria-label="t('status.hunkUnstageAria', { path: row.path })"
                   @click.stop="openHunk(row.path, true)"
@@ -369,7 +367,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', f.path)
               "
             >
-              <span :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(f.status)]">
+              <span :class="['shrink-0 w-12 text-3xs uppercase', statusColor(f.status)]">
                 {{ statusLabel(f.status) }}
               </span>
               <span class="flex-1 truncate font-mono text-xs">{{ f.path }}</span>
@@ -393,7 +391,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               </button>
               <button
                 type="button"
-                class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                class="text-3xs text-muted-foreground/70 hover:text-foreground"
                 :title="t('status.hunkStageTooltip')"
                 :aria-label="t('status.hunkStageAria', { path: f.path })"
                 @click.stop="openHunk(f.path, false)"
@@ -439,9 +437,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                   (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.path)
                 "
               >
-                <span
-                  :class="['shrink-0 w-12 text-[10px] uppercase', statusColor(row.meta.status)]"
-                >
+                <span :class="['shrink-0 w-12 text-3xs uppercase', statusColor(row.meta.status)]">
                   {{ statusLabel(row.meta.status) }}
                 </span>
                 <span class="flex-1 truncate font-mono text-xs" :title="row.path">
@@ -467,7 +463,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </button>
                 <button
                   type="button"
-                  class="text-[10px] text-muted-foreground/70 hover:text-foreground"
+                  class="text-3xs text-muted-foreground/70 hover:text-foreground"
                   title="Hunk-level stage"
                   :aria-label="t('status.hunkStageAria', { path: row.path })"
                   @click.stop="openHunk(row.path, false)"
@@ -514,7 +510,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)
               "
             >
-              <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground"> new </span>
+              <span class="shrink-0 w-12 text-3xs uppercase text-muted-foreground"> new </span>
               <span class="flex-1 truncate font-mono text-xs">{{ p }}</span>
               <button
                 type="button"
@@ -550,7 +546,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 @keydown.enter.self="onFileClick(row.path, false)"
                 @keydown.space.self.prevent="onFileClick(row.path, false)"
               >
-                <span class="shrink-0 w-12 text-[10px] uppercase text-muted-foreground">new</span>
+                <span class="shrink-0 w-12 text-3xs uppercase text-muted-foreground">new</span>
                 <span class="flex-1 truncate font-mono text-xs" :title="row.path">{{
                   row.name
                 }}</span>
@@ -586,7 +582,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <span class="flex-1 truncate font-mono">! {{ p }}</span>
               <button
                 type="button"
-                class="opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+                class="opacity-100 rounded border border-border px-1.5 py-0.5 text-3xs text-muted-foreground hover:bg-accent/40"
                 :title="t('status.mergetoolTitle')"
                 :disabled="mergetoolMut.isPending.value"
                 @click="onLaunchMergetool(p)"
@@ -595,7 +591,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               </button>
               <button
                 type="button"
-                class="opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+                class="opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-3xs hover:bg-destructive/20"
                 :title="t('status.resolveTitle')"
                 @click="openMerge(p)"
               >
@@ -624,7 +620,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 <span class="flex-1 truncate font-mono" :title="row.path">! {{ row.name }}</span>
                 <button
                   type="button"
-                  class="opacity-100 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent/40"
+                  class="opacity-100 rounded border border-border px-1.5 py-0.5 text-3xs text-muted-foreground hover:bg-accent/40"
                   :title="t('status.mergetoolShort')"
                   :disabled="mergetoolMut.isPending.value"
                   @click="onLaunchMergetool(row.path)"
@@ -633,7 +629,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </button>
                 <button
                   type="button"
-                  class="opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-[10px] hover:bg-destructive/20"
+                  class="opacity-100 rounded border border-destructive/40 px-1.5 py-0.5 text-3xs hover:bg-destructive/20"
                   :title="t('status.resolveTitle')"
                   @click="openMerge(row.path)"
                 >

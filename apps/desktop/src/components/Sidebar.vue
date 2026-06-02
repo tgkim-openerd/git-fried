@@ -75,10 +75,7 @@ useShortcut('filterRepos', focusSidebarSearch)
       <span class="font-mono text-sm font-semibold tracking-tight">git-fried</span>
       <!-- Sprint c31 PR-B — version 0.0.0 → 0.3.0 동기 (tauri.conf.json + Cargo.toml + package.json) -->
       <!-- plan/30 P3-4 — release date / Sprint context tooltip -->
-      <span
-        class="cursor-help text-[10px] text-muted-foreground"
-        :title="t('sidebar.versionTitle')"
-      >
+      <span class="cursor-help text-3xs text-muted-foreground" :title="t('sidebar.versionTitle')">
         v0.3.0
       </span>
     </header>
@@ -117,7 +114,7 @@ useShortcut('filterRepos', focusSidebarSearch)
       <RouterLink
         to="/repositories"
         data-testid="sidebar-repo-management-link"
-        class="rounded-md border border-input px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground"
+        class="rounded-md border border-input px-1.5 py-0.5 text-3xs text-muted-foreground hover:bg-accent hover:text-foreground"
         :title="t('sidebar.managementTitle')"
       >
         {{ t('sidebar.managementRepos') }}
@@ -138,7 +135,7 @@ useShortcut('filterRepos', focusSidebarSearch)
         <button
           v-if="search.isActive.value"
           type="button"
-          class="absolute right-1 top-1/2 -translate-y-1/2 rounded text-[10px] text-muted-foreground hover:text-foreground"
+          class="absolute right-1 top-1/2 -translate-y-1/2 rounded text-3xs text-muted-foreground hover:text-foreground"
           :title="t('sidebar.clearSearch')"
           :aria-label="t('sidebar.clearSearch')"
           @click="search.clear()"
@@ -155,7 +152,7 @@ useShortcut('filterRepos', focusSidebarSearch)
       <ActiveRepoQuickActions />
     </div>
 
-    <footer class="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
+    <footer class="border-t border-border px-3 py-2 text-2xs text-muted-foreground">
       {{ t('sidebar.footerStack') }}
     </footer>
   </aside>

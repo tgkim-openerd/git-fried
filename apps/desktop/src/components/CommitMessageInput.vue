@@ -190,7 +190,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
     <!-- Sprint c30 / GitKraken UX (Phase 2b) — "Commit" 헤더 라벨.
          GitKraken 스크린샷 3 의 우측 패널 하단 commit form 위 라벨 흡수. -->
     <div
-      class="flex items-center justify-between border-b border-border/50 pb-1 text-[11px] uppercase tracking-wider text-muted-foreground"
+      class="flex items-center justify-between border-b border-border/50 pb-1 text-2xs uppercase tracking-wider text-muted-foreground"
     >
       <span class="font-semibold">⊙ Commit</span>
       <span class="font-mono">↑ {{ ahead }} / ↓ {{ behind }}</span>
@@ -263,7 +263,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
       <summary class="cursor-pointer text-muted-foreground">
         {{ t('commitInputExtra.previewLabel') }}
       </summary>
-      <pre class="mt-1 whitespace-pre-wrap font-mono text-[11px]">{{
+      <pre class="mt-1 whitespace-pre-wrap font-mono text-2xs">{{
         finalMessage || '(비어있음)'
       }}</pre>
     </details>
@@ -280,7 +280,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
     >
       <input v-model="amend" type="checkbox" :disabled="!repoId" class="accent-amber-500" />
       <span :class="amend ? 'font-semibold text-warning-amber' : ''"> Amend previous commit </span>
-      <span v-if="amend" class="text-[10px] text-muted-foreground">{{
+      <span v-if="amend" class="text-3xs text-muted-foreground">{{
         t('commitInputExtra.amendLabel')
       }}</span>
     </label>
@@ -340,7 +340,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
                 : t('commitInput.stageAndCommit')
         }}
       </span>
-      <span class="text-[10px] opacity-75">⌘⇧Enter</span>
+      <span class="text-3xs opacity-75">⌘⇧Enter</span>
     </button>
 
     <!-- Pre-commit hook 실패 결과 패널 -->
@@ -353,7 +353,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
           ✕ Commit 실패 (exit {{ lastResult.exitCode }})
           <span
             v-if="hookKind(lastResult.stderr)"
-            class="ml-1 rounded bg-rose-500/20 px-1 text-[10px]"
+            class="ml-1 rounded bg-rose-500/20 px-1 text-3xs"
           >
             {{ hookKind(lastResult.stderr) }}
           </span>
@@ -367,10 +367,10 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
           ✕
         </button>
       </div>
-      <pre class="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px]">{{
+      <pre class="max-h-48 overflow-auto whitespace-pre-wrap font-mono text-2xs">{{
         lastResult.stderr || lastResult.stdout || '(출력 없음)'
       }}</pre>
-      <p class="mt-2 text-[10px] text-muted-foreground">
+      <p class="mt-2 text-3xs text-muted-foreground">
         💡 Pre-commit hook 이 실패하면 보통 lint / format / typecheck 가 막은 것입니다. 에디터에서
         수정 후 다시 commit. <strong>--no-verify 우회는 권장하지 않음</strong>
         (CI 실패 / 코드 품질 저하).

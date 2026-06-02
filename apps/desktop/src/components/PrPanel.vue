@@ -224,10 +224,10 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
         >
           <div class="flex items-center justify-between">
             <span class="font-mono text-xs text-muted-foreground">#{{ pr.number }}</span>
-            <span :class="['text-[10px] uppercase', stateColor(pr.state)]">{{ pr.state }}</span>
+            <span :class="['text-3xs uppercase', stateColor(pr.state)]">{{ pr.state }}</span>
           </div>
           <div class="truncate text-sm">{{ pr.title }}</div>
-          <div class="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div class="flex items-center justify-between text-2xs text-muted-foreground">
             <span class="flex items-center gap-1">
               <UserAvatar
                 :username="pr.author.username"
@@ -242,7 +242,7 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
             <span
               v-for="l in pr.labels"
               :key="l.name"
-              class="rounded px-1 py-0.5 text-[10px]"
+              class="rounded px-1 py-0.5 text-3xs"
               :style="{ backgroundColor: l.color + '33', color: l.color }"
             >
               {{ l.name }}
@@ -261,7 +261,7 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
           >
             <span>
               <span class="mr-1">{{ expandedBots[name] ? '▾' : '▸' }}</span>
-              🤖 {{ name }} <span class="text-[10px]">({{ list.length }})</span>
+              🤖 {{ name }} <span class="text-3xs">({{ list.length }})</span>
             </span>
           </button>
           <ul v-if="expandedBots[name]">
@@ -277,7 +277,7 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
               @keydown.enter="selectedNumber = pr.number"
               @keydown.space.prevent="selectedNumber = pr.number"
             >
-              <span class="font-mono text-[10px] text-muted-foreground">#{{ pr.number }}</span>
+              <span class="font-mono text-3xs text-muted-foreground">#{{ pr.number }}</span>
               <span class="ml-2 truncate">{{ pr.title }}</span>
             </li>
           </ul>

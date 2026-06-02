@@ -52,7 +52,7 @@ const isHiddenByOther = shouldHide(props.storageKey)
     :class="isMaxedHere ? 'rounded ring-1 ring-primary/30' : ''"
   >
     <div
-      class="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground"
+      class="flex items-center justify-between text-3xs uppercase tracking-wider text-muted-foreground"
     >
       <button
         type="button"
@@ -66,7 +66,7 @@ const isHiddenByOther = shouldHide(props.storageKey)
         @click="collapsed = !collapsed"
         @dblclick.stop.prevent="toggleMaximize(storageKey)"
       >
-        <span class="text-[9px]">{{ collapsed ? '▶' : '▼' }}</span>
+        <span class="text-4xs">{{ collapsed ? '▶' : '▼' }}</span>
         <span>{{ title }} ({{ count }})</span>
       </button>
       <button

@@ -246,7 +246,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
             placeholder="검색: subject / 작성자 / SHA / ref (esc 닫기)"
             class="w-72 rounded-md border border-input bg-background px-2 py-1 text-xs"
           />
-          <span class="text-[10px] text-muted-foreground">
+          <span class="text-3xs text-muted-foreground">
             {{ searchQuery ? `${matchCount} / ${rows.length}` : `${rows.length}` }}
           </span>
           <button
@@ -276,7 +276,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
 
     <!-- 컬럼 헤더 (drag reorder + 우클릭 토글 메뉴) -->
     <div
-      class="relative flex items-center border-b border-border bg-muted/40 px-2 py-1.5 min-h-[28px] text-[11px] uppercase tracking-wider text-muted-foreground"
+      class="relative flex items-center border-b border-border bg-muted/40 px-2 py-1.5 min-h-[28px] text-2xs uppercase tracking-wider text-muted-foreground"
       @contextmenu="openHeaderMenu"
     >
       <!-- 그래프 sticky 좌측 placeholder -->
@@ -470,15 +470,15 @@ void [searchInputRef, moveSelection, headerMenuRef]
             <span class="font-mono text-muted-foreground">// WIP</span>
             <span
               v-if="wipChangeCount > 0"
-              class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-warning-amber"
+              class="rounded bg-amber-500/15 px-1.5 py-0.5 text-3xs text-warning-amber"
             >
               {{ wipChangeCount }}
             </span>
             <!-- Sprint c95+ C2 E1 — WIP note 있으면 사용자 메시지 노출 (GitKraken 의 stash subject 와 정합), 없으면 default instructional hint. -->
-            <span v-if="wipNoteRef" class="text-[11px] text-amber-300/90 font-medium">
+            <span v-if="wipNoteRef" class="text-2xs text-amber-300/90 font-medium">
               {{ wipNoteRef }}
             </span>
-            <span v-else class="text-[10px] text-muted-foreground/70">
+            <span v-else class="text-3xs text-muted-foreground/70">
               (작업 중인 변경 — 클릭하면 우측 staging 패널)
             </span>
           </div>
@@ -567,7 +567,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
                 {{ commitRowAt(v.index)?.commit.subject }}
                 <span
                   v-if="bodyFirstLine(commitRowAt(v.index)?.commit.body)"
-                  class="ml-2 text-[11px] text-muted-foreground/70"
+                  class="ml-2 text-2xs text-muted-foreground/70"
                 >
                   {{ bodyFirstLine(commitRowAt(v.index)?.commit.body) }}
                 </span>
@@ -601,7 +601,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
                     /* c58 P3-5 보강 — 한글 2글자 시 font 축소 + tracking-tight (w-4 14px fit) */
                     authorInitial(commitRowAt(v.index)?.commit.authorName).length >= 2
                       ? 'text-[7px] tracking-tighter'
-                      : 'text-[9px]',
+                      : 'text-4xs',
                   ]"
                   :title="commitRowAt(v.index)?.commit.authorEmail || ''"
                   aria-hidden="true"

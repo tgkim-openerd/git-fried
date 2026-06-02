@@ -35,7 +35,7 @@ function onHide(name: string) {
 
 <template>
   <span
-    class="ref-pill inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px]"
+    class="ref-pill inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-3xs"
     :class="[pillClass, extraClass, shrink !== false ? 'shrink-0' : '']"
   >
     <button

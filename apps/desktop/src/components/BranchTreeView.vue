@@ -68,7 +68,7 @@ function onToggle(n: BranchTreeFolder<T>) {
     <li
       v-for="n in visible"
       :key="`${n.kind}:${isFolder(n) ? n.path : n.fullName}`"
-      class="text-[11px]"
+      class="text-2xs"
     >
       <button
         v-if="isFolder(n)"
@@ -79,11 +79,11 @@ function onToggle(n: BranchTreeFolder<T>) {
         :aria-expanded="isExpanded(n.path)"
         @click="onToggle(n)"
       >
-        <span class="w-3 shrink-0 text-center text-[9px]">
+        <span class="w-3 shrink-0 text-center text-4xs">
           {{ isExpanded(n.path) ? '▼' : '▶' }}
         </span>
         <span class="flex-1 truncate">{{ n.name }}</span>
-        <span class="rounded bg-muted px-1 text-[9px]">{{ n.leafCount }}</span>
+        <span class="rounded bg-muted px-1 text-4xs">{{ n.leafCount }}</span>
       </button>
       <div v-else-if="isLeaf(n)" class="rounded" :style="{ paddingLeft: indent(n) }">
         <slot :node="n" :data="n.data" :index="leafIndexMap.get(n.fullName) ?? -1" />

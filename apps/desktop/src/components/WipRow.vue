@@ -40,7 +40,7 @@ const emit = defineEmits<{
     @keydown.space.prevent="emit('select')"
   >
     <!-- BRANCH/TAG 컬럼 placeholder (graph row column 폭 정렬용) -->
-    <div class="w-24 shrink-0 truncate font-mono text-[10px] text-muted-foreground">
+    <div class="w-24 shrink-0 truncate font-mono text-3xs text-muted-foreground">
       <span v-if="branch" class="rounded bg-emerald-500/15 px-1 py-0.5 text-diff-add">
         ●&nbsp;{{ branch }}
       </span>
@@ -70,7 +70,7 @@ const emit = defineEmits<{
       <span class="font-mono text-muted-foreground">// WIP</span>
       <span
         v-if="changeCount > 0"
-        class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-warning-amber"
+        class="rounded bg-amber-500/15 px-1.5 py-0.5 text-3xs text-warning-amber"
       >
         {{ changeCount }}
       </span>

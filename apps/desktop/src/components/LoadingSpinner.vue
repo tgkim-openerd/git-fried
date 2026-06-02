@@ -28,7 +28,7 @@ const sizeClassMap = {
 } as const
 
 const labelSizeMap = {
-  sm: 'text-[10px]',
+  sm: 'text-3xs',
   md: 'text-xs',
   lg: 'text-sm',
 } as const

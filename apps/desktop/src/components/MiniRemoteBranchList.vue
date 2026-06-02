@@ -84,7 +84,7 @@ const tree = computed(() => {
     >
       <template #default="{ data }: { data: BranchInfo }">
         <div
-          class="flex items-center gap-1 px-1 py-1 text-[11px] text-muted-foreground hover:bg-accent/40 rounded"
+          class="flex items-center gap-1 px-1 py-1 text-2xs text-muted-foreground hover:bg-accent/40 rounded"
           :class="[
             isHidden(data.name) ? 'opacity-40 line-through' : '',
             soloRef === data.name ? 'ring-1 ring-orange-500/40' : '',

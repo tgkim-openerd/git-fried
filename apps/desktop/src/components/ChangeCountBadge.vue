@@ -75,7 +75,7 @@ function onStageAll(e: MouseEvent) {
           <span class="text-muted-foreground"> file changes</span>
         </span>
       </span>
-      <span v-if="!isClean" class="flex items-center gap-1 text-[10px]">
+      <span v-if="!isClean" class="flex items-center gap-1 text-3xs">
         <span v-if="counts.staged > 0" class="rounded bg-emerald-500/15 px-1 text-diff-add">
           staged {{ counts.staged }}
         </span>
@@ -95,7 +95,7 @@ function onStageAll(e: MouseEvent) {
       <!-- Sprint c54+ — branch 이름 길면 truncate (우측 360→420 fix 와 함께). -->
       <span
         v-if="branch"
-        class="ml-auto flex min-w-0 items-center gap-0.5 font-mono text-[11px] text-muted-foreground"
+        class="ml-auto flex min-w-0 items-center gap-0.5 font-mono text-2xs text-muted-foreground"
         :title="branch"
       >
         on
@@ -109,7 +109,7 @@ function onStageAll(e: MouseEvent) {
       v-if="canStageAll"
       type="button"
       data-testid="stage-all-changes"
-      class="shrink-0 rounded-md bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+      class="shrink-0 rounded-md bg-emerald-600 px-2 py-0.5 text-2xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
       :disabled="stageAllMut.isPending.value"
       :title="`${counts.unstaged + counts.untracked}개 변경 모두 stage`"
       :aria-label="`Stage All Changes (${counts.unstaged + counts.untracked}개)`"

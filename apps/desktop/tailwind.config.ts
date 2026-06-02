@@ -81,6 +81,15 @@ export default {
         modal: 'var(--shadow-modal)',
         toast: 'var(--shadow-toast)',
       },
+      fontSize: {
+        // plan #44 C1 — micro-text 토큰 (arbitrary text-[Npx] 치환).
+        // ⚠ px 단위 필수: 앱 root font-size = 14px (≠16px) 이라 rem 토큰은 0.875× 로 축소됨.
+        // 기존 text-[Npx] 는 절대 px 이므로 토큰도 px 로 정의해야 픽셀 동일.
+        // font-size only (line-height 미설정) — leading-* 독립 제어 보존.
+        '2xs': '11px',
+        '3xs': '10px',
+        '4xs': '9px',
+      },
       zIndex: {
         // Layer 6 (plan/24 Sprint A-5)
         // 10 sticky header (SyncBar)

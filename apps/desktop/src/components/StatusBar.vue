@@ -147,7 +147,7 @@ const appVersion = '0.3.0'
 
 <template>
   <footer
-    class="flex min-w-0 items-center gap-3 overflow-hidden border-t border-border bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground"
+    class="flex min-w-0 items-center gap-3 overflow-hidden border-t border-border bg-muted/30 px-3 py-1 text-2xs text-muted-foreground"
   >
     <!-- Conflict prediction -->
     <span v-if="store.activeRepoId == null">{{ t('statusBar.noRepo') }}</span>
@@ -186,7 +186,7 @@ const appVersion = '0.3.0'
     <button
       v-if="prediction && !prediction.ok && ai.available.value && status.data.value?.branch"
       type="button"
-      class="rounded border border-border px-1.5 py-0.5 text-[10px] text-warning-amber hover:bg-accent/40 disabled:opacity-50"
+      class="rounded border border-border px-1.5 py-0.5 text-3xs text-warning-amber hover:bg-accent/40 disabled:opacity-50"
       :disabled="explainMut.isPending.value"
       :title="
         t('statusBar.aiAnalyzeTitle', {
@@ -207,7 +207,7 @@ const appVersion = '0.3.0'
     <!-- Phase 10-3 — 단축키 hint (중앙). action 매핑된 항목은 클릭 시 dispatchShortcut.
          c58 — 1024 viewport collision 방지: ≥1280 (xl) 에서만 노출. -->
     <div
-      class="ml-auto hidden xl:flex items-center gap-2 text-[10px] opacity-70 hover:opacity-100"
+      class="ml-auto hidden xl:flex items-center gap-2 text-3xs opacity-70 hover:opacity-100"
       data-testid="status-bar-shortcuts"
     >
       <button
@@ -223,7 +223,7 @@ const appVersion = '0.3.0'
         @click="onShortcutClick(h)"
       >
         <kbd
-          class="rounded border border-border bg-muted/50 px-1 py-0 font-mono text-[9px] tracking-tight"
+          class="rounded border border-border bg-muted/50 px-1 py-0 font-mono text-4xs tracking-tight"
         >
           {{ h.combo }}
         </kbd>
@@ -246,7 +246,7 @@ const appVersion = '0.3.0'
          GitKraken parity (zoom % 는 Tauri 가 native — 표시 보류, version + license + repo
          counts 우선). -->
     <span
-      class="ml-1 flex items-center gap-1.5 border-l border-border/40 pl-2 text-[10px] opacity-60 hover:opacity-100"
+      class="ml-1 flex items-center gap-1.5 border-l border-border/40 pl-2 text-3xs opacity-60 hover:opacity-100"
       data-testid="status-bar-meta"
     >
       <span

@@ -109,17 +109,17 @@ const { onStashContextMenu } = useStashInteraction({
       <li
         v-for="s in stashes ?? []"
         :key="`ms-${s.index}`"
-        class="group flex items-center gap-1 rounded px-1 py-1 text-[11px] hover:bg-accent/30 cursor-pointer"
+        class="group flex items-center gap-1 rounded px-1 py-1 text-2xs hover:bg-accent/30 cursor-pointer"
         :title="`stash@{${s.index}} on ${s.branch ?? 'unknown'} — ${s.message}`"
         @click="onStashClick(s.sha)"
         @contextmenu="onStashContextMenu($event, s)"
       >
-        <span class="shrink-0 font-mono text-[10px] text-muted-foreground">@{{ s.index }}</span>
+        <span class="shrink-0 font-mono text-3xs text-muted-foreground">@{{ s.index }}</span>
         <span class="flex-1 truncate">{{ s.message || t('stashList.noMessage') }}</span>
         <!-- S-3: createdAt epoch sec → relative time (formatRelativeTime ko/en) -->
         <span
           v-if="s.createdAt"
-          class="shrink-0 text-[9px] text-muted-foreground/70"
+          class="shrink-0 text-4xs text-muted-foreground/70"
           :title="new Date(s.createdAt * 1000).toLocaleString()"
         >
           {{ formatRelativeTime(s.createdAt) }}
@@ -127,7 +127,7 @@ const { onStashContextMenu } = useStashInteraction({
         <!-- S-4+S-5: ⋯ overflow → ContextMenu (apply/pop/copy SHA/drop). hover 시 노출. -->
         <button
           type="button"
-          class="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 rounded px-1 text-[11px] text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+          class="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 rounded px-1 text-2xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
           :title="t('stashList.menuTitle')"
           :aria-label="t('stashList.menuAriaLabel', { idx: s.index })"
           @click.stop="onStashContextMenu($event, s)"

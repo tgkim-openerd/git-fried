@@ -88,15 +88,15 @@ const QUICK_TABS: ReadonlyArray<{
       <div class="flex flex-wrap items-baseline gap-1 font-mono text-xs">
         <span class="text-muted-foreground">on</span>
         <span class="font-semibold text-foreground">{{ branch || '(no branch)' }}</span>
-        <span v-if="upstream" class="text-[10px] text-muted-foreground">→ {{ upstream }}</span>
-        <span v-if="ahead || behind" class="text-[10px]">
+        <span v-if="upstream" class="text-3xs text-muted-foreground">→ {{ upstream }}</span>
+        <span v-if="ahead || behind" class="text-3xs">
           <span v-if="ahead" class="text-diff-add">↑{{ ahead }}</span>
           <span v-if="behind" class="ml-0.5 text-danger-rose">↓{{ behind }}</span>
         </span>
       </div>
 
       <!-- changes count badges -->
-      <div v-if="counts.total > 0" class="flex flex-wrap gap-1 text-[10px]">
+      <div v-if="counts.total > 0" class="flex flex-wrap gap-1 text-3xs">
         <span v-if="counts.staged > 0" class="rounded bg-emerald-500/15 px-1 text-diff-add">
           staged {{ counts.staged }}
         </span>
@@ -110,7 +110,7 @@ const QUICK_TABS: ReadonlyArray<{
           ⚠ {{ counts.conflicted }}
         </span>
       </div>
-      <div v-else class="text-[10px] text-muted-foreground">{{ t('common.noChanges') }}</div>
+      <div v-else class="text-3xs text-muted-foreground">{{ t('common.noChanges') }}</div>
 
       <!-- quick tab buttons — SB-002 i18n migration (sidebar.quickTab.*). -->
       <div class="grid grid-cols-5 gap-1">
@@ -118,7 +118,7 @@ const QUICK_TABS: ReadonlyArray<{
           v-for="qt in QUICK_TABS"
           :key="qt.key"
           type="button"
-          class="flex flex-col items-center gap-0 rounded-md border border-border bg-card px-1 py-1 text-[10px] hover:bg-accent hover:text-accent-foreground"
+          class="flex flex-col items-center gap-0 rounded-md border border-border bg-card px-1 py-1 text-3xs hover:bg-accent hover:text-accent-foreground"
           :title="t(qt.titleKey)"
           @click="dispatchShortcut(qt.key)"
         >

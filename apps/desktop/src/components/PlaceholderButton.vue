@@ -70,7 +70,7 @@ function onClick() {
     <span v-if="icon" class="opacity-60">{{ icon }}</span>
     <span class="opacity-80">{{ label }}</span>
     <span
-      class="ml-0.5 rounded bg-muted px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider opacity-90"
+      class="ml-0.5 rounded bg-muted px-1 py-0.5 text-3xs font-bold uppercase tracking-wider opacity-90"
     >
       🔜 {{ eta }}
     </span>

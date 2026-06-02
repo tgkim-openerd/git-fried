@@ -62,7 +62,7 @@ cd.registerHunkNavShortcut(diffRef, openRef)
       <div class="flex w-full items-center justify-between gap-2">
         <h2 class="flex items-center gap-2 font-mono text-sm">
           <!-- ARCH-010 fix — Modal/Panel badge 일관 정책 (둘 다 mode badge). -->
-          <span class="rounded bg-sky-500/15 px-1.5 text-[10px] font-bold text-sky-500">
+          <span class="rounded bg-sky-500/15 px-1.5 text-3xs font-bold text-sky-500">
             MODAL DIFF
           </span>
           <span>commit</span>
@@ -104,7 +104,7 @@ cd.registerHunkNavShortcut(diffRef, openRef)
             </button>
           </div>
           <!-- 3-mode 토글 (Sprint B1) -->
-          <div class="flex gap-0.5 rounded-md border border-border bg-muted/40 p-0.5 text-[10px]">
+          <div class="flex gap-0.5 rounded-md border border-border bg-muted/40 p-0.5 text-3xs">
             <button
               v-for="m in MODES"
               :key="m"
@@ -150,7 +150,7 @@ cd.registerHunkNavShortcut(diffRef, openRef)
             <div class="flex items-center gap-0.5 rounded border border-border bg-muted/40 p-0.5">
               <select
                 v-model="cd.resetMode.value"
-                class="rounded bg-transparent px-1 text-[10px] text-muted-foreground focus:outline-none"
+                class="rounded bg-transparent px-1 text-3xs text-muted-foreground focus:outline-none"
                 :title="t('commitDiff.resetModeTitle')"
               >
                 <option value="soft">soft</option>
@@ -159,7 +159,7 @@ cd.registerHunkNavShortcut(diffRef, openRef)
               </select>
               <button
                 type="button"
-                class="rounded px-1.5 py-0.5 text-[11px] hover:bg-accent/40"
+                class="rounded px-1.5 py-0.5 text-2xs hover:bg-accent/40"
                 :class="cd.resetMode.value === 'hard' ? 'text-destructive' : ''"
                 title="HEAD reset to this commit"
                 @click="cd.onReset"

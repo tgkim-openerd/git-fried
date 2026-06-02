@@ -109,12 +109,12 @@ async function onReset() {
           <input
             v-model="newBad"
             :placeholder="t('bisect.badPlaceholder')"
-            class="rounded border border-input bg-background px-2 py-1 text-[11px]"
+            class="rounded border border-input bg-background px-2 py-1 text-2xs"
           />
           <input
             v-model="newGood"
             :placeholder="t('bisect.goodPlaceholder')"
-            class="rounded border border-input bg-background px-2 py-1 text-[11px]"
+            class="rounded border border-input bg-background px-2 py-1 text-2xs"
           />
         </div>
         <button
@@ -125,7 +125,7 @@ async function onReset() {
         >
           {{ startMut.isPending.value ? '...' : 'Bisect 시작' }}
         </button>
-        <p class="mt-2 text-[10px] text-muted-foreground">
+        <p class="mt-2 text-3xs text-muted-foreground">
           시작 후: 현재 commit 이 작동하지 않으면 "Bad", 작동하면 "Good" 표시. git 이 자동으로 다음
           후보 commit checkout. 범위가 좁아질 때까지 반복.
         </p>
@@ -179,7 +179,7 @@ async function onReset() {
           </button>
         </div>
 
-        <details class="mt-3 rounded border border-border bg-muted/10 p-2 text-[11px]">
+        <details class="mt-3 rounded border border-border bg-muted/10 p-2 text-2xs">
           <summary class="cursor-pointer text-muted-foreground">bisect log</summary>
           <pre class="mt-1 max-h-48 overflow-auto whitespace-pre-wrap font-mono">{{
             statusQuery.data.value.lastOutput

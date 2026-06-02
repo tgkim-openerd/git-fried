@@ -123,7 +123,7 @@ const {
       </div>
     </fieldset>
 
-    <p class="text-[10px] text-muted-foreground">
+    <p class="text-3xs text-muted-foreground">
       {{ t('settings.uiCustomization.futureNote') }}
     </p>
 
@@ -163,7 +163,7 @@ const {
       :value="themeExportText"
       readonly
       rows="6"
-      class="mt-1 w-full rounded border border-border bg-muted/20 p-2 font-mono text-[11px]"
+      class="mt-1 w-full rounded border border-border bg-muted/20 p-2 font-mono text-2xs"
     />
     <button
       v-if="themeExportText"
@@ -177,7 +177,7 @@ const {
       v-model="themeImportText"
       rows="5"
       :placeholder="t('settings.uiCustomization.importPlaceholder')"
-      class="mt-3 w-full rounded border border-border bg-background p-2 font-mono text-[11px]"
+      class="mt-3 w-full rounded border border-border bg-background p-2 font-mono text-2xs"
     />
     <button
       type="button"

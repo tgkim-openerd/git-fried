@@ -82,14 +82,14 @@ onBeforeUnmount(() => destroy())
       v-if="files.length > 1"
       class="flex items-center gap-1 overflow-x-auto border-b border-border bg-muted/30 px-2 py-1"
     >
-      <span class="shrink-0 font-mono text-[10px] text-muted-foreground">
+      <span class="shrink-0 font-mono text-3xs text-muted-foreground">
         {{ files.length }} 파일
       </span>
       <button
         v-for="(f, idx) in files"
         :key="`${idx}:${f.fileName}`"
         type="button"
-        class="shrink-0 rounded border border-border px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent/40"
+        class="shrink-0 rounded border border-border px-1.5 py-0.5 font-mono text-3xs hover:bg-accent/40"
         :class="idx === activeIdx ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'"
         :title="f.fileName"
         @click="activeIdx = idx"
@@ -99,7 +99,7 @@ onBeforeUnmount(() => destroy())
     </div>
     <div
       v-else-if="activeFile"
-      class="border-b border-border bg-muted/30 px-3 py-1 font-mono text-[11px] text-muted-foreground"
+      class="border-b border-border bg-muted/30 px-3 py-1 font-mono text-2xs text-muted-foreground"
     >
       {{ activeFile.fileName }}
     </div>

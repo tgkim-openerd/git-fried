@@ -192,10 +192,10 @@ function fmtSize(b: number | null): string {
 
     <!-- 추적 패턴 -->
     <section v-else-if="statusQuery.data.value" class="border-b border-border px-3 py-2">
-      <div class="text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div class="text-3xs uppercase tracking-wider text-muted-foreground">
         추적 패턴 ({{ statusQuery.data.value.trackedPatterns.length }})
       </div>
-      <div v-if="statusQuery.data.value.version" class="text-[10px] text-muted-foreground">
+      <div v-if="statusQuery.data.value.version" class="text-3xs text-muted-foreground">
         {{ statusQuery.data.value.version }}
       </div>
       <ul class="mt-1 space-y-0.5">
@@ -235,7 +235,7 @@ function fmtSize(b: number | null): string {
     <!-- Sprint C2 — pre-push size 인디케이터 -->
     <section
       v-if="pushSizeQuery.data.value && pushSizeQuery.data.value.commitCount > 0"
-      class="border-b border-border bg-muted/30 px-3 py-1.5 text-[11px]"
+      class="border-b border-border bg-muted/30 px-3 py-1.5 text-2xs"
     >
       <span class="font-medium">Pre-push:</span>
       {{ pushSizeQuery.data.value.commitCount }} commit
@@ -248,14 +248,14 @@ function fmtSize(b: number | null): string {
     </section>
     <section
       v-else-if="pushSizeQuery.data.value?.note"
-      class="border-b border-border bg-muted/20 px-3 py-1 text-[10px] text-muted-foreground"
+      class="border-b border-border bg-muted/20 px-3 py-1 text-3xs text-muted-foreground"
     >
       {{ pushSizeQuery.data.value.note }}
     </section>
 
     <!-- LFS 파일 -->
     <div class="flex-1 overflow-auto px-2 py-2 text-sm">
-      <div class="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div class="mb-1 text-3xs uppercase tracking-wider text-muted-foreground">
         LFS 파일 ({{ filesQuery.data.value?.length ?? 0 }})
       </div>
       <ul>
@@ -273,10 +273,10 @@ function fmtSize(b: number | null): string {
             {{ f.downloaded ? '●' : '◌' }}
           </span>
           <span class="flex-1 truncate font-mono">{{ f.path }}</span>
-          <span class="font-mono text-[10px] text-muted-foreground">
+          <span class="font-mono text-3xs text-muted-foreground">
             {{ f.oid.slice(0, 7) }}
           </span>
-          <span class="w-12 text-right text-[10px] text-muted-foreground">
+          <span class="w-12 text-right text-3xs text-muted-foreground">
             {{ fmtSize(f.size) }}
           </span>
         </li>
@@ -288,7 +288,7 @@ function fmtSize(b: number | null): string {
           <EmptyState icon="📦" title="LFS 파일 없음" size="sm" />
         </li>
       </ul>
-      <p class="mt-2 text-[10px] text-muted-foreground">
+      <p class="mt-2 text-3xs text-muted-foreground">
         ● = 다운로드됨 / ◌ = pointer 만 (fetch / pull 필요)
       </p>
     </div>
