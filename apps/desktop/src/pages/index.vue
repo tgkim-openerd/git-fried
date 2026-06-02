@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 메인 페이지 — GitKrakenToolbar + 좌측(로그/그래프) + 우측 탭 패널 + 하단(commit input + 통합 터미널).
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useReposStore } from '@/stores/repos'
 import { useStatus } from '@/composables/useStatus'
 import { useGraph } from '@/composables/useGraph'
@@ -105,6 +105,16 @@ const fullscreenActive = computed(() => fsDiff.current.value != null)
 
 // Sprint c30 / GitKraken UX (Phase 5) — main view 7개 (status/commit 제거).
 const MAIN_VIEWS: MainView[] = ['graph', 'branches', 'stash', 'submodule', 'lfs', 'pr', 'worktree']
+
+// B3 (plan #44) — ARIA tablist 키보드 nav: ←/→ 로 인접 탭 이동 + 포커스 이동 (roving tabindex).
+function moveTab(delta: number): void {
+  const idx = MAIN_VIEWS.indexOf(mainView.value)
+  const next = MAIN_VIEWS[(idx + delta + MAIN_VIEWS.length) % MAIN_VIEWS.length]
+  mainView.value = next
+  void nextTick(() => {
+    document.querySelector<HTMLButtonElement>(`[data-testid="main-nav-${next}"]`)?.focus()
+  })
+}
 function mainViewLabel(v: MainView): string {
   switch (v) {
     case 'graph':
@@ -192,14 +202,23 @@ onUnmounted(() => {
       <div v-else-if="!focusMode" class="grid min-h-0 grid-rows-[auto_1fr] overflow-hidden">
         <!-- main nav (가운데 영역 위, 'graph' default) -->
         <nav
+          role="tablist"
+          aria-label="메인 뷰"
           class="flex border-b border-border bg-card text-xs"
           title="더블클릭 = 우측 sidebar 숨김 / 복원"
           @dblclick="toggleFocusMode"
+          @keydown.left.prevent="moveTab(-1)"
+          @keydown.right.prevent="moveTab(1)"
         >
           <button
             v-for="v in MAIN_VIEWS"
             :key="v"
             type="button"
+            role="tab"
+            :id="`main-nav-${v}`"
+            :aria-selected="mainView === v"
+            :aria-controls="`main-panel-${v}`"
+            :tabindex="mainView === v ? 0 : -1"
             :data-testid="`main-nav-${v}`"
             class="flex-1 px-1.5 py-1.5 capitalize"
             :class="
@@ -213,8 +232,14 @@ onUnmounted(() => {
           </button>
         </nav>
 
-        <!-- mainView 별 panel — min-h-0 + h-full 로 grid 1fr 정확 stretch (c74 — viewport 끝까지 graph 늘리기). -->
-        <div class="h-full min-h-0 overflow-hidden">
+        <!-- mainView 별 panel — min-h-0 + h-full 로 grid 1fr 정확 stretch (c74 — viewport 끝까지 graph 늘리기).
+             B3 (plan #44) — ARIA tabpanel: 선택 tab(main-nav-{view})과 aria-labelledby 연결. -->
+        <div
+          role="tabpanel"
+          :id="`main-panel-${mainView}`"
+          :aria-labelledby="`main-nav-${mainView}`"
+          class="h-full min-h-0 overflow-hidden"
+        >
           <!-- Sprint c30 / GitKraken UX (Phase 8a) — graph view: CommitGraph 가 WIP row 직접 통합.
                (별도 WipRow mount 제거 — CommitGraph 의 virtualizer idx=0 + dirty 시 WIP row.) -->
           <!-- Phase 14-1 (GitKraken parity 강화) — 커밋 선택 시 diff 가 dominant content.

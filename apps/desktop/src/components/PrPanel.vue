@@ -212,9 +212,14 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
         <li
           v-for="pr in humanPrs"
           :key="pr.number"
-          class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40"
+          role="button"
+          :tabindex="0"
+          :aria-label="`PR #${pr.number}: ${pr.title}`"
+          class="cursor-pointer rounded px-2 py-1.5 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           :class="selectedNumber === pr.number ? 'bg-accent' : ''"
           @click="selectedNumber = pr.number"
+          @keydown.enter="selectedNumber = pr.number"
+          @keydown.space.prevent="selectedNumber = pr.number"
           @contextmenu="onPrContextMenu($event, pr)"
         >
           <div class="flex items-center justify-between">
@@ -263,9 +268,14 @@ function onPrContextMenu(ev: MouseEvent, pr: PullRequest) {
             <li
               v-for="pr in list"
               :key="pr.number"
-              class="cursor-pointer rounded px-4 py-1 text-xs hover:bg-accent/40"
+              role="button"
+              :tabindex="0"
+              :aria-label="`PR #${pr.number}: ${pr.title}`"
+              class="cursor-pointer rounded px-4 py-1 text-xs hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               :class="selectedNumber === pr.number ? 'bg-accent' : ''"
               @click="selectedNumber = pr.number"
+              @keydown.enter="selectedNumber = pr.number"
+              @keydown.space.prevent="selectedNumber = pr.number"
             >
               <span class="font-mono text-[10px] text-muted-foreground">#{{ pr.number }}</span>
               <span class="ml-2 truncate">{{ pr.title }}</span>

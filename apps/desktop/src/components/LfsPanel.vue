@@ -264,7 +264,12 @@ function fmtSize(b: number | null): string {
           :key="`${f.oid}-${f.path}`"
           class="flex items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-accent/40"
         >
-          <span :class="f.downloaded ? 'text-diff-add' : 'text-muted-foreground'">
+          <span
+            role="img"
+            :aria-label="f.downloaded ? '다운로드됨' : 'pointer 만 (fetch / pull 필요)'"
+            :title="f.downloaded ? '다운로드됨' : 'pointer 만 (fetch / pull 필요)'"
+            :class="f.downloaded ? 'text-diff-add' : 'text-muted-foreground'"
+          >
             {{ f.downloaded ? '●' : '◌' }}
           </span>
           <span class="flex-1 truncate font-mono">{{ f.path }}</span>

@@ -519,6 +519,8 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
+                title="stage"
+                :aria-label="`'${p}' stage`"
                 @click.stop="onStageOne(p)"
               >
                 +
