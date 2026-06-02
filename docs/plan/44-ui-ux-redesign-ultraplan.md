@@ -391,7 +391,29 @@ D1‖D2 (규모 gate)                                [Phase 4]
 
 ## 10. 다음 단계 (구현 sprint 진입점)
 
-본 plan 은 **검토·리서치 산출물** (코드 변경 0). 구현은 Phase 별 별도 sprint:
+> **구현 현황 (2026-06-02 sprint — Codex 페어, 12 commit `1928ef2..b699f3c`, origin+upstream 동기)**
+> 본 plan 은 검토·리서치 산출물로 작성됐고, 이후 actionable·benefit-검증 항목을 sprint 로 구현 완료.
+>
+> | 항목 | 상태 | 비고 |
+> | --- | --- | --- |
+> | A1 modal stack / A2 focus-trap / A3 elevation 4-tier / A4 backdrop | ✅ 구현 | `f12e706`+`1928ef2`. Codex REFUTE z-index(50+depth, toast<60) fix |
+> | A6 closeAllModals compareOpen | ✅ (이전 sprint) | — |
+> | B1·B2·B3·B4·B5·B6·B8·B9·B10·B11·B12 | ✅ 구현 | Phase 2 a11y **theme 완결**. B8 = roving-tabindex(200행 tab-stop 회피) |
+> | B7 drag | ✅ 충족 | 이미 role=button+keyboard+context-menu(WCAG 2.5.7 OK) — fix 불요 |
+> | C1 fontSize 토큰화 | ✅ 구현 | 335곳 text-3xs/2xs/4xs. **px 단위**(root=14px라 rem 0.875× 회귀, dry-run 검출) |
+> | C7 light amber 대비 | ✅ 구현 | 3.60→4.84:1 AA (light token만, dark 불변) |
+> | E1 global search | ✅ 구현 | Rust `unified_search` 4-scope(cargo 310) + GlobalSearchModal FE |
+> | E2 gutter blame | ✅ 구현 | FileViewer CodeMirror gutter, commit-source gate(Codex MED) |
+> | E4 merge editor | ✅ 구현(v1) | MergeResultEditor CodeMirror + conflict-line 강조. 2-pane MergeView 는 후속 |
+> | F1/F2/F3/F5 | ✅ (이전 sprint) | quick-win |
+> | **C4 input 상태** | ❌ **DROP** | benefit gate — adoption surface 0(aria-invalid 0/input-border error-state 0). speculative |
+> | C3 Button primitive | ⏸ defer | 버튼 이미 WCAG 충족, 간접(dev DRY) 이점뿐 + 40+ site "한 번에 금지" → 리디자인 driver 시 전용 sprint |
+> | D1/D2 가상화 | ⏸ defer | 규모 gate — 개인 repo~6 저우선 (CommitGraph 가상화 이미 보유) |
+> | E5 virtual branches | ⏸ defer | POC 필수 + 전략 결정 (§8) |
+>
+> 교훈: c52 toolchain trap 재발(chocolatey cargo/rustc 1.60 shadow → stable bin PATH 앞) · BaseModal headless `<Transition>` DOM 미제거 artifact([solution](../solutions/) 기록) · GH multi-account push(origin=TaeGyumKim / upstream=RoastFried-RF 소유자 계정 전환).
+
+원 plan 의 sprint 진입점(아카이브):
 - 즉시 착수 가능 quick-win (단발·저위험, Codex 검증된 fix 위치): **A6**(closeAllModals 1라인) + **B5**(submenu 버그 fix) + **B10**(RemoteManage focus) + **B11·B12**(checkbox/input label) + **B1**(BranchPanel 24px) + **F3**(useSidebarGroups.ts:67-95 singleton `__misc__` 병합 — "기타"×3 버그) + **F5**(CommandPalette.vue:181 `c.hint||c.id`→`||''` raw-id leak) + **F2**(ActiveRepoQuickActions.vue:126 `whitespace-nowrap` + settings.vue:243 nav 폭).
 - `/plan` 또는 sprint 진입 시 **Phase 1(overlay 통합)** 부터 — P0 정합성 + cross-agent 최고 수렴.
 - **Phase 2 systematic a11y sweep** = B2(11-15 row surface) + B4(31 checkbox) 일괄 — sized.
