@@ -130,6 +130,6 @@ watch(
   font-size: 12px;
 }
 :deep(.cm-scroller) {
-  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+  font-family: 'SFMono-Regular', 'D2Coding', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
 }
 </style>
