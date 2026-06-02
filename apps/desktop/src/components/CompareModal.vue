@@ -90,6 +90,7 @@ function swap() {
         v-model="ref1"
         list="ref-options"
         :placeholder="t('compare.ref1Placeholder')"
+        :aria-label="t('compare.ref1Placeholder')"
         class="w-40 rounded-md border border-input bg-background px-2 py-1 font-mono"
       />
       <button
@@ -104,6 +105,7 @@ function swap() {
         v-model="ref2"
         list="ref-options"
         :placeholder="t('compare.ref2Placeholder')"
+        :aria-label="t('compare.ref2Placeholder')"
         class="w-40 rounded-md border border-input bg-background px-2 py-1 font-mono"
       />
       <datalist id="ref-options">

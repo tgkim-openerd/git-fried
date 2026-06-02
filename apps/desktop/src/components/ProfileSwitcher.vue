@@ -76,9 +76,14 @@ async function pick(id: number) {
         <li
           v-for="p in profiles"
           :key="p.id"
-          class="cursor-pointer px-3 py-1.5 text-sm hover:bg-accent/40"
+          role="button"
+          :tabindex="0"
+          :aria-label="`프로파일 ${p.name}${p.isActive ? ' (활성)' : ''}`"
+          class="cursor-pointer rounded px-3 py-1.5 text-sm hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           :class="p.isActive ? 'bg-accent/60 font-semibold' : ''"
           @click="pick(p.id)"
+          @keydown.enter="pick(p.id)"
+          @keydown.space.prevent="pick(p.id)"
         >
           <div class="flex items-center justify-between">
             <span>

@@ -166,22 +166,22 @@ function repoName(id: number): string {
         </div>
         <div class="max-h-60 overflow-auto rounded-md border border-border">
           <ul>
-            <li
-              v-for="r in repos"
-              :key="r.id"
-              class="flex items-center gap-2 px-3 py-1 text-xs hover:bg-accent/40"
-            >
-              <input :checked="selectedIds.has(r.id)" type="checkbox" @change="toggle(r.id)" />
-              <span class="font-medium">{{ r.name }}</span>
-              <span class="ml-auto text-3xs text-muted-foreground">
-                {{ r.defaultBranch || '?' }}
-              </span>
-              <span
-                v-if="r.forgeKind !== 'unknown'"
-                class="rounded bg-muted px-1 text-4xs uppercase"
+            <li v-for="r in repos" :key="r.id">
+              <label
+                class="flex cursor-pointer items-center gap-2 px-3 py-1 text-xs hover:bg-accent/40"
               >
-                {{ r.forgeKind }}
-              </span>
+                <input :checked="selectedIds.has(r.id)" type="checkbox" @change="toggle(r.id)" />
+                <span class="font-medium">{{ r.name }}</span>
+                <span class="ml-auto text-3xs text-muted-foreground">
+                  {{ r.defaultBranch || '?' }}
+                </span>
+                <span
+                  v-if="r.forgeKind !== 'unknown'"
+                  class="rounded bg-muted px-1 text-4xs uppercase"
+                >
+                  {{ r.forgeKind }}
+                </span>
+              </label>
             </li>
             <li
               v-if="repos && repos.length === 0"

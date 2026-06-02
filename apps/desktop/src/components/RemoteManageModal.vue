@@ -71,6 +71,11 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
   onStartUrlChange: (r) => startUrlChange(r),
   onRemove: (name) => removeMut.mutate(name),
 })
+
+// B10 (plan #44) — inline rename/url 편집 폼 표시 시 input 에 mount-1회 자동 focus.
+const vAutofocus = {
+  mounted: (el: HTMLInputElement) => el.focus(),
+}
 </script>
 
 <template>
@@ -136,6 +141,7 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
           >
             <input
               v-model="renameNew"
+              v-autofocus
               class="flex-1 rounded border border-input bg-background px-2 py-0.5 text-xs"
               :placeholder="t('remote.renameNewName')"
             />
@@ -165,6 +171,7 @@ const { onRemoteContextMenu, removeRemoteSafely } = useRemoteInteraction({
           >
             <input
               v-model="urlNew"
+              v-autofocus
               class="flex-1 rounded border border-input bg-background px-2 py-0.5 font-mono text-2xs"
               :placeholder="t('remote.newUrl')"
             />
