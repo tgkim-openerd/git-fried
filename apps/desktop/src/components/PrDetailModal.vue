@@ -121,6 +121,15 @@ const {
   reset: resetSuggestion,
 } = suggestion
 
+// E3 (plan #44) — Files 탭 diff 라인 "+" 클릭 → suggestion form 에 path/line prefill + conversation 탭 전환.
+// (기존 수동 path/line 입력 대체 — 사용자는 클릭만으로 대상 라인 지정 후 코멘트 작성.)
+function onCommentLine(target: { path: string; line: number }) {
+  sugPath.value = target.path
+  sugLine.value = target.line
+  suggestionOpen.value = true
+  activeTab.value = 'conversation'
+}
+
 watch(
   () => props.open,
   (o) => {
@@ -461,6 +470,7 @@ async function onAiReview(): Promise<void> {
       :number="number"
       :visible="open && activeTab === 'files'"
       :detail-html-url="detailQuery.data.value?.htmlUrl"
+      @comment-line="onCommentLine"
     />
 
     <!-- 푸터: Merge / Close / Reopen -->

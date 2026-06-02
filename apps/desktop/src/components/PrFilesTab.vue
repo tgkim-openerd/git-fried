@@ -21,6 +21,9 @@ const props = defineProps<{
   detailHtmlUrl?: string | null
 }>()
 
+// E3 (plan #44) — diff 라인 "+" 클릭 → (path, new-file line) 을 부모(PrDetailModal)로 relay.
+const emit = defineEmits<{ 'comment-line': [target: { path: string; line: number }] }>()
+
 const expandedFiles = ref<Set<string>>(new Set())
 
 const filesQuery = useQuery({
@@ -160,7 +163,12 @@ const totalDeletions = computed(
                 ↗ 외부에서 열기
               </a>
             </div>
-            <DiffViewer v-else :patch="f.patch" />
+            <DiffViewer
+              v-else
+              :patch="f.patch"
+              commentable
+              @comment-line="(line: number) => emit('comment-line', { path: f.path, line })"
+            />
           </div>
         </li>
         <li
