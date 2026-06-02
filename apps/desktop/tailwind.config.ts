@@ -96,15 +96,13 @@ export default {
         '60': '60',
       },
       fontFamily: {
-        // v0.6 #20 (UltraPlan plan/31) — CJK fallback (Noto Sans JP / SC / TC)
-        // system 폰트 chain — 일본어 (Noto Sans CJK JP / Hiragino) / 중국어 간체
-        // (Noto Sans CJK SC / PingFang) / 번체 (Noto Sans CJK TC) fallback.
-        // bundled @fontsource 는 한글만 (수 MB 부담) — CJK 는 OS system 의존.
+        // 2026-06-02 — Pretendard Variable 를 라틴+한글 통합 primary 로 (한글 폰트 전면 Pretendard 기본).
+        // Pretendard 가 Latin/Korean cover → Roboto Flex + Noto Sans KR 제거.
+        // 일본어 (Noto Sans CJK JP / Hiragino) / 중국어 간체 (SC / PingFang) / 번체 (TC) 는
+        // bundled 안 함 (수 MB 부담) — OS system fallback 의존.
         sans: [
-          '"Roboto Flex Variable"',
-          'Roboto',
-          '"Noto Sans KR"',
-          '"Noto Sans CJK KR"',
+          '"Pretendard Variable"',
+          'Pretendard',
           '"Noto Sans CJK JP"',
           '"Hiragino Sans"',
           '"Yu Gothic"',

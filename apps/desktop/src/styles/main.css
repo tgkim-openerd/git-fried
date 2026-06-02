@@ -1,11 +1,9 @@
-/* Roboto Flex (라틴) + Noto Sans KR (한글 fallback) self-host — plan/24 Sprint A-1 self-host 정책 유지.
- * Roboto Flex variable: opsz/wght/wdth axes, font-display: swap.
- * Noto Sans KR: 본문 용도 400/700 만 import (전체 weight import 시 수 MB 부담).
- * font-family chain 으로 라틴은 Roboto, 한글은 Noto Sans KR 자동 매칭.
+/* Pretendard Variable self-host — 라틴 + 한글 통합 primary 폰트 (2026-06-02).
+ * 한글 폰트 전면 Pretendard 기본화: Pretendard 가 Latin/Korean 모두 cover →
+ * 기존 Roboto Flex(라틴) + Noto Sans KR(한글) 대체. font-display: swap 은 css 내장.
+ * 일본어/중국어(JP/SC/TC) 는 tailwind sans chain 의 OS system fallback 의존.
  */
-@import '@fontsource-variable/roboto-flex';
-@import '@fontsource/noto-sans-kr/400.css';
-@import '@fontsource/noto-sans-kr/700.css';
+@import 'pretendard/dist/web/variable/pretendardvariable.css';
 
 @tailwind base;
 @tailwind components;
@@ -160,13 +158,12 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* 가독성 — Roboto Flex variable axes 활용:
-     * - opsz: 14 (Roboto Flex 8~144 범위 중 본문 최적)
-     * - line-height: 1.55 (한글 fallback 폰트와의 mixed line spacing 충분 확보)
+    /* 가독성 — Pretendard Variable (wght axis, 기본 400):
+     * - line-height: 1.55 (한글 mixed line spacing 충분 확보)
      * - letter-spacing: -0.003em (tabular numbers + Hangul 균형)
      * - font-smoothing: Windows webview 렌더링 보정
+     * (opsz 설정 제거 — Roboto Flex 전용 axis, Pretendard 미보유)
      */
-    font-variation-settings: 'opsz' 14;
     line-height: 1.55;
     letter-spacing: -0.003em;
     -webkit-font-smoothing: antialiased;
