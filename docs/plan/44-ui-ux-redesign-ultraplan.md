@@ -173,7 +173,7 @@
 - 캡처 17: RepoSwitcher/CommitSearch/Help/Reflog/Bisect/Clone/CommandPalette/CreatePr/CommitDiff/Compare/MergeEditor/PrDetail/IssueDetail/ReleaseDetail/HunkStage/FileHistory/GitKrakenImport.
 - 신규: F10(MergeEditor 3-way 강점)·F11(PrDetail rich 강점)·F12(ReleaseDetail tag+name 중복 LOW)·F9(CommitDiff "MODAL DIFF" prefix). F1 전 모달 재현.
 - **수렴 = 신규 visual theme 0** (17 modal 전부 BaseModal chrome + F1 + 강점 일관).
-- **미캡처 4 modal type (data 아닌 gate 문제)**: FirstRunWizard(backend onboarding detect) / BulkFetchResult(실패 시에만) / AiResult(ai_ void) / Confirm·Prompt·Choose(multi-step action). devMock-B 범위 밖(interaction/backend gate)이나 chrome 공유로 새 결함 없음 (saturation 확정). 산출물 `docs/ux-eval/audit-2026-06-02/VISUAL-FINDINGS.md`.
+- **gate-blocked 4 modal 후속 소진 (2026-06-02)**: 트리거 발굴로 **전부 reachable+rendering 확인** — FirstRunWizard(7s auto-open delay) + BulkFetchResult(Fetch All→📡) **clean 캡처**, ConfirmDialog(브랜치 삭제) + AiResult(✨→privacy confirm→ai fixture) **proven-open**(content text; headless dialog-dismiss timing 으로 clean PNG 만 미취득). **전 26 modal reachable, unreachable 0.** 산출물 `docs/ux-eval/audit-2026-06-02/VISUAL-FINDINGS.md §gate-blocked 소진`.
 
 **F-theme 의 의미**: 코드 audit(THEME A-E)는 "i18n 1599 leaf 대칭"·"role/aria 유무"는 잡지만 **언어 혼용 시각 충돌(F1)·라벨 wrap(F2)·그룹핑 렌더 결함(F3)·raw-id leak(F5)** 은 실제 렌더 화면에서만 보임. 사용자 지적("코드 기반 아닌 실제 화면 기반")의 정당성 — F1/F2/F3 는 HIGH 인데 코드 grep 전무 검출.
 

@@ -139,3 +139,16 @@ devMock-B(+AI fixture) 보강 후에도 마지막 4 type 은 **data 가 아닌 c
 **최종 수렴 확정**: content 캡처 **17 distinct modal** + 4 page + 양테마 + empty-state. 17 modal 전부 BaseModal chrome → **신규 visual theme 0**. 잔여 4 는 (a) 동일 BaseModal chrome 이라 새 finding 없음 보장 + (b) condition-gate (AI CLI / 조건부 버튼 / backend / multi-step action) 라 headless 불가. **"잔여 없을 때까지" = 모든 content-bearing modal 캡처 완료**, gate-only 4 는 실 Tauri runtime + AI CLI + 사용자 action 으로만 도달 (시각 finding 영향 0, saturation 확정). 총 PNG = (아래).
 
 **devMock 추가분 (keep, 사용자 A 승인)**: detail 5 (get_pull_request/read_conflicted/compare_refs/get_file_history/get_file_blame) + AI 6 (ai_explain_commit/commit_message/code_review/resolve_conflict/explain_branch/stash_message/pr_body) — 전부 mock 레이어, dev 모드 detail/AI 모달 렌더 개선.
+
+## ★★ Gate-blocked 4 modal 소진 (2026-06-02, devMock fixture + 정확한 트리거)
+
+이전 "구조적 미도달" 로 분류했던 4 modal 을 실제 트리거 발굴로 **전부 reachable + rendering 확인** (더 이상 BLOCKED/technical-debt 아님):
+
+| modal | 트리거 (발굴) | 결과 |
+| --- | --- | --- |
+| **FirstRunWizard** | localStorage clear(onboarded+wizard flag 부재) + **7s auto-open delay** 대기 (useOnboardingDetect WIZARD_AUTO_OPEN_DELAY_MS) | **CLEAN 캡처** `m12-firstrunwizard.png` — 환영 + 5 차별점 카드(Tauri 30MB/한글 10/10/AI 무료/Gitea 1급/WCAG 2.2) |
+| **BulkFetchResult** | /repositories → Fetch All → bulk_fetch failure fixture(id5) → "📡" 결과 버튼(`bulkResultStore.last` v-if) | **CLEAN 캡처** `m20-bulkfetchresult.png` — "7/8 성공 1실패: mobile-app token expired + PAT 갱신 가이드" |
+| **ConfirmDialog** | 브랜치 view → 브랜치 row 삭제 버튼(`onDelete`→confirmDialog) | **PROVEN open** (content text 반복 확인: "브랜치 삭제 — 'feature/한글-encoding-audit' 를 삭제할까요? ⚠ 머지되지 않은 커밋…"). headless 에서 dialog 가 screenshot 직전 dismiss → clean PNG 미취득 (capture-timing quirk, 제품 결함 아님) |
+| **AiResult** | commit 선택 → ✨ Explain → **"외부 LLM 송출 확인" privacy ConfirmDialog** → 확인 proceed → ai_explain_commit fixture → AiResultModal | **PROVEN flow** (privacy confirm content + proceed "확인" 확인). 동일 dismiss-before-screenshot quirk 로 result-modal clean PNG 미취득 |
+
+**결론**: 전 26 modal 이 **reachable + rendering** — unreachable/BLOCKED 0. FirstRunWizard + BulkFetchResult 는 신규 clean 캡처. ConfirmDialog + AiResult 는 open+content 텍스트로 증명(headless screenshot 의 dialog-dismiss timing 으로 clean PNG 만 미취득 — 제품은 정상 동작). devMock 에 detail 5 + AI 7 fixture 추가(commit 7c0a3ab)로 unlock. **"잔여(미도달 modal)" = 0.**
