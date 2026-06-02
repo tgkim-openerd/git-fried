@@ -123,7 +123,7 @@ const QUICK_TABS: ReadonlyArray<{
           @click="dispatchShortcut(qt.key)"
         >
           <span class="text-sm leading-none">{{ qt.icon }}</span>
-          <span class="leading-tight">{{ t(qt.labelKey) }}</span>
+          <span class="leading-tight whitespace-nowrap">{{ t(qt.labelKey) }}</span>
         </button>
       </div>
 

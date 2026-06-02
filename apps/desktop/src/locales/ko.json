@@ -1656,7 +1656,7 @@
     },
     "repoRefresh": {
       "label": "Repo: 모든 쿼리 새로고침",
-      "hint": "invalidate everything"
+      "hint": ""
     },
     "repoFetch": {
       "label": "Repo: Fetch (모든 remote)",
@@ -1700,15 +1700,15 @@
     },
     "repoGoHome": {
       "label": "홈으로",
-      "hint": "navigate /"
+      "hint": ""
     },
     "repoGoLaunchpad": {
       "label": "Launchpad",
-      "hint": "navigate /launchpad"
+      "hint": ""
     },
     "repoGoSettings": {
       "label": "설정",
-      "hint": "navigate /settings"
+      "hint": ""
     },
     "repoOpenInExplorer": {
       "label": "레포 폴더 열기 (OS 파일 매니저)",
@@ -1819,7 +1819,7 @@
     },
     "viewThemeCopyJson": {
       "label": "Custom theme JSON 복사 (현재 vars)",
-      "hint": "clipboard.writeText"
+      "hint": ""
     },
     "viewThemeReset": {
       "label": "Custom theme 초기화 (기본 테마 복원)",
@@ -1867,11 +1867,11 @@
     },
     "settingsProfiles": {
       "label": "프로파일 관리",
-      "hint": "/settings 의 Profiles"
+      "hint": ""
     },
     "settingsForge": {
       "label": "Forge 계정 관리 (PAT)",
-      "hint": "/settings"
+      "hint": ""
     },
     "integrationGithubActions": {
       "label": "🔜 GitHub Actions CI status (v0.4 예정)",

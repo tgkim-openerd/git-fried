@@ -268,7 +268,7 @@ const buildInfo = computed(() => ({
             <li v-for="c in g.items" :key="c.id">
               <button
                 type="button"
-                class="w-full px-4 py-1.5 pl-6 min-h-[32px] text-left text-[13px]"
+                class="w-full truncate px-4 py-1.5 pl-6 min-h-[32px] text-left text-[13px]"
                 :class="[
                   c.futureRelease
                     ? 'cursor-not-allowed text-muted-foreground/50'
@@ -283,7 +283,11 @@ const buildInfo = computed(() => ({
                 :aria-pressed="active === c.id"
                 :aria-disabled="c.futureRelease ? 'true' : undefined"
                 :aria-label="`${t(GROUP_I18N_KEY[g.id] ?? g.label)} > ${t(ITEM_I18N_KEY[c.id] ?? c.label)}`"
-                :title="c.futureRelease ? 'v0.5 출시 예정 — 현재 비활성' : undefined"
+                :title="
+                  c.futureRelease
+                    ? 'v0.5 출시 예정 — 현재 비활성'
+                    : t(ITEM_I18N_KEY[c.id] ?? c.label)
+                "
                 @click="!c.futureRelease && (active = c.id)"
               >
                 {{ t(ITEM_I18N_KEY[c.id] ?? c.label) }}

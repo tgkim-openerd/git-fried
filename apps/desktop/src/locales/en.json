@@ -1656,7 +1656,7 @@
     },
     "repoRefresh": {
       "label": "Repo: Refresh all queries",
-      "hint": "invalidate everything"
+      "hint": ""
     },
     "repoFetch": {
       "label": "Repo: Fetch (all remotes)",
@@ -1700,15 +1700,15 @@
     },
     "repoGoHome": {
       "label": "Go home",
-      "hint": "navigate /"
+      "hint": ""
     },
     "repoGoLaunchpad": {
       "label": "Launchpad",
-      "hint": "navigate /launchpad"
+      "hint": ""
     },
     "repoGoSettings": {
       "label": "Settings",
-      "hint": "navigate /settings"
+      "hint": ""
     },
     "repoOpenInExplorer": {
       "label": "Open repo folder (OS file manager)",
@@ -1819,7 +1819,7 @@
     },
     "viewThemeCopyJson": {
       "label": "Copy custom theme JSON (current vars)",
-      "hint": "clipboard.writeText"
+      "hint": ""
     },
     "viewThemeReset": {
       "label": "Reset custom theme (restore default)",
@@ -1867,11 +1867,11 @@
     },
     "settingsProfiles": {
       "label": "Manage profiles",
-      "hint": "/settings → Profiles"
+      "hint": ""
     },
     "settingsForge": {
       "label": "Manage Forge accounts (PAT)",
-      "hint": "/settings"
+      "hint": ""
     },
     "integrationGithubActions": {
       "label": "🔜 GitHub Actions CI status (v0.4 planned)",

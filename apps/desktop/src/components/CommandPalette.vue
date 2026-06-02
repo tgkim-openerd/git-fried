@@ -178,7 +178,7 @@ onUnmounted(() => {
               >
                 <div class="flex items-center justify-between">
                   <span>{{ c.label }}</span>
-                  <span class="text-[10px] text-muted-foreground">{{ c.hint || c.id }}</span>
+                  <span class="text-[10px] text-muted-foreground">{{ c.hint || '' }}</span>
                 </div>
               </li>
             </ul>

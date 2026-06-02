@@ -143,21 +143,17 @@ export function useContextMenu() {
     submenuX.value = rect.right + 2
     submenuY.value = rect.top
     submenuParentIndex.value = idx
-    // submenuFocusedIndex 는 raw idx — 첫 non-divider 찾기.
+    // B5 (plan #44) — submenuFocusedIndex 는 visible index (divider 제외). 첫 visible 항목 = 0.
+    // 이전: firstNonDivider(raw idx) 로 seed → moveSubFocus 의 `% visibleTotal` 과 불일치 (divider 선행 시
+    //       focus ring 이 Enter 실행대상과 desync). visible index 로 통일.
     const sub = item.submenu ?? []
-    let firstNonDivider = 0
-    for (let i = 0; i < sub.length; i++) {
-      if (!sub[i].divider) {
-        firstNonDivider = i
-        break
-      }
-    }
-    submenuFocusedIndex.value = firstNonDivider
+    const hasVisible = sub.some((s) => !s.divider)
+    submenuFocusedIndex.value = hasVisible ? 0 : -1
     submenuOpen.value = true
     void nextTick(() => {
       clampSubmenuToViewport()
       // Sprint c37 a11y — submenu open 시 첫 menuitem 에 focus.
-      focusSubMenuItem(firstNonDivider)
+      if (hasVisible) focusSubMenuItem(0)
     })
   }
 
@@ -193,6 +189,17 @@ export function useContextMenu() {
     return count
   }
 
+  // B5 (plan #44) — submenu 의 raw idx → visible idx. submenuFocusedIndex 가 visible index 이므로
+  // 템플릿(ContextMenu.vue)의 highlight 비교 / mouseenter 쓰기에서 raw→visible 변환에 사용.
+  function subVisibleIndexFromRaw(rawIdx: number): number {
+    const sub = items.value[submenuParentIndex.value]?.submenu ?? []
+    let count = 0
+    for (let i = 0; i < rawIdx; i++) {
+      if (!sub[i]?.divider) count++
+    }
+    return count
+  }
+
   function moveFocus(delta: number) {
     const total = visibleItems.value.length
     if (total === 0) return
@@ -219,15 +226,11 @@ export function useContextMenu() {
     focusSubMenuItem(submenuFocusedIndex.value)
   }
 
-  function focusSubMenuItem(rawIdx: number) {
+  function focusSubMenuItem(visIdx: number) {
+    // B5 (plan #44) — submenuFocusedIndex 는 visible index. [data-ctx-sub-item] 은 visible 항목만
+    // 렌더되므로 직접 인덱싱 (이전: raw→visible 재변환 = double-conversion 버그).
     void nextTick(() => {
       const buttons = submenuRef.value?.querySelectorAll<HTMLButtonElement>('[data-ctx-sub-item]')
-      // submenuFocusedIndex 는 raw idx (divider 포함). visible 만 querySelectorAll → idx 매핑 필요.
-      const sub = items.value[submenuParentIndex.value]?.submenu ?? []
-      let visIdx = 0
-      for (let i = 0; i < rawIdx; i++) {
-        if (!sub[i]?.divider) visIdx++
-      }
       buttons?.[visIdx]?.focus()
     })
   }
@@ -322,5 +325,6 @@ export function useContextMenu() {
     onItemClick,
     onSubItemClick,
     visibleIndexFromRaw,
+    subVisibleIndexFromRaw,
   }
 }

@@ -43,7 +43,7 @@ export function useAppModals() {
     compareOpen.value = true
   }
 
-  /** ⌘W 로 일괄 닫기 — 7 modal 동시 close. 외부 등록 modal 은 자체 ESC 처리. */
+  /** ⌘W 로 일괄 닫기 — 8 modal 동시 close. 외부 등록 modal 은 자체 ESC 처리. */
   function closeAllModals() {
     syncTemplateOpen.value = false
     bisectOpen.value = false
@@ -52,6 +52,7 @@ export function useAppModals() {
     createPrOpen.value = false
     helpOpen.value = false
     commitSearchOpen.value = false
+    compareOpen.value = false
   }
 
   return {

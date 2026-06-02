@@ -111,12 +111,14 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
           role="menuitem"
           class="flex w-full items-center justify-between gap-3 px-3 py-1.5 text-left hover:bg-accent disabled:opacity-50"
           :class="[
-            subRawIdx === cm.submenuFocusedIndex.value ? 'bg-accent text-accent-foreground' : '',
+            cm.subVisibleIndexFromRaw(subRawIdx) === cm.submenuFocusedIndex.value
+              ? 'bg-accent text-accent-foreground'
+              : '',
             sub.destructive ? 'text-destructive hover:text-destructive' : '',
           ]"
           :disabled="sub.disabled"
           @click="!sub.disabled && cm.onSubItemClick(sub)"
-          @mouseenter="cm.submenuFocusedIndex.value = subRawIdx"
+          @mouseenter="cm.submenuFocusedIndex.value = cm.subVisibleIndexFromRaw(subRawIdx)"
         >
           <span class="flex items-center gap-2">
             <span v-if="sub.icon" class="w-4 text-center">{{ sub.icon }}</span>

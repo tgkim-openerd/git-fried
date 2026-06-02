@@ -84,17 +84,23 @@ export function useSidebarGroups(
       map.get(k)!.push(r)
     }
     const result: RepoGroup[] = []
+    const miscRepos: Repo[] = []
     for (const [key, repoList] of map.entries()) {
       // forge 모드는 항상 그룹 라벨 표시 (1개라도 — Local/Gitea/GitHub 명시).
       const isSolo =
         groupMode.value === 'forge'
           ? false
           : key === '__solo__' || key === '__no-org__' || repoList.length === 1
-      result.push({
-        key,
-        label: isSolo ? null : key,
-        repos: repoList,
-      })
+      if (isSolo) {
+        // F3 (plan #44) — label=null singleton 들을 단일 "기타" 그룹으로 병합.
+        // 이전: dir 모드에서 parentDirName 이 다른 singleton 마다 "기타 (1)" 별도 그룹 생성 (×N).
+        miscRepos.push(...repoList)
+      } else {
+        result.push({ key, label: key, repos: repoList })
+      }
+    }
+    if (miscRepos.length > 0) {
+      result.push({ key: '__misc__', label: null, repos: miscRepos })
     }
     // forge 모드는 고정 순서: Gitea → GitHub → Remote (other) → Local-only.
     if (groupMode.value === 'forge') {
