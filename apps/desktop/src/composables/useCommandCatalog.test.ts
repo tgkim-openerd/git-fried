@@ -108,7 +108,7 @@ describe('useCommandCatalog — 카테고리별 명령 카운트 (회귀 차단)
     repo: 19,
     branch: 8,
     file: 5,
-    view: 14,
+    view: 15,
     stash: 1,
     history: 5,
     ai: 1,

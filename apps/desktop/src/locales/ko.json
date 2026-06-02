@@ -1774,6 +1774,10 @@
       "label": "메시지 입력창 focus",
       "hint": "⌘⇧M"
     },
+    "viewGlobalSearch": {
+      "label": "검색: 통합 (SHA/브랜치/커밋/파일)",
+      "hint": "⌘⇧K"
+    },
     "viewToggleSidebar": {
       "label": "좌측 사이드바 토글",
       "hint": "⌘J"

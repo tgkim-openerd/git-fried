@@ -203,6 +203,26 @@ export const searchCommitsByMessage = (
     },
   })
 
+// plan #44 E1 — 통합 검색 (SHA / branch / commit message / file content).
+// Rust SearchScope enum (camelCase serde) 와 1:1.
+export type SearchScope = 'commitMessage' | 'fileContent' | 'branch' | 'sha' | 'unified'
+export interface UnifiedSearchHit {
+  kind: SearchScope
+  label: string
+  detail: string
+  sha: string | null
+  path: string | null
+  line: number | null
+}
+export const unifiedSearch = (
+  repoId: number,
+  pattern: string,
+  opts?: { scope?: SearchScope; limit?: number },
+): Promise<UnifiedSearchHit[]> =>
+  invoke('unified_search', {
+    args: { repoId, pattern, scope: opts?.scope ?? 'unified', limit: opts?.limit },
+  })
+
 // --- Branches ---
 export interface BranchInfo {
   name: string

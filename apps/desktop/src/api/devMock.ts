@@ -1381,6 +1381,39 @@ const HANDLERS: Record<string, MockHandler> = {
       finalLine: i + 1,
       content: '// ' + (i + 1) + ': ' + c.subject.slice(0, 48),
     })),
+
+  // plan #44 E1 — 통합 검색 mock (dev 레이어만, 프로덕션은 실제 unified_search IPC).
+  unified_search: (args) => {
+    const a = (args?.args ?? {}) as { pattern?: string }
+    const pattern = String(a.pattern ?? '')
+    const c = COMMIT_SUMMARIES[0]
+    return [
+      {
+        kind: 'branch',
+        label: `feature/${pattern}`,
+        detail: 'branch',
+        sha: null,
+        path: null,
+        line: null,
+      },
+      {
+        kind: 'commitMessage',
+        label: c.subject,
+        detail: `${c.shortSha} · ${c.authorName}`,
+        sha: c.sha,
+        path: null,
+        line: null,
+      },
+      {
+        kind: 'fileContent',
+        label: 'src/example.ts',
+        detail: `const ${pattern} = 1`,
+        sha: null,
+        path: 'src/example.ts',
+        line: 42,
+      },
+    ]
+  },
 }
 
 // 응답 없는 command 들 (mutation, void) — 빈 응답으로 무시

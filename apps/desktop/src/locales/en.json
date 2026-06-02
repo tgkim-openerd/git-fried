@@ -1774,6 +1774,10 @@
       "label": "Focus message input",
       "hint": "⌘⇧M"
     },
+    "viewGlobalSearch": {
+      "label": "Search: Global (SHA/branch/commit/file)",
+      "hint": "⌘⇧K"
+    },
     "viewToggleSidebar": {
       "label": "Toggle left sidebar",
       "hint": "⌘J"

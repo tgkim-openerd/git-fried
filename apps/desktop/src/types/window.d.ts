@@ -32,6 +32,8 @@ declare global {
     gitFriedToggleTheme?: () => void
     /** CommandPalette → 네이티브 메뉴 'View > Command Palette' (Phase 10-6). */
     gitFriedOpenCommandPalette?: () => void
+    /** GlobalSearchModal → ⌘⇧K / CommandPalette 'Global search' (plan #44 E1). */
+    gitFriedOpenGlobalSearch?: () => void
     /** Sidebar → 네이티브 메뉴 'File > Reload Repositories' (Phase 10-6). */
     gitFriedReloadRepos?: () => void
     /**

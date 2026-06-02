@@ -451,7 +451,15 @@ export function useCommandCatalog(): UseCommandCatalogReturn {
       action: trigger('focusMessage'),
     },
 
-    // ===== View / Layout (14) =====
+    // ===== View / Layout (15) =====
+    {
+      // plan #44 E1 — 통합 검색 (SHA/branch/commit/file content). GlobalSearchModal 진입.
+      id: 'view.global-search',
+      category: 'view',
+      label: lbl('viewGlobalSearch'),
+      hint: hnt('viewGlobalSearch'),
+      action: callWindow('gitFriedOpenGlobalSearch'),
+    },
     {
       id: 'view.toggle-sidebar',
       category: 'view',

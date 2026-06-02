@@ -14,6 +14,7 @@ import ReflogModal from './components/ReflogModal.vue'
 import ToastContainer from './components/ToastContainer.vue'
 import LongRunningBanner from './components/LongRunningBanner.vue'
 import CommitSearchModal from './components/CommitSearchModal.vue'
+import GlobalSearchModal from './components/GlobalSearchModal.vue'
 import RepoSwitcherModal from './components/RepoSwitcherModal.vue'
 import CreatePrModal from './components/CreatePrModal.vue'
 import HelpModal from './components/HelpModal.vue'
@@ -204,6 +205,8 @@ useMenuListener()
     <ToastContainer />
     <LongRunningBanner />
     <CommitSearchModal :open="commitSearchOpen" @close="commitSearchOpen = false" />
+    <!-- plan #44 E1 — Global unified search (self-contained: 자체 open + ⌘⇧K + window hook). -->
+    <GlobalSearchModal />
     <ConfirmDialog />
     <PromptDialog />
     <ChooseDialog />
