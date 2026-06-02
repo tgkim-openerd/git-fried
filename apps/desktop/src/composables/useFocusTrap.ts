@@ -28,6 +28,9 @@ const FOCUSABLE_SEL =
 export function useFocusTrap(
   rootRef: Readonly<Ref<HTMLElement | null>>,
   isOpen: Readonly<Ref<boolean>>,
+  // plan #44 A1 — 중첩 overlay 시 stack-top 만 Tab 을 가로채도록 하는 gate.
+  // 미전달 시 항상 활성 (단일 modal 기존 동작 유지 — 하위 호환).
+  isActive?: Readonly<Ref<boolean>>,
 ) {
   let prevActive: HTMLElement | null = null
 
@@ -41,6 +44,8 @@ export function useFocusTrap(
 
   function onKeydown(e: KeyboardEvent) {
     if (e.key !== 'Tab' || !isOpen.value) return
+    // 중첩 시 stack-top 이 아니면 Tab 순환을 양보 (하위 modal 이 상위 focus 를 빼앗지 않도록).
+    if (isActive && !isActive.value) return
     const focusables = getFocusables()
     if (focusables.length === 0) {
       e.preventDefault()

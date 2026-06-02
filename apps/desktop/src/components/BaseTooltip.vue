@@ -57,7 +57,7 @@ withDefaults(
         <TooltipContent
           :side="placement"
           :side-offset="6"
-          class="z-50 max-w-xs rounded border border-border bg-popover px-2 py-1 text-[11px] text-popover-foreground shadow-popover"
+          class="z-50 max-w-xs rounded border border-border bg-popover px-2 py-1 text-[11px] text-popover-foreground shadow-tooltip"
           role="tooltip"
         >
           <span>{{ text }}</span>

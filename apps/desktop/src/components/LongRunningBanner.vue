@@ -68,7 +68,7 @@ const stageClasses = computed(() => {
       role="status"
       aria-live="polite"
       :class="[
-        'fixed right-4 top-14 z-40 flex max-w-md items-start gap-3 rounded-md border px-3 py-2 text-xs shadow-lg backdrop-blur',
+        'fixed right-4 top-14 z-40 flex max-w-md items-start gap-3 rounded-md border px-3 py-2 text-xs shadow-toast backdrop-blur',
         stageClasses,
       ]"
     >

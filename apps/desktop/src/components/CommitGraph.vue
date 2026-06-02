@@ -309,7 +309,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
       <div
         v-if="headerMenuOpen"
         ref="headerMenuRef"
-        class="absolute right-2 top-full z-20 mt-1 w-44 rounded-md border border-border bg-card text-xs shadow-lg"
+        class="absolute right-2 top-full z-20 mt-1 w-44 rounded-md border border-border bg-card text-xs shadow-popover"
       >
         <ul class="py-1">
           <li

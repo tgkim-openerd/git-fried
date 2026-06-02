@@ -45,7 +45,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
     <div
       v-if="cm.open.value"
       ref="rootRef"
-      class="mini-list-scroll fixed z-50 min-w-[220px] max-h-[80vh] overflow-y-auto rounded-md border border-border bg-popover py-1 text-sm shadow-lg"
+      class="mini-list-scroll fixed z-50 min-w-[220px] max-h-[80vh] overflow-y-auto rounded-md border border-border bg-popover py-1 text-sm shadow-popover"
       :style="{ left: `${cm.x.value}px`, top: `${cm.y.value}px` }"
       role="menu"
       aria-orientation="vertical"
@@ -93,7 +93,7 @@ defineExpose<ContextMenuExpose>({ openAt: cm.openAt, close: cm.close })
     <div
       v-if="cm.submenuOpen.value && cm.submenuParentIndex.value >= 0"
       ref="submenuRef"
-      class="mini-list-scroll fixed z-50 min-w-[200px] max-h-[80vh] overflow-y-auto rounded-md border border-border bg-popover py-1 text-sm shadow-lg"
+      class="mini-list-scroll fixed z-50 min-w-[200px] max-h-[80vh] overflow-y-auto rounded-md border border-border bg-popover py-1 text-sm shadow-popover"
       :style="{ left: `${cm.submenuX.value}px`, top: `${cm.submenuY.value}px` }"
       role="menu"
       aria-orientation="vertical"

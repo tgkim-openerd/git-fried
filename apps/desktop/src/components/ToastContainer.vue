@@ -51,7 +51,7 @@ function kindIcon(kind: ToastKind): string {
         <div
           v-for="toast in toasts"
           :key="toast.id"
-          class="pointer-events-auto rounded-md border bg-card shadow-lg"
+          class="pointer-events-auto rounded-md border bg-card shadow-toast"
           :class="kindClass(toast.kind)"
           :role="toast.kind === 'error' ? 'alert' : 'status'"
         >

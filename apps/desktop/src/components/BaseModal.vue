@@ -31,6 +31,7 @@
 //   - role="dialog" + aria-modal="true" + aria-labelledby (title 있을 때)
 import { computed, useTemplateRef } from 'vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
+import { useModalStackEntry } from '@/composables/useModalStack'
 
 type MaxWidth = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | 'full'
 
@@ -60,10 +61,10 @@ const props = withDefaults(
 const emit = defineEmits<{ close: [] }>()
 
 const rootRef = useTemplateRef<HTMLElement>('rootRef')
-useFocusTrap(
-  rootRef,
-  computed(() => props.open),
-)
+const isOpen = computed(() => props.open)
+// A1 — overlay stack 등록: isTopModal(focus-trap·Esc gate) / modalDepth(backdrop 농도).
+const { isTop: isTopModal, depth: modalDepth } = useModalStackEntry(isOpen)
+useFocusTrap(rootRef, isOpen, isTopModal)
 
 const maxWidthClass = computed<string>(() => {
   // Tailwind 의 max-w-* 매핑 (full 만 별도)
@@ -80,6 +81,8 @@ function onBackdrop() {
 }
 
 function onKeydown(e: KeyboardEvent) {
+  // A1 — 중첩 시 stack-top overlay 만 Esc 로 닫힘.
+  if (!isTopModal.value) return
   if (props.closeOnEsc && e.key === 'Escape') {
     e.stopPropagation()
     emit('close')
@@ -96,8 +99,12 @@ function onKeydown(e: KeyboardEvent) {
     <Transition name="modal-backdrop" appear>
       <div
         v-if="open"
-        class="fixed inset-0 z-50 flex justify-center bg-black/50 p-4"
-        :class="align === 'top' ? 'items-start pt-24' : 'items-center'"
+        class="fixed inset-0 flex justify-center p-4"
+        :style="{ zIndex: 50 + Math.min(modalDepth, 9) }"
+        :class="[
+          modalDepth === 0 ? 'bg-black/50' : 'bg-transparent',
+          align === 'top' ? 'items-start pt-24' : 'items-center',
+        ]"
         @click.self="onBackdrop"
         @keydown="onKeydown"
       >
@@ -109,7 +116,7 @@ function onKeydown(e: KeyboardEvent) {
             aria-modal="true"
             :aria-labelledby="titleId"
             tabindex="-1"
-            class="flex max-h-[90vh] w-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-xl outline-none"
+            class="flex max-h-[90vh] w-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-modal outline-none"
             :class="[maxWidthClass, panelClass]"
           >
             <!-- 헤더: header slot 우선, 없으면 title prop -->

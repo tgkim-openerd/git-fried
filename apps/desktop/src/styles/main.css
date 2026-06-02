@@ -64,10 +64,12 @@
     --ring: 240 5.9% 10%;
     --radius: 0.5rem;
 
-    /* Elevation tier 3 — A-4 신규 (popover / modal / toast) */
-    --shadow-popover: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-toast: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    /* Elevation tier 4 — plan #44 A3 (tooltip < popover < modal < toast).
+     * tooltip(sm) 호버 힌트 / popover(lg) 드롭다운·메뉴 / modal(xl) 다이얼로그 / toast(2xl) 최상단 알림. */
+    --shadow-tooltip: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-popover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-toast: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 
     /* Sprint 22-12 Q-5 Transition 정책 + S-4 Micro-interaction (design 01 §7 / 04 §6).
      *
@@ -136,10 +138,11 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
 
-    /* Elevation tier (dark — opacity 강화) */
-    --shadow-popover: 0 1px 2px 0 rgb(0 0 0 / 0.6);
-    --shadow-modal: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
-    --shadow-toast: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.6);
+    /* Elevation tier 4 (dark — opacity 강화) */
+    --shadow-tooltip: 0 1px 2px 0 rgb(0 0 0 / 0.6);
+    --shadow-popover: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+    --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.6);
+    --shadow-toast: 0 25px 50px -12px rgb(0 0 0 / 0.7);
   }
 
   * {

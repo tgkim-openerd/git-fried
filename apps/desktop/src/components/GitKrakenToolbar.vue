@@ -251,7 +251,7 @@ onUnmounted(() => {
           <!-- Dropdown popover -->
           <div
             v-if="pullDropdownOpen"
-            class="absolute left-0 top-full z-50 mt-0.5 w-44 overflow-hidden rounded-md border border-border bg-popover text-xs shadow-modal"
+            class="absolute left-0 top-full z-50 mt-0.5 w-44 overflow-hidden rounded-md border border-border bg-popover text-xs shadow-popover"
             role="menu"
             @click.stop
           >
@@ -315,7 +315,7 @@ onUnmounted(() => {
           </BaseTooltip>
           <div
             v-if="pushDropdownOpen"
-            class="absolute left-0 top-full z-50 mt-0.5 w-56 overflow-hidden rounded-md border border-border bg-popover text-xs shadow-modal"
+            class="absolute left-0 top-full z-50 mt-0.5 w-56 overflow-hidden rounded-md border border-border bg-popover text-xs shadow-popover"
             role="menu"
             @click.stop
           >

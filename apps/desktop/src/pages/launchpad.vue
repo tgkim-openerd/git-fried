@@ -378,7 +378,7 @@ const {
                   </button>
                   <div
                     v-if="snoozeMenuFor === rowKey(row)"
-                    class="absolute right-0 top-full z-10 mt-1 w-32 rounded-md border border-border bg-card text-xs shadow-lg"
+                    class="absolute right-0 top-full z-10 mt-1 w-32 rounded-md border border-border bg-card text-xs shadow-popover"
                   >
                     <ul class="py-1" role="menu">
                       <li

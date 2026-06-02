@@ -64,7 +64,7 @@ async function pick(id: number) {
     <!-- 드롭다운 -->
     <div
       v-if="open"
-      class="absolute right-0 top-full z-30 mt-1 w-72 rounded-md border border-border bg-card shadow-lg"
+      class="absolute right-0 top-full z-30 mt-1 w-72 rounded-md border border-border bg-card shadow-popover"
       @keydown.esc="open = false"
     >
       <div

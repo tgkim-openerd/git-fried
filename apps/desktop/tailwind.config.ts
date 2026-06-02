@@ -75,7 +75,8 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       boxShadow: {
-        // Elevation tier 3 (plan/24 Sprint A-4)
+        // Elevation tier 4 (plan/24 Sprint A-4 → plan #44 A3: tooltip 추가)
+        tooltip: 'var(--shadow-tooltip)',
         popover: 'var(--shadow-popover)',
         modal: 'var(--shadow-modal)',
         toast: 'var(--shadow-toast)',

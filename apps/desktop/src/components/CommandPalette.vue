@@ -8,6 +8,7 @@
 // 본 컴포넌트는 open / filter / keyboard nav / UI rendering 만 담당.
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
+import { useModalStackEntry } from '@/composables/useModalStack'
 import { useI18n } from 'vue-i18n'
 import {
   CATEGORY_LABELS,
@@ -23,7 +24,9 @@ const { allCommands } = useCommandCatalog()
 const open = ref(false)
 // A2 (plan #44) — dialog focus-trap: 열릴 때 첫 focusable focus + Tab 순환 + 닫힐 때 직전 focus 복원.
 const paletteRef = ref<HTMLElement | null>(null)
-useFocusTrap(paletteRef, open)
+// A1 — overlay stack 등록: 중첩 시 top 일 때만 focus-trap·nav 활성 + depth 로 z-index/backdrop.
+const { isTop, depth } = useModalStackEntry(open)
+useFocusTrap(paletteRef, open, isTop)
 const filter = ref('')
 const selected = ref(0)
 
@@ -110,6 +113,8 @@ function onKey(e: KeyboardEvent) {
     return
   }
   if (!open.value) return
+  // A1 — palette 가 stack-top 이 아니면 nav 키 양보 (상위 overlay 우선).
+  if (!isTop.value) return
   if (e.key === 'Escape') {
     e.preventDefault()
     open.value = false
@@ -148,7 +153,9 @@ onUnmounted(() => {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-32"
+      class="fixed inset-0 flex items-start justify-center pt-32"
+      :style="{ zIndex: 50 + Math.min(depth, 9) }"
+      :class="depth === 0 ? 'bg-black/40' : 'bg-transparent'"
       @click.self="open = false"
     >
       <div
@@ -156,7 +163,7 @@ onUnmounted(() => {
         role="dialog"
         aria-modal="true"
         aria-label="명령 팔레트"
-        class="w-[600px] max-w-[90vw] rounded-lg border border-border bg-card shadow-xl"
+        class="w-[600px] max-w-[90vw] rounded-lg border border-border bg-card shadow-modal"
       >
         <input
           v-model="filter"
