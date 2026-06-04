@@ -36,6 +36,7 @@ pub async fn hook_activate(
     args: HookToggleArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_hooks::hook_activate_from_sample(&path, args.hooks_path_override.as_deref(), &args.name)
         .await
@@ -47,6 +48,7 @@ pub async fn hook_deactivate(
     args: HookToggleArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_hooks::hook_deactivate_to_sample(&path, args.hooks_path_override.as_deref(), &args.name)
         .await

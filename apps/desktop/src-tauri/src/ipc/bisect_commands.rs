@@ -34,6 +34,7 @@ pub async fn bisect_start(
     args: BisectStartArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<String> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_bisect::start(&path, args.bad.as_deref(), args.good.as_deref()).await
 }
@@ -51,12 +52,14 @@ pub async fn bisect_mark(
     args: BisectMarkArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<String> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_bisect::mark(&path, args.mark, args.sha.as_deref()).await
 }
 
 #[tauri::command]
 pub async fn bisect_reset(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_bisect::reset(&path).await
 }

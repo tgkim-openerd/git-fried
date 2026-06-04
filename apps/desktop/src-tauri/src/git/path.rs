@@ -76,7 +76,10 @@ pub fn validate_repo_relative_path(
     if path.trim().is_empty() {
         return Err(AppError::validation("파일 경로가 비었습니다."));
     }
-    if path.contains("..") {
+    // Codex review 2026-06-04 — substring `contains("..")` 는 `a..b.txt` / `v1..v2/x`
+    // 같은 정상 git 파일명을 traversal 로 오탐. path 구분자(`/` `\`) 단위로 분해해
+    // 컴포넌트가 정확히 ".." 인 경우만 거부 (실제 traversal: `../`, `a/../b`, `..\x`).
+    if path.replace('\\', "/").split('/').any(|seg| seg == "..") {
         return Err(AppError::validation(
             "상대경로 traversal (..) 은 허용되지 않습니다.",
         ));
@@ -248,5 +251,37 @@ mod tests {
         // 앞뒤 공백 포함도 거부 (trim 후 - 검사).
         assert!(reject_dash_prefix("  -D  ", "branch").is_err());
         assert_eq!(reject_dash_prefix("  main  ", "branch").unwrap(), "main");
+    }
+
+    // ====== validate_repo_relative_path (Codex review 2026-06-04 — `..` component 검사) ======
+
+    /// `a..b.txt` 같은 정상 git 파일명은 traversal 오탐 없이 통과 (substring → component 전환).
+    #[test]
+    fn validate_path_allows_legit_filename_with_double_dot() {
+        let repo = std::path::Path::new("__nonexistent_repo_for_test__");
+        assert!(validate_repo_relative_path(repo, "a..b.txt").is_ok());
+        assert!(validate_repo_relative_path(repo, "src/v1..v2/file.rs").is_ok());
+        assert!(validate_repo_relative_path(repo, "src/components/Foo.vue").is_ok());
+    }
+
+    /// 실제 traversal (`../`, `a/../b`, `..`, backslash 변종) 은 여전히 거부.
+    #[test]
+    fn validate_path_rejects_real_traversal() {
+        let repo = std::path::Path::new("__nonexistent_repo_for_test__");
+        assert!(validate_repo_relative_path(repo, "../etc/passwd").is_err());
+        assert!(validate_repo_relative_path(repo, "a/../../b").is_err());
+        assert!(validate_repo_relative_path(repo, "..").is_err());
+        // backslash 구분자(Windows) traversal 도 정규화 후 거부.
+        assert!(validate_repo_relative_path(repo, "..\\windows\\system32").is_err());
+        assert!(validate_repo_relative_path(repo, "a\\..\\b").is_err());
+    }
+
+    /// 빈 경로 / 절대경로 / 루트 접두는 거부.
+    #[test]
+    fn validate_path_rejects_empty_and_absolute() {
+        let repo = std::path::Path::new("__nonexistent_repo_for_test__");
+        assert!(validate_repo_relative_path(repo, "").is_err());
+        assert!(validate_repo_relative_path(repo, "   ").is_err());
+        assert!(validate_repo_relative_path(repo, "/abs/path").is_err());
     }
 }

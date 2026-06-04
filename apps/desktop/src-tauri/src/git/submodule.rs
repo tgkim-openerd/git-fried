@@ -4,9 +4,18 @@
 // `docs/plan/02 §3 W4` 참조.
 
 use crate::error::AppResult;
-use crate::git::runner::{git_run, GitRunOpts};
+use crate::git::runner::{git_run, GitRunOpts, GIT_NETWORK_TIMEOUT};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+/// Codex review 2026-06-04 (F3) — submodule init/update 는 `--init` 으로 submodule 을
+/// network clone. repo_mutation_guard 보유 중 hang 시 starvation → 600s timeout + orphan-kill.
+fn network_opts() -> GitRunOpts {
+    GitRunOpts {
+        timeout: Some(GIT_NETWORK_TIMEOUT),
+        ..GitRunOpts::default()
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -84,7 +93,7 @@ pub async fn init_submodules(repo: &Path) -> AppResult<()> {
     git_run(
         repo,
         &["submodule", "update", "--init", "--recursive"],
-        &GitRunOpts::default(),
+        &network_opts(),
     )
     .await?
     .into_ok()?;
@@ -96,9 +105,7 @@ pub async fn update_submodules(repo: &Path, remote: bool) -> AppResult<()> {
     if remote {
         args.push("--remote");
     }
-    git_run(repo, &args, &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    git_run(repo, &args, &network_opts()).await?.into_ok()?;
     Ok(())
 }
 

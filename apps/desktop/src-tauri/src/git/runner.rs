@@ -149,16 +149,22 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
 
     // reader 를 stdin write 보다 먼저 spawn — child 가 stdout 파이프 버퍼를 채우며 block 하고
     // 우리는 stdin write 로 block 되는 deadlock 회피 (대용량 patch stdin + 대용량 stdout 동시).
+    // Codex review 2026-06-04 (F4) — read IO error 시 partial buf 는 보존(hard-fail 보다 유용)
+    // 하되 silent swallow 대신 trace 로깅해 진단 손실 방지.
     let stdout_task = tokio::spawn(async move {
         let mut buf = Vec::new();
         let mut h = stdout_handle;
-        let _ = h.read_to_end(&mut buf).await;
+        if let Err(e) = h.read_to_end(&mut buf).await {
+            tracing::debug!(target: "git_fried_lib::runner", error = %e, "git stdout read 부분 실패 — partial 반환");
+        }
         buf
     });
     let stderr_task = tokio::spawn(async move {
         let mut buf = Vec::new();
         let mut h = stderr_handle;
-        let _ = h.read_to_end(&mut buf).await;
+        if let Err(e) = h.read_to_end(&mut buf).await {
+            tracing::debug!(target: "git_fried_lib::runner", error = %e, "git stderr read 부분 실패 — partial 반환");
+        }
         buf
     });
 

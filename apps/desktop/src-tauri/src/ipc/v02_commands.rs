@@ -149,14 +149,26 @@ pub async fn bulk_cherry_pick(
     args: BulkCherryPickArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<Vec<git_cp::CherryPickResult>> {
-    git_cp::bulk_cherry_pick(
+    // Codex review 2026-06-04 (F1) — bulk 은 여러 repo 에 cherry-pick (HEAD mutation). 각 repo 의
+    // mutation guard 를 미리 획득해 같은 repo 의 단건 cherry_pick_sha/commit 등과 직렬화.
+    // 정렬 + dedup 순서로 획득 → 다른 bulk 호출과 lock-ordering deadlock 방지 (모두 동일 순서).
+    let mut ids: Vec<i64> = args.repo_ids.clone();
+    ids.sort_unstable();
+    ids.dedup();
+    let mut guards = Vec::with_capacity(ids.len());
+    for id in &ids {
+        guards.push(state.repo_mutation_guard(*id).await);
+    }
+    let result = git_cp::bulk_cherry_pick(
         &state.db,
         &args.repo_ids,
         &args.sha,
         args.strategy,
         args.no_commit,
     )
-    .await
+    .await;
+    drop(guards);
+    result
 }
 
 // ====== 3-way merge — 분리 (ipc/merge_commands.rs, c48 Wave D-4) ======

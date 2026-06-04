@@ -38,6 +38,7 @@ pub async fn create_tag(
     args: CreateTagArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_tag::create_tag(
         &path,
@@ -70,6 +71,7 @@ pub async fn annotate_existing_tag(
     args: AnnotateTagArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_tag::annotate_existing_tag(&path, &args.name, &args.commit_sha, &args.message).await
 }
@@ -79,6 +81,7 @@ pub async fn delete_tag(
     args: TagNameArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_tag::delete_tag(&path, &args.name).await
 }

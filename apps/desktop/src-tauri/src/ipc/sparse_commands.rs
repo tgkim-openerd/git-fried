@@ -21,6 +21,7 @@ pub async fn sparse_init_cone(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_sparse::sparse_init_cone(&path).await
 }
@@ -37,18 +38,21 @@ pub async fn sparse_set(
     args: SparseSetArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_sparse::sparse_set(&path, &args.paths).await
 }
 
 #[tauri::command]
 pub async fn sparse_disable(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_sparse::sparse_disable(&path).await
 }
 
 #[tauri::command]
 pub async fn sparse_reapply(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_sparse::sparse_reapply(&path).await
 }

@@ -23,6 +23,7 @@ pub async fn init_submodules(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_sub::init_submodules(&path).await
 }
@@ -40,6 +41,7 @@ pub async fn update_submodules(
     args: UpdateSubmodulesArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_sub::update_submodules(&path, args.remote).await
 }
@@ -49,6 +51,7 @@ pub async fn sync_submodules(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_sub::sync_submodules(&path).await
 }

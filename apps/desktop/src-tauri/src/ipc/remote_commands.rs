@@ -37,6 +37,7 @@ pub async fn add_remote(
     args: AddRemoteArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_remote::add_remote(&path, &args.name, &args.url).await
 }
@@ -53,6 +54,7 @@ pub async fn remove_remote(
     args: RemoteNameArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_remote::remove_remote(&path, &args.name).await
 }
@@ -70,6 +72,7 @@ pub async fn rename_remote(
     args: RenameRemoteArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_remote::rename_remote(&path, &args.old_name, &args.new_name).await
 }
@@ -87,6 +90,7 @@ pub async fn set_remote_url(
     args: SetRemoteUrlArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_remote::set_remote_url(&path, &args.name, &args.url).await
 }
@@ -142,6 +146,7 @@ pub async fn apply_repo_config(
     args: ApplyRepoConfigArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_cfg_local::apply_snapshot(&path, &args.snapshot).await
 }

@@ -34,6 +34,7 @@ pub async fn add_worktree(
     args: AddWorktreeArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_wt::add_worktree(
         &path,
@@ -61,6 +62,7 @@ pub async fn remove_worktree(
     args: RemoveWorktreeArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_wt::remove_worktree(&path, &args.path, args.force).await
 }
@@ -70,6 +72,7 @@ pub async fn prune_worktrees(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_wt::prune_worktrees(&path).await
 }
@@ -87,6 +90,7 @@ pub async fn lock_worktree(
     args: LockWorktreeArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_wt::lock_worktree(&path, &args.path, args.reason.as_deref()).await
 }
@@ -103,6 +107,7 @@ pub async fn unlock_worktree(
     args: UnlockWorktreeArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_wt::unlock_worktree(&path, &args.path).await
 }

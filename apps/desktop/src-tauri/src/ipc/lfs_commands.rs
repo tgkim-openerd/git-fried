@@ -39,6 +39,7 @@ pub async fn lfs_track(
     args: LfsPatternArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_lfs::track(&path, &args.pattern).await
 }
@@ -48,12 +49,14 @@ pub async fn lfs_untrack(
     args: LfsPatternArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_lfs::untrack(&path, &args.pattern).await
 }
 
 #[tauri::command]
 pub async fn lfs_install(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_lfs::install(&path).await
 }

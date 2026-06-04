@@ -10,7 +10,7 @@
 
 use crate::error::AppResult;
 use crate::git::path::reject_dash_prefix;
-use crate::git::runner::{git_run, GitOutput, GitRunOpts};
+use crate::git::runner::{git_run, GitOutput, GitRunOpts, GIT_NETWORK_TIMEOUT};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -41,6 +41,10 @@ impl From<GitOutput> for SyncResult {
 fn opts_with_ssh(ssh_key_path: Option<&str>) -> GitRunOpts {
     GitRunOpts {
         ssh_key_path: ssh_key_path.map(String::from),
+        // Codex review 2026-06-04 (F3) — network op 무제한 hang 방지. pull 은 repo_mutation_guard
+        // 를 보유하므로 hang 시 같은 repo 의 모든 mutation 이 starvation. GIT_NETWORK_TIMEOUT(600s)
+        // + git_run orphan-kill(F14) 연동으로 timeout 시 child kill → guard 해제.
+        timeout: Some(GIT_NETWORK_TIMEOUT),
         ..GitRunOpts::default()
     }
 }
