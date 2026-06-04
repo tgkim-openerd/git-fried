@@ -32,6 +32,7 @@ pub async fn merge_branch(
     args: MergeBranchArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_branch::MergeResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_branch::merge_into_head(&path, &args.source, args.no_ff, args.no_commit, args.squash).await
 }
@@ -48,6 +49,7 @@ pub async fn rebase_branch(
     args: RebaseBranchArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_branch::MergeResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_branch::rebase_onto(&path, &args.upstream).await
 }
@@ -66,6 +68,7 @@ pub async fn cherry_pick_sha(
     args: CherryPickShaArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_branch::MergeResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_branch::cherry_pick_sha(&path, &args.sha, args.target_branch.as_deref()).await
 }
@@ -97,6 +100,7 @@ pub async fn switch_branch(
     args: SwitchBranchArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_branch::switch_branch(&path, &args.name, args.create).await
 }
@@ -114,6 +118,7 @@ pub async fn create_branch(
     args: CreateBranchArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_branch::create_branch(&path, &args.name, args.start.as_deref()).await
 }
@@ -132,6 +137,7 @@ pub async fn delete_branch(
     args: DeleteBranchArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_branch::delete_branch(&path, &args.name, args.force).await
 }
@@ -149,6 +155,7 @@ pub async fn rename_branch(
     args: RenameBranchArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_branch::rename_branch(&path, &args.old_name, &args.new_name).await
 }

@@ -32,6 +32,7 @@ pub async fn push_stash(
     args: PushStashArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_stash::push_stash(&path, args.message.as_deref(), args.include_untracked).await
 }
@@ -52,6 +53,7 @@ pub async fn push_stash_staged(
     args: PushStashStagedArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_stash::push_stash_staged(&path, args.message.as_deref()).await
 }
@@ -70,6 +72,7 @@ pub async fn stash_to_branch(
     args: StashToBranchArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_stash::stash_to_branch(&path, args.index, &args.branch).await
 }
@@ -86,6 +89,7 @@ pub async fn apply_stash(
     args: StashIndexArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_stash::apply_stash(&path, args.index).await
 }
@@ -95,6 +99,7 @@ pub async fn pop_stash(
     args: StashIndexArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_stash::pop_stash(&path, args.index).await
 }
@@ -104,6 +109,7 @@ pub async fn drop_stash(
     args: StashIndexArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_stash::drop_stash(&path, args.index).await
 }
@@ -131,6 +137,7 @@ pub async fn apply_stash_file(
     args: StashFileArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_stash::apply_stash_file(&path, args.index, &args.path).await
 }

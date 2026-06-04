@@ -36,12 +36,14 @@ pub struct PathsArgs {
 
 #[tauri::command]
 pub async fn stage_paths(args: PathsArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     stage::stage_paths(&path, &args.paths).await
 }
 
 #[tauri::command]
 pub async fn stage_all(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     stage::stage_all(&path).await
 }
@@ -51,6 +53,7 @@ pub async fn unstage_paths(
     args: PathsArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     stage::unstage_paths(&path, &args.paths).await
 }
@@ -60,6 +63,7 @@ pub async fn discard_paths(
     args: PathsArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     stage::discard_paths(&path, &args.paths).await
 }
@@ -75,6 +79,7 @@ pub struct PatchArgs {
 
 #[tauri::command]
 pub async fn apply_patch(args: PatchArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     if args.reverse {
         stage::unstage_patch(&path, &args.patch).await
@@ -96,6 +101,7 @@ pub async fn restore_worktree_patch(
     args: RestoreWorktreePatchArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     stage::restore_worktree_patch(&path, &args.patch).await
 }
@@ -148,6 +154,7 @@ pub async fn restore_paths(
     args: RestoreArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_restore::restore_paths(&path, &args.paths, &args.opts).await
 }

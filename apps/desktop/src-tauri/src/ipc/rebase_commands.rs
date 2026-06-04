@@ -47,6 +47,7 @@ pub async fn rebase_run(
     args: RebaseRunArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<RebaseRunResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     let out = git_rebase::run_interactive(&path, &args.base, &args.todo).await?;
     let status = git_rebase::status(&path)?;
@@ -73,6 +74,7 @@ pub async fn rebase_continue(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<RebaseRunResult> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     let out = git_rebase::rebase_continue(&path).await?;
     let status = git_rebase::status(&path)?;
@@ -87,6 +89,7 @@ pub async fn rebase_continue(
 
 #[tauri::command]
 pub async fn rebase_abort(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_rebase::rebase_abort(&path).await
 }
@@ -96,6 +99,7 @@ pub async fn rebase_skip(
     repo_id: i64,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<RebaseRunResult> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     let out = git_rebase::rebase_skip(&path).await?;
     let status = git_rebase::status(&path)?;

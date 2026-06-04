@@ -41,6 +41,7 @@ pub async fn write_resolved(
     args: WriteResolvedArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_merge::write_resolved(&path, &args.path, &args.content).await
 }
@@ -58,6 +59,7 @@ pub async fn take_side(
     args: TakeSideArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_merge::take_side(&path, &args.path, args.side).await
 }

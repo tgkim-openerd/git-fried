@@ -88,6 +88,21 @@ impl AppState {
             .or_insert_with(|| Arc::new(TokioMutex::new(())))
             .clone()
     }
+
+    /// Sprint 2026-06-04 (/analyze F3/F13) — destructive/index-mutating IPC 의 표준 진입 가드.
+    ///
+    /// `repo_lock(repo_id)` 를 owned guard 로 획득 (FIFO blocking). guard 가 사는 동안
+    /// 같은 repo 의 다른 mutation IPC 는 직렬화 → 동시 `git` 프로세스가 index.lock / ref.lock
+    /// 충돌로 "another git process" 에러를 노출하는 UX degrade 를 막는다.
+    /// (git lockfile 이 corruption 자체는 막지만 사용자에게 raw 에러가 새는 걸 못 막음.)
+    ///
+    /// **반드시 IPC boundary 에서만** 호출 — git 모듈 fn 내부에서 호출하면 TokioMutex 가
+    /// non-reentrant 라 self-deadlock. 대상: index/worktree/HEAD/refs/stash/sequencer 변경.
+    /// 제외: read-only, network(fetch_all/push/bulk_fetch — 장시간 대기로 commit block),
+    /// rebase_prepare_todo(메타 편집). 설계 근거: Codex 자문 2026-06-04.
+    pub async fn repo_mutation_guard(&self, repo_id: i64) -> tokio::sync::OwnedMutexGuard<()> {
+        self.repo_lock(repo_id).lock_owned().await
+    }
 }
 
 /// `tauri::Builder` 를 셋업하고 실행. main.rs 에서 호출.

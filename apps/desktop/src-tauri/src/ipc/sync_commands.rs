@@ -57,6 +57,7 @@ pub async fn pull(
     args: PullArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_sync::SyncResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     let opts = git_sync::PullOpts {
         rebase: args.rebase,

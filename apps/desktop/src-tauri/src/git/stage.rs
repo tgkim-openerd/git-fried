@@ -4,14 +4,29 @@
 // `.gitattributes` (eol / filter / lfs) 처리가 git CLI 가 정확함.
 
 use crate::error::AppResult;
+use crate::git::path::validate_repo_relative_path;
 use crate::git::runner::{git_run, GitRunOpts};
 use std::path::Path;
+
+/// Sprint 2026-06-04 (/analyze F11/F16) — stage/unstage/discard path 정책 통일.
+///
+/// read_file.rs / merge.rs 와 동일하게 `validate_repo_relative_path` 4단 가드 적용
+/// (empty / `..` traversal / 절대경로 / 루트 접두 + 존재 시 canonicalize prefix 확인).
+/// `--` 구분자가 이미 옵션 인젝션을 막지만, defense-in-depth 로 repo 외부 경로를
+/// git CLI 에 넘기기 전에 차단한다. 반환 absolute path 는 버리고 검증만 수행.
+fn validate_paths(repo: &Path, paths: &[String]) -> AppResult<()> {
+    for p in paths {
+        validate_repo_relative_path(repo, p)?;
+    }
+    Ok(())
+}
 
 /// 단일 또는 다수 path 를 stage 추가.
 pub async fn stage_paths(repo: &Path, paths: &[String]) -> AppResult<()> {
     if paths.is_empty() {
         return Ok(());
     }
+    validate_paths(repo, paths)?;
     let mut args: Vec<&str> = vec!["add", "--"];
     for p in paths {
         args.push(p.as_str());
@@ -35,6 +50,7 @@ pub async fn unstage_paths(repo: &Path, paths: &[String]) -> AppResult<()> {
     if paths.is_empty() {
         return Ok(());
     }
+    validate_paths(repo, paths)?;
     let mut args: Vec<&str> = vec!["reset", "HEAD", "--"];
     for p in paths {
         args.push(p.as_str());
@@ -51,6 +67,7 @@ pub async fn discard_paths(repo: &Path, paths: &[String]) -> AppResult<()> {
     if paths.is_empty() {
         return Ok(());
     }
+    validate_paths(repo, paths)?;
     let mut args: Vec<&str> = vec!["checkout", "--"];
     for p in paths {
         args.push(p.as_str());

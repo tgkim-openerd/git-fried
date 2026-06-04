@@ -133,6 +133,35 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
 
     let mut child = cmd.spawn().map_err(AppError::Io)?;
 
+    // Sprint 2026-06-04 (/analyze F14) — SAF-401(ai/runner.rs) child.kill() 패턴 이식.
+    // 기존 `wait_with_output()` 은 child 소유권을 가져가 timeout 시 kill 불가 → orphan 잔존.
+    // explicit stdout/stderr take → 별도 reader task 로 비동기 drain → `child.wait()` 와 race →
+    // timeout 시 `child.kill().await` + reap + reader abort 로 orphan 제거.
+    use tokio::io::AsyncReadExt;
+    let stdout_handle = child
+        .stdout
+        .take()
+        .ok_or_else(|| AppError::internal("git subprocess stdout 핸들 take 실패 (이미 닫힘)"))?;
+    let stderr_handle = child
+        .stderr
+        .take()
+        .ok_or_else(|| AppError::internal("git subprocess stderr 핸들 take 실패 (이미 닫힘)"))?;
+
+    // reader 를 stdin write 보다 먼저 spawn — child 가 stdout 파이프 버퍼를 채우며 block 하고
+    // 우리는 stdin write 로 block 되는 deadlock 회피 (대용량 patch stdin + 대용량 stdout 동시).
+    let stdout_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        let mut h = stdout_handle;
+        let _ = h.read_to_end(&mut buf).await;
+        buf
+    });
+    let stderr_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        let mut h = stderr_handle;
+        let _ = h.read_to_end(&mut buf).await;
+        buf
+    });
+
     if let (Some(input), Some(mut stdin)) = (opts.stdin.as_ref(), child.stdin.take()) {
         use tokio::io::AsyncWriteExt;
         stdin
@@ -142,14 +171,16 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
         stdin.shutdown().await.map_err(AppError::Io)?;
     }
 
-    // Sprint c45 P0-2 — timeout 적용. 초과 시 child kill + GitCli 에러.
-    let output = match opts.timeout {
-        Some(d) => match tokio::time::timeout(d, child.wait_with_output()).await {
+    // Sprint c45 P0-2 — timeout 적용. 초과 시 child kill + reap + GitCli 에러.
+    let status = match opts.timeout {
+        Some(d) => match tokio::time::timeout(d, child.wait()).await {
             Ok(res) => res.map_err(AppError::Io)?,
             Err(_) => {
-                // timeout 시 best-effort kill — wait_with_output 이 child 소유권을 이미 가져갔으므로
-                // 별도 kill 호출은 불가능. 프로세스는 자연 종료될 때까지 orphan 가능 (OS 가 정리).
-                // 다음 sprint 에서 child.kill() + manual stdout/stderr read 패턴으로 재구성 가능.
+                // timeout — child kill + reap (orphan 방지) + reader task abort.
+                let _ = child.kill().await;
+                let _ = child.wait().await;
+                stdout_task.abort();
+                stderr_task.abort();
                 return Err(AppError::GitCli {
                     message: format!(
                         "git 명령 timeout {}초 초과 ({})",
@@ -161,13 +192,16 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
                 });
             }
         },
-        None => child.wait_with_output().await.map_err(AppError::Io)?,
+        None => child.wait().await.map_err(AppError::Io)?,
     };
 
+    let stdout_bytes = stdout_task.await.unwrap_or_default();
+    let stderr_bytes = stderr_task.await.unwrap_or_default();
+
     Ok(GitOutput {
-        exit_code: output.status.code(),
-        stdout: decode_lossy(&output.stdout),
-        stderr: decode_lossy(&output.stderr),
+        exit_code: status.code(),
+        stdout: decode_lossy(&stdout_bytes),
+        stderr: decode_lossy(&stderr_bytes),
     })
 }
 

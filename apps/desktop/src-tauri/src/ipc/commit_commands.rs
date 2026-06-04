@@ -48,6 +48,7 @@ pub async fn commit(
     args: CommitArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_commit::CommitResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_commit::commit(
         &path,
@@ -104,6 +105,7 @@ pub struct ResetArgs {
 
 #[tauri::command]
 pub async fn reset(args: ResetArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_reset::reset(&path, args.mode, &args.target).await
 }
@@ -119,6 +121,7 @@ pub struct RevertArgs {
 
 #[tauri::command]
 pub async fn revert(args: RevertArgs, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_reset::revert(&path, &args.sha, args.no_commit).await
 }
@@ -136,6 +139,7 @@ pub async fn undo_last_action(
     args: UndoLastActionArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_reflog::UndoResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_reflog::undo_last_action(&path).await
 }
@@ -145,6 +149,7 @@ pub async fn redo_last_action(
     args: UndoLastActionArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_reflog::UndoResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_reflog::redo_last_action(&path).await
 }
