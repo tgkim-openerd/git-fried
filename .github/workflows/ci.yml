@@ -73,6 +73,52 @@ jobs:
         working-directory: apps/desktop
         run: bun run test
 
+      # 로드맵 Step 5 — UI surface testid ratchet 게이트 (신규 상호작용 컴포넌트 testid 강제).
+      - name: UI surface testid gate
+        run: node scripts/ui-surface-inventory.mjs --gate
+
+      # 로드맵 Step 6 #5 — prod 번들에 dev-only 테스트 훅(fault/test-invoke) 미누출 검증.
+      - name: Prod bundle clean (dev hook 미누출)
+        run: node scripts/check-prod-bundle-clean.mjs
+
+  e2e-tauri:
+    name: Tauri CDP fixture e2e (Windows)
+    needs: [rust-test, web-test]
+    runs-on: windows-latest
+    # 실 Tauri(WebView2 CDP) + tauri dev debug 빌드 — 러너 환경(WebView2/PATH/빌드시간) 변수가 커
+    # 최초 도입은 non-blocking. 실 CI 1회 green 확인 후 continue-on-error 제거 예정.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # connectOverCDP 는 node 런타임 필수 (bun 은 WS timeout — docs/solutions CDP 핸들 참조).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: ${{ runner.os }}-cargo-e2e-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install bun deps
+        run: bun install
+
+      # tauri dev(debug 빌드 + vite + WebView2 CDP)로 .tauri.spec.ts(격리 DB + fixture) 실행.
+      - name: Tauri CDP fixture e2e
+        run: npx playwright test --config playwright.tauri.config.ts
+
   tauri-build:
     name: Tauri release build (Windows MSI)
     needs: [rust-test, web-test]
