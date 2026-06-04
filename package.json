@@ -27,6 +27,8 @@
     "test:e2e:tauri": "playwright test --config playwright.tauri.config.ts",
     "ui:check": "node scripts/ui-shot.mjs",
     "ui:sweep": "node scripts/ui-sweep.mjs",
+    "ui:inventory": "node scripts/ui-surface-inventory.mjs",
+    "ui:inventory:gate": "node scripts/ui-surface-inventory.mjs --gate",
     "i18n:count": "node scripts/i18n-leaf-count.mjs"
   },
   "engines": {
