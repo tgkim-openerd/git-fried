@@ -255,6 +255,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         placeholder="커밋 메시지 (자유 형식)"
         rows="6"
         class="rounded-md border border-input bg-background px-2 py-1 text-sm font-mono"
+        data-testid="commit-message-input"
       />
     </template>
 
@@ -303,6 +304,7 @@ useShortcut('stageAndCommit', dispatchStageAndCommit)
         class="rounded-md bg-primary px-3 py-1.5 min-h-[28px] text-xs font-medium text-primary-foreground disabled:opacity-50"
         :disabled="!canCommit() || commitMut.isPending.value"
         :title="amend ? t('commitInput.amendTitle') : t('commitInput.commitTitle')"
+        data-testid="commit-submit"
         @click="commitWith(noVerify)"
       >
         {{

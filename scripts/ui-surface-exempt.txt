@@ -1,7 +1,7 @@
 # Vue surface 인벤토리 게이트 — data-testid 미보유 baseline (ratchet).
 # `node scripts/ui-surface-inventory.mjs --gate` 가 이 목록을 제외하고 신규 미보유를 차단.
 # 목표: 컴포넌트에 e2e/testid 추가 시 여기서 제거 → 0 이면 "전부 커버".
-# baseline 61개 (커버리지 28%).
+# baseline 60개 (커버리지 29%).
 apps/desktop/src/components/ActiveRepoQuickActions.vue
 apps/desktop/src/components/AiResultModal.vue
 apps/desktop/src/components/BaseModal.vue
@@ -18,7 +18,6 @@ apps/desktop/src/components/CommitTable.vue
 apps/desktop/src/components/CompareModal.vue
 apps/desktop/src/components/ConfirmDialog.vue
 apps/desktop/src/components/ContextMenu.vue
-apps/desktop/src/components/ConventionalCommitBuilder.vue
 apps/desktop/src/components/CreatePrModal.vue
 apps/desktop/src/components/DiffSplitView.vue
 apps/desktop/src/components/EmptyState.vue

@@ -69,6 +69,7 @@ defineExpose({ subjectRef })
       class="rounded-md border border-input bg-background px-2 py-1 text-sm"
       :class="subjectWarn ? 'border-amber-500' : ''"
       aria-label="Conventional commit subject"
+      data-testid="commit-subject-input"
     />
     <!-- Phase 10 MEDIUM 1 — 50/72 progress bar -->
     <div class="flex flex-col gap-0.5">

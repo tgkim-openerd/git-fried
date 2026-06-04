@@ -6,6 +6,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # e2e-tauri(WebView2 CDP)는 헤드리스 러너 동작 미검증 — 수동 디스패치로만 실행.
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -87,12 +89,13 @@ jobs:
         run: node scripts/check-prod-bundle-clean.mjs
 
   e2e-tauri:
-    name: Tauri CDP fixture e2e (Windows)
+    name: Tauri CDP fixture e2e (Windows, manual)
     needs: [rust-test, web-test]
     runs-on: windows-latest
-    # 실 Tauri(WebView2 CDP) + tauri dev debug 빌드 — 러너 환경(WebView2/PATH/빌드시간) 변수가 커
-    # 최초 도입은 non-blocking. 실 CI 1회 green 확인 후 continue-on-error 제거 예정.
-    continue-on-error: true
+    # 수동 디스패치 전용 — WebView2 CDP 가 헤드리스 러너에서 동작하는지 미검증이라 push/PR 게이트로
+    # 두지 않는다. continue-on-error(fake-green) 도 제거: 수동 실행 시 실패하면 정직하게 red.
+    # 실 디스패치 1회 green 확인 후 push/PR 트리거로 승격 + needs 에 추가.
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
