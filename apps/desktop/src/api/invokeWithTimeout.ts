@@ -181,6 +181,10 @@ export function invoke<T>(
   // dev-only e2e fault/delay 주입 — loading/error transient 상태를 결정론적으로 트리거.
   // localStorage 'git-fried.test-fault' = { [cmd]: { delayMs?, error? } }. release 빌드는
   // import.meta.env.DEV 가 false 로 치환되어 본 블록 전체가 dead-code 제거됨(미노출).
+  //
+  // 스코프 = **UI state-only** (Codex R-impl): delay/error 가 invokeInner(timeout/retry/progress)
+  // *전* 에 적용되므로 timeout 발화·retry·long-running 등록 경로는 검증하지 않는다. delayMs 는
+  // 짧게(loading 노출용) 쓰고, backend fault(timeout-during-call/retry)는 Rust inject_fault(후속).
   if (import.meta.env.DEV) {
     let fault: { delayMs?: number; error?: string } | null = null
     try {

@@ -57,6 +57,11 @@ jobs:
         with:
           bun-version: latest
 
+      # inventory gate / bundle-clean 가 node 로 실행 — 러너 기본 node 의존 회피(Codex R-impl).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Install deps
         run: bun install
         working-directory: ./

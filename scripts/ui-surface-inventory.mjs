@@ -72,7 +72,8 @@ function analyze() {
     // <template> 영역만 (script 의 문자열 오탐 회피).
     const tpl = (src.match(/<template[\s\S]*?<\/template>/i) || [''])[0]
     const interactive = INTERACTIVE_SIGNALS.some((re) => re.test(tpl))
-    const testidCount = (src.match(/data-testid=/g) || []).length
+    // testid 는 <template> 기준 카운트 — script/주석의 'data-testid=' 문자열 오탐 회피(Codex R-impl).
+    const testidCount = (tpl.match(/data-testid=/g) || []).length
     return {
       file: rel,
       interactive,

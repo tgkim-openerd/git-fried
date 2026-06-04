@@ -55,7 +55,10 @@ pub fn open(path: &Path) -> AppResult<Repository> {
 pub fn log(repo: &Repository, limit: usize, skip: usize) -> AppResult<Vec<CommitSummary>> {
     let mut walker = repo.revwalk().map_err(AppError::Git)?;
     walker.set_sorting(Sort::TIME).map_err(AppError::Git)?;
-    walker.push_head().map_err(AppError::Git)?;
+    // unborn HEAD (커밋 0 repo) — push_head 가 에러나므로 graph 와 동일하게 빈 목록 반환(Codex R-impl).
+    if walker.push_head().is_err() {
+        return Ok(Vec::new());
+    }
 
     // 참조(tag/branch) 매핑 — sha → label 리스트
     let refs_map = collect_refs_map(repo).unwrap_or_default();

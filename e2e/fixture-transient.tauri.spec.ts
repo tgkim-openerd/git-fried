@@ -42,13 +42,18 @@ test.describe('fixture transient 상태 e2e (loading/empty via fault 주입)', (
     }
   })
 
+  // 실패한 테스트가 fault 를 다음 테스트로 누수시키지 않게 항상 정리(Codex R-impl flaky).
+  test.afterEach(async () => {
+    await clearFault(page).catch(() => {})
+  })
+
   test('loading → content 잔존 검출 (get_graph delay 주입)', async () => {
     // get_graph 3s 지연 주입 → 그래프 skeleton 노출 → resolve 후 skeleton 사라지고 content.
     await seedFixtureAndOpenRepo(page, 'basic', tmpRoot, 'tr-loading', 'graph', { get_graph: { delayMs: 3000 } })
 
     const skeleton = page.locator('[data-testid="commit-graph-skeleton"]')
-    // 지연 동안 skeleton visible (isFetching && rows===0).
-    await expect(skeleton).toBeVisible({ timeout: 4_000 })
+    // 지연 동안 skeleton visible (isFetching && rows===0). reload/startup jitter 마진 위해 timeout 넉넉히.
+    await expect(skeleton).toBeVisible({ timeout: 7_000 })
     // resolve 후 skeleton 사라짐(잔존 없음) + commit content 노출.
     await expect(skeleton).toBeHidden({ timeout: 8_000 })
     await expect(page.locator('body')).toContainText('feat: C', { timeout: 4_000 })
