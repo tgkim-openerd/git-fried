@@ -64,4 +64,20 @@ test.describe('fixture transient 상태 e2e (loading/empty via fault 주입)', (
     // 로딩 완료 후 skeleton 잔존 없음.
     await expect(page.locator('[data-testid="commit-graph-skeleton"]')).toBeHidden({ timeout: 4_000 })
   })
+
+  test('mutation 실패 → error toast(role=alert) 렌더', async () => {
+    // stage_all IPC 에 error 주입 → Stage All 클릭 → 뮤테이션 onError → toast.error.
+    await seedFixtureAndOpenRepo(page, 'dirty', tmpRoot, 'tr-toast', 'graph', {
+      stage_all: { error: 'fault: stage 실패' },
+    })
+    const btn = page.locator('[data-testid="stage-all-changes"]').first()
+    await expect(btn).toBeVisible({ timeout: 10_000 })
+    await btn.click()
+
+    // 에러 toast 는 role="alert" (ToastContainer). 자동 dismiss(8s) 전 캡처.
+    const alert = page.getByRole('alert').filter({ hasText: 'Stage all 실패' }).first()
+    await expect(alert).toBeVisible({ timeout: 8_000 })
+
+    await clearFault(page)
+  })
 })
