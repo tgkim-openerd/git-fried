@@ -110,6 +110,7 @@ pub async fn maintenance_gc(
     args: MaintenanceArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<git_maint::MaintenanceResult> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_maint::gc(&path, args.aggressive).await
 }

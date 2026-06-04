@@ -5,7 +5,7 @@
 
 use crate::error::AppResult;
 use crate::git::path::reject_dash_prefix;
-use crate::git::runner::{git_run, GitRunOpts};
+use crate::git::runner::{git_run, GitRunOpts, GIT_NETWORK_TIMEOUT};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -144,9 +144,13 @@ pub async fn fetch(repo: &Path) -> AppResult<()> {
 }
 
 pub async fn pull(repo: &Path) -> AppResult<()> {
-    git_run(repo, &["lfs", "pull"], &GitRunOpts::default())
-        .await?
-        .into_ok()?;
+    // Codex review 2026-06-04 (F3) — lfs pull 은 network(객체 다운로드)+worktree checkout 이고
+    // IPC(lfs_pull)가 repo_mutation_guard 보유 → hang 시 starvation. 600s timeout + orphan-kill.
+    let opts = GitRunOpts {
+        timeout: Some(GIT_NETWORK_TIMEOUT),
+        ..GitRunOpts::default()
+    };
+    git_run(repo, &["lfs", "pull"], &opts).await?.into_ok()?;
     Ok(())
 }
 

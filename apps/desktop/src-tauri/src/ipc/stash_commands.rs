@@ -156,6 +156,7 @@ pub async fn edit_stash_message(
     args: EditStashMessageArgs,
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
     let path = repo_path(&state, args.repo_id).await?;
     git_stash::edit_stash_message(&path, args.index, &args.message).await
 }

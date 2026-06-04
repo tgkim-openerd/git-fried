@@ -152,6 +152,9 @@ pub async fn bulk_cherry_pick(
     // Codex review 2026-06-04 (F1) — bulk 은 여러 repo 에 cherry-pick (HEAD mutation). 각 repo 의
     // mutation guard 를 미리 획득해 같은 repo 의 단건 cherry_pick_sha/commit 등과 직렬화.
     // 정렬 + dedup 순서로 획득 → 다른 bulk 호출과 lock-ordering deadlock 방지 (모두 동일 순서).
+    // Codex review 2026-06-04 (R3) — guard 와 작업 대상을 같은 dedup 집합으로 통일.
+    // `args.repo_ids` 를 그대로 넘기면 `[2,2]` 같은 중복 입력 시 같은 repo 에 cherry-pick task 가
+    // 병렬 2개 실행되어 intra-bulk race + 무의미 중복 apply. dedup 한 `ids` 를 작업에도 사용.
     let mut ids: Vec<i64> = args.repo_ids.clone();
     ids.sort_unstable();
     ids.dedup();
@@ -159,14 +162,8 @@ pub async fn bulk_cherry_pick(
     for id in &ids {
         guards.push(state.repo_mutation_guard(*id).await);
     }
-    let result = git_cp::bulk_cherry_pick(
-        &state.db,
-        &args.repo_ids,
-        &args.sha,
-        args.strategy,
-        args.no_commit,
-    )
-    .await;
+    let result =
+        git_cp::bulk_cherry_pick(&state.db, &ids, &args.sha, args.strategy, args.no_commit).await;
     drop(guards);
     result
 }

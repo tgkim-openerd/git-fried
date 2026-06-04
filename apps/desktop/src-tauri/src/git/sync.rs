@@ -41,10 +41,6 @@ impl From<GitOutput> for SyncResult {
 fn opts_with_ssh(ssh_key_path: Option<&str>) -> GitRunOpts {
     GitRunOpts {
         ssh_key_path: ssh_key_path.map(String::from),
-        // Codex review 2026-06-04 (F3) — network op 무제한 hang 방지. pull 은 repo_mutation_guard
-        // 를 보유하므로 hang 시 같은 repo 의 모든 mutation 이 starvation. GIT_NETWORK_TIMEOUT(600s)
-        // + git_run orphan-kill(F14) 연동으로 timeout 시 child kill → guard 해제.
-        timeout: Some(GIT_NETWORK_TIMEOUT),
         ..GitRunOpts::default()
     }
 }
@@ -143,7 +139,12 @@ pub async fn pull(
             args.push(b);
         }
     }
-    let out = git_run(repo, &args, &opts_with_ssh(ssh_key_path)).await?;
+    // Codex review 2026-06-04 (F3/F5) — pull 만 repo_mutation_guard 를 보유하므로 network hang 시
+    // 같은 repo mutation 이 starvation. 600s timeout + git_run orphan-kill(F14) 으로 guard 해제.
+    // fetch/push 는 unlock 이라 timeout 미적용 (대형 repo >10분 작업 정상 동작 보존).
+    let mut pull_opts = opts_with_ssh(ssh_key_path);
+    pull_opts.timeout = Some(GIT_NETWORK_TIMEOUT);
+    let out = git_run(repo, &args, &pull_opts).await?;
     let elapsed_ms = started.elapsed().as_millis() as u64;
     if out.exit_code == Some(0) {
         tracing::info!(target: "git_fried_lib::sync", repo = %repo.display(), strategy, elapsed_ms, "pull 완료");

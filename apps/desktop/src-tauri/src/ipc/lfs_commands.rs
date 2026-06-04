@@ -69,12 +69,14 @@ pub async fn lfs_fetch(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> 
 
 #[tauri::command]
 pub async fn lfs_pull(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_lfs::pull(&path).await
 }
 
 #[tauri::command]
 pub async fn lfs_prune(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
+    let _guard = state.repo_mutation_guard(repo_id).await;
     let path = repo_path(&state, repo_id).await?;
     git_lfs::prune(&path).await
 }

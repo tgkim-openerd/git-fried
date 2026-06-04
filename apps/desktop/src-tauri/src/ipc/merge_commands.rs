@@ -83,6 +83,9 @@ pub struct MergetoolResult {
     pub exit_code: Option<i32>,
 }
 
+/// Codex review 2026-06-04 — repo_mutation_guard 의도적 미적용: launch_mergetool 은 외부
+/// merge tool 을 spawn 해 사용자가 interactive 로 편집하는 blocking 작업이라 lock 보유 시간이
+/// 비결정적(분 단위). 실제 충돌 해결 write 경로는 write_resolved/take_side 가 guard 보유.
 #[tauri::command]
 pub async fn launch_mergetool(
     args: LaunchMergetoolArgs,
