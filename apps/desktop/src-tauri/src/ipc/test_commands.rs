@@ -73,7 +73,7 @@ pub async fn guard_probe(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SeedFixtureArgs {
-    /// "basic" | "branches" | "dirty" | "stash" | "conflict" | "remote"
+    /// "basic" | "branches" | "dirty" | "stash" | "conflict" | "remote" | "manybranches"
     pub scenario: String,
     /// 임시 루트 디렉토리 (TS temp dir).
     pub root: String,
@@ -264,6 +264,23 @@ async fn build_scenario(dir: &Path, scenario: &str, opts: &GitRunOpts) -> AppRes
             git_run(dir, &["push", "-u", "origin", "main"], opts)
                 .await?
                 .into_ok()?;
+        }
+        // 다수의 긴 하이픈 브랜치명 — chip/label wrap·overflow 시각 회귀 스트레스용
+        // (CLAUDE.md § UI Breakage: 데이터 밀집/엣지 필수. commit 480bbb4 의 ref 라벨 wrap 버그 가드).
+        "manybranches" => {
+            commit_file(dir, "README.md", "base\n", "feat: base", opts).await?;
+            for n in [
+                "feature/very-long-hyphenated-branch-name-for-wrap-regression-001",
+                "release/2026-06-04-candidate-build-rollup-x9",
+                "bugfix/some-extremely-long-descriptive-branch-name-here",
+                "chore/dependency-bump-and-lockfile-sync-batch",
+                "hotfix/urgent-production-issue-with-a-very-long-name",
+                "experiment/spike-on-new-architecture-approach-v2",
+                "docs/update-readme-and-contributing-guidelines",
+                "test/add-e2e-coverage-for-status-panel-flows",
+            ] {
+                git_run(dir, &["branch", n], opts).await?.into_ok()?;
+            }
         }
         other => {
             return Err(AppError::validation(format!(
