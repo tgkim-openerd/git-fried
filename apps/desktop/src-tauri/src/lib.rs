@@ -83,6 +83,9 @@ impl AppState {
             .repo_locks
             .lock()
             .expect("repo_locks Mutex poisoned — bug or panic during lock");
+        // Codex R6 review 2026-06-04 — unbounded growth 방지. guarded IPC 가 repo_path 검증
+        // *전에* guard 를 획득하므로 invalid repo_id 반복 호출 시 map 에 TokioMutex 가 영구 잔류.
+        prune_idle_locks(&mut locks);
         locks
             .entry(repo_id)
             .or_insert_with(|| Arc::new(TokioMutex::new(())))
@@ -103,6 +106,16 @@ impl AppState {
     pub async fn repo_mutation_guard(&self, repo_id: i64) -> tokio::sync::OwnedMutexGuard<()> {
         self.repo_lock(repo_id).lock_owned().await
     }
+}
+
+/// repo_locks map 에서 활성 홀더 없는(strong_count==1 → map 만 참조) 항목 정리.
+///
+/// Codex R6 review 2026-06-04 — `repo_lock` 에서 매 호출 정리해 unbounded growth 방지.
+/// 사용 중 lock 은 caller(`repo_lock` 반환 Arc) 또는 guard(`lock_owned`/`lock` 보유)가 Arc 를
+/// 들고 있어 count>=2 → 절대 정리되지 않음. 호출처가 StdMutex 를 보유하므로 strong_count 판정
+/// 직전·직후 다른 thread 의 신규 clone 은 불가능(clone 경로는 repo_lock 단일).
+fn prune_idle_locks(locks: &mut HashMap<i64, Arc<TokioMutex<()>>>) {
+    locks.retain(|_, lock| Arc::strong_count(lock) > 1);
 }
 
 /// `tauri::Builder` 를 셋업하고 실행. main.rs 에서 호출.
@@ -344,3 +357,32 @@ pub fn run() {
 //
 // 본 POC 코드 + dev-dep 모두 제거 — plan/36 v0.3 에 결과 documented.
 // Linux/macOS 또는 Tauri 후속 release 에서 재시도 시 별도 trigger.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Codex R6 review 2026-06-04 — repo_lock unbounded growth 방지 가드.
+    /// 활성 홀더 없는(strong_count==1) 항목은 정리, 보유 중인 항목은 유지.
+    #[test]
+    fn prune_idle_locks_removes_unheld_keeps_held() {
+        let mut map: HashMap<i64, Arc<TokioMutex<()>>> = HashMap::new();
+        // id=1: idle (map 만 참조, count==1) — invalid repo_id 반복 호출 시뮬레이션.
+        map.insert(1, Arc::new(TokioMutex::new(())));
+        // id=2: 외부에서 보유 (caller/guard 상당, count==2).
+        let held = Arc::new(TokioMutex::new(()));
+        map.insert(2, held.clone());
+
+        prune_idle_locks(&mut map);
+
+        assert!(
+            !map.contains_key(&1),
+            "활성 홀더 없는 lock 은 정리되어야 함"
+        );
+        assert!(map.contains_key(&2), "보유 중 lock 은 유지되어야 함");
+        // held drop 후 재정리 시 id=2 도 정리됨 (lazy 재생성 전제).
+        drop(held);
+        prune_idle_locks(&mut map);
+        assert!(map.is_empty(), "모든 홀더 해제 후 map 은 비어야 함");
+    }
+}
