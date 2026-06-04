@@ -131,6 +131,19 @@ pub trait DbExt {
     ) -> AppResult<Repo>;
     async fn remove_repo(&self, id: i64) -> AppResult<()>;
     async fn get_repo(&self, id: i64) -> AppResult<Repo>;
+    /// Sprint 2026-06-04 — forge 메타 self-heal/backfill 전용 부분 UPDATE.
+    /// `add_repo` upsert 와 달리 workspace_id/name/is_pinned/forge_account_id/
+    /// profile_id/profile_pinned 를 건드리지 않아 사용자 바인딩·핀 보존.
+    /// GitKraken 대량 임포트 시 detect_meta 실패로 비어버린 forge 메타 복구에 사용.
+    async fn update_repo_forge_meta(
+        &self,
+        id: i64,
+        default_branch: Option<&str>,
+        default_remote: Option<&str>,
+        forge_kind: ForgeKindLite,
+        forge_owner: Option<&str>,
+        forge_repo: Option<&str>,
+    ) -> AppResult<Repo>;
     async fn set_repo_pinned(&self, id: i64, pinned: bool) -> AppResult<Repo>;
     /// v0.4 #1 — per-repo forge account override. None → fallback chain.
     async fn set_repo_forge_account(&self, id: i64, account_id: Option<i64>) -> AppResult<Repo>;
@@ -321,6 +334,46 @@ impl DbExt for Db {
         self.get_repo(id).await
     }
 
+    async fn update_repo_forge_meta(
+        &self,
+        id: i64,
+        default_branch: Option<&str>,
+        default_remote: Option<&str>,
+        forge_kind: ForgeKindLite,
+        forge_owner: Option<&str>,
+        forge_repo: Option<&str>,
+    ) -> AppResult<Repo> {
+        // 부분 UPDATE — forge 메타 5개 컬럼만 갱신. workspace_id/name/is_pinned/
+        // forge_account_id/profile_id/profile_pinned 는 의도적으로 제외 (바인딩·핀 보존).
+        //
+        // COALESCE/CASE — 기존에 채워진 값을 None/unknown 으로 덮어쓰지 않는다(clobber 방지,
+        // Codex R2 리뷰). self-heal 대상은 "한 필드라도 비어있음" 이라 owner/repo 가 이미
+        // 있는 부분 상태도 포함되는데, detect_meta 재탐지가 (URL 변경 등으로) 더 빈약한 결과를
+        // 내도 present 값을 잃지 않게 한다. nullable 4컬럼은 COALESCE, NOT NULL 인 forge_kind 는
+        // 'unknown'(부재 sentinel) 일 때 기존 값 보존.
+        let kind_str = forge_kind_to_str(forge_kind);
+        sqlx::query(
+            "UPDATE repos SET \
+             default_branch = COALESCE(?, default_branch), \
+             default_remote = COALESCE(?, default_remote), \
+             forge_kind = CASE WHEN ? = 'unknown' THEN forge_kind ELSE ? END, \
+             forge_owner = COALESCE(?, forge_owner), \
+             forge_repo = COALESCE(?, forge_repo) \
+             WHERE id = ?",
+        )
+        .bind(default_branch)
+        .bind(default_remote)
+        .bind(kind_str)
+        .bind(kind_str)
+        .bind(forge_owner)
+        .bind(forge_repo)
+        .bind(id)
+        .execute(&self.pool)
+        .await
+        .map_err(AppError::Db)?;
+        self.get_repo(id).await
+    }
+
     async fn remove_repo(&self, id: i64) -> AppResult<()> {
         sqlx::query("DELETE FROM repos WHERE id = ?")
             .bind(id)
@@ -505,6 +558,158 @@ mod tests {
         assert_eq!(r1.id, r2.id);
         assert_eq!(r2.name, "새 이름");
         assert_eq!(r2.default_branch.as_deref(), Some("dev"));
+    }
+
+    /// Sprint 2026-06-04 — `update_repo_forge_meta` 는 forge 메타 5컬럼만 갱신하고
+    /// 사용자 바인딩(workspace/name/pin/profile/forge_account) 은 보존해야 한다.
+    /// self-heal/backfill 이 `add_repo` upsert 를 재사용하면 안 되는 이유의 safety net.
+    #[tokio::test]
+    async fn test_update_repo_forge_meta_preserves_bindings() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = Db::open(tmp.path()).await.unwrap();
+
+        let ws = db.create_workspace("회사", None).await.unwrap();
+
+        // forge 메타 비운 채 등록 (임포트 실패 상황 재현).
+        let r = db
+            .add_repo(
+                "/tmp/heal-target",
+                Some(ws.id),
+                Some("내 레포"),
+                None,
+                None,
+                ForgeKindLite::Unknown,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+        // 사용자 바인딩 부여: pin + profile(pinned) + forge_account.
+        db.set_repo_pinned(r.id, true).await.unwrap();
+        let profile = crate::profiles::create(
+            &db.pool,
+            crate::profiles::ProfileInput {
+                name: "개인".to_string(),
+                git_user_name: None,
+                git_user_email: None,
+                signing_key: None,
+                ssh_key_path: None,
+                default_forge_account_id: None,
+            },
+        )
+        .await
+        .unwrap();
+        db.set_repo_profile(r.id, Some(profile.id), true)
+            .await
+            .unwrap();
+        let acc_id: i64 = sqlx::query(
+            "INSERT INTO forge_accounts (forge_kind, base_url, username, keychain_ref) \
+             VALUES ('gitea','https://git.dev.opnd.io','tgkim','ref') RETURNING id",
+        )
+        .fetch_one(&db.pool)
+        .await
+        .unwrap()
+        .try_get::<i64, _>("id")
+        .unwrap();
+        db.set_repo_forge_account(r.id, Some(acc_id)).await.unwrap();
+
+        // forge 메타 self-heal.
+        let healed = db
+            .update_repo_forge_meta(
+                r.id,
+                Some("main"),
+                Some("origin"),
+                ForgeKindLite::Gitea,
+                Some("opnd-frontend"),
+                Some("ankentrip"),
+            )
+            .await
+            .unwrap();
+
+        // forge 메타는 갱신.
+        assert_eq!(healed.forge_owner.as_deref(), Some("opnd-frontend"));
+        assert_eq!(healed.forge_repo.as_deref(), Some("ankentrip"));
+        assert_eq!(healed.forge_kind, "gitea");
+        assert_eq!(healed.default_remote.as_deref(), Some("origin"));
+        assert_eq!(healed.default_branch.as_deref(), Some("main"));
+
+        // 사용자 바인딩은 보존.
+        assert_eq!(healed.name, "내 레포", "name 보존");
+        assert_eq!(healed.workspace_id, Some(ws.id), "workspace 보존");
+        assert!(healed.is_pinned, "pin 보존");
+        assert_eq!(healed.profile_id, Some(profile.id), "profile 보존");
+        assert!(healed.profile_pinned, "profile_pinned 보존");
+        assert_eq!(healed.forge_account_id, Some(acc_id), "forge_account 보존");
+    }
+
+    /// Sprint 2026-06-04 (Codex R2) — `update_repo_forge_meta` 는 detect_meta 가 더 빈약한
+    /// 결과(None/unknown)를 내도 기존 present 값을 덮어쓰지 않는다(clobber 방지). 새 값이
+    /// Some/known 이면 정상 덮어쓰기.
+    #[tokio::test]
+    async fn test_update_repo_forge_meta_no_clobber_with_none() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = Db::open(tmp.path()).await.unwrap();
+
+        // full good 메타로 등록.
+        let r = db
+            .add_repo(
+                "/tmp/good-meta",
+                None,
+                Some("good"),
+                Some("main"),
+                Some("origin"),
+                ForgeKindLite::Github,
+                Some("tgkim"),
+                Some("git-fried"),
+            )
+            .await
+            .unwrap();
+
+        // 빈약한 재탐지 결과(None/unknown)로 update — 기존 값 전부 보존되어야.
+        let after = db
+            .update_repo_forge_meta(r.id, None, None, ForgeKindLite::Unknown, None, None)
+            .await
+            .unwrap();
+        assert_eq!(after.forge_owner.as_deref(), Some("tgkim"), "owner 보존");
+        assert_eq!(after.forge_repo.as_deref(), Some("git-fried"), "repo 보존");
+        assert_eq!(after.forge_kind, "github", "kind 보존");
+        assert_eq!(
+            after.default_remote.as_deref(),
+            Some("origin"),
+            "remote 보존"
+        );
+        assert_eq!(after.default_branch.as_deref(), Some("main"), "branch 보존");
+
+        // 새 값이 Some/known 이면 그 필드만 덮어쓰고, None 인 필드는 기존 보존.
+        let after2 = db
+            .update_repo_forge_meta(
+                r.id,
+                Some("dev"),
+                None,
+                ForgeKindLite::Gitea,
+                Some("opnd"),
+                None,
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            after2.forge_owner.as_deref(),
+            Some("opnd"),
+            "owner 덮어쓰기"
+        );
+        assert_eq!(after2.forge_kind, "gitea", "kind 덮어쓰기");
+        assert_eq!(
+            after2.default_branch.as_deref(),
+            Some("dev"),
+            "branch 덮어쓰기"
+        );
+        assert_eq!(after2.forge_repo.as_deref(), Some("git-fried"), "repo 보존");
+        assert_eq!(
+            after2.default_remote.as_deref(),
+            Some("origin"),
+            "remote 보존"
+        );
     }
 
     // 2026-05-05 c41 — storage migration smoke + DbExt CRUD round-trip 강화.

@@ -180,6 +180,22 @@ fn test_parse_forge_unknown() {
     assert!(matches!(kind2, ForgeKindLite::Unknown));
 }
 
+/// Sprint 2026-06-04 — IP/포트 커스텀 호스트(self-hosted Gitea on LAN) 의 ssh URL.
+/// host 는 미인식(Unknown)이라도 owner/repo 는 정상 추출되어야 forge 메타 self-heal 이
+/// 작동한다(owner unwrap 에러 회피). 실 사례: frontend_work-dir.
+#[test]
+fn test_parse_forge_ip_host_extracts_owner_repo_unknown_kind() {
+    let (kind, owner, repo) = parse_forge(Some(
+        "ssh://git@192.168.50.254:2222/template_work-dir/frontend_work-dir.git",
+    ));
+    assert!(
+        matches!(kind, ForgeKindLite::Unknown),
+        "IP 호스트는 forge 종류 미인식(Unknown) 이 정상"
+    );
+    assert_eq!(owner.as_deref(), Some("template_work-dir"));
+    assert_eq!(repo.as_deref(), Some("frontend_work-dir"));
+}
+
 #[tokio::test]
 async fn test_detect_meta_round_trip() {
     let (_tmp, path) = init_test_repo().await;

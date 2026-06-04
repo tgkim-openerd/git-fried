@@ -15,7 +15,8 @@ use crate::forge::{
     gitea::GiteaClient, github::GithubClient, CreatePullRequestReq, ForgeClient, Issue,
     MergeMethod, PrComment, PrFile, PrState, PullRequest, Release, ReviewVerdict,
 };
-use crate::storage::DbExt;
+use crate::git::repository as repo;
+use crate::storage::{DbExt, Repo};
 use crate::AppState;
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -160,6 +161,61 @@ pub async fn forge_delete_account(
 
 // ====== Forge client 생성 헬퍼 ======
 
+/// Sprint 2026-06-04 — forge 메타(owner/repo/default_remote) 가 비어있으면 레포의
+/// `local_path` 에서 1회 재탐지해 self-heal 한다. GitKraken 대량 임포트 당시 미클론 등으로
+/// 메타가 비어 forge(PR/Issue/Release) 기능이 막힌 레포를 클릭 시 자동 복구한다.
+///
+/// `detect_meta` 는 sync(libgit2) 라 `spawn_blocking` 으로 async hot path 차단을 회피하고,
+/// repo_lock 을 잡지 않은 채 실행한다(lock 보유 중 git fn 호출 금지 불변식 준수). 실제 DB
+/// write 구간만 repo_lock 으로 직렬화 + double-check 해 동시 heal 의 중복 write 를 막는다.
+/// 재탐지 실패(경로 없음/비 git)는 raw git2 메시지 대신 actionable validation 에러로 변환한다.
+async fn ensure_forge_meta(state: &Arc<AppState>, repo_id: i64) -> AppResult<Repo> {
+    let r = state.db.get_repo(repo_id).await?;
+    if r.forge_owner.is_some() && r.forge_repo.is_some() && r.default_remote.is_some() {
+        return Ok(r);
+    }
+
+    // detect_meta 는 repo_lock 을 잡지 않은 채 실행한다. lib.rs 의 repo_lock 불변식상
+    // lock 보유 중 git 모듈 fn 호출은 금지(직렬화 latency·재진입 위험). 동시에 같은 레포의
+    // 두 forge IPC 가 진입하면 detect 가 중복 실행될 수 있으나 idempotent 하며, 실제 write 는
+    // 아래 lock 구간의 double-check 로 1회만 반영된다.
+    let local_path = r.local_path.clone();
+    let path = std::path::PathBuf::from(&local_path);
+    let meta = match tokio::task::spawn_blocking(move || repo::detect_meta(&path)).await {
+        Ok(Ok(m)) => m,
+        Ok(Err(e)) => {
+            return Err(AppError::validation(format!(
+                "레포 메타 재탐지 실패 — 로컬 경로를 열 수 없습니다 ({local_path}): {e}. \
+                 레포가 이동/삭제되었을 수 있습니다."
+            )))
+        }
+        Err(e) => {
+            return Err(AppError::internal(format!(
+                "forge 메타 재탐지 task 실패: {e}"
+            )))
+        }
+    };
+
+    // write 구간만 직렬화 — 동시 heal double-write 방지 + lock 대기 중 선행 heal 반영 확인.
+    let lock = state.repo_lock(repo_id);
+    let _guard = lock.lock().await;
+    let r = state.db.get_repo(repo_id).await?;
+    if r.forge_owner.is_some() && r.forge_repo.is_some() && r.default_remote.is_some() {
+        return Ok(r);
+    }
+    state
+        .db
+        .update_repo_forge_meta(
+            repo_id,
+            meta.default_branch.as_deref(),
+            meta.default_remote.as_deref(),
+            meta.forge_kind,
+            meta.forge_owner.as_deref(),
+            meta.forge_repo.as_deref(),
+        )
+        .await
+}
+
 /// repo_id 로부터 적절한 ForgeClient 만든다.
 ///
 /// Resolution chain (plan/43 P3 — R2-F2/F13 반영):
@@ -171,16 +227,20 @@ async fn forge_client_for_repo(
     state: &Arc<AppState>,
     repo_id: i64,
 ) -> AppResult<(Box<dyn ForgeClient>, String, String)> {
-    let r = state.db.get_repo(repo_id).await?;
+    // forge 메타가 비면 local_path 에서 1회 재탐지(self-heal) 후 진행.
+    let r = ensure_forge_meta(state, repo_id).await?;
     let kind = r.forge_kind.clone();
-    let owner = r
-        .forge_owner
-        .clone()
-        .ok_or_else(|| AppError::validation("이 레포는 forge owner 가 없습니다."))?;
-    let repo = r
-        .forge_repo
-        .clone()
-        .ok_or_else(|| AppError::validation("이 레포는 forge repo 가 없습니다."))?;
+    let owner = r.forge_owner.clone().ok_or_else(|| {
+        AppError::validation(
+            "이 레포의 forge owner 를 인식하지 못했습니다. origin remote 가 없거나 \
+             remote URL 에서 owner/repo 를 추출할 수 없습니다.",
+        )
+    })?;
+    let repo = r.forge_repo.clone().ok_or_else(|| {
+        AppError::validation(
+            "이 레포의 forge repo 를 인식하지 못했습니다. origin remote URL 을 확인하세요.",
+        )
+    })?;
 
     // Resolution chain — 1: per-repo override → 2: 바인딩 프로필 → 3: 공용 프로필 → 4: kind 매칭
     let explicit_account_id = match r.forge_account_id {
@@ -423,6 +483,16 @@ async fn build_client(
     _owner: &str,
     _repo: &str,
 ) -> AppResult<(Box<dyn ForgeClient>, ForgeAccount)> {
+    // Sprint 2026-06-04 — kind=unknown(커스텀/IP Gitea 등 미인식 호스트) 는 first-match
+    // fallback 으로 풀 수 없다. self-heal 로 owner/repo 는 채워져도 forge 종류를 모르면
+    // 어느 계정 API 를 쓸지 알 수 없으므로 actionable 안내. (per-repo 계정 바인딩으로 해소)
+    if !matches!(kind, "gitea" | "github") {
+        return Err(AppError::validation(format!(
+            "이 레포의 forge 종류를 자동 인식하지 못했습니다(kind={kind}). \
+             커스텀/IP 호스트일 수 있습니다 — Settings 에서 forge 계정을 등록한 뒤 \
+             이 레포에 바인딩하세요."
+        )));
+    }
     // forge_accounts 에서 first match (kind 동일) 사용.
     // v0.2 에서 base_url 정확 매칭으로 개선.
     let row = sqlx::query(

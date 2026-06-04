@@ -32,6 +32,7 @@ pub mod rebase;
 pub mod reflog;
 pub mod remote;
 pub mod repository;
+pub mod repository_meta_backfill;
 pub mod reset;
 pub mod restore;
 pub mod runner;

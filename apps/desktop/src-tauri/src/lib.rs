@@ -60,6 +60,45 @@ impl AppState {
                 "profile 자동 매칭 backfill 실패 (무시하고 기동)"
             );
         }
+
+        // Sprint 2026-06-04 — forge 메타 backfill. GitKraken 대량 임포트로 비어버린
+        // forge_owner/repo/default_remote 를 background 로 1회 일괄 재탐지(self-heal).
+        // 기동(window) 을 막지 않도록 detached task. runtime 은 `.manage(runtime)` 로
+        // 앱 수명 동안 유지되므로 block_on 반환 후에도 task 가 계속 진행된다.
+        // 복구 후 owner 가 채워진 레포는 auto_match 를 재실행해 같은 기동에서 프로필 바인딩.
+        let db_bg = db.clone();
+        tokio::spawn(async move {
+            match crate::git::repository_meta_backfill::backfill_forge_meta(&db_bg).await {
+                Ok(rep) => {
+                    if rep.healed > 0 || rep.failed > 0 {
+                        tracing::info!(
+                            target: "git_fried_lib",
+                            healed = rep.healed,
+                            missing = rep.skipped_missing,
+                            no_meta = rep.skipped_no_meta,
+                            failed = rep.failed,
+                            "forge 메타 backfill 완료"
+                        );
+                    }
+                    if rep.healed > 0 {
+                        if let Err(e) = crate::git::profile_match::backfill_auto_match(&db_bg).await
+                        {
+                            tracing::warn!(
+                                target: "git_fried_lib",
+                                error = %e,
+                                "forge backfill 후 자동 매칭 재평가 실패"
+                            );
+                        }
+                    }
+                }
+                Err(e) => tracing::warn!(
+                    target: "git_fried_lib",
+                    error = %e,
+                    "forge 메타 backfill 실패 (무시하고 기동)"
+                ),
+            }
+        });
+
         Ok(Arc::new(Self {
             db,
             pty: pty::PtyRegistry::new(),
