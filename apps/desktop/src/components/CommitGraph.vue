@@ -73,6 +73,23 @@ const { visibleRef, soloRef, toggleSoloRef, hideRefByName, refKindOf } = useGrap
   () => props.repoId,
 )
 
+// /verify 2026-06-04 — ref 라벨 겹침 수정. 좁은 branchTag 컬럼에 ref 가 많으면 pill 이
+// (단일행화 후에도) overflow-hidden 으로 잘려 일부 ref 가 표시 안 됨 → 첫 N 개만 노출 + "+K".
+const MAX_REF_PILLS = 3
+function shownRefs(refs: readonly string[] | undefined): string[] {
+  return (refs ?? []).filter((r) => visibleRef.value(r)).slice(0, MAX_REF_PILLS)
+}
+function extraRefCount(refs: readonly string[] | undefined): number {
+  const n = (refs ?? []).filter((r) => visibleRef.value(r)).length
+  return Math.max(0, n - MAX_REF_PILLS)
+}
+function hiddenRefNames(refs: readonly string[] | undefined): string {
+  return (refs ?? [])
+    .filter((r) => visibleRef.value(r))
+    .slice(MAX_REF_PILLS)
+    .join('\n')
+}
+
 // Sprint c51 — GitKraken parity Minor (body 첫 줄 / ref-pill 색 / avatar) — c65 useCommitGraphPresentation 위임.
 // c73 ARCH-002 — getter 패턴 마이그 (family 일관).
 const { bodyFirstLine, refPillClass, authorInitial, authorAvatarBg } = useCommitGraphPresentation({
@@ -540,16 +557,22 @@ void [searchInputRef, moveSelection, headerMenuRef]
                 v-else-if="col.id === 'branchTag'"
                 :class="[col.widthClass, 'flex items-center gap-1 overflow-hidden']"
               >
-                <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
-                  <CommitRefPill
-                    v-if="visibleRef(r)"
-                    :name="r"
-                    :solo-ref="soloRef"
-                    :pill-class="refPillClass(r)"
-                    @solo="toggleSoloRef"
-                    @hide="hideRefByName"
-                  />
-                </template>
+                <CommitRefPill
+                  v-for="r in shownRefs(commitRowAt(v.index)?.commit.refs)"
+                  :key="r"
+                  :name="r"
+                  :solo-ref="soloRef"
+                  :pill-class="refPillClass(r)"
+                  @solo="toggleSoloRef"
+                  @hide="hideRefByName"
+                />
+                <span
+                  v-if="extraRefCount(commitRowAt(v.index)?.commit.refs) > 0"
+                  class="shrink-0 rounded bg-muted/50 px-1 py-0.5 text-3xs text-muted-foreground"
+                  :title="hiddenRefNames(commitRowAt(v.index)?.commit.refs)"
+                >
+                  +{{ extraRefCount(commitRowAt(v.index)?.commit.refs) }}
+                </span>
               </span>
               <!-- sha -->
               <span

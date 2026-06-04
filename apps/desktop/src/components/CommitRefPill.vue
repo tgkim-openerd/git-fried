@@ -35,12 +35,12 @@ function onHide(name: string) {
 
 <template>
   <span
-    class="ref-pill inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-3xs"
+    class="ref-pill inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-3xs whitespace-nowrap"
     :class="[pillClass, extraClass, shrink !== false ? 'shrink-0' : '']"
   >
     <button
       type="button"
-      class="ref-pill-body cursor-pointer hover:underline"
+      class="ref-pill-body max-w-[9rem] cursor-pointer truncate hover:underline"
       :title="
         soloRef === name
           ? `Solo 해제: ${name}`
