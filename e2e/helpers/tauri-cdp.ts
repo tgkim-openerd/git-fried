@@ -37,20 +37,48 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * 실 Tauri 앱을 CDP 활성으로 띄우고 page 가 준비될 때까지 대기.
- * @param port  WebView2 remote debugging 포트
+ * @param port  WebView2 remote debugging 포트 (spec 별 unique — 충돌 회피)
  * @param timeoutMs  빌드+launch+page ready 총 대기 (cold build ~70s+)
+ * @param envExtra  자식 프로세스에 추가 주입할 env (예: GIT_FRIED_DB_PATH 로 격리 DB)
  */
-export async function launchTauriWithCdp(port = 9222, timeoutMs = 200_000): Promise<TauriCdpHandle> {
+export async function launchTauriWithCdp(
+  port = 9222,
+  timeoutMs = 200_000,
+  envExtra: Record<string, string> = {},
+): Promise<TauriCdpHandle> {
   const cdpBase = `http://127.0.0.1:${port}`
+
+  // DEFECT-4 — stale WebView2 가 같은 포트를 점유하면 격리 env(GIT_FRIED_DB_PATH) 우회로
+  // 잘못된(실) DB 에 붙을 수 있다. spawn 전 선점검: 포트가 응답하면 lingering git-fried 정리 후
+  // 재확인, 그래도 살아있으면 fail-fast (silent 잘못된-DB attach 방지).
+  if (Array.isArray(await fetchJson(`${cdpBase}/json/list`))) {
+    try {
+      execFileSync('taskkill', ['/F', '/IM', 'git-fried.exe'], { stdio: 'ignore' })
+    } catch {
+      /* 없으면 무시 */
+    }
+    await sleep(1500)
+    if (Array.isArray(await fetchJson(`${cdpBase}/json/list`))) {
+      throw new Error(
+        `[tauri-cdp] 포트 ${port} 가 stale 인스턴스에 점유됨 — git-fried.exe 수동 종료 후 재시도.`,
+      )
+    }
+  }
+
   // tauri-rustup.mjs = cargo 툴체인 PATH-fix wrapper (chocolatey 1.60 함정 회피). repo root 기준.
+  let procExited = false
   const proc: ChildProcess = spawn('node', ['scripts/tauri-rustup.mjs', 'dev'], {
     cwd: process.cwd(),
     env: {
       ...process.env,
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`,
+      ...envExtra,
     },
     stdio: 'ignore',
     shell: process.platform === 'win32',
+  })
+  proc.on('exit', () => {
+    procExited = true
   })
 
   const close = (): void => {
@@ -75,6 +103,11 @@ export async function launchTauriWithCdp(port = 9222, timeoutMs = 200_000): Prom
   let pageUrl = ''
   while (Date.now() - start < timeoutMs) {
     await sleep(2000)
+    // 빌드/툴체인 실패로 tauri dev 가 조기 종료되면 full timeout 대기 대신 즉시 fail.
+    if (procExited) {
+      close()
+      throw new Error('[tauri-cdp] tauri dev 프로세스가 조기 종료됨 (빌드/툴체인 실패 가능).')
+    }
     const list = await fetchJson(`${cdpBase}/json/list`)
     if (Array.isArray(list)) {
       const page = (list as CdpTarget[]).find(

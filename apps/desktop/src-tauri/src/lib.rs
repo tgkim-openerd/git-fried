@@ -386,6 +386,8 @@ pub fn run() {
             // e2e 전용 guard probe — debug 빌드에서만 등록 (release 미포함).
             #[cfg(debug_assertions)]
             ipc::test_commands::guard_probe,
+            #[cfg(debug_assertions)]
+            ipc::test_commands::seed_fixture_repo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -10,7 +10,8 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: /tauri-guard\.spec\.ts/,
+  // 실 Tauri(CDP) 전용 스펙: 레거시 tauri-guard + `.tauri.spec.ts` 컨벤션(신규).
+  testMatch: /(tauri-guard\.spec|\.tauri\.spec)\.ts$/,
   // 단일 앱 인스턴스 — serial.
   fullyParallel: false,
   workers: 1,

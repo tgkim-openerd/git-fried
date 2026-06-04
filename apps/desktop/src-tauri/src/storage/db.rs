@@ -471,6 +471,17 @@ impl DbExt for Db {
 }
 
 fn default_db_path() -> AppResult<PathBuf> {
+    // e2e/테스트 격리 — debug 빌드에서만 GIT_FRIED_DB_PATH 로 DB 경로 override 허용.
+    // release 에서는 차단: 외부 launcher 가 env 로 실 DB(repos/profiles/forge 메타)를 silently
+    // 바꿔치기하는 면을 제거 (Codex SEC 권고). open_default 이 parent dir 를 create_dir_all 하므로
+    // temp 경로의 부모도 자동 생성됨. WAL/journal sibling 이 같은 디렉토리에 생기니 호출측이
+    // temp 디렉토리 안의 경로를 줘야 한다.
+    #[cfg(debug_assertions)]
+    if let Ok(p) = std::env::var("GIT_FRIED_DB_PATH") {
+        if !p.trim().is_empty() {
+            return Ok(PathBuf::from(p));
+        }
+    }
     // dirs::data_local_dir() 가 OS 별 적절한 위치 반환:
     //   Win:  %LOCALAPPDATA%\git-fried\db.sqlite
     //   Mac:  ~/Library/Application Support/git-fried/db.sqlite
