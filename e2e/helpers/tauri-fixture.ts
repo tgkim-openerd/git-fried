@@ -9,6 +9,23 @@ import type { Page } from '@playwright/test'
 const TABS_KEY = 'git-fried.repo-tabs.v1'
 const LOCALE_KEY = 'git-fried.locale.v1'
 const DETAIL_KEY = 'git-fried.detail-visible'
+const FAULT_KEY = 'git-fried.test-fault'
+
+/** IPC 별 fault/delay 주입 맵 — invokeWithTimeout(DEV) 가 cmd 별로 읽는다. */
+export type FaultMap = Record<string, { delayMs?: number; error?: string }>
+
+/** dev-only fault 설정 (이미 부팅된 page 에 즉시 적용 — 후속 invoke 부터 반영). */
+export async function setFault(page: Page, faults: FaultMap): Promise<void> {
+  await page.evaluate(({ key, faults }) => localStorage.setItem(key, JSON.stringify(faults)), {
+    key: FAULT_KEY,
+    faults,
+  })
+}
+
+/** fault 해제. */
+export async function clearFault(page: Page): Promise<void> {
+  await page.evaluate((key) => localStorage.removeItem(key), FAULT_KEY)
+}
 
 export interface SeededRepo {
   repoId: number
@@ -61,16 +78,27 @@ export async function seedFixtureAndOpenRepo(
   root: string,
   name: string,
   openTab?: 'graph' | 'branches' | 'stash' | 'submodule' | 'lfs' | 'pr' | 'worktree',
+  fault?: FaultMap,
 ): Promise<SeededRepo> {
   await waitForInvokeHook(page)
   const seeded = await seedFixture(page, scenario, root, name)
+  // reload 전 localStorage 설정 — 부팅 직후 쿼리(get_graph 등)가 fault/delay 를 본다.
   await page.evaluate(
-    ({ tabsKey, localeKey, detailKey, repoId }) => {
+    ({ tabsKey, localeKey, detailKey, faultKey, repoId, fault }) => {
       localStorage.setItem(localeKey, 'ko')
       localStorage.setItem(tabsKey, JSON.stringify({ tabs: [repoId], active: repoId }))
       localStorage.setItem(detailKey, '1')
+      if (fault) localStorage.setItem(faultKey, JSON.stringify(fault))
+      else localStorage.removeItem(faultKey)
     },
-    { tabsKey: TABS_KEY, localeKey: LOCALE_KEY, detailKey: DETAIL_KEY, repoId: seeded.repoId },
+    {
+      tabsKey: TABS_KEY,
+      localeKey: LOCALE_KEY,
+      detailKey: DETAIL_KEY,
+      faultKey: FAULT_KEY,
+      repoId: seeded.repoId,
+      fault: fault ?? null,
+    },
   )
   await page.reload()
   await page.locator('[data-testid="repo-tab-bar"]').waitFor({ state: 'visible', timeout: 20_000 })

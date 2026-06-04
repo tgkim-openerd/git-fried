@@ -73,7 +73,7 @@ pub async fn guard_probe(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SeedFixtureArgs {
-    /// "basic" | "branches" | "dirty" | "stash" | "conflict" | "remote" | "manybranches"
+    /// "empty" | "basic" | "branches" | "dirty" | "stash" | "conflict" | "remote" | "manybranches"
     pub scenario: String,
     /// 임시 루트 디렉토리 (TS temp dir).
     pub root: String,
@@ -200,6 +200,9 @@ async fn commit_file(
 /// 시나리오별 레포 상태 구성. 모두 deterministic(고정 날짜/identity/eol).
 async fn build_scenario(dir: &Path, scenario: &str, opts: &GitRunOpts) -> AppResult<()> {
     match scenario {
+        // 커밋 0 (unborn HEAD) — empty state UI 테스트용. get_graph=빈 rows / get_status=clean.
+        // 주의: get_log 은 unborn HEAD 에서 에러나므로 이 fixture 로 get_log 테스트 금지(Codex Q2).
+        "empty" => {}
         // 3 commit on main.
         "basic" => {
             commit_file(dir, "README.md", "A\n", "feat: A", opts).await?;

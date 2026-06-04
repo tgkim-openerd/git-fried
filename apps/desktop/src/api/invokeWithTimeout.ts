@@ -178,6 +178,36 @@ export function invoke<T>(
   args?: Record<string, unknown>,
   opts?: InvokeOptions,
 ): Promise<T> {
+  // dev-only e2e fault/delay 주입 — loading/error transient 상태를 결정론적으로 트리거.
+  // localStorage 'git-fried.test-fault' = { [cmd]: { delayMs?, error? } }. release 빌드는
+  // import.meta.env.DEV 가 false 로 치환되어 본 블록 전체가 dead-code 제거됨(미노출).
+  if (import.meta.env.DEV) {
+    let fault: { delayMs?: number; error?: string } | null = null
+    try {
+      const raw = localStorage.getItem('git-fried.test-fault')
+      if (raw)
+        fault =
+          (JSON.parse(raw) as Record<string, { delayMs?: number; error?: string }>)[cmd] ?? null
+    } catch {
+      fault = null
+    }
+    if (fault) {
+      const f = fault
+      return (async (): Promise<T> => {
+        if (f.delayMs) await new Promise((r) => setTimeout(r, f.delayMs))
+        if (f.error) throw new Error(f.error)
+        return invokeInner<T>(cmd, args, opts)
+      })()
+    }
+  }
+  return invokeInner<T>(cmd, args, opts)
+}
+
+function invokeInner<T>(
+  cmd: string,
+  args?: Record<string, unknown>,
+  opts?: InvokeOptions,
+): Promise<T> {
   // dev-only mock: Tauri webview 부재 시 fixture 응답 (`docs/plan/23`).
   // 실 Tauri webview / production 빌드는 자동 우회.
   if (isMockEnabled()) {
