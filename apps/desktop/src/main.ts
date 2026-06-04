@@ -66,3 +66,13 @@ app.mount('#app')
 // Phase 3.1 — cold_start_ms 측정 완료 mark + window.__gitFriedPerf 노출.
 mark('app-mounted')
 installPerfAPI()
+
+// /verify 2026-06-04 Layer 1 — e2e(CDP) 전용 raw invoke 훅.
+// Playwright 가 실 WebView2 페이지에서 page.evaluate 로 실 백엔드 IPC 를 직접 호출(동시 guard 관찰)
+// 하기 위함. withGlobalTauri 가 꺼져 있어 window.__TAURI__ 가 없으므로 dev 빌드에서만 노출.
+// `import.meta.env.DEV` 는 production 빌드에서 false → esbuild 가 블록 전체 dead-code 제거 (무노출).
+if (import.meta.env.DEV) {
+  void import('@tauri-apps/api/core').then(({ invoke }) => {
+    ;(window as Window & { __gitfriedTestInvoke?: typeof invoke }).__gitfriedTestInvoke = invoke
+  })
+}

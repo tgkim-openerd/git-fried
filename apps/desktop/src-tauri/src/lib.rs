@@ -344,6 +344,9 @@ pub fn run() {
             ipc::profile_commands::apply_profile_binding,
             ipc::profile_commands::select_default_profile,
             ipc::profile_commands::clear_profile_binding,
+            // e2e 전용 guard probe — debug 빌드에서만 등록 (release 미포함).
+            #[cfg(debug_assertions)]
+            ipc::test_commands::guard_probe,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -361,6 +364,7 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     /// Codex R6 review 2026-06-04 — repo_lock unbounded growth 방지 가드.
     /// 활성 홀더 없는(strong_count==1) 항목은 정리, 보유 중인 항목은 유지.
@@ -384,5 +388,65 @@ mod tests {
         drop(held);
         prune_idle_locks(&mut map);
         assert!(map.is_empty(), "모든 홀더 해제 후 map 은 비어야 함");
+    }
+
+    // ====== repo_mutation_guard 직렬화 불변식 (Layer D, /verify 2026-06-04) ======
+    //
+    // full-stack(CDP e2e) 와 별도로, guard 직렬화 invariant 를 deterministic 하게 검증.
+    // WebView/WebDriver flake 없이 Rust 런타임에서 직접 동시성 관찰.
+
+    async fn test_state() -> (Arc<AppState>, tempfile::NamedTempFile) {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = storage::Db::open(tmp.path()).await.unwrap();
+        let state = Arc::new(AppState {
+            db,
+            pty: pty::PtyRegistry::new(),
+            repo_locks: StdMutex::new(HashMap::new()),
+        });
+        (state, tmp) // tmp 반환해 NamedTempFile 생명주기 유지 (drop 시 파일 삭제).
+    }
+
+    /// 같은 repo 의 두 번째 guard 는 첫 번째 해제 전까지 직렬화(대기) — 해제 후 즉시 획득.
+    #[tokio::test]
+    async fn repo_mutation_guard_blocks_same_repo_until_released() {
+        let (state, _tmp) = test_state().await;
+        let g1 = state.repo_mutation_guard(7).await;
+        let blocked =
+            tokio::time::timeout(Duration::from_millis(150), state.repo_mutation_guard(7)).await;
+        assert!(
+            blocked.is_err(),
+            "같은 repo 의 두 번째 mutation guard 는 첫 번째 해제 전까지 직렬화(대기)되어야 함"
+        );
+        drop(g1);
+        let after =
+            tokio::time::timeout(Duration::from_millis(150), state.repo_mutation_guard(7)).await;
+        assert!(after.is_ok(), "guard 해제 후 같은 repo 재획득 가능해야 함");
+    }
+
+    /// 다른 repo 의 guard 는 동시 획득 가능 (직렬화 안 됨) — network/UX starvation 회피의 근거.
+    #[tokio::test]
+    async fn repo_mutation_guard_allows_different_repos_concurrently() {
+        let (state, _tmp) = test_state().await;
+        let _g1 = state.repo_mutation_guard(1).await;
+        let g2 =
+            tokio::time::timeout(Duration::from_millis(150), state.repo_mutation_guard(2)).await;
+        assert!(g2.is_ok(), "다른 repo 의 guard 는 동시 획득 가능해야 함");
+    }
+
+    /// 같은 repo_id 는 같은 Mutex 인스턴스 공유(→직렬화), 다른 id 는 별도(→동시). prune 후에도 유지.
+    #[tokio::test]
+    async fn repo_lock_same_id_returns_same_mutex() {
+        let (state, _tmp) = test_state().await;
+        let a = state.repo_lock(42);
+        let b = state.repo_lock(42);
+        assert!(
+            Arc::ptr_eq(&a, &b),
+            "같은 repo_id 는 같은 Mutex 인스턴스를 공유해야 직렬화됨"
+        );
+        let c = state.repo_lock(43);
+        assert!(
+            !Arc::ptr_eq(&a, &c),
+            "다른 repo_id 는 별도 Mutex 여야 동시 실행됨"
+        );
     }
 }

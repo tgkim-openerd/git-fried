@@ -48,6 +48,9 @@ pub mod status_commands;
 pub mod submodule_commands;
 pub mod sync_commands;
 pub mod tag_commands;
+// e2e 전용 — debug 빌드에서만 (release 미포함). /verify 2026-06-04 Layer 2.
+#[cfg(debug_assertions)]
+pub mod test_commands;
 pub mod v02_commands;
 pub mod workspace_commands;
 pub mod worktree_commands;

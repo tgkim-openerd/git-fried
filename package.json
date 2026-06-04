@@ -12,9 +12,10 @@
     "dev": "bun run --cwd apps/desktop dev",
     "dev:cleanup": "node scripts/dev-cleanup.mjs",
     "build": "bun run --cwd apps/desktop build",
-    "tauri": "bun run --cwd apps/desktop tauri",
-    "tauri:dev": "bun run --cwd apps/desktop tauri dev",
-    "tauri:build": "bun run --cwd apps/desktop tauri build",
+    "tauri": "node scripts/tauri-rustup.mjs",
+    "tauri:dev": "node scripts/tauri-rustup.mjs dev",
+    "tauri:build": "node scripts/tauri-rustup.mjs build",
+    "tauri:dev:raw": "bun run --cwd apps/desktop tauri dev",
     "test": "bun run --cwd apps/desktop test && bun run test:rust",
     "test:rust": "node scripts/cargo-rustup.mjs test --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "test:web": "bun run --cwd apps/desktop test",
@@ -23,6 +24,7 @@
     "typecheck": "bun run --cwd apps/desktop typecheck",
     "fmt": "bun run --cwd apps/desktop fmt && node scripts/cargo-rustup.mjs fmt --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "test:e2e": "playwright test",
+    "test:e2e:tauri": "playwright test --config playwright.tauri.config.ts",
     "i18n:count": "node scripts/i18n-leaf-count.mjs"
   },
   "engines": {

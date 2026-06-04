@@ -11,6 +11,9 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
+  // tauri-guard.spec.ts 는 실 Tauri(CDP) 전용 — playwright.tauri.config.ts 로만 실행.
+  // 기본(mock Chromium) config 에서는 제외 (실 앱 launch 가 mock 컨텍스트와 충돌).
+  testIgnore: /tauri-guard\.spec\.ts/,
   // PERF-305 (Codex R1 + Build agent agreed) — 병렬 e2e. CI 는 보수적 (2 worker), local 4.
   // dev server 1 instance reuse (webServer.reuseExistingServer=true) 로 race 회피.
   fullyParallel: true,
