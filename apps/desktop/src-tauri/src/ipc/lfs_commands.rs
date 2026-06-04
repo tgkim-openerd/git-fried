@@ -62,6 +62,9 @@ pub async fn lfs_install(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -
 }
 
 #[tauri::command]
+// repo_mutation_guard 미적용 (R4 review 2026-06-04): lfs_fetch 는 LFS object 를 .git/lfs
+// 캐시(content-addressed)에만 다운로드, worktree/index/refs 무변경 → race 불가 + network 대기.
+// (lfs_pull 은 fetch+checkout 으로 worktree 변경이라 guard 보유 — 대조)
 pub async fn lfs_fetch(repo_id: i64, state: tauri::State<'_, Arc<AppState>>) -> AppResult<()> {
     let path = repo_path(&state, repo_id).await?;
     git_lfs::fetch(&path).await

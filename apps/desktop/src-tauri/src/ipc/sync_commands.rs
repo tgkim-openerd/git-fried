@@ -17,6 +17,19 @@ async fn resolve_ssh_key(state: &AppState, repo_id: i64) -> AppResult<Option<Str
 }
 
 // ====== Sync (push / pull / fetch) ======
+//
+// repo_mutation_guard 정책 (Codex R1 설계 + R4 review 2026-06-04 확정):
+//   - pull 만 guard (fetch 후 merge/rebase 로 worktree/HEAD/refs/heads 변경 → local mutation).
+//   - fetch_all / bulk_fetch 는 guard 미적용: `git fetch` 는 refs/remotes/* (remote-tracking) +
+//     .git/objects 만 쓴다. guard 가 보호하는 refs/heads + HEAD + index + worktree 와 ref
+//     네임스페이스가 disjoint 라 race 불가. objects 는 content-addressed (concurrent-safe).
+//     git 자체 ref-lock 이 refs/remotes 원자성 보장. → 잠그면 network 대기가 local commit/stage
+//     를 starve 하는 손해만 큼 (corruption 이익 0).
+//   - push 도 guard 미적용: 원격 ref 만 변경 (local corruption 위험 0). `--set-upstream` 시
+//     branch.<name>.remote/merge 를 .git/config 에 쓰지만 git config.lock 이 원자성 보장 +
+//     guard 가 보호하는 mutation 중 branch.* config 를 만지는 건 rename/delete_branch 뿐이고
+//     동일 브랜치 동시 push -u + rename 은 비현실적 + 결과도 stale config 일 뿐 corruption 아님.
+//     network push(최대 수분) 동안 guard 보유 = starvation 이라 trade-off 상 미적용.
 
 #[tauri::command]
 #[tracing::instrument(target = "git_fried_lib::ipc::sync", skip(state), err)]
