@@ -201,7 +201,7 @@ async fn commit_file(
 async fn build_scenario(dir: &Path, scenario: &str, opts: &GitRunOpts) -> AppResult<()> {
     match scenario {
         // 커밋 0 (unborn HEAD) — empty state UI 테스트용. get_graph=빈 rows / get_status=clean.
-        // 주의: get_log 은 unborn HEAD 에서 에러나므로 이 fixture 로 get_log 테스트 금지(Codex Q2).
+        // get_log / search_commits_by_message 는 unborn HEAD 에서 빈 목록 반환(repository.rs log/search 대칭) — 에러 아님.
         "empty" => {}
         // 3 commit on main.
         "basic" => {

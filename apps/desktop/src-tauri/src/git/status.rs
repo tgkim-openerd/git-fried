@@ -56,12 +56,20 @@ pub struct QuickStatus {
     pub behind: usize,
 }
 
+/// HEAD 의 로컬 브랜치 이름. detached HEAD 면 git2 `shorthand()` 가 "HEAD" 를 반환하므로
+/// 브랜치로 오인하지 않도록 None 을 돌려준다 (B-01 — detached/unborn 경계).
+fn head_branch_name(repo: &Repository) -> Option<String> {
+    if repo.head_detached().unwrap_or(false) {
+        return None;
+    }
+    repo.head()
+        .ok()
+        .and_then(|r| r.shorthand().map(|s| s.to_string()))
+}
+
 pub fn read_quick_status(path: &Path) -> AppResult<QuickStatus> {
     let repo = Repository::open(path).map_err(AppError::Git)?;
-    let head_ref = repo.head().ok();
-    let branch_name = head_ref
-        .as_ref()
-        .and_then(|r| r.shorthand().map(|s| s.to_string()));
+    let branch_name = head_branch_name(&repo);
 
     let (upstream, ahead, behind) = match branch_name.as_deref() {
         Some(name) => {
@@ -97,10 +105,7 @@ pub fn read_status(path: &Path) -> AppResult<RepoStatus> {
     let repo = Repository::open(path).map_err(AppError::Git)?;
 
     // 브랜치
-    let head_ref = repo.head().ok();
-    let branch_name = head_ref
-        .as_ref()
-        .and_then(|r| r.shorthand().map(|s| s.to_string()));
+    let branch_name = head_branch_name(&repo);
 
     // upstream + ahead/behind (브랜치가 있을 때만)
     let (upstream, ahead, behind) = match branch_name.as_deref() {
@@ -123,6 +128,21 @@ pub fn read_status(path: &Path) -> AppResult<RepoStatus> {
         }
         None => (None, 0, 0),
     };
+
+    // bare repo 는 working tree 가 없어 statuses() 가 에러 → 깨끗한 빈 상태로 graceful 반환 (B-03).
+    if repo.is_bare() {
+        return Ok(RepoStatus {
+            branch: branch_name,
+            upstream,
+            ahead,
+            behind,
+            staged: Vec::new(),
+            unstaged: Vec::new(),
+            untracked: Vec::new(),
+            conflicted: Vec::new(),
+            is_clean: true,
+        });
+    }
 
     // 파일 상태
     let mut opts = StatusOptions::new();

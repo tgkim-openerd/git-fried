@@ -7,7 +7,9 @@
 //   4. parse_forge: GitHub / Gitea URL 패턴 인식
 //   5. git CLI 표준 spawn: core.quotepath=false 정상 주입
 
-use super::repository::{detect_meta, log, open, parse_forge, ForgeKindLite};
+use super::repository::{
+    detect_meta, log, open, parse_forge, search_commits_by_message, ForgeKindLite,
+};
 use super::runner::{commit_with_message, git_run, git_version};
 use tempfile::TempDir;
 
@@ -595,4 +597,88 @@ async fn test_stage_patch_partial_apply() {
     // working tree 는 added4 도 그대로 남아있어야 (나머지 stage 안 됨).
     let wt = std::fs::read_to_string(path.join("a.txt")).unwrap();
     assert!(wt.contains("added4"), "stage 안 한 부분은 working 에 잔존");
+}
+
+// ====== Repo boundary 상태 (Codex 교차검증 2026-06-09) ======
+
+#[tokio::test]
+async fn test_search_on_unborn_head_returns_empty() {
+    // 커밋 0 (unborn HEAD) repo — search 가 에러 대신 빈 목록을 반환해야 함 (B-02 대칭화).
+    let (_tmp, path) = init_test_repo().await;
+    let repo = open(&path).unwrap();
+    let hits = search_commits_by_message(&repo, "anything", 10, true).unwrap();
+    assert!(
+        hits.is_empty(),
+        "unborn HEAD search 는 에러 대신 빈 목록이어야 함"
+    );
+    // log 도 동일하게 빈 목록 (대칭 확인).
+    assert!(
+        log(&repo, 10, 0).unwrap().is_empty(),
+        "unborn HEAD log 도 빈 목록"
+    );
+}
+
+#[tokio::test]
+async fn test_detached_head_branch_is_none() {
+    // detached HEAD 에서 branch/default_branch 가 "HEAD" 문자열이 아닌 None 이어야 함 (B-01).
+    let (_tmp, path) = init_test_repo().await;
+    git_run(
+        &path,
+        &["commit", "--allow-empty", "-m", "init"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    // HEAD 를 현재 커밋에 detach.
+    git_run(&path, &["checkout", "--detach"], &Default::default())
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+
+    assert_eq!(
+        detect_meta(&path).unwrap().default_branch,
+        None,
+        "detached HEAD 면 default_branch=None (\"HEAD\" 아님)"
+    );
+    assert_eq!(
+        super::status::read_status(&path).unwrap().branch,
+        None,
+        "detached HEAD 면 status.branch=None"
+    );
+    assert_eq!(
+        super::status::read_quick_status(&path).unwrap().branch,
+        None,
+        "detached HEAD 면 quick.branch=None"
+    );
+}
+
+#[tokio::test]
+async fn test_status_on_bare_repo_is_clean() {
+    // bare repo 는 working tree 가 없어 statuses() 가 에러 → read_status 가 clean 빈 상태 반환해야 함 (B-03).
+    let tmp = TempDir::new().unwrap();
+    let path = tmp.path().to_path_buf();
+    git_run(
+        &path,
+        &["init", "--bare", "-q", "-b", "main"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+
+    let st = super::status::read_status(&path).unwrap();
+    assert!(
+        st.is_clean,
+        "bare repo 는 clean 으로 처리되어야 함 (에러 아님)"
+    );
+    assert!(
+        st.staged.is_empty() && st.unstaged.is_empty() && st.untracked.is_empty(),
+        "bare repo 는 파일 변경 목록이 비어야 함"
+    );
+    // quick status 도 에러 없이 동작.
+    super::status::read_quick_status(&path).unwrap();
 }

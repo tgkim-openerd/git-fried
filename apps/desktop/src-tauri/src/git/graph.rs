@@ -334,4 +334,59 @@ mod tests {
         assert_eq!(merge_row.parent_lanes.len(), 2);
         assert!(g.max_lane >= 2, "max_lane={}", g.max_lane);
     }
+
+    #[tokio::test]
+    async fn test_octopus_merge_three_parents() {
+        // 3-parent octopus merge — lane 계산이 parent>2 도 처리하는지 (B-04: 기존 테스트는 2-parent 만 검증).
+        let tmp = tempfile::TempDir::new().unwrap();
+        let path = tmp.path().to_path_buf();
+        let run = |args: &[&str]| {
+            let path = path.clone();
+            let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+            async move {
+                let argr: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+                crate::git::runner::git_run(&path, &argr, &Default::default())
+                    .await
+                    .unwrap()
+                    .into_ok()
+                    .unwrap()
+            }
+        };
+        run(&["init", "-q", "-b", "main"]).await;
+        run(&["config", "user.name", "x"]).await;
+        run(&["config", "user.email", "x@x"]).await;
+        run(&["config", "commit.gpgsign", "false"]).await;
+        run(&["commit", "--allow-empty", "-m", "main:c1"]).await;
+        run(&["switch", "-c", "a"]).await;
+        run(&["commit", "--allow-empty", "-m", "a:c1"]).await;
+        run(&["switch", "main"]).await;
+        run(&["switch", "-c", "b"]).await;
+        run(&["commit", "--allow-empty", "-m", "b:c1"]).await;
+        run(&["switch", "main"]).await;
+        run(&["commit", "--allow-empty", "-m", "main:c2"]).await;
+        // a, b 를 한 번에 octopus merge → 머지 커밋 parent = [main:c2, a, b] (3개).
+        run(&["merge", "-m", "octopus a b", "a", "b"]).await;
+
+        let g = compute_graph(&path, 100).unwrap();
+        let merge_row = g
+            .rows
+            .iter()
+            .find(|r| r.is_merge && r.commit.parent_shas.len() >= 3)
+            .expect("3-parent octopus 머지 커밋이 있어야 함");
+        assert_eq!(
+            merge_row.commit.parent_shas.len(),
+            3,
+            "octopus 머지는 parent 3개"
+        );
+        assert_eq!(
+            merge_row.parent_lanes.len(),
+            3,
+            "octopus 머지는 parent_lane 3개"
+        );
+        assert!(
+            g.max_lane >= 3,
+            "octopus 는 최소 3 lane: max_lane={}",
+            g.max_lane
+        );
+    }
 }
