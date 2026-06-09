@@ -735,4 +735,29 @@ async fn test_upstream_gone_detected() {
         main.upstream_gone,
         "config 잔존 + remote-tracking ref 없음 → upstream_gone=true"
     );
+
+    // 부분 config(merge 만, remote 없음)는 gone 으로 오판하지 않음 (Codex audit fix).
+    git_run(&path, &["branch", "partial"], &Default::default())
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+    git_run(
+        &path,
+        &["config", "branch.partial.merge", "refs/heads/partial"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    let branches2 = super::branch::list_branches(&path).unwrap();
+    let partial = branches2
+        .iter()
+        .find(|b| b.name == "partial")
+        .expect("partial 브랜치 존재");
+    assert!(
+        !partial.upstream_gone,
+        "merge 만 있는 부분 config 는 gone 아님 (remote 없음)"
+    );
 }

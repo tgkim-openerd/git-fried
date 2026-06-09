@@ -54,14 +54,17 @@ pub fn list_branches(path: &Path) -> AppResult<Vec<BranchInfo>> {
                 .upstream()
                 .ok()
                 .and_then(|b| b.name().ok().flatten().map(|s| s.to_string()));
-            // upstream config(branch.<name>.merge)는 있으나 remote-tracking ref 가 사라진 경우 (B-05).
+            // upstream config(branch.<name>.remote + .merge 둘 다)는 있으나 remote-tracking ref
+            // 가 사라진 경우만 gone (B-05). merge 만 있는 부분 config 는 오판 제외 (Codex audit).
             let upstream_gone = *kind == BranchType::Local
                 && branch.upstream().is_err()
                 && repo
                     .config()
-                    .ok()
-                    .and_then(|c| c.get_string(&format!("branch.{name}.merge")).ok())
-                    .is_some();
+                    .map(|c| {
+                        c.get_string(&format!("branch.{name}.remote")).is_ok()
+                            && c.get_string(&format!("branch.{name}.merge")).is_ok()
+                    })
+                    .unwrap_or(false);
 
             let (subject, ahead, behind) = match target {
                 Some(oid) => {
