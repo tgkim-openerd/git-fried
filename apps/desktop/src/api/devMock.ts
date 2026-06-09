@@ -1119,7 +1119,7 @@ const HANDLERS: Record<string, MockHandler> = {
 
   // Status / Branches / Log
   get_status: () => STATUS,
-  list_branches: () => BRANCHES,
+  list_branches: () => BRANCHES.map((b) => ({ upstreamGone: false, ...b })),
   get_log: () => COMMIT_SUMMARIES,
   get_graph: () => ({
     rows: COMMIT_SUMMARIES.map((c, i) => ({

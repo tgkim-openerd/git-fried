@@ -58,7 +58,8 @@ pub struct QuickStatus {
 
 /// HEAD 의 로컬 브랜치 이름. detached HEAD 면 git2 `shorthand()` 가 "HEAD" 를 반환하므로
 /// 브랜치로 오인하지 않도록 None 을 돌려준다 (B-01 — detached/unborn 경계).
-fn head_branch_name(repo: &Repository) -> Option<String> {
+/// repository.rs::detect_meta 도 재사용 (QUAL-001 DRY).
+pub(crate) fn head_branch_name(repo: &Repository) -> Option<String> {
     if repo.head_detached().unwrap_or(false) {
         return None;
     }

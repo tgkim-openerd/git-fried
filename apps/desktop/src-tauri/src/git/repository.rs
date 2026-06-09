@@ -55,10 +55,14 @@ pub fn open(path: &Path) -> AppResult<Repository> {
 pub fn log(repo: &Repository, limit: usize, skip: usize) -> AppResult<Vec<CommitSummary>> {
     let mut walker = repo.revwalk().map_err(AppError::Git)?;
     walker.set_sorting(Sort::TIME).map_err(AppError::Git)?;
-    // unborn HEAD (커밋 0 repo) — push_head 가 에러나므로 graph 와 동일하게 빈 목록 반환(Codex R-impl).
-    if walker.push_head().is_err() {
-        return Ok(Vec::new());
+    // unborn HEAD (커밋 0 repo) → 빈 목록. 그 외 HEAD 에러(손상/잘못된 ref)는 전파 (CDX-003).
+    if let Err(e) = repo.head() {
+        if e.code() == git2::ErrorCode::UnbornBranch {
+            return Ok(Vec::new());
+        }
+        return Err(AppError::Git(e));
     }
+    walker.push_head().map_err(AppError::Git)?;
 
     // 참조(tag/branch) 매핑 — sha → label 리스트
     let refs_map = collect_refs_map(repo).unwrap_or_default();
@@ -172,10 +176,14 @@ pub fn search_commits_by_message(
 
     let mut walker = repo.revwalk().map_err(AppError::Git)?;
     walker.set_sorting(Sort::TIME).map_err(AppError::Git)?;
-    // unborn HEAD (커밋 0 repo) — log()/compute_graph() 과 동일하게 빈 목록 반환 (B-02 대칭화).
-    if walker.push_head().is_err() {
-        return Ok(Vec::new());
+    // unborn HEAD → 빈 목록 (log/graph 대칭). 그 외 HEAD 에러는 전파 (CDX-003).
+    if let Err(e) = repo.head() {
+        if e.code() == git2::ErrorCode::UnbornBranch {
+            return Ok(Vec::new());
+        }
+        return Err(AppError::Git(e));
     }
+    walker.push_head().map_err(AppError::Git)?;
 
     let refs_map = collect_refs_map(repo).unwrap_or_default();
     let mut out = Vec::with_capacity(limit.min(64));
@@ -244,14 +252,8 @@ pub fn detect_meta(path: &Path) -> AppResult<RepoMeta> {
         .unwrap_or("repo")
         .to_string();
 
-    // detached HEAD 면 shorthand() 가 "HEAD" 를 반환하므로 브랜치로 오인하지 않도록 None (B-01).
-    let default_branch = if repo.head_detached().unwrap_or(false) {
-        None
-    } else {
-        repo.head()
-            .ok()
-            .and_then(|h| h.shorthand().map(|s| s.to_string()))
-    };
+    // detached HEAD 가드 포함 — status::head_branch_name 재사용 (B-01 + QUAL-001 DRY).
+    let default_branch = crate::git::status::head_branch_name(&repo);
 
     let mut default_remote: Option<String> = None;
     let mut remote_url: Option<String> = None;

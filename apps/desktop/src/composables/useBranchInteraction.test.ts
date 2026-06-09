@@ -38,6 +38,7 @@ const sampleBranch: BranchInfo = {
   lastCommitSubject: null,
   ahead: 0,
   behind: 0,
+  upstreamGone: false,
 }
 
 describe('useBranchInteraction', () => {

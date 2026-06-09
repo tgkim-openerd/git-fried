@@ -50,6 +50,7 @@ function makeBranch(name: string, kind: 'local' | 'remote' = 'local'): BranchInf
     ahead: 0,
     behind: 0,
     upstream: null,
+    upstreamGone: false,
     lastCommitSubject: null,
     lastCommitSha: null,
   } as unknown as BranchInfo

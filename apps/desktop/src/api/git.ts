@@ -229,8 +229,8 @@ export interface BranchInfo {
   kind: 'local' | 'remote'
   isHead: boolean
   upstream: string | null
-  /** upstream config 는 있으나 remote-tracking ref 가 사라진 상태 (B-05). */
-  upstreamGone?: boolean
+  /** upstream config 는 있으나 remote-tracking ref 가 사라진 상태 (B-05). Rust 가 항상 직렬화(non-optional). */
+  upstreamGone: boolean
   lastCommitSha: string | null
   lastCommitSubject: string | null
   ahead: number

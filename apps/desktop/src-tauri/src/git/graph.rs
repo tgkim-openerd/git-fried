@@ -56,12 +56,17 @@ pub fn compute_graph(path: &Path, limit: usize) -> AppResult<GraphResult> {
     walker
         .set_sorting(Sort::TIME | Sort::TOPOLOGICAL)
         .map_err(AppError::Git)?;
-    if walker.push_head().is_err() {
-        return Ok(GraphResult {
-            rows: vec![],
-            max_lane: 0,
-        });
+    // unborn HEAD → 빈 그래프. 그 외 HEAD 에러(손상/잘못된 ref)는 전파 (CDX-003).
+    if let Err(e) = repo.head() {
+        if e.code() == git2::ErrorCode::UnbornBranch {
+            return Ok(GraphResult {
+                rows: vec![],
+                max_lane: 0,
+            });
+        }
+        return Err(AppError::Git(e));
     }
+    walker.push_head().map_err(AppError::Git)?;
 
     // refs map (ref labels)
     let refs_map = collect_refs(&repo);

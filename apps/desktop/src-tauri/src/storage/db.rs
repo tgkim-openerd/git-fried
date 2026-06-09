@@ -313,7 +313,8 @@ impl DbExt for Db {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0) \
              ON CONFLICT(local_path) DO UPDATE SET \
              workspace_id = excluded.workspace_id, name = excluded.name, \
-             default_remote = excluded.default_remote, default_branch = excluded.default_branch, \
+             default_remote = excluded.default_remote, \
+             default_branch = COALESCE(excluded.default_branch, repos.default_branch), \
              forge_kind = excluded.forge_kind, forge_owner = excluded.forge_owner, \
              forge_repo = excluded.forge_repo \
              RETURNING id",
@@ -569,6 +570,51 @@ mod tests {
         assert_eq!(r1.id, r2.id);
         assert_eq!(r2.name, "새 이름");
         assert_eq!(r2.default_branch.as_deref(), Some("dev"));
+    }
+
+    /// CDX-001 — detached HEAD 에서 detect_meta.default_branch=None 이 와도 기존 저장값을
+    /// NULL 로 덮어쓰면 안 됨 (add_repo upsert COALESCE 보존). detached 는 일시 상태라
+    /// 영속 default_branch 를 지우는 건 데이터 손실.
+    #[tokio::test]
+    async fn test_add_repo_preserves_default_branch_on_none() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let db = Db::open(tmp.path()).await.unwrap();
+
+        let r1 = db
+            .add_repo(
+                "/tmp/detached-repo",
+                None,
+                Some("repo"),
+                Some("main"),
+                Some("origin"),
+                ForgeKindLite::Github,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        assert_eq!(r1.default_branch.as_deref(), Some("main"));
+
+        // detached 상태 재등록 — default_branch=None.
+        let r2 = db
+            .add_repo(
+                "/tmp/detached-repo",
+                None,
+                Some("repo"),
+                None,
+                Some("origin"),
+                ForgeKindLite::Github,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        assert_eq!(r1.id, r2.id);
+        assert_eq!(
+            r2.default_branch.as_deref(),
+            Some("main"),
+            "detached 재등록(None)이 저장된 default_branch 를 wipe 하면 안 됨 (CDX-001)"
+        );
     }
 
     /// Sprint 2026-06-04 — `update_repo_forge_meta` 는 forge 메타 5컬럼만 갱신하고
