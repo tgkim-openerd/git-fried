@@ -1281,6 +1281,7 @@
     "toastDeleteFailed": "Delete 실패",
     "tooltipHead": "(현재 HEAD)",
     "tooltipDblclick": "— dblclick=switch, 우클릭=메뉴",
+    "upstreamGone": "⚠ 업스트림 ref 없음 (설정 잔존)",
     "toastAiUnavailable": "AI 사용 불가",
     "toastAiUnavailableBody": "Claude/Codex CLI 미설치",
     "empty": "브랜치 없음",

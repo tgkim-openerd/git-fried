@@ -682,3 +682,57 @@ async fn test_status_on_bare_repo_is_clean() {
     // quick status 도 에러 없이 동작.
     super::status::read_quick_status(&path).unwrap();
 }
+
+#[tokio::test]
+async fn test_upstream_gone_detected() {
+    // upstream config(branch.main.merge)는 남아있으나 remote-tracking ref 가 없으면 upstream_gone=true (B-05).
+    let (_tmp, path) = init_test_repo().await;
+    git_run(
+        &path,
+        &["commit", "--allow-empty", "-m", "init"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    git_run(
+        &path,
+        &["remote", "add", "origin", "git@github.com:x/y.git"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    // remote-tracking ref(refs/remotes/origin/main) 없이 upstream config 만 주입 → orphaned upstream.
+    git_run(
+        &path,
+        &["config", "branch.main.remote", "origin"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+    git_run(
+        &path,
+        &["config", "branch.main.merge", "refs/heads/main"],
+        &Default::default(),
+    )
+    .await
+    .unwrap()
+    .into_ok()
+    .unwrap();
+
+    let branches = super::branch::list_branches(&path).unwrap();
+    let main = branches
+        .iter()
+        .find(|b| b.name == "main")
+        .expect("main 브랜치 존재");
+    assert!(main.upstream.is_none(), "gone 이면 upstream 이름은 None");
+    assert!(
+        main.upstream_gone,
+        "config 잔존 + remote-tracking ref 없음 → upstream_gone=true"
+    );
+}

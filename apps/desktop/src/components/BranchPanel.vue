@@ -76,6 +76,7 @@ function branchHoverTitle(b: BranchInfo): string {
     lines.push(`최신 commit${sha ? ` (${sha})` : ''}: ${b.lastCommitSubject}`)
   }
   if (b.upstream) lines.push(`upstream: ${b.upstream}`)
+  else if (b.upstreamGone) lines.push(t('branch.upstreamGone'))
   if (b.ahead) lines.push(`↑ ${b.ahead} (push 가능)`)
   if (b.behind) lines.push(`↓ ${b.behind} (pull 필요)`)
   if (b.isHead) lines.push(t('branch.tooltipHead'))

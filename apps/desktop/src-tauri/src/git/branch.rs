@@ -16,6 +16,8 @@ pub struct BranchInfo {
     pub kind: BranchKindLite, // local | remote
     pub is_head: bool,
     pub upstream: Option<String>,
+    /// upstream config(branch.<name>.merge)는 있으나 remote-tracking ref 가 사라진 상태 (B-05).
+    pub upstream_gone: bool,
     pub last_commit_sha: Option<String>,
     pub last_commit_subject: Option<String>,
     pub ahead: usize,
@@ -52,6 +54,14 @@ pub fn list_branches(path: &Path) -> AppResult<Vec<BranchInfo>> {
                 .upstream()
                 .ok()
                 .and_then(|b| b.name().ok().flatten().map(|s| s.to_string()));
+            // upstream config(branch.<name>.merge)는 있으나 remote-tracking ref 가 사라진 경우 (B-05).
+            let upstream_gone = *kind == BranchType::Local
+                && branch.upstream().is_err()
+                && repo
+                    .config()
+                    .ok()
+                    .and_then(|c| c.get_string(&format!("branch.{name}.merge")).ok())
+                    .is_some();
 
             let (subject, ahead, behind) = match target {
                 Some(oid) => {
@@ -80,6 +90,7 @@ pub fn list_branches(path: &Path) -> AppResult<Vec<BranchInfo>> {
                 last_commit_sha: target.map(|o| o.to_string()),
                 last_commit_subject: subject,
                 upstream,
+                upstream_gone,
                 ahead,
                 behind,
                 name,
@@ -379,6 +390,7 @@ mod tests {
             kind: BranchKindLite::Local,
             is_head: true,
             upstream: Some("origin/main".to_string()),
+            upstream_gone: false,
             last_commit_sha: Some("abc1234".to_string()),
             last_commit_subject: Some("feat: init".to_string()),
             ahead: 3,
@@ -400,6 +412,7 @@ mod tests {
             kind: BranchKindLite::Local,
             is_head: false,
             upstream: Some("origin/feature/한글-브랜치".to_string()),
+            upstream_gone: false,
             last_commit_sha: None,
             last_commit_subject: Some("feat: 한글 커밋".to_string()),
             ahead: 0,

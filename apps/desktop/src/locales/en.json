@@ -1281,6 +1281,7 @@
     "toastDeleteFailed": "Delete failed",
     "tooltipHead": "(current HEAD)",
     "tooltipDblclick": "— dblclick=switch, right-click=menu",
+    "upstreamGone": "⚠ upstream ref missing (config remains)",
     "toastAiUnavailable": "AI unavailable",
     "toastAiUnavailableBody": "Claude/Codex CLI not installed",
     "empty": "No branches",
