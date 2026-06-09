@@ -106,6 +106,8 @@ pub async fn launch_mergetool(
         args.push(format!("--tool={t}"));
     }
     if let Some(f) = file.filter(|s| !s.trim().is_empty()) {
+        // SEC-001 — take_side/read_conflicted/write_resolved 와 동일하게 repo-relative traversal 가드.
+        validate_repo_relative_path(path, f)?;
         args.push("--".into());
         args.push(f.into());
     }
