@@ -60,7 +60,11 @@ pub async fn backfill_forge_meta(db: &Db) -> AppResult<BackfillReport> {
         let db = db.clone();
         let sem = sem.clone();
         handles.push(tokio::spawn(async move {
-            let _permit = sem.acquire().await.expect("semaphore closed");
+            let _permit = match sem.acquire().await {
+                Ok(p) => p,
+                // semaphore close 시 panic 대신 이 항목을 실패로 표기 (Codex SEMAPHORE 하드닝).
+                Err(_) => return Outcome::Failed,
+            };
             heal_one(&db, &r).await
         }));
     }

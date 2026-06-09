@@ -63,7 +63,20 @@ pub async fn bulk_fetch(
             .flatten();
         let sem = sem.clone();
         handles.push(tokio::spawn(async move {
-            let _permit = sem.acquire_owned().await.expect("semaphore");
+            let _permit = match sem.acquire_owned().await {
+                Ok(p) => p,
+                // semaphore 는 현재 close 되지 않지만, 향후 shutdown/cancel 도입 시 panic 대신
+                // 이 repo 를 실패로 표기하고 graceful 종료 (Codex SEMAPHORE 하드닝).
+                Err(_) => {
+                    return BulkResult {
+                        repo_id: id,
+                        repo_name: name,
+                        success: false,
+                        data: None,
+                        error: Some("semaphore closed".to_string()),
+                    };
+                }
+            };
             let res = git_sync::fetch_all(&path, ssh.as_deref()).await;
             BulkResult {
                 repo_id: id,
@@ -159,7 +172,20 @@ pub async fn bulk_list_prs(
         let kind = r.forge_kind;
         let sem = sem.clone();
         handles.push(tokio::spawn(async move {
-            let _permit = sem.acquire_owned().await.expect("semaphore");
+            let _permit = match sem.acquire_owned().await {
+                Ok(p) => p,
+                // semaphore 는 현재 close 되지 않지만, 향후 shutdown/cancel 도입 시 panic 대신
+                // 이 repo 를 실패로 표기하고 graceful 종료 (Codex SEMAPHORE 하드닝).
+                Err(_) => {
+                    return BulkResult {
+                        repo_id: id,
+                        repo_name: name,
+                        success: false,
+                        data: None,
+                        error: Some("semaphore closed".to_string()),
+                    };
+                }
+            };
             let client_res: Result<Box<dyn ForgeClient>, AppError> = match kind.as_str() {
                 "gitea" => GiteaClient::new(&account.0, &account.1).map(|c| Box::new(c) as _),
                 "github" => {
