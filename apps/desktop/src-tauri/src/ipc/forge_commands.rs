@@ -433,6 +433,11 @@ pub async fn set_repo_credential_identity(
     }
     reject_dash_prefix(url, "credential url")?;
 
+    // F (plan #45) — apply_repo_config / profile_apply 와 동일하게 per-repo mutation
+    // guard 직렬화. 같은 repo `.git/config` 에 동시 쓰는 다른 writer 와의 race window
+    // 제거 (이전엔 본 command 만 유일하게 unguarded 였음).
+    let _guard = state.repo_mutation_guard(args.repo_id).await;
+
     let repo = state.db.get_repo(args.repo_id).await?;
     let path = std::path::Path::new(&repo.local_path);
     let key = format!("credential.{url}.username");
