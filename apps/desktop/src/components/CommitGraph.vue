@@ -141,7 +141,7 @@ const {
 } = useGraphSearch(rows, { onClose: () => drawGraph() })
 
 // Sprint c40 — canvas 렌더링 + WIP idx 판정.
-const { drawGraph, isWipIdx } = useGraphCanvasRenderer({
+const { drawGraph, scheduleDraw, isWipIdx } = useGraphCanvasRenderer({
   canvasRef,
   containerRef,
   virtualItems,
@@ -158,7 +158,7 @@ const { onScroll } = useGraphInfiniteScroll({
   containerRef,
   rows,
   isFetching,
-  onScrollSideEffect: () => drawGraph(),
+  onScrollSideEffect: () => scheduleDraw(), // plan #45 M3 — scroll 마다 rAF coalesce
 })
 
 // Sprint c37 god 19/N — selectedSha + moveSelection (vim J/K) + selectWip.
@@ -200,7 +200,8 @@ useCommitGraphLifecycle({
 })
 // c79 ARCH-003 — window.gitFriedSelectCommit 등록 단일책임 분리.
 useGlobalCommitJumpHook(selectAndScrollToSha)
-watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => drawGraph()))
+// plan #45 M3 — reactive 변경도 rAF coalesce (스트림 갱신 시 프레임당 1회 draw).
+watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => scheduleDraw()))
 
 // Sprint A3 / c40 review ARCH-004 — 컬럼 토글 / 재정렬 + header menu.
 // Sprint c52 — branchTagSticky (branchTag visible + 첫 위치) 활성 시 sticky overlay column 노출.

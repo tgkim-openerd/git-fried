@@ -14,6 +14,7 @@
 //   })
 //
 // LOC 절감: CommitGraph 138-273 (~135 LOC) → ~10 LOC destructure.
+import { onScopeDispose } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { VirtualItem } from '@tanstack/vue-virtual'
 import type { GraphRow } from '@/api/git'
@@ -62,8 +63,12 @@ export function useGraphCanvasRenderer(opts: UseGraphCanvasRendererOptions) {
     const dpi = window.devicePixelRatio || 1
     const w = opts.graphWidth.value
     const h = container.clientHeight
-    c.width = w * dpi
-    c.height = h * dpi
+    // plan #45 M3 — backing-store(c.width/height) 할당은 캔버스 전체를 reset 하는 비싼 realloc.
+    // 매 scroll 프레임마다 재할당하던 것을 크기 변동 시에만 수행 (clearRect 는 아래서 항상).
+    const pw = Math.round(w * dpi)
+    const ph = Math.round(h * dpi)
+    if (c.width !== pw) c.width = pw
+    if (c.height !== ph) c.height = ph
     c.style.width = `${w}px`
     c.style.height = `${h}px`
     // headless 환경 (jsdom 등) 에서 getContext('2d') 가 null 반환 가능 — silent return.
@@ -197,8 +202,27 @@ export function useGraphCanvasRenderer(opts: UseGraphCanvasRendererOptions) {
     }
   }
 
+  // plan #45 M3 — scroll/reactive 트리거의 draw 를 requestAnimationFrame 으로 coalesce
+  // (프레임당 1회). 매 scroll 이벤트마다 동기 draw 하던 것을 합쳐 perf 개선. drawGraph 는
+  // 동기 즉시 draw 로 유지 (강제 초기 draw / 테스트용).
+  let rafId: number | null = null
+  function scheduleDraw() {
+    if (rafId != null) return
+    rafId = requestAnimationFrame(() => {
+      rafId = null
+      drawGraph()
+    })
+  }
+  onScopeDispose(() => {
+    if (rafId != null) {
+      cancelAnimationFrame(rafId)
+      rafId = null
+    }
+  })
+
   return {
     drawGraph,
+    scheduleDraw,
     laneColor,
     isWipIdx,
   }
