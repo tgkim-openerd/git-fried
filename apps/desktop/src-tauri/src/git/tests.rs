@@ -599,6 +599,39 @@ async fn test_stage_patch_partial_apply() {
     assert!(wt.contains("added4"), "stage 안 한 부분은 working 에 잔존");
 }
 
+// plan #45 G — git apply 가 `--unsafe-paths` 없이 traversal patch header 를 거부함을
+// 회귀 잠금. stage.rs 의 모든 apply 경로(stage/unstage/restore)는 `--cached`/`--reverse`
+// 만 쓰고 `--unsafe-paths`/`--directory` 를 절대 추가하지 않는다는 계약을 행동으로 고정.
+#[tokio::test]
+async fn test_stage_patch_rejects_traversal_path() {
+    let (_tmp, path) = init_test_repo().await;
+    std::fs::write(path.join("seed.txt"), "x\n").unwrap();
+    super::stage::stage_all(&path).await.unwrap();
+    super::commit::commit_simple(&path, "init").await.unwrap();
+
+    // repo 밖 `../evil.txt` 를 새로 만들려는 악성 patch — git apply 가 거부해야 함.
+    let evil_patch = "diff --git a/../evil.txt b/../evil.txt\n\
+new file mode 100644\n\
+--- /dev/null\n\
++++ b/../evil.txt\n\
+@@ -0,0 +1 @@\n\
++pwned\n";
+
+    let res = super::stage::stage_patch(&path, evil_patch).await;
+    assert!(
+        res.is_err(),
+        "traversal patch header(`../evil.txt`)는 git apply 가 거부해야 함 (--unsafe-paths 미사용)",
+    );
+
+    // repo 부모 디렉토리에 escape 파일이 생성되지 않았어야 함.
+    let escaped = path.parent().unwrap().join("evil.txt");
+    assert!(
+        !escaped.exists(),
+        "거부된 traversal patch 가 repo 밖에 파일을 만들면 안 됨: {}",
+        escaped.display(),
+    );
+}
+
 // ====== Repo boundary 상태 (Codex 교차검증 2026-06-09) ======
 
 #[tokio::test]
