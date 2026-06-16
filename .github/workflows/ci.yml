@@ -49,6 +49,21 @@ jobs:
         working-directory: apps/desktop/src-tauri
         run: cargo test --all-features --no-fail-fast
 
+  # plan #45 E — 공급망 RUSTSEC advisory baseline. deny.toml(apps/desktop/src-tauri)
+  # 기준 advisories/bans/sources 검사 (licenses 는 게이트 제외). cargo-deny-action 이
+  # cargo-deny 를 설치+실행하므로 로컬 install 불필요. Windows-only 정책 유지(§2).
+  supply-chain:
+    name: cargo-deny (advisories/bans/sources)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: cargo-deny check
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          manifest-path: apps/desktop/src-tauri/Cargo.toml
+          command: check
+          arguments: advisories bans sources
+
   web-test:
     name: Vue typecheck + tests
     runs-on: windows-latest

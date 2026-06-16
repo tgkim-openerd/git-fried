@@ -1,0 +1,42 @@
+# cargo-deny — 공급망 advisory(RUSTSEC) baseline (plan #45 E).
+#
+# CI: .github/workflows/ci.yml 의 supply-chain job 이 cargo-deny-action 으로 실행
+#     (check: advisories bans sources — licenses 는 별도 관심사라 게이트에서 제외).
+# 로컬: cargo install cargo-deny --locked
+#       && cargo deny --manifest-path apps/desktop/src-tauri/Cargo.toml check advisories bans sources
+
+[advisories]
+yanked = "deny"
+ignore = [
+    # RUSTSEC-2023-0071 (rsa Marvin attack) — rsa 는 sqlx-mysql 경유 phantom lock entry.
+    # sqlx 는 default-features=false + features=["sqlite"] 라 mysql driver 가 미컴파일된다
+    # (cargo tree -i rsa = "nothing to print"). 실제 빌드에 rsa 부재이므로 무시.
+    "RUSTSEC-2023-0071",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "warn"
+
+# licenses 는 CI 게이트에서 제외 (advisories/bans/sources 만 enforce). allowlist 는
+# 로컬 full check 시 참고용 — 유지보수 부담 회피 (plan #45 E 는 RUSTSEC 모니터링 목적).
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "MPL-2.0",
+    "CC0-1.0",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "OpenSSL",
+]
+confidence-threshold = 0.8
