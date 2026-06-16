@@ -8,7 +8,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { cloneRepo, type CloneOptions } from '@/api/git'
+import { cloneRepo, cancelGitOp, type CloneOptions } from '@/api/git'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/composables/useToast'
 import BaseModal from './BaseModal.vue'
@@ -19,6 +19,9 @@ const emit = defineEmits<{ close: [] }>()
 
 const toast = useToast()
 const qc = useQueryClient()
+
+// plan #45 M4c — 진행 중 clone 취소용 job_id. mutate 마다 새로 생성 → cancelGitOp 로 중단.
+const cloneJobId = ref<string | null>(null)
 
 const url = ref('')
 const parentPath = ref('')
@@ -118,7 +121,19 @@ const cloneMut = useMutation({
     if (bare.value) opts.bare = true
     const f = filter.value.trim()
     if (f) opts.filter = f
-    return cloneRepo(url.value.trim(), targetPath.value, opts, true, props.workspaceId)
+    // plan #45 M4c — 취소 가능 clone: 새 job_id 생성 후 전달. cancelClone() 이 이 id 로 중단.
+    cloneJobId.value = crypto.randomUUID()
+    return cloneRepo(
+      url.value.trim(),
+      targetPath.value,
+      opts,
+      true,
+      props.workspaceId,
+      cloneJobId.value,
+    )
+  },
+  onSettled: () => {
+    cloneJobId.value = null
   },
   onSuccess: (r) => {
     toast.success(
@@ -151,6 +166,13 @@ function reset() {
 function close() {
   reset()
   emit('close')
+}
+
+// plan #45 M4c — 진행 중 clone 취소 (M4b cancel_git_op IPC → BE git child kill).
+// 취소 시 clone IPC 가 "취소됨" 에러 반환 → cloneMut.onError 로 사용자 피드백.
+async function cancelClone() {
+  const id = cloneJobId.value
+  if (id) await cancelGitOp(id)
 }
 
 const canSubmit = computed(
@@ -312,6 +334,16 @@ const canSubmit = computed(
           @click="close"
         >
           취소
+        </button>
+        <!-- plan #45 M4c — clone 진행 중 취소 버튼 (BE git child kill via cancel_git_op). -->
+        <button
+          v-if="cloneMut.isPending.value"
+          type="button"
+          class="rounded border border-red-500/50 px-3 py-1.5 min-h-[32px] text-red-700 hover:bg-red-500/10 dark:text-red-400"
+          title="진행 중인 clone 을 중단합니다"
+          @click="cancelClone"
+        >
+          클론 취소
         </button>
         <button
           type="button"

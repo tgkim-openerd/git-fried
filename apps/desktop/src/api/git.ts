@@ -1277,10 +1277,15 @@ export const cloneRepo = (
   options: CloneOptions = {},
   autoRegister = true,
   workspaceId: number | null = null,
+  jobId: string | null = null,
 ): Promise<CloneRepoResult> =>
   invoke('clone_repo', {
-    args: { url, targetPath, options, autoRegister, workspaceId },
+    args: { url, targetPath, options, autoRegister, workspaceId, jobId },
   })
+
+/** plan #45 M4b/M4c — 진행 중 장시간 git op(clone 등) 취소. op 시작 시 넘긴 jobId 로 호출.
+ * 반환 true = 취소 신호 전달됨, false = 이미 완료/미등록. */
+export const cancelGitOp = (jobId: string): Promise<boolean> => invoke('cancel_git_op', { jobId })
 
 // --- Tag panel (`docs/plan/14 §8 G1` Sprint C14) ---
 
