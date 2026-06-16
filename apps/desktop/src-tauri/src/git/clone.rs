@@ -18,6 +18,8 @@ use crate::error::{AppError, AppResult};
 use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tokio::sync::Notify;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -93,7 +95,12 @@ fn is_allowed_clone_url(url: &str) -> bool {
 ///   - SEC-008: protocol allowlist (`https`/`http`/`ssh`/`git`/SCP-like). `file://`,
 ///     `ext::sh -c ...` (CVE-2024-32004 류), `lp:` 등 위험 protocol 거부.
 ///   - CVE-2017-1000117 (`ssh://-oProxyCommand=...`) 차단.
-pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<CloneResult> {
+pub async fn clone(
+    url: &str,
+    target: &Path,
+    opts: &CloneOptions,
+    cancel: Option<Arc<Notify>>,
+) -> AppResult<CloneResult> {
     if url.trim().is_empty() {
         return Err(AppError::validation("clone URL 이 비어있음"));
     }
@@ -174,8 +181,10 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
 
     // clone 은 부모 디렉토리에서 실행 (target 자체는 아직 없음).
     // plan #45 M4a — 네트워크 clone 에 30분 backstop (무한 hang 방지, 대형 repo 보존).
+    // plan #45 M4b — cancel 신호 전달 (FE 가 cancel_git_op(job_id) 호출 시 child kill).
     let clone_opts = GitRunOpts {
         timeout: Some(crate::git::runner::GIT_LONG_NETWORK_TIMEOUT),
+        cancel,
         ..GitRunOpts::default()
     };
     let clone_out = git_run(parent, &arg_refs, &clone_opts).await?;
@@ -259,9 +268,9 @@ mod tests {
     async fn test_clone_empty_url_rejected() {
         let tmp = tempfile::TempDir::new().unwrap();
         let target = tmp.path().join("repo");
-        let res = clone("", &target, &CloneOptions::default()).await;
+        let res = clone("", &target, &CloneOptions::default(), None).await;
         assert!(res.is_err());
-        let res2 = clone("   ", &target, &CloneOptions::default()).await;
+        let res2 = clone("   ", &target, &CloneOptions::default(), None).await;
         assert!(res2.is_err());
     }
 

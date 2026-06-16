@@ -15,8 +15,10 @@
 
 use crate::error::{AppError, AppResult};
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::process::Command;
+use tokio::sync::Notify;
 
 /// git CLI 실행 결과.
 #[derive(Debug, Clone)]
@@ -62,6 +64,9 @@ pub struct GitRunOpts {
     /// caller (fetch/pull/push/clone) 가 active profile 의 `ssh_key_path` 를 옵션 전달.
     /// PuTTY/plink 미지원 — 사용자 별도 PATH 설정 (Codex 권고).
     pub ssh_key_path: Option<String>,
+    /// plan #45 M4b — 취소 신호. Some 이고 notify 되면 child kill + reap (timeout 과 동일).
+    /// AppState.register_cancel(job_id) 가 반환한 Notify 를 장시간 op IPC 가 전달.
+    pub cancel: Option<Arc<Notify>>,
 }
 
 /// Sprint c45 P0-2 — long-running git 작업 표준 timeout (10분). repo_mutation_guard 를
@@ -183,12 +188,42 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
         stdin.shutdown().await.map_err(AppError::Io)?;
     }
 
-    // Sprint c45 P0-2 — timeout 적용. 초과 시 child kill + reap + GitCli 에러.
-    let status = match opts.timeout {
-        Some(d) => match tokio::time::timeout(d, child.wait()).await {
-            Ok(res) => res.map_err(AppError::Io)?,
-            Err(_) => {
-                // timeout — child kill + reap (orphan 방지) + reader task abort.
+    // Sprint c45 P0-2 — timeout 적용 + plan #45 M4b — 취소 신호. child.wait() 를 timeout/취소와
+    // race. timeout 또는 취소 시 child kill + reap (orphan 방지) + reader task abort.
+    let status = {
+        let cancel = opts.cancel.clone();
+        let cancelled = async {
+            match &cancel {
+                Some(n) => n.notified().await,
+                None => std::future::pending::<()>().await,
+            }
+        };
+        let timed_out = async {
+            match opts.timeout {
+                Some(d) => tokio::time::sleep(d).await,
+                None => std::future::pending::<()>().await,
+            }
+        };
+        tokio::pin!(cancelled);
+        tokio::pin!(timed_out);
+
+        tokio::select! {
+            res = child.wait() => res.map_err(AppError::Io)?,
+            _ = &mut cancelled => {
+                let _ = child.kill().await;
+                let _ = child.wait().await;
+                stdout_task.abort();
+                stderr_task.abort();
+                return Err(AppError::GitCli {
+                    message: format!(
+                        "git 명령 취소됨 ({})",
+                        args.first().copied().unwrap_or("?")
+                    ),
+                    exit_code: None,
+                    stderr: String::new(),
+                });
+            }
+            _ = &mut timed_out => {
                 let _ = child.kill().await;
                 let _ = child.wait().await;
                 stdout_task.abort();
@@ -196,15 +231,14 @@ pub async fn git_run(cwd: &Path, args: &[&str], opts: &GitRunOpts) -> AppResult<
                 return Err(AppError::GitCli {
                     message: format!(
                         "git 명령 timeout {}초 초과 ({})",
-                        d.as_secs(),
+                        opts.timeout.map(|d| d.as_secs()).unwrap_or(0),
                         args.first().copied().unwrap_or("?")
                     ),
                     exit_code: None,
                     stderr: String::new(),
                 });
             }
-        },
-        None => child.wait().await.map_err(AppError::Io)?,
+        }
     };
 
     let stdout_bytes = stdout_task.await.unwrap_or_default();

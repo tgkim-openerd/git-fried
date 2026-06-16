@@ -16,6 +16,17 @@ async fn resolve_ssh_key(state: &AppState, repo_id: i64) -> AppResult<Option<Str
     crate::profiles::resolve_ssh_key_for_repo(&state.db.pool, &repo).await
 }
 
+/// plan #45 M4b — 진행 중 장시간 git op(clone 등) 취소. FE 가 op 시작 시 넘긴 job_id 로
+/// 호출 → git_run 의 select! 이 child kill (timeout-kill 경로 재사용). 등록된 op 가 있어
+/// 취소 신호를 보냈으면 `true`, 이미 완료/미등록이면 `false`.
+#[tauri::command]
+pub async fn cancel_git_op(
+    job_id: String,
+    state: tauri::State<'_, Arc<AppState>>,
+) -> AppResult<bool> {
+    Ok(state.cancel_op(&job_id))
+}
+
 // ====== Sync (push / pull / fetch) ======
 //
 // repo_mutation_guard 정책 (Codex R1 설계 + R4 review 2026-06-04 확정):

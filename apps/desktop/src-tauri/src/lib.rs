@@ -30,6 +30,7 @@ pub mod storage;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex as StdMutex};
 use tokio::sync::Mutex as TokioMutex;
+use tokio::sync::Notify;
 
 pub use error::{AppError, AppResult};
 
@@ -46,6 +47,10 @@ pub struct AppState {
     /// guard 가 살아있는 동안 다른 mutation 직렬화 보장. lock 자체는 (`)` 만 보유 —
     /// payload 는 호출처가 보관. lock map 자체 mutation 은 std Mutex (sync, 단순 insert).
     repo_locks: StdMutex<HashMap<i64, Arc<TokioMutex<()>>>>,
+    /// plan #45 M4b — 진행 중 장시간 git op(clone/fetch/push)의 취소 신호 registry.
+    /// FE 가 생성한 job_id → `Notify`. `cancel_op(job_id)` 가 notify → git_run 의 select!
+    /// 이 child kill (timeout-kill 경로 재사용). 완료 시 `unregister_cancel` 로 정리.
+    cancel_signals: StdMutex<HashMap<String, Arc<Notify>>>,
 }
 
 impl AppState {
@@ -103,6 +108,7 @@ impl AppState {
             db,
             pty: pty::PtyRegistry::new(),
             repo_locks: StdMutex::new(HashMap::new()),
+            cancel_signals: StdMutex::new(HashMap::new()),
         }))
     }
 
@@ -144,6 +150,44 @@ impl AppState {
     /// rebase_prepare_todo(메타 편집). 설계 근거: Codex 자문 2026-06-04.
     pub async fn repo_mutation_guard(&self, repo_id: i64) -> tokio::sync::OwnedMutexGuard<()> {
         self.repo_lock(repo_id).lock_owned().await
+    }
+
+    /// plan #45 M4b — job_id 에 취소 Notify 를 등록(이미 있으면 재사용)하고 반환.
+    /// 장시간 op 진입 시 호출 → 반환된 Notify 를 `GitRunOpts.cancel` 로 전달.
+    pub fn register_cancel(&self, job_id: &str) -> Arc<Notify> {
+        let mut map = self
+            .cancel_signals
+            .lock()
+            .expect("cancel_signals Mutex poisoned");
+        map.entry(job_id.to_string())
+            .or_insert_with(|| Arc::new(Notify::new()))
+            .clone()
+    }
+
+    /// plan #45 M4b — job_id 의 진행 중 op 취소 신호. 등록된 Notify 가 있으면 notify 후
+    /// `true`, 없으면(이미 완료/미등록) `false`. git_run select! 이 child 를 kill 한다.
+    pub fn cancel_op(&self, job_id: &str) -> bool {
+        let map = self
+            .cancel_signals
+            .lock()
+            .expect("cancel_signals Mutex poisoned");
+        match map.get(job_id) {
+            Some(n) => {
+                // 대기 중인 waiter 깨우기 + 아직 wait 진입 전이면 다음 wait 즉시 통과(permit).
+                n.notify_waiters();
+                n.notify_one();
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// plan #45 M4b — op 완료/실패 후 취소 Notify 정리 (registry 무한 증가 방지).
+    pub fn unregister_cancel(&self, job_id: &str) {
+        self.cancel_signals
+            .lock()
+            .expect("cancel_signals Mutex poisoned")
+            .remove(job_id);
     }
 }
 
@@ -236,6 +280,7 @@ pub fn run() {
             ipc::sync_commands::fetch_all,
             ipc::sync_commands::pull,
             ipc::sync_commands::push,
+            ipc::sync_commands::cancel_git_op,
             ipc::branch_commands::list_branches,
             ipc::branch_commands::switch_branch,
             ipc::branch_commands::create_branch,
@@ -455,6 +500,7 @@ mod tests {
             db,
             pty: pty::PtyRegistry::new(),
             repo_locks: StdMutex::new(HashMap::new()),
+            cancel_signals: StdMutex::new(HashMap::new()),
         });
         (state, tmp) // tmp 반환해 NamedTempFile 생명주기 유지 (drop 시 파일 삭제).
     }
@@ -501,5 +547,28 @@ mod tests {
             !Arc::ptr_eq(&a, &c),
             "다른 repo_id 는 별도 Mutex 여야 동시 실행됨"
         );
+    }
+
+    /// plan #45 M4b — cancel registry contract: register 후 cancel_op 이 대기 중 op 를
+    /// 깨우고, unregister 후/미등록 job 은 false. (cancel_git_op IPC 의 동작 근거.)
+    #[tokio::test]
+    async fn cancel_registry_signals_waiter_and_unregisters() {
+        let (state, _tmp) = test_state().await;
+        let notify = state.register_cancel("job-1");
+
+        // 대기 중 op(notified) 가 cancel_op 으로 깨워져야 함.
+        let waiter = {
+            let n = notify.clone();
+            tokio::spawn(async move { n.notified().await })
+        };
+        tokio::time::sleep(Duration::from_millis(20)).await; // waiter 등록 양보.
+        assert!(state.cancel_op("job-1"), "등록된 job 은 cancel 신호 true");
+        let woke = tokio::time::timeout(Duration::from_millis(300), waiter).await;
+        assert!(woke.is_ok(), "cancel_op 이 대기 중 op 를 깨워야 함");
+
+        // unregister 후/미등록 job 은 false.
+        state.unregister_cancel("job-1");
+        assert!(!state.cancel_op("job-1"), "unregister 후 cancel 은 false");
+        assert!(!state.cancel_op("unknown"), "미등록 job 은 false");
     }
 }

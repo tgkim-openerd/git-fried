@@ -98,6 +98,10 @@ pub struct CloneRepoArgs {
     /// 자동 등록 시 소속 워크스페이스. None = unassigned.
     #[serde(default)]
     pub workspace_id: Option<i64>,
+    /// plan #45 M4b — FE 가 생성한 취소 job_id. Some 이면 clone 도중 cancel_git_op(job_id)
+    /// 로 중단 가능 (child kill). None = 취소 불가 (기존 동작 보존).
+    #[serde(default)]
+    pub job_id: Option<String>,
 }
 
 fn default_auto_register() -> bool {
@@ -126,7 +130,14 @@ pub async fn clone_repo(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<CloneRepoResult> {
     let target = Path::new(&args.target_path);
-    let clone_res = git_clone::clone(&args.url, target, &args.options).await?;
+    // plan #45 M4b — job_id 있으면 취소 가능 clone. 완료(성공/실패) 후 registry 정리하고
+    // 에러는 정리 뒤 전파 (registry leak 방지).
+    let cancel = args.job_id.as_deref().map(|id| state.register_cancel(id));
+    let clone_res = git_clone::clone(&args.url, target, &args.options, cancel).await;
+    if let Some(id) = args.job_id.as_deref() {
+        state.unregister_cancel(id);
+    }
+    let clone_res = clone_res?;
 
     if !args.auto_register {
         return Ok(CloneRepoResult {
