@@ -100,6 +100,22 @@ async fn predict_modern(repo: &Path, target: &str) -> AppResult<ConflictPredicti
     }
 
     // exit != 0
+    // git 2.38+ 는 invalid/unmergeable target 도 exit=1 로 반환한다
+    // (stderr/stdout: "<ref> - not something we can merge"). 실제 충돌이 아니므로
+    // note 를 실어 predict() 가 legacy fallback 으로 graceful degrade 하게 한다.
+    if out.stderr.contains("not something we can merge")
+        || stdout.contains("not something we can merge")
+    {
+        return Ok(ConflictPrediction {
+            ok: true,
+            target: target.to_string(),
+            conflict_files: vec![],
+            note: Some(format!(
+                "merge-tree: target 해석 실패 ({target}) — {}",
+                out.stderr.trim().chars().take(120).collect::<String>(),
+            )),
+        });
+    }
     if out.exit_code == Some(1) {
         // 표준 충돌 — stdout: SHA / "" / file1 / file2 ...
         let lines: Vec<&str> = stdout.lines().collect();
