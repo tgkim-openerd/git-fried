@@ -2,17 +2,26 @@
 #
 # CI: .github/workflows/ci.yml 의 supply-chain job 이 cargo-deny-action 으로 실행
 #     (check: advisories bans sources — licenses 는 별도 관심사라 게이트에서 제외).
-# 로컬: cargo install cargo-deny --locked
-#       && cargo deny --manifest-path apps/desktop/src-tauri/Cargo.toml check advisories bans sources
+# 로컬: cargo-deny 소스 빌드는 newer toolchain(2024 edition) 필요. 또한 cargo-deny 가 내부적으로
+#   `cargo metadata` 를 호출하는데, PATH 의 cargo 가 구버전(<1.85)이면 2024-edition transitive
+#   crate 파싱에 실패한다. → prebuilt 바이너리 + rustup stable cargo 로 실행:
+#     gh release download --repo EmbarkStudios/cargo-deny --pattern '*x86_64-pc-windows-msvc*'
+#     CARGO="$(rustup which --toolchain stable cargo)" cargo-deny \
+#       --manifest-path apps/desktop/src-tauri/Cargo.toml check advisories bans sources
 
 [advisories]
 yanked = "deny"
-ignore = [
-    # RUSTSEC-2023-0071 (rsa Marvin attack) — rsa 는 sqlx-mysql 경유 phantom lock entry.
-    # sqlx 는 default-features=false + features=["sqlite"] 라 mysql driver 가 미컴파일된다
-    # (cargo tree -i rsa = "nothing to print"). 실제 빌드에 rsa 부재이므로 무시.
-    "RUSTSEC-2023-0071",
-]
+unmaintained = "workspace"
+# unmaintained 는 workspace 직접 의존만 검사 (cargo-deny 0.19 v2). 실측 결과 검출된
+# unmaintained 20건이 전부 통제 불가한 transitive (Windows 앱이 tauri 통해 끄는 Linux
+# gtk-rs 바인딩 10 + unic/async-std/fxhash 등) — 보안 취약점 아닌 노이즈라 게이트 제외.
+# 본 게이트의 목적은 *취약점(vulnerability)* + yanked 검출 (그 둘은 deny 유지).
+# ignore 없음 — RUSTSEC-2023-0071(rsa Marvin)은 cargo-deny 실측상 그래프에 부재
+# ("no crate matched"). sqlx default-features=false + sqlite-only 라 mysql driver(rsa)가
+# 미컴파일되기 때문. 따라서 ignore 불필요 (cargo-deny 0.19 는 미매칭 ignore 를 error 처리).
+# 만약 향후 의존성 변경으로 rsa 가 실제 그래프에 유입되면 본 게이트가 정상적으로 vulnerability
+# 를 flag 하도록 의도적으로 ignore 하지 않는다.
+ignore = []
 
 [bans]
 multiple-versions = "warn"
