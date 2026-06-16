@@ -142,6 +142,10 @@ export function useTagInteraction(opts: UseTagInteractionOpts) {
       await annotateExistingTag(id, tag.name, tag.commitSha, message.trim())
       toast.success(t('tagActions.toastAnnotated'), tag.name)
       qc.invalidateQueries({ queryKey: ['tags', id] })
+      // plan #45 M2 — tag annotate 는 CommitGraph 의 tag ring / CommitRefPill 표시에
+      // 반영되므로 graph + log 도 무효화 (이전엔 ['tags'] 만 → graph 의 tag 표시 stale).
+      qc.invalidateQueries({ queryKey: ['graph', id] })
+      qc.invalidateQueries({ queryKey: ['log', id] })
     } catch (e) {
       toast.error(t('tagActions.toastAnnotateFailed'), describeError(e))
     }

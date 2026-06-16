@@ -16,6 +16,19 @@ import { mount } from '@vue/test-utils'
 import { useTagInteraction } from './useTagInteraction'
 import type { TagInfo } from '@/api/git'
 import type { ContextMenuExpose } from '@/components/ContextMenu.vue'
+import { promptDialog } from '@/composables/useConfirm'
+
+// plan #45 M2 — annotateTag 무효화 테스트용. api/useConfirm 의 user-facing side effect 만
+// stub (기존 테스트는 repoId null 조기 return / contextmenu / clipboard 라 영향 없음).
+vi.mock('@/api/git', () => ({
+  annotateExistingTag: vi.fn().mockResolvedValue(undefined),
+  createBranch: vi.fn().mockResolvedValue(undefined),
+  switchBranch: vi.fn().mockResolvedValue(undefined),
+}))
+vi.mock('@/composables/useConfirm', () => ({
+  promptDialog: vi.fn(),
+  confirmDialog: vi.fn().mockResolvedValue(false),
+}))
 
 // vue-query / pinia / i18n 환경 setup helper — useToast / useInvalidateRepoQueries 가
 // queryClient 를 inject 해야 함.
@@ -119,5 +132,38 @@ describe('useTagInteraction', () => {
     // confirm/prompt 가 호출되지 않아야 함 — 조기 return
     await expect(checkoutTag(sampleTag)).resolves.toBeUndefined()
     await expect(createBranchFromTag(sampleTag)).resolves.toBeUndefined()
+  })
+
+  // plan #45 M2 — annotateTag 는 tags 뿐 아니라 graph + log 도 무효화해야 함
+  // (CommitGraph 의 tag ring / CommitRefPill 이 stale 되지 않도록).
+  it('annotateTag — graph+log+tags 무효화 (M2)', async () => {
+    vi.mocked(promptDialog).mockResolvedValue('annotated message')
+    const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko: {}, en: {} } })
+    const qc = new QueryClient()
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries')
+    setActivePinia(createPinia())
+    let api!: ReturnType<typeof useTagInteraction>
+    mount(
+      {
+        setup() {
+          api = useTagInteraction({
+            repoId: () => 1,
+            ctxMenu: ref(null),
+            onPush: vi.fn(),
+            onDelete: vi.fn(),
+            onDeleteRemote: vi.fn(),
+          })
+          return () => null
+        },
+      },
+      { global: { plugins: [i18n, [VueQueryPlugin, { queryClient: qc }]] } },
+    )
+
+    await api.annotateTag({ ...sampleTag, commitSha: 'abc123def456' })
+
+    const keys = invalidateSpy.mock.calls.map((c) => (c[0] as { queryKey: unknown[] }).queryKey)
+    expect(keys).toContainEqual(['tags', 1])
+    expect(keys).toContainEqual(['graph', 1])
+    expect(keys).toContainEqual(['log', 1])
   })
 })
