@@ -621,6 +621,7 @@
       "notExecutableHint": "Missing executable bit — git will not run this. Unix: run `chmod +x`. Windows: generally ignored (Git for Windows uses ACLs).",
       "missingSummary": "Standard hooks not installed: {n} (click to expand)",
       "editNote": "💡 Edit hooks by opening the file directly (`.git/hooks/<name>`). Lefthook integration lands in the next sprint (Plan #42 M-1 follow-up).",
+      "externalWarning": "⚠ core.hooksPath points outside this repository. External hook directories are allowed but run with caution — use only trusted shared hooks.",
       "activateButton": "Activate",
       "activateButtonTitle": "{name}.sample → {name} rename (activate)",
       "deactivateButton": "Deactivate",

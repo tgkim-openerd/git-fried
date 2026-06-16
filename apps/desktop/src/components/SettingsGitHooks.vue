@@ -29,6 +29,14 @@ const hooksPathOverride = computed<string | null>(
   () => repoConfig.query.data.value?.hooksPath ?? null,
 )
 
+// plan #45 H (경고+허용) — core.hooksPath 가 repo 밖(절대경로 / `..` 시작)을 가리키면
+// UI 경고. 보안 차단은 Rust 측 서버 해석이 담당(거부 아님) — 본 배너는 사용자 주의 환기.
+const hooksExternal = computed<boolean>(() => {
+  const p = hooksPathOverride.value?.trim()
+  if (!p) return false
+  return /^([/\\]|[A-Za-z]:[\\/]|\.\.[/\\])/.test(p) || p === '..'
+})
+
 // Plan #42 M-1 후속 (Sprint c104) — enable/disable toggle mutation.
 function invalidateHooks() {
   if (activeRepoId.value != null) {
@@ -100,6 +108,14 @@ const missingHooks = computed(() =>
     </div>
 
     <template v-else>
+      <!-- plan #45 H — 외부 core.hooksPath 경고 (경고+허용 정책) -->
+      <div
+        v-if="hooksExternal"
+        class="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400"
+      >
+        {{ t('settings.gitHooks.externalWarning') }}
+      </div>
+
       <SkeletonBlock v-if="hooksQuery.isFetching.value && !hooksQuery.data.value" :lines="3" />
 
       <p

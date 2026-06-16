@@ -621,6 +621,7 @@
       "notExecutableHint": "executable bit 없음 — git 은 실행 안 함. Unix: `chmod +x` 필요. Windows: 일반적으로 무시 (Git for Windows ACL 기준)",
       "missingSummary": "표준 hook 중 미설치 {n}개 (펼쳐서 확인)",
       "editNote": "💡 hook 편집은 직접 파일 열기 (`.git/hooks/<name>`). 외부 lefthook 통합은 다음 sprint (Plan #42 M-1 후속).",
+      "externalWarning": "⚠ core.hooksPath 가 이 저장소 밖을 가리킵니다. 외부 hook 디렉토리는 허용되나 주의하세요 — 신뢰하는 공유 hooks 만 사용하세요.",
       "activateButton": "활성화",
       "activateButtonTitle": "{name}.sample → {name} rename (활성화)",
       "deactivateButton": "비활성화",

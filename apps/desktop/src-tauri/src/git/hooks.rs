@@ -6,6 +6,7 @@
 // 본 모듈 = read-only scan. enable/disable / edit 은 별도 sprint (M-1 후속).
 
 use crate::error::{AppError, AppResult};
+use crate::git::runner::{git_run, GitRunOpts};
 use serde::{Deserialize, Serialize};
 use std::fs::Metadata;
 use std::path::{Path, PathBuf};
@@ -95,7 +96,7 @@ pub async fn hook_activate_from_sample(
             "invalid hook name (path traversal 차단)",
         ));
     }
-    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override);
+    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override).await?;
     let sample_path = hooks_dir.join(format!("{name}.sample"));
     let active_path = hooks_dir.join(name);
     if !sample_path.exists() {
@@ -147,7 +148,7 @@ pub async fn hook_deactivate_to_sample(
             "invalid hook name (path traversal 차단)",
         ));
     }
-    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override);
+    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override).await?;
     let active_path = hooks_dir.join(name);
     let sample_path = hooks_dir.join(format!("{name}.sample"));
     if !active_path.exists() {
@@ -174,17 +175,68 @@ pub async fn hook_deactivate_to_sample(
     Ok(())
 }
 
-fn resolve_hooks_dir(repo_path: &Path, hooks_path_override: Option<&str>) -> PathBuf {
-    match hooks_path_override {
-        Some(p) if !p.trim().is_empty() => {
-            let pb = PathBuf::from(p);
-            if pb.is_absolute() {
-                pb
+/// hooks 디렉토리 해석 — **서버측 권위 해석** (plan #45 H, 경고+허용 정책).
+///
+/// SECURITY: renderer 가 넘긴 `hooks_path_override` 는 신뢰하지 않는다. 과거엔 override
+/// 를 verbatim 사용해, compromised renderer(XSS)가 임의 절대경로를 넘기면 `list_git_hooks`
+/// 가 임의 디렉토리의 파일 메타를 열거(정찰)할 수 있었다. 이제 git 이 직접 모든 config
+/// level 의 `core.hooksPath` 를 resolve 한 결과(`git rev-parse --git-path hooks`)를 SoT 로
+/// 쓴다. renderer override 가 서버 해석과 다르면 무시 + warn-log. 정당한 외부 core.hooksPath
+/// (중앙 공유 hooks)는 git 이 resolve 하므로 그대로 동작한다(거부 아님 — 경고+허용).
+async fn resolve_hooks_dir(
+    repo_path: &Path,
+    hooks_path_override: Option<&str>,
+) -> AppResult<PathBuf> {
+    // git 이 core.hooksPath(모든 config level)를 직접 resolve. 비-git / git 실패 시
+    // `.git/hooks` 기본값으로 graceful fallback (repo 내부 + override 미사용 → 보안
+    // 불변식 유지). renderer override 는 어떤 경우에도 해석에 쓰지 않는다.
+    let default_dir = repo_path.join(".git").join("hooks");
+    let resolved = match git_run(
+        repo_path,
+        &["rev-parse", "--git-path", "hooks"],
+        &GitRunOpts::default(),
+    )
+    .await
+    {
+        Ok(out) if out.exit_code == Some(0) && !out.stdout.trim().is_empty() => {
+            let p = PathBuf::from(out.stdout.trim());
+            if p.is_absolute() {
+                p
             } else {
-                repo_path.join(pb)
+                repo_path.join(p)
             }
         }
-        _ => repo_path.join(".git").join("hooks"),
+        _ => default_dir,
+    };
+
+    // renderer override cross-check — 서버 해석과 불일치 시 무시(warn). 신뢰 경계.
+    if let Some(ov) = hooks_path_override.map(str::trim).filter(|s| !s.is_empty()) {
+        let ov_abs = {
+            let p = PathBuf::from(ov);
+            if p.is_absolute() {
+                p
+            } else {
+                repo_path.join(p)
+            }
+        };
+        if ov_abs != resolved {
+            tracing::warn!(
+                target: "git_fried_lib::hooks",
+                repo = %repo_path.display(),
+                "hooks_path_override 가 실제 core.hooksPath 해석과 불일치 — override 무시 (renderer-supplied 임의 경로 차단)"
+            );
+        }
+    }
+
+    Ok(resolved)
+}
+
+/// 해석된 hooks 디렉토리가 repo working tree 밖인지 — UI 경고(경고+허용)용.
+/// canonicalize 가능하면 그 기준, 아니면 경로 prefix 로 보수 판정.
+pub fn hooks_dir_is_external(repo_path: &Path, hooks_dir: &Path) -> bool {
+    match (hooks_dir.canonicalize(), repo_path.canonicalize()) {
+        (Ok(hc), Ok(rc)) => !hc.starts_with(&rc),
+        _ => !hooks_dir.starts_with(repo_path),
     }
 }
 
@@ -193,7 +245,16 @@ pub async fn list_git_hooks(
     repo_path: &Path,
     hooks_path_override: Option<&str>,
 ) -> AppResult<Vec<HookEntry>> {
-    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override);
+    let hooks_dir = resolve_hooks_dir(repo_path, hooks_path_override).await?;
+
+    if hooks_dir_is_external(repo_path, &hooks_dir) {
+        tracing::warn!(
+            target: "git_fried_lib::hooks",
+            repo = %repo_path.display(),
+            hooks_dir = %hooks_dir.display(),
+            "core.hooksPath 가 repo working tree 밖을 가리킴 — 외부 hooks 디렉토리 (경고+허용)"
+        );
+    }
 
     tracing::debug!(
         target: "git_fried_lib::hooks",
@@ -372,5 +433,53 @@ mod tests {
         let result = list_git_hooks(repo, None).await.unwrap();
         assert!(result.iter().all(|e| !e.exists));
         assert!(result.iter().all(|e| !e.sample_exists));
+    }
+
+    // plan #45 H — renderer 가 임의 hooks_path_override 를 줘도 서버는 그것을 신뢰하지
+    // 않고 git 이 resolve 한 core.hooksPath(config)만 scan 함을 검증. (compromised
+    // renderer 가 임의 디렉토리 메타를 열거하던 벡터 차단 — 경고+허용 정책.)
+    #[tokio::test]
+    async fn test_list_hooks_ignores_renderer_override_uses_config() {
+        let repo_tmp = TempDir::new().unwrap();
+        let repo = repo_tmp.path();
+        git_run(repo, &["init", "-q", "-b", "main"], &GitRunOpts::default())
+            .await
+            .unwrap()
+            .into_ok()
+            .unwrap();
+
+        // 정당한 외부 hooks 디렉토리 (config 로 지정) — pre-commit 보유.
+        let cfg_tmp = TempDir::new().unwrap();
+        let cfg_dir = cfg_tmp.path();
+        std::fs::write(cfg_dir.join("pre-commit"), "#!/bin/sh\nexit 0\n").unwrap();
+        git_run(
+            repo,
+            &["config", "core.hooksPath", cfg_dir.to_str().unwrap()],
+            &GitRunOpts::default(),
+        )
+        .await
+        .unwrap()
+        .into_ok()
+        .unwrap();
+
+        // 공격자가 노리는 override 디렉토리 — pre-push 보유 (config 에는 없음).
+        let evil_tmp = TempDir::new().unwrap();
+        let evil_dir = evil_tmp.path();
+        std::fs::write(evil_dir.join("pre-push"), "#!/bin/sh\nexit 0\n").unwrap();
+
+        // renderer 가 evil override 를 줘도 → config(cfg_dir)의 pre-commit 만 보여야 함.
+        let result = list_git_hooks(repo, Some(evil_dir.to_str().unwrap()))
+            .await
+            .unwrap();
+        let pre_commit = result.iter().find(|e| e.name == "pre-commit").unwrap();
+        assert!(
+            pre_commit.exists,
+            "config 의 core.hooksPath 가 honor 되어 pre-commit 발견되어야 함"
+        );
+        let pre_push = result.iter().find(|e| e.name == "pre-push").unwrap();
+        assert!(
+            !pre_push.exists,
+            "공격자 override 디렉토리의 pre-push 는 무시되어야 함 (renderer override 불신)"
+        );
     }
 }
