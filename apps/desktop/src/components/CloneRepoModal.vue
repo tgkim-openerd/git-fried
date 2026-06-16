@@ -23,7 +23,7 @@ const qc = useQueryClient()
 // plan #45 M4c — 진행 중 clone 취소용 job_id. mutate 마다 새로 생성 → cancelGitOp 로 중단.
 const cloneJobId = ref<string | null>(null)
 // 사용자가 취소를 눌렀는지 — onError 에서 "취소됨"(중립)과 "실패"(에러)를 구분 (Codex Phase 3).
-const cloneCancelled = ref(false)
+const cloneCancelled = ref<boolean>(false)
 
 // crypto.randomUUID 미지원 환경(구형 WebView/일부 테스트) fallback (Codex Phase 3 LOW).
 function genJobId(): string {
@@ -189,13 +189,23 @@ function close() {
 // 취소 시 clone IPC 가 "취소됨" 에러 반환 → cloneMut.onError 로 사용자 피드백.
 async function cancelClone() {
   const id = cloneJobId.value
-  if (id) {
-    cloneCancelled.value = true // onError 가 "취소됨"(중립)으로 처리하도록 표시.
-    await cancelGitOp(id)
+  if (!id) return
+  // cancelGitOp 은 실제 취소 신호가 BE 에 전달됐는지 boolean 을 반환한다.
+  // true(child kill 신호 전달)일 때만 cloneCancelled 를 세워 cloneMut.onError 가
+  // "취소됨"(중립)으로 표시한다. false(이미 완료/미등록)면 플래그를 세우지 않아
+  // 진짜 clone 결과(성공/실제 에러)가 그대로 surface 된다 — 실패의 "취소됨" 위장 방지.
+  // 또한 async @click 핸들러의 rejection 은 Vue errorHandler 가 못 잡으므로 직접
+  // catch 해 surface 한다 (silent-failure review C-1/H-1).
+  try {
+    if (await cancelGitOp(id)) {
+      cloneCancelled.value = true
+    }
+  } catch (e) {
+    toast.error('클론 취소 실패', describeError(e))
   }
 }
 
-const canSubmit = computed(
+const canSubmit = computed<boolean>(
   () => url.value.trim().length > 0 && targetPath.value.length > 0 && !cloneMut.isPending.value,
 )
 </script>

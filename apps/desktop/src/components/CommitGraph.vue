@@ -9,7 +9,7 @@
 //  - 8개 stable color (브랜치 hash)
 // Sprint c48 Wave B-2 — script 227 LOC → ~110 LOC. WIP+virtualizer 와 row interaction 을
 // useCommitGraphRows / useCommitGraphInteraction 으로 분리.
-import { computed, ref, useTemplateRef, watch, nextTick } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { VueDraggable } from 'vue-draggable-plus'
 import { useGraph } from '@/composables/useGraph'
@@ -201,7 +201,9 @@ useCommitGraphLifecycle({
 // c79 ARCH-003 — window.gitFriedSelectCommit 등록 단일책임 분리.
 useGlobalCommitJumpHook(selectAndScrollToSha)
 // plan #45 M3 — reactive 변경도 rAF coalesce (스트림 갱신 시 프레임당 1회 draw).
-watch([rows, maxLane, virtualItems, laneW, wipActive], () => nextTick(() => scheduleDraw()))
+// scheduleDraw 의 rAF 콜백이 microtask(Vue 렌더 flush) 이후 실행 → drawGraph 가
+// fresh virtualItems/rows 를 읽는다. nextTick 불필요 (이중 지연 제거 — quality review #2).
+watch([rows, maxLane, virtualItems, laneW, wipActive], () => scheduleDraw())
 
 // Sprint A3 / c40 review ARCH-004 — 컬럼 토글 / 재정렬 + header menu.
 // Sprint c52 — branchTagSticky (branchTag visible + 첫 위치) 활성 시 sticky overlay column 노출.

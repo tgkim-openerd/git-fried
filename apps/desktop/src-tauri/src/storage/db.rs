@@ -171,10 +171,18 @@ impl Db {
     /// sidecar 가 남으면 재생성된 fresh DB 에 stale WAL 이 replay 되어 손상되기 때문. 하나라도
     /// 옮기지 못하면 `false` 반환 → 호출자가 재생성을 중단하고 원 에러를 전파(안전).
     ///
-    /// ts 는 나노초 (같은 초 다중 격리 시 dst 충돌 방지, Codex M6.4). rename 은 같은 볼륨 내
+    /// dst 는 `ts`(나노초) + process 수명 `seq` 카운터로 유일성 보장 — 같은 초/같은 나노초
+    /// tick 다중 격리나 ts=0 fallback(시계 스큐)에도 충돌 안 함 (Codex M6.4 + review M-2).
+    /// rename 은 같은 볼륨 내
     /// 메타데이터 연산이라 파일 크기와 무관하게 빠름 — async 블로킹 무시 가능 (Codex M6.5).
     /// Windows 파일 잠금 해제 지연 대비 1회 재시도.
     async fn quarantine_corrupt(path: &Path) -> bool {
+        // process 수명 단조 카운터 — 거친 클럭 해상도(Windows)로 같은 나노초 tick 에 2회
+        // 격리하거나 시계 스큐로 ts=0 fallback 이 겹쳐도 dst 가 유일하도록 tiebreaker.
+        // (silent-failure review M-2 — ts 단독으로는 충돌 가능)
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static SEQ: AtomicU64 = AtomicU64::new(0);
+        let seq = SEQ.fetch_add(1, Ordering::Relaxed);
         let ts = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos())
@@ -185,7 +193,7 @@ impl Db {
             if !src.exists() {
                 continue;
             }
-            let dst = PathBuf::from(format!("{base}.corrupt-{ts}{suffix}"));
+            let dst = PathBuf::from(format!("{base}.corrupt-{ts}-{seq}{suffix}"));
             let mut moved = std::fs::rename(&src, &dst).is_ok();
             if !moved {
                 // pool close 후에도 핸들 해제가 지연될 수 있음 — 짧게 대기 후 1회 재시도.
