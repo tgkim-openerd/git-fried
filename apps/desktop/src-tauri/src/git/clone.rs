@@ -183,7 +183,7 @@ pub async fn clone(
     // plan #45 M4a — 네트워크 clone 에 30분 backstop (무한 hang 방지, 대형 repo 보존).
     // plan #45 M4b — cancel 신호 전달 (FE 가 cancel_git_op(job_id) 호출 시 child kill).
     let clone_opts = GitRunOpts {
-        timeout: Some(crate::git::runner::GIT_LONG_NETWORK_TIMEOUT),
+        timeout: Some(crate::git::runner::git_long_network_timeout()),
         cancel,
         ..GitRunOpts::default()
     };

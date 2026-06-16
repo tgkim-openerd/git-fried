@@ -73,10 +73,21 @@ pub struct GitRunOpts {
 /// 보유하는 op(pull 등)용 — guard starvation 방지로 짧게.
 pub const GIT_NETWORK_TIMEOUT: Duration = Duration::from_secs(600);
 
-/// plan #45 M4a — guard 없는 네트워크 op(clone/fetch/push)용 generous backstop (30분).
+/// plan #45 M4a — guard 없는 네트워크 op(clone/fetch/push)용 generous backstop 기본값 (30분).
 /// 의도: 대형 repo 의 정상 장시간 작업은 보존하되, 무한 hang(네트워크 black-hole 등)은
 /// 영원히 매달리지 않고 종료시킨다. 사용자 능동 취소는 M4b(cancellation IPC) 가 담당.
 pub const GIT_LONG_NETWORK_TIMEOUT: Duration = Duration::from_secs(1800);
+
+/// plan #45 M4a (Codex M4a.1) — backstop 을 환경변수로 override 가능하게. 초대형 monorepo
+/// 가 30분을 넘기면 `GIT_FRIED_NETWORK_TIMEOUT_SECS` 로 연장 (유효 양수만, 아니면 기본 30분).
+pub fn git_long_network_timeout() -> Duration {
+    std::env::var("GIT_FRIED_NETWORK_TIMEOUT_SECS")
+        .ok()
+        .and_then(|s| s.parse::<u64>().ok())
+        .filter(|&n| n > 0)
+        .map(Duration::from_secs)
+        .unwrap_or(GIT_LONG_NETWORK_TIMEOUT)
+}
 
 /// 한글 안전 git CLI 호출.
 ///

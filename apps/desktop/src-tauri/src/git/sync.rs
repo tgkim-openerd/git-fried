@@ -11,7 +11,7 @@
 use crate::error::AppResult;
 use crate::git::path::reject_dash_prefix;
 use crate::git::runner::{
-    git_run, GitOutput, GitRunOpts, GIT_LONG_NETWORK_TIMEOUT, GIT_NETWORK_TIMEOUT,
+    git_long_network_timeout, git_run, GitOutput, GitRunOpts, GIT_NETWORK_TIMEOUT,
 };
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -43,9 +43,9 @@ impl From<GitOutput> for SyncResult {
 fn opts_with_ssh(ssh_key_path: Option<&str>) -> GitRunOpts {
     GitRunOpts {
         ssh_key_path: ssh_key_path.map(String::from),
-        // plan #45 M4a — guard 없는 fetch/push 에 30분 backstop (무한 hang 방지).
+        // plan #45 M4a — guard 없는 fetch/push 에 30분 backstop (무한 hang 방지, env override 가능).
         // pull 은 호출부에서 GIT_NETWORK_TIMEOUT(600s)로 override (guard 보유).
-        timeout: Some(GIT_LONG_NETWORK_TIMEOUT),
+        timeout: Some(git_long_network_timeout()),
         ..GitRunOpts::default()
     }
 }
@@ -302,7 +302,7 @@ mod tests {
             Some("/home/me/.ssh/id_ed25519")
         );
         // plan #45 M4a — backstop timeout 동반.
-        assert_eq!(opts.timeout, Some(GIT_LONG_NETWORK_TIMEOUT));
+        assert_eq!(opts.timeout, Some(git_long_network_timeout()));
     }
 
     #[test]
@@ -310,6 +310,6 @@ mod tests {
         // plan #45 M4a — ssh 없어도 fetch/push 에 30분 backstop 적용 (무한 hang 방지).
         let opts = opts_with_ssh(None);
         assert!(opts.ssh_key_path.is_none());
-        assert_eq!(opts.timeout, Some(GIT_LONG_NETWORK_TIMEOUT));
+        assert_eq!(opts.timeout, Some(git_long_network_timeout()));
     }
 }

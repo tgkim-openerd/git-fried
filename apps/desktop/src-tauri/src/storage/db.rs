@@ -76,7 +76,16 @@ impl Db {
                     error = %e,
                     "Db::open 실패 — DB 손상 의심, 격리 후 재생성 시도"
                 );
-                Self::quarantine_corrupt(path).await;
+                // 격리 실패(특히 -wal/-shm 잔존) 시 재생성하면 fresh DB 에 stale WAL 이
+                // replay 될 수 있다 (Codex M6.3) → 재생성하지 않고 원 에러 전파.
+                if !Self::quarantine_corrupt(path).await {
+                    tracing::error!(
+                        target: "git_fried_lib::storage",
+                        path = %path.display(),
+                        "손상 파일 격리 실패 — fresh DB 재생성 중단, 원 에러 전파"
+                    );
+                    return Err(e);
+                }
                 let db = Self::open_and_migrate(path).await?;
                 tracing::warn!(
                     target: "git_fried_lib::storage",
@@ -133,6 +142,11 @@ impl Db {
     }
 
     /// M6 — `PRAGMA quick_check` 무결성 검사 후 마이그레이션 (멱등). 손상 시 Err.
+    ///
+    /// quick_check 는 시작 시 빠른 best-effort 게이트 (Codex M6.1): 구조/페이지/malformed
+    /// 손상은 잡지만 일부 index 불일치는 놓칠 수 있다. 매 시작 full `integrity_check` 는
+    /// 대형 DB 에서 비싸므로 quick_check 채택. 성공 시 단일 "ok" 행, 손상 시 첫 행이 오류
+    /// 설명 → `fetch_one` 의 첫 행이 "ok" 가 아니면 손상 (Codex M6.2: 첫 행으로 충분).
     async fn verify_and_migrate(pool: &SqlitePool) -> AppResult<()> {
         let check: String = sqlx::query_scalar("PRAGMA quick_check")
             .fetch_one(pool)
@@ -150,32 +164,43 @@ impl Db {
         Ok(())
     }
 
-    /// M6 — 손상 DB 파일 집합(db + `-wal` + `-shm`)을 `<path>.corrupt-<ts>` 로 격리(보존).
-    /// 데이터 손실 없이 사용자가 수동 복구할 수 있게 원본을 옮겨둔다. Windows 파일 잠금
-    /// 해제 지연 대비 1회 재시도. 격리 실패해도 warn-log 후 진행 (재생성이 덮어쓸 수 있음).
-    async fn quarantine_corrupt(path: &Path) {
+    /// M6 — 손상 DB 파일 집합(`-wal`, `-shm`, 그리고 main db)을 `<path>.corrupt-<ts>` 로
+    /// 격리(보존). 데이터 손실 없이 사용자가 수동 복구할 수 있게 원본을 옮겨둔다.
+    ///
+    /// **순서 (Codex M6.3)**: sidecar(-wal/-shm)를 main 보다 **먼저** 옮긴다. main 만 옮기고
+    /// sidecar 가 남으면 재생성된 fresh DB 에 stale WAL 이 replay 되어 손상되기 때문. 하나라도
+    /// 옮기지 못하면 `false` 반환 → 호출자가 재생성을 중단하고 원 에러를 전파(안전).
+    ///
+    /// ts 는 나노초 (같은 초 다중 격리 시 dst 충돌 방지, Codex M6.4). rename 은 같은 볼륨 내
+    /// 메타데이터 연산이라 파일 크기와 무관하게 빠름 — async 블로킹 무시 가능 (Codex M6.5).
+    /// Windows 파일 잠금 해제 지연 대비 1회 재시도.
+    async fn quarantine_corrupt(path: &Path) -> bool {
         let ts = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
+            .map(|d| d.as_nanos())
             .unwrap_or(0);
         let base = path.to_string_lossy().to_string();
-        for suffix in ["", "-wal", "-shm"] {
+        for suffix in ["-wal", "-shm", ""] {
             let src = PathBuf::from(format!("{base}{suffix}"));
             if !src.exists() {
                 continue;
             }
             let dst = PathBuf::from(format!("{base}.corrupt-{ts}{suffix}"));
-            if std::fs::rename(&src, &dst).is_err() {
+            let mut moved = std::fs::rename(&src, &dst).is_ok();
+            if !moved {
                 // pool close 후에도 핸들 해제가 지연될 수 있음 — 짧게 대기 후 1회 재시도.
                 tokio::time::sleep(std::time::Duration::from_millis(150)).await;
-                if let Err(e) = std::fs::rename(&src, &dst) {
-                    tracing::warn!(
-                        target: "git_fried_lib::storage",
-                        "손상 파일 격리 rename 실패 {src:?} -> {dst:?}: {e}"
-                    );
-                }
+                moved = std::fs::rename(&src, &dst).is_ok();
+            }
+            if !moved {
+                tracing::warn!(
+                    target: "git_fried_lib::storage",
+                    "손상 파일 격리 실패 {src:?} -> {dst:?} — 재생성 중단 (stale WAL 방지)"
+                );
+                return false;
             }
         }
+        true
     }
 }
 

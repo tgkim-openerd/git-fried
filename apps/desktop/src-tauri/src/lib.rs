@@ -152,16 +152,18 @@ impl AppState {
         self.repo_lock(repo_id).lock_owned().await
     }
 
-    /// plan #45 M4b — job_id 에 취소 Notify 를 등록(이미 있으면 재사용)하고 반환.
-    /// 장시간 op 진입 시 호출 → 반환된 Notify 를 `GitRunOpts.cancel` 로 전달.
+    /// plan #45 M4b — job_id 에 **새** 취소 Notify 를 등록하고 반환. job_id 는 op 당 유일해야
+    /// 한다 (FE 가 crypto.randomUUID 등으로 생성). 동일 id 재등록 시 새 Notify 로 덮어쓴다 —
+    /// 이전 op 의 handle 은 orphan 이 되어 cross-cancel 을 막는다 (Codex M4b.4). 완료 시
+    /// `unregister_cancel` 에 **반환된 Arc 를 그대로** 넘겨야 자기 항목만 제거된다 (M4b.5).
+    /// 직접 호출보다 [`CancelGuard`] 사용 권장 (panic/early-return 시 자동 정리).
     pub fn register_cancel(&self, job_id: &str) -> Arc<Notify> {
-        let mut map = self
-            .cancel_signals
+        let n = Arc::new(Notify::new());
+        self.cancel_signals
             .lock()
-            .expect("cancel_signals Mutex poisoned");
-        map.entry(job_id.to_string())
-            .or_insert_with(|| Arc::new(Notify::new()))
-            .clone()
+            .expect("cancel_signals Mutex poisoned")
+            .insert(job_id.to_string(), n.clone());
+        n
     }
 
     /// plan #45 M4b — job_id 의 진행 중 op 취소 신호. 등록된 Notify 가 있으면 notify 후
@@ -182,12 +184,45 @@ impl AppState {
         }
     }
 
-    /// plan #45 M4b — op 완료/실패 후 취소 Notify 정리 (registry 무한 증가 방지).
-    pub fn unregister_cancel(&self, job_id: &str) {
-        self.cancel_signals
+    /// plan #45 M4b — op 완료/실패 후 **자신의** 취소 Notify 만 제거. 다른 op 가 같은 job_id
+    /// 로 덮어썼으면(ptr 불일치) no-op → 진행 중인 그 op 의 취소 가능성을 보존한다 (Codex M4b.5).
+    pub fn unregister_cancel(&self, job_id: &str, own: &Arc<Notify>) {
+        let mut map = self
+            .cancel_signals
             .lock()
-            .expect("cancel_signals Mutex poisoned")
-            .remove(job_id);
+            .expect("cancel_signals Mutex poisoned");
+        if map
+            .get(job_id)
+            .is_some_and(|existing| Arc::ptr_eq(existing, own))
+        {
+            map.remove(job_id);
+        }
+    }
+}
+
+/// plan #45 M4b — 취소 registry RAII 가드. drop(정상 완료 / `?` 조기 반환 / panic) 시 자신의
+/// Notify 만 unregister → registry leak 방지 (Codex M4b.2). 장시간 op IPC 시작 시 생성하고
+/// `guard.notify.clone()` 을 `GitRunOpts.cancel` 로 전달한다.
+pub struct CancelGuard {
+    state: Arc<AppState>,
+    job_id: String,
+    pub notify: Arc<Notify>,
+}
+
+impl CancelGuard {
+    pub fn new(state: Arc<AppState>, job_id: String) -> Self {
+        let notify = state.register_cancel(&job_id);
+        Self {
+            state,
+            job_id,
+            notify,
+        }
+    }
+}
+
+impl Drop for CancelGuard {
+    fn drop(&mut self) {
+        self.state.unregister_cancel(&self.job_id, &self.notify);
     }
 }
 
@@ -566,9 +601,19 @@ mod tests {
         let woke = tokio::time::timeout(Duration::from_millis(300), waiter).await;
         assert!(woke.is_ok(), "cancel_op 이 대기 중 op 를 깨워야 함");
 
-        // unregister 후/미등록 job 은 false.
-        state.unregister_cancel("job-1");
+        // unregister(자기 Notify) 후/미등록 job 은 false.
+        state.unregister_cancel("job-1", &notify);
         assert!(!state.cancel_op("job-1"), "unregister 후 cancel 은 false");
         assert!(!state.cancel_op("unknown"), "미등록 job 은 false");
+
+        // M4b.5 회귀 — 다른 op 가 같은 id 로 덮어쓴 뒤엔, 이전 Notify 로 unregister 해도 no-op
+        // (진행 중인 새 op 의 취소 가능성 보존).
+        let first = state.register_cancel("job-2");
+        let _second = state.register_cancel("job-2"); // 덮어쓰기
+        state.unregister_cancel("job-2", &first); // ptr 불일치 → no-op
+        assert!(
+            state.cancel_op("job-2"),
+            "덮어쓴 op 는 이전 Notify unregister 후에도 취소 가능해야 함"
+        );
     }
 }

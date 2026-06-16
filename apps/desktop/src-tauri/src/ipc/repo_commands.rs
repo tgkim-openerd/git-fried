@@ -130,14 +130,17 @@ pub async fn clone_repo(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> AppResult<CloneRepoResult> {
     let target = Path::new(&args.target_path);
-    // plan #45 M4b — job_id 있으면 취소 가능 clone. 완료(성공/실패) 후 registry 정리하고
-    // 에러는 정리 뒤 전파 (registry leak 방지).
-    let cancel = args.job_id.as_deref().map(|id| state.register_cancel(id));
-    let clone_res = git_clone::clone(&args.url, target, &args.options, cancel).await;
-    if let Some(id) = args.job_id.as_deref() {
-        state.unregister_cancel(id);
-    }
-    let clone_res = clone_res?;
+    // plan #45 M4b — job_id 있으면 CancelGuard 로 취소 가능 clone. guard drop(완료/`?` 에러/
+    // panic) 시 자동 unregister → registry leak 방지 (Codex M4b.2/M4b.5). scope = clone 만
+    // (fetch/push 취소는 동일 메커니즘으로 후속, Codex M4b.3). clone 은 fresh target 이라 kill
+    // 시 기존 repo 의 .git lock 잔존 위험 없음 (Codex M4b.6 N/A — 부분 target dir 만 남음).
+    let cancel_guard = args
+        .job_id
+        .as_deref()
+        .map(|id| crate::CancelGuard::new(state.inner().clone(), id.to_string()));
+    let cancel = cancel_guard.as_ref().map(|g| g.notify.clone());
+    let clone_res = git_clone::clone(&args.url, target, &args.options, cancel).await?;
+    drop(cancel_guard); // 네트워크 clone 완료 — 후속 DB 작업 전 registry 정리.
 
     if !args.auto_register {
         return Ok(CloneRepoResult {
