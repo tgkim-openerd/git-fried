@@ -31,6 +31,8 @@
 - **AI 외부 송출 명시**: 첫 사용 시 confirm 모달 + per-workspace 토글 + secret 마스킹 (regex: `ghp_*` / `gho_*` / `glpat-*` / AWS keys / 한국 주민번호)
 - **OS 키체인 single source**: `tauri-plugin-keyring` 만 PAT / SSH passphrase 저장 — 평문 파일 / SQLite 저장 금지
 - **한글 안전 spawn**: `git/runner.rs::git_run` 표준 — UTF-8 강제 + LANG=C.UTF-8 + lossy 디코딩 + NFC + GBK fallback
+- **CSP** (`tauri.conf.json`): `script-src 'self'` (unsafe-eval/inline 없음), `connect-src`/`img-src` 는 3 forge 호스트 allowlist. `style-src` 는 **`'unsafe-inline'` 의도적 허용 (plan #45 M9)** — Vue scoped styles / Tailwind 가 inline `<style>`·`style=""` 를 생성해 nonce/hash 화 비용이 크고, `script-src 'self'` 라 CSS 인젝션 단독으로 코드 실행 불가. 재평가는 Vue/Tailwind CSP-친화 전환 시.
+- **hooks 경로 신뢰 경계 (plan #45 H)**: `core.hooksPath` 는 git 이 직접 resolve (`git rev-parse --git-path hooks`) 한 값만 SoT — renderer 가 IPC 로 넘긴 override 는 불신(서버 해석과 불일치 시 무시 + warn-log). 외부(repo working tree 밖) hooks 경로는 **거부하지 않고 허용하되 경고** (중앙 공유 hooks 보존 — 경고+허용 정책).
 - **PR template 의 회귀 차단 체크리스트** ([`docs/plan/06 §회귀 차단`](docs/plan/06-risks-and-pitfalls.md))
 
 ## 공개 정책
