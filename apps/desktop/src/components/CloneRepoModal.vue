@@ -22,6 +22,15 @@ const qc = useQueryClient()
 
 // plan #45 M4c — 진행 중 clone 취소용 job_id. mutate 마다 새로 생성 → cancelGitOp 로 중단.
 const cloneJobId = ref<string | null>(null)
+// 사용자가 취소를 눌렀는지 — onError 에서 "취소됨"(중립)과 "실패"(에러)를 구분 (Codex Phase 3).
+const cloneCancelled = ref(false)
+
+// crypto.randomUUID 미지원 환경(구형 WebView/일부 테스트) fallback (Codex Phase 3 LOW).
+function genJobId(): string {
+  const c = globalThis.crypto
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
+  return `clone-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
 
 const url = ref('')
 const parentPath = ref('')
@@ -122,7 +131,8 @@ const cloneMut = useMutation({
     const f = filter.value.trim()
     if (f) opts.filter = f
     // plan #45 M4c — 취소 가능 clone: 새 job_id 생성 후 전달. cancelClone() 이 이 id 로 중단.
-    cloneJobId.value = crypto.randomUUID()
+    cloneCancelled.value = false
+    cloneJobId.value = genJobId()
     return cloneRepo(
       url.value.trim(),
       targetPath.value,
@@ -146,7 +156,14 @@ const cloneMut = useMutation({
     reset()
     emit('close')
   },
-  onError: (e) => toast.error(t('clone.failedTitle'), describeError(e)),
+  onError: (e) => {
+    // plan #45 M4c (Codex Phase 3) — 사용자 취소는 "실패" 가 아닌 중립 안내로 표시.
+    if (cloneCancelled.value) {
+      toast.info('클론을 취소했습니다')
+    } else {
+      toast.error(t('clone.failedTitle'), describeError(e))
+    }
+  },
 })
 
 function reset() {
@@ -172,7 +189,10 @@ function close() {
 // 취소 시 clone IPC 가 "취소됨" 에러 반환 → cloneMut.onError 로 사용자 피드백.
 async function cancelClone() {
   const id = cloneJobId.value
-  if (id) await cancelGitOp(id)
+  if (id) {
+    cloneCancelled.value = true // onError 가 "취소됨"(중립)으로 처리하도록 표시.
+    await cancelGitOp(id)
+  }
 }
 
 const canSubmit = computed(
@@ -188,7 +208,7 @@ const canSubmit = computed(
     panel-class="max-h-[85vh]"
     @close="close"
   >
-    <form class="p-4 text-sm" @submit.prevent="cloneMut.mutate()">
+    <form class="p-4 text-sm" @submit.prevent="canSubmit && cloneMut.mutate()">
       <label class="block">
         <span class="text-xs font-medium">URL</span>
         <input

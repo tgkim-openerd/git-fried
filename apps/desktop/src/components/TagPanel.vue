@@ -39,6 +39,9 @@ const tagsQuery = useQuery({
 function invalidate() {
   qc.invalidateQueries({ queryKey: ['tags', props.repoId] })
   qc.invalidateQueries({ queryKey: ['log', props.repoId] })
+  // plan #45 M2 (Codex Phase 3) — tag create/delete 도 CommitGraph 의 tag ring 에 반영되므로
+  // graph 무효화 (이전엔 tags+log 만 → 생성/삭제된 tag ring 이 graph 에서 stale).
+  qc.invalidateQueries({ queryKey: ['graph', props.repoId] })
 }
 
 // === create ===
