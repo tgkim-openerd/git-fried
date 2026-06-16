@@ -2,7 +2,7 @@
 
 > 출처: /analyze (2026-06-16) → work-list 추출(Claude×Codex) → grounding 워크플로(4 agent) → 초안 → **Codex 적대적 검토 병합** → 본 최종본.
 > 범위: git-fried 본체. **codex 플러그인 remediation 제외**(별도 이슈 opnd-io/opnd-codex-plugin#18).
-> 상태: **FINAL** (Codex 페어 검토 반영 완료, §6 참조).
+> 상태: **구현 완료 (2026-06-16)** — §7 완료 로그 참조. 구현·검증 가능 전 항목 Codex 페어 0건 수렴. B 는 사용자 결정(옵션 A)으로 deferred.
 
 ## 0. Grounding 요약 (계획 근거 — 모두 source-verified)
 
@@ -209,3 +209,34 @@ Codex(GPT-5.x) 적대적 검토(no-shell, 인라인) 반영:
 | acceptance 항목별 named 회귀 | §4.3 에 8개 named 회귀 명시 |
 
 **Codex 최종 build 순서**(채택, M8/M9 fold-in): ① A·C·D 결정 → ② H·F·G(파일 비충돌 시 병렬)·M8·M9 → ③ M7(②와 병렬) → ④ E(버전핀, ②③과 병렬) → ⑤ M1(H/F/M7 후) → ⑥ M6 → ⑦ M4a → ⑧ M4b(lock cleanup 테스트) → ⑨ M2(BE owner 분리 시 ⑥⑦과 병렬) → ⑩ M3(coalesce+interaction) → ⑪ B(CommitGraphRow 는 M3 후/병합; StatusPanel·PR 병렬) → ⑫ M4c(cancellation 안정 후) → ⑬ M5a → ⑭ M5b(cert 후).
+
+## 7. 구현 완료 로그 (2026-06-16)
+
+**18 commits** `d64d405..1060fb5` (main 직접). 전 단계 Codex 페어 적대적 리뷰 → 0건 수렴.
+
+| Phase | 항목 | commit | Codex 페어 결과 |
+|---|---|---|---|
+| prereq | conflict_prediction graceful degrade (git 2.38+) | dea9b1d | baseline 복원 |
+| prereq | rust-1.95 clippy 8 lint | 9c2c676 | toolchain drift |
+| 1 | F credential guard | 31574ba | — |
+| 1 | G git-apply traversal test | 87bbe99 | — |
+| 1 | H hooksPath 서버측 해석 | a4b5520 | audit BLOCKER=false positive(검증 기각) |
+| 1 | M9 CSP/hooksPath doc | 312f068 | — |
+| 1 | M7 tracing/bulk 마스킹 | 6feed48 | — |
+| 1 | E cargo-deny baseline | 414ff64 | CI-validated |
+| 1 | M8 deep-link / M1 IPC sweep | (코드무) | M8 이미 hardened, M1 0 unguarded |
+| 2 | M6 DB graceful recovery | b090306 | **BLOCKER M6.3 stale-WAL 수정** |
+| 2 | M4a backstop timeout | a515ec0 | — |
+| 2 | M4b cancellation 메커니즘 | 2c516cd | **BLOCKER M4b.5 unregister race 수정** |
+| 2 | Phase 2 Codex fixes | c3240f6 | 재리뷰 0건 |
+| 3 | M2 tag cache invalidation | 0eab72b | — |
+| 3 | M3 CommitGraph rAF perf | 9cd5ed3 | M3 selection-regression refuted |
+| 3 | M4c clone 취소 UI | d130b37 | — |
+| 3 | Phase 3 Codex fixes (M2확장+M4c UX) | 1060fb5 | 최종리뷰 0건 |
+| 4 | M5a 서명 설계 + 체크리스트 | f055f18 | M5b CI(release.yml gated signtool) pre-exists |
+
+**검증**: cargo test 333 · vitest 929(94 files) · clippy -D warnings 0 · typecheck/lint/i18n대칭 green.
+
+**미완 (deferred, 사용자 결정)**:
+- **B (god-comp template 추출: CommitGraphRow/StatusFileRow/PrConversationTab)** — 옵션 A 수용(2026-06-16). 사유: 후보 전부 고의존 template 추출 + 시각 회귀 검증(ui:sweep)이 실 Tauri WebView2 CDP(GUI) 필요 → 자율 flow 검증 불가, non-blocking warning 강행 시 silent UI regression 위험. GUI 검증 환경 별도 sprint.
+- **M5b tauri.conf.json 서명 키 + macOS** — cert 보유 후 사용자 적용 (CI scaffold 는 완료). updater 는 defer.
