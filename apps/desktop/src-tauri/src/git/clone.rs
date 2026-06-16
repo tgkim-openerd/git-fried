@@ -173,7 +173,12 @@ pub async fn clone(url: &str, target: &Path, opts: &CloneOptions) -> AppResult<C
     let started = std::time::Instant::now();
 
     // clone 은 부모 디렉토리에서 실행 (target 자체는 아직 없음).
-    let clone_out = git_run(parent, &arg_refs, &GitRunOpts::default()).await?;
+    // plan #45 M4a — 네트워크 clone 에 30분 backstop (무한 hang 방지, 대형 repo 보존).
+    let clone_opts = GitRunOpts {
+        timeout: Some(crate::git::runner::GIT_LONG_NETWORK_TIMEOUT),
+        ..GitRunOpts::default()
+    };
+    let clone_out = git_run(parent, &arg_refs, &clone_opts).await?;
     if clone_out.exit_code != Some(0) {
         tracing::error!(
             target: "git_fried_lib::clone",

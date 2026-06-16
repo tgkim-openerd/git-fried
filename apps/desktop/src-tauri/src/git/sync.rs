@@ -10,7 +10,9 @@
 
 use crate::error::AppResult;
 use crate::git::path::reject_dash_prefix;
-use crate::git::runner::{git_run, GitOutput, GitRunOpts, GIT_NETWORK_TIMEOUT};
+use crate::git::runner::{
+    git_run, GitOutput, GitRunOpts, GIT_LONG_NETWORK_TIMEOUT, GIT_NETWORK_TIMEOUT,
+};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -41,6 +43,9 @@ impl From<GitOutput> for SyncResult {
 fn opts_with_ssh(ssh_key_path: Option<&str>) -> GitRunOpts {
     GitRunOpts {
         ssh_key_path: ssh_key_path.map(String::from),
+        // plan #45 M4a — guard 없는 fetch/push 에 30분 backstop (무한 hang 방지).
+        // pull 은 호출부에서 GIT_NETWORK_TIMEOUT(600s)로 override (guard 보유).
+        timeout: Some(GIT_LONG_NETWORK_TIMEOUT),
         ..GitRunOpts::default()
     }
 }
@@ -141,7 +146,8 @@ pub async fn pull(
     }
     // Codex review 2026-06-04 (F3/F5) — pull 만 repo_mutation_guard 를 보유하므로 network hang 시
     // 같은 repo mutation 이 starvation. 600s timeout + git_run orphan-kill(F14) 으로 guard 해제.
-    // fetch/push 는 unlock 이라 timeout 미적용 (대형 repo >10분 작업 정상 동작 보존).
+    // (plan #45 M4a) fetch/push 는 opts_with_ssh 의 30분 backstop 만 — pull 은 guard 보유라
+    // 여기서 600s 로 tighten. 대형 repo 정상 작업은 backstop(30분) 안에서 보존.
     let mut pull_opts = opts_with_ssh(ssh_key_path);
     pull_opts.timeout = Some(GIT_NETWORK_TIMEOUT);
     let out = git_run(repo, &args, &pull_opts).await?;
@@ -295,11 +301,15 @@ mod tests {
             opts.ssh_key_path.as_deref(),
             Some("/home/me/.ssh/id_ed25519")
         );
+        // plan #45 M4a — backstop timeout 동반.
+        assert_eq!(opts.timeout, Some(GIT_LONG_NETWORK_TIMEOUT));
     }
 
     #[test]
-    fn opts_with_ssh_none_is_default() {
+    fn opts_with_ssh_none_has_backstop_timeout() {
+        // plan #45 M4a — ssh 없어도 fetch/push 에 30분 backstop 적용 (무한 hang 방지).
         let opts = opts_with_ssh(None);
         assert!(opts.ssh_key_path.is_none());
+        assert_eq!(opts.timeout, Some(GIT_LONG_NETWORK_TIMEOUT));
     }
 }

@@ -64,8 +64,14 @@ pub struct GitRunOpts {
     pub ssh_key_path: Option<String>,
 }
 
-/// Sprint c45 P0-2 — long-running git 작업 표준 timeout (10분).
+/// Sprint c45 P0-2 — long-running git 작업 표준 timeout (10분). repo_mutation_guard 를
+/// 보유하는 op(pull 등)용 — guard starvation 방지로 짧게.
 pub const GIT_NETWORK_TIMEOUT: Duration = Duration::from_secs(600);
+
+/// plan #45 M4a — guard 없는 네트워크 op(clone/fetch/push)용 generous backstop (30분).
+/// 의도: 대형 repo 의 정상 장시간 작업은 보존하되, 무한 hang(네트워크 black-hole 등)은
+/// 영원히 매달리지 않고 종료시킨다. 사용자 능동 취소는 M4b(cancellation IPC) 가 담당.
+pub const GIT_LONG_NETWORK_TIMEOUT: Duration = Duration::from_secs(1800);
 
 /// 한글 안전 git CLI 호출.
 ///
