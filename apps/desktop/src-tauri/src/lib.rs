@@ -157,15 +157,27 @@ fn prune_idle_locks(locks: &mut HashMap<i64, Arc<TokioMutex<()>>>) {
     locks.retain(|_, lock| Arc::strong_count(lock) > 1);
 }
 
+/// plan #45 M7 — tracing fmt sink 을 secret 마스킹 통과시키는 MakeWriter.
+/// 전역 로그(stderr)에 token/SSH/remote URL 등이 섞여도 sink 직전에 `mask_secrets` 적용.
+struct RedactingMakeWriter;
+
+impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for RedactingMakeWriter {
+    type Writer = secret_mask::RedactingWriter<std::io::Stderr>;
+    fn make_writer(&'a self) -> Self::Writer {
+        secret_mask::RedactingWriter::new(std::io::stderr())
+    }
+}
+
 /// `tauri::Builder` 를 셋업하고 실행. main.rs 에서 호출.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // 로깅: RUST_LOG 환경변수, 디폴트는 info.
+    // 로깅: RUST_LOG 환경변수, 디폴트는 info. plan #45 M7 — RedactingMakeWriter 로 마스킹.
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info,git_fried_lib=debug")),
         )
+        .with_writer(RedactingMakeWriter)
         .init();
 
     // Sprint c78 — panic hook (Tauri webview silent abort 방지).

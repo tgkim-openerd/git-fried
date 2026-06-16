@@ -83,7 +83,9 @@ pub async fn bulk_fetch(
                 repo_name: name,
                 success: res.as_ref().map(|s| s.success).unwrap_or(false),
                 data: res.as_ref().ok().cloned(),
-                error: res.err().map(|e| e.to_string()),
+                error: res
+                    .err()
+                    .map(|e| crate::secret_mask::mask_secrets(&e.to_string())),
             }
         }));
     }
@@ -97,7 +99,7 @@ pub async fn bulk_fetch(
                 repo_name: "(join error)".to_string(),
                 success: false,
                 data: None,
-                error: Some(e.to_string()),
+                error: Some(crate::secret_mask::mask_secrets(&e.to_string())),
             }),
         }
     }
@@ -202,7 +204,9 @@ pub async fn bulk_list_prs(
                 repo_name: name,
                 success: res.is_ok(),
                 data: res.as_ref().ok().cloned(),
-                error: res.err().map(|e| e.to_string()),
+                error: res
+                    .err()
+                    .map(|e| crate::secret_mask::mask_secrets(&e.to_string())),
             }
         }));
     }
@@ -216,7 +220,7 @@ pub async fn bulk_list_prs(
                 repo_name: "(join error)".into(),
                 success: false,
                 data: None,
-                error: Some(e.to_string()),
+                error: Some(crate::secret_mask::mask_secrets(&e.to_string())),
             }),
         }
     }
@@ -244,7 +248,9 @@ pub async fn bulk_quick_status(
                 repo_name: name,
                 success: res.is_ok(),
                 data: res.as_ref().ok().cloned(),
-                error: res.err().map(|e| e.to_string()),
+                error: res
+                    .err()
+                    .map(|e| crate::secret_mask::mask_secrets(&e.to_string())),
             }
         }));
     }
@@ -258,7 +264,7 @@ pub async fn bulk_quick_status(
                 repo_name: "(join error)".into(),
                 success: false,
                 data: None,
-                error: Some(e.to_string()),
+                error: Some(crate::secret_mask::mask_secrets(&e.to_string())),
             }),
         }
     }
@@ -285,7 +291,9 @@ pub async fn bulk_status(
                 repo_name: name,
                 success: res.is_ok(),
                 data: res.as_ref().ok().cloned(),
-                error: res.err().map(|e| e.to_string()),
+                error: res
+                    .err()
+                    .map(|e| crate::secret_mask::mask_secrets(&e.to_string())),
             }
         }));
     }
@@ -299,7 +307,7 @@ pub async fn bulk_status(
                 repo_name: "(join error)".into(),
                 success: false,
                 data: None,
-                error: Some(e.to_string()),
+                error: Some(crate::secret_mask::mask_secrets(&e.to_string())),
             }),
         }
     }

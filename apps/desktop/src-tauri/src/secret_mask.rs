@@ -57,9 +57,60 @@ pub fn mask_secrets(input: &str) -> String {
     out
 }
 
+/// tracing fmt sink 용 redacting writer (plan #45 M7).
+///
+/// 전역 `tracing_subscriber::fmt()` sink 가 마스킹을 거치지 않아, secret 를 담은 값이
+/// tracing 으로 로깅되면 stderr/캡처 로그로 누출될 수 있었다 (IPC Serialize 마스킹은
+/// frontend-bound 경로만 보호). 본 writer 는 fmt 가 포맷한 각 이벤트 라인을 `mask_secrets`
+/// 통과 후 inner(기본 stderr)로 흘린다. fmt 는 이벤트당 1회 write_all 하므로 라인 단위
+/// 마스킹이 안전하다.
+pub struct RedactingWriter<W: std::io::Write> {
+    inner: W,
+}
+
+impl<W: std::io::Write> RedactingWriter<W> {
+    pub fn new(inner: W) -> Self {
+        Self { inner }
+    }
+}
+
+impl<W: std::io::Write> std::io::Write for RedactingWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let masked = mask_secrets(&String::from_utf8_lossy(buf));
+        self.inner.write_all(masked.as_bytes())?;
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn redacting_writer_masks_pat_before_sink() {
+        use std::io::Write;
+        let mut sink: Vec<u8> = Vec::new();
+        {
+            let mut w = RedactingWriter::new(&mut sink);
+            write!(
+                w,
+                "fetch 실패: token ghp_abcdefghijklmnopqrstuvwxyz123456 invalid"
+            )
+            .unwrap();
+        }
+        let out = String::from_utf8(sink).unwrap();
+        assert!(
+            out.contains("[MASKED]"),
+            "PAT 이 sink 직전 마스킹되어야 함: {out}"
+        );
+        assert!(
+            !out.contains("ghp_"),
+            "원본 PAT 가 sink 에 남으면 안 됨: {out}"
+        );
+    }
 
     #[test]
     fn masks_github_pat() {
