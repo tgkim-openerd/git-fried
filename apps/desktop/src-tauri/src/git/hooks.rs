@@ -324,7 +324,7 @@ pub async fn list_git_hooks(
         } else {
             (file_name.clone(), false)
         };
-        let is_standard = STANDARD_HOOK_NAMES.iter().any(|s| *s == base_name.as_str());
+        let is_standard = STANDARD_HOOK_NAMES.contains(&base_name.as_str());
         if is_standard {
             if let Some(entry) = entries.iter_mut().find(|e| e.name == base_name) {
                 if is_sample {

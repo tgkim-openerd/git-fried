@@ -43,7 +43,7 @@ pub async fn reset(path: &Path, mode: ResetMode, target: &str) -> AppResult<()> 
     // reject_dash_prefix 가드만으로 충분 (mode 가 이미 fixed option).
     let result = git_run(
         path,
-        &["reset", mode_arg, &safe_target],
+        &["reset", mode_arg, safe_target],
         &GitRunOpts::default(),
     )
     .await?
@@ -353,7 +353,7 @@ pub async fn revert(path: &Path, sha: &str, no_commit: bool) -> AppResult<()> {
     }
     let safe_sha = reject_dash_prefix(sha, "sha")?;
     args.push("--end-of-options");
-    args.push(&safe_sha);
+    args.push(safe_sha);
     git_run(path, &args, &GitRunOpts::default())
         .await?
         .into_ok()?;

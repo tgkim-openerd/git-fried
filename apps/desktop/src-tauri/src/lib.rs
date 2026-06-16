@@ -199,7 +199,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_shell::init())
-        .menu(|handle| menu::build(handle))
+        .menu(menu::build)
         .on_menu_event(|app, event| {
             menu::handle_event(app, event.id().as_ref());
         })

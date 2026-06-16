@@ -53,7 +53,7 @@ pub fn build_authorize_url(args: &OAuthStartArgs, redirect_uri: &str) -> String 
     // SEC-001 — PKCE verifier 검증 (RFC 7636 §4.1).
     let verifier_len = args.pkce_verifier.len();
     assert!(
-        verifier_len >= 43 && verifier_len <= 128,
+        (43..=128).contains(&verifier_len),
         "PKCE verifier 가 RFC 7636 §4.1 범위 위반 (현재 len={verifier_len}, 권장 43..=128). \
          실 OAuth flow 진입 전 차단."
     );

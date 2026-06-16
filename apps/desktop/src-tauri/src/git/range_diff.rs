@@ -171,17 +171,15 @@ fn parse_header_line(line: &str) -> Option<RangeDiffEntry> {
 
     // op 와 idx 가 모순이면 거부 (헤더 false-positive 방어).
     match op.as_str() {
-        ">" => {
+        ">"
             // 좌측은 비어있어야 함.
-            if left_idx.is_some() || left_sha.is_some() {
+            if (left_idx.is_some() || left_sha.is_some()) => {
                 return None;
             }
-        }
-        "<" => {
-            if right_idx.is_some() || right_sha.is_some() {
+        "<"
+            if (right_idx.is_some() || right_sha.is_some()) => {
                 return None;
             }
-        }
         _ => {}
     }
 

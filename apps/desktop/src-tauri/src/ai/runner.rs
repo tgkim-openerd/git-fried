@@ -46,7 +46,7 @@ impl AiCli {
     /// non-interactive prompt 실행을 위한 CLI args 조립.
     ///
     /// Sprint c35 — `ai_run` 의 match 인라인 제거. trait 변환 시 그대로 trait method.
-    pub fn build_args<'a>(self, prompt: &'a str) -> Vec<&'a str> {
+    pub fn build_args(self, prompt: &str) -> Vec<&str> {
         match self {
             // Claude Code: -p (non-interactive) + --output-format text
             Self::Claude => vec!["-p", prompt, "--output-format", "text"],
