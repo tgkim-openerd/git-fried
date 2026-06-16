@@ -84,7 +84,7 @@
 | Claude security | 0 Critical/High (+2 LOW) | LOW 2건(hooks canonicalize cosmetic, RedactingWriter UTF-8) = documented-safe |
 | Claude silent-failure | 1 CRITICAL + 1 HIGH + 3 MEDIUM | C-1/H-1 수정(CRITICAL), M-2 수정, M-3 refuted(LC_ALL=C 강제), M-1 documented-safe |
 | Codex per-phase (구현 중) | M2/M6.1/M6.2/H/FixA | 전부 구현 중 반영(db.rs 144-150 doc 가 Codex M6.1/M6.2 인용) |
-| Codex full re-review | (실행 중 task-mqgh095e) | per-phase 0 수렴 재확인 성격 |
+| Codex full re-review | **hang ~20분 무결과** (task-mqgh095e, plugin issue #18) | inconclusive — per-phase Codex + 3 Claude 로 0 수렴 이미 확립, redundant bonus 라 미훼손 |
 | **재리뷰** | **0 findings** | 3 fix 전부 RESOLVED, regression 0 |
 
 **핵심 수정 (commit a5039bb)**:
@@ -102,7 +102,7 @@
 - **동적 상태**: hover/focus/selected/drag 후, viewport 리사이즈(좁음/넓음), 가상 스크롤 점프 — `ui:sweep` 는 기본 viewport 정적 캡처라 §UI Breakage 9~12범주는 부분 cover.
 - **모달/오버레이**: clone 모달·PR 상세·커밋 상세 사이드바 등은 sweep 경로(routes+settings+main-nav)에 미포함 — 별도 trigger 필요.
 - **실 백엔드 시나리오 e2e**: `.tauri.spec` 직렬/동시 invoke 교차입증은 본 run 에 미포함(이전 Sprint 2026-06-04 에서 3 passed 확인).
-- **Codex full re-review**: task-mqgh095e 실행 중(plugin 백그라운드). per-phase Codex + 3 Claude 리뷰로 0 수렴은 이미 확립.
+- **Codex full re-review**: task-mqgh095e 가 ~20분 무결과 hang (plugin issue #18 의 process_died/hang 패턴) → inconclusive. 단 per-phase Codex(M2/M6.1/M6.2/H/FixA 구현 중 반영) + 3 Claude 적대적 리뷰 + fix 재리뷰 0 findings 로 0 수렴은 이미 확립 — full re-review 는 redundant 교차검증이라 hang 이 결론을 바꾸지 않음.
 
 ---
 
