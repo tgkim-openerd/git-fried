@@ -64,6 +64,33 @@ impl Db {
     }
 
     pub async fn open(path: &Path) -> AppResult<Self> {
+        match Self::open_and_migrate(path).await {
+            Ok(db) => Ok(db),
+            Err(e) => {
+                // M6 (plan #45) — 손상 / 마이그레이션 실패 시 프로세스 abort 대신 graceful
+                // recovery: 손상 파일 집합(db + -wal + -shm)을 `.corrupt-<ts>` 로 격리(보존)
+                // 후 fresh DB 재생성 + migrate. 두 번째 실패는 진짜 결함 → 전파(상위에서 처리).
+                tracing::error!(
+                    target: "git_fried_lib::storage",
+                    path = %path.display(),
+                    error = %e,
+                    "Db::open 실패 — DB 손상 의심, 격리 후 재생성 시도"
+                );
+                Self::quarantine_corrupt(path).await;
+                let db = Self::open_and_migrate(path).await?;
+                tracing::warn!(
+                    target: "git_fried_lib::storage",
+                    path = %path.display(),
+                    "손상 DB 격리 후 fresh DB 재생성 완료 (이전 데이터는 .corrupt-* 파일에 보존)"
+                );
+                Ok(db)
+            }
+        }
+    }
+
+    /// 연결 + 무결성 검사 + 마이그레이션. 실패 시 pool 을 명시적으로 닫아
+    /// (Windows 파일 잠금 해제) 호출자가 손상 파일을 격리/재생성할 수 있게 한다.
+    async fn open_and_migrate(path: &Path) -> AppResult<Self> {
         let started = std::time::Instant::now();
         tracing::info!(
             target: "git_fried_lib::storage",
@@ -88,21 +115,67 @@ impl Db {
             .await
             .map_err(AppError::Db)?;
 
-        // 마이그레이션 — 시작 시 항상 실행. 멱등성 보장.
-        sqlx::migrate!("./src/storage/migrations")
-            .run(&pool)
-            .await
-            .map_err(AppError::Migrate)?;
+        if let Err(e) = Self::verify_and_migrate(&pool).await {
+            // 손상/마이그레이션 실패 — 격리 전 파일 잠금 해제를 위해 pool 명시 close.
+            pool.close().await;
+            return Err(e);
+        }
 
         let elapsed_ms = started.elapsed().as_millis() as u64;
         tracing::info!(
             target: "git_fried_lib::storage",
             path = %path.display(),
             elapsed_ms,
-            "Db::open 완료 (migrations 적용)"
+            "Db::open 완료 (integrity ok + migrations 적용)"
         );
 
         Ok(Self { pool })
+    }
+
+    /// M6 — `PRAGMA quick_check` 무결성 검사 후 마이그레이션 (멱등). 손상 시 Err.
+    async fn verify_and_migrate(pool: &SqlitePool) -> AppResult<()> {
+        let check: String = sqlx::query_scalar("PRAGMA quick_check")
+            .fetch_one(pool)
+            .await
+            .map_err(AppError::Db)?;
+        if check != "ok" {
+            return Err(AppError::Internal(format!(
+                "DB 무결성 quick_check 실패: {check}"
+            )));
+        }
+        sqlx::migrate!("./src/storage/migrations")
+            .run(pool)
+            .await
+            .map_err(AppError::Migrate)?;
+        Ok(())
+    }
+
+    /// M6 — 손상 DB 파일 집합(db + `-wal` + `-shm`)을 `<path>.corrupt-<ts>` 로 격리(보존).
+    /// 데이터 손실 없이 사용자가 수동 복구할 수 있게 원본을 옮겨둔다. Windows 파일 잠금
+    /// 해제 지연 대비 1회 재시도. 격리 실패해도 warn-log 후 진행 (재생성이 덮어쓸 수 있음).
+    async fn quarantine_corrupt(path: &Path) {
+        let ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let base = path.to_string_lossy().to_string();
+        for suffix in ["", "-wal", "-shm"] {
+            let src = PathBuf::from(format!("{base}{suffix}"));
+            if !src.exists() {
+                continue;
+            }
+            let dst = PathBuf::from(format!("{base}.corrupt-{ts}{suffix}"));
+            if std::fs::rename(&src, &dst).is_err() {
+                // pool close 후에도 핸들 해제가 지연될 수 있음 — 짧게 대기 후 1회 재시도.
+                tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+                if let Err(e) = std::fs::rename(&src, &dst) {
+                    tracing::warn!(
+                        target: "git_fried_lib::storage",
+                        "손상 파일 격리 rename 실패 {src:?} -> {dst:?}: {e}"
+                    );
+                }
+            }
+        }
     }
 }
 
@@ -529,6 +602,35 @@ mod tests {
         let ws2 = db.list_workspaces().await.unwrap();
         assert_eq!(ws2.len(), 1);
         assert_eq!(ws2[0].name, "개인");
+    }
+
+    // M6 (plan #45) — 손상 DB 는 프로세스 abort 대신 graceful recovery (격리 + 재생성).
+    #[tokio::test]
+    async fn test_db_open_recovers_from_corrupt_file() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let path = tmp.path().join("db.sqlite");
+        // sqlite 가 아닌 garbage — connect 또는 quick_check 단계에서 손상 감지.
+        std::fs::write(&path, b"NOT A SQLITE DATABASE \x00\x01\x02 garbage bytes").unwrap();
+
+        // abort 가 아니라 Ok (fresh DB 재생성) 여야 함.
+        let db = Db::open(&path)
+            .await
+            .expect("손상 DB 에서 graceful recovery 되어야 함");
+
+        // 재생성된 DB 는 정상 동작 (무결성 ok + 마이그레이션 적용).
+        let check: String = sqlx::query_scalar("PRAGMA quick_check")
+            .fetch_one(&db.pool)
+            .await
+            .unwrap();
+        assert_eq!(check, "ok");
+        assert_eq!(db.list_workspaces().await.unwrap().len(), 0);
+
+        // 손상 원본은 `.corrupt-*` 로 격리(보존)되어야 함.
+        let quarantined = std::fs::read_dir(tmp.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .any(|e| e.file_name().to_string_lossy().contains(".corrupt-"));
+        assert!(quarantined, "손상 DB 가 .corrupt-* 로 격리되어야 함");
     }
 
     #[tokio::test]
