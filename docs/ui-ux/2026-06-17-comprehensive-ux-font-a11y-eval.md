@@ -21,6 +21,18 @@
 
 ---
 
+## 2026-06-17 후속 적용 (같은 세션, commit `56c350f`)
+
+평가 직후 백로그 **9건 해소** (Codex 페어 + ui:sweep 회귀 0 검증). 갱신 점수: 폰트 74→**~84**, a11y 78→**~86**, 종합 ~85→**~90**.
+
+- **Pretendard 적용 여부 — 런타임 확정**: "적용 안 됨" 체감 검증 위해 실 앱 CDP `document.fonts` 프로브 실행 → `checkVar=true` / `loaded:["Pretendard Variable [loaded w=45 920]"]` / body 실 적용 = Pretendard 최우선 / 렌더 폭이 fallback 과 상이. **Pretendard Variable 은 2026-06-02 부터 실제 로드+적용 중**. 체감 원인은 폰트 *family* 가 아니라 *size(10/9px)+contrast(alpha muted)* — 아래 A-1~A-3 가 정답이었음. (메모리 pitfall: 적용 여부는 config 추측 금지, 실 앱 SoT.)
+- **해소 9건**: C-1·C-2(Mini 행 키보드) / C-3·C-4(icon 버튼 aria-label + 24px) / C-5(reset select focus-ring) / A-1·A-3(SHA·stash time 9px→11px full muted, 2.31:1→AA) / A-2(graph body 대비) / B-1(saved-view 삭제 pending-disable). 폰트 floor 정책 결정 적용: **9px=장식 전용 / 초소형 alpha 금지 / 의미 메타 ≥11px**.
+- **잔여 (다음 세션)**:
+  - **#8 `text-3xs(10px)` 213회 floor 상향** — 토큰 정책(11/12px·dense 유지) 결정 후 전수 audit (별도 sprint, 사용자 디자인 판단).
+  - **button-in-button 통일 a11y refactor (NEW, Codex)** — `<li role="button">` + 내부 `<button>` 패턴이 **10+ 컴포넌트**(FileRow/StatusFileRow/MiniStashList/BranchPanel...)에 퍼져 있음. ARIA 엄밀히는 nested-interactive 부적절 → 내부 full-width `<button>` 래퍼로 통일하는 codebase-wide pass 권장 (현재 9건 수정은 기존 패턴 일관 유지 + 키보드 접근 net 개선). MED, 전역 패턴 결정 필요.
+
+---
+
 ## ① 시각 깨짐 — ✅ 0 (회귀 없음)
 
 - 27 surface `CONSOLE_ERRORS=0` (3회 sweep 일관: baseline / B-1 / 본 평가).
