@@ -297,24 +297,17 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 :path="row.path"
                 @toggle="toggleDir"
               />
-              <li
+              <StatusFileRow
                 v-else
-                class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-                :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
-                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                role="button"
-                tabindex="0"
-                @click="onFileClick(row.path, true)"
-                @keydown.enter.self="onFileClick(row.path, true)"
-                @keydown.space.self.prevent="onFileClick(row.path, true)"
+                :path="row.path"
+                :label="statusLabel(row.meta.status)"
+                :color="statusColor(row.meta.status)"
+                :display="row.path.split('/').pop() ?? ''"
+                :selected="isSelected(row.path)"
+                :depth="row.depth"
+                @select="onFileClick(row.path, true)"
                 @contextmenu="onFileContextMenu($event, row.path, true)"
               >
-                <span :class="['shrink-0 w-12 text-3xs uppercase', statusColor(row.meta.status)]">
-                  {{ statusLabel(row.meta.status) }}
-                </span>
-                <span class="flex-1 truncate font-mono text-xs" :title="row.path">
-                  {{ row.path.split('/').pop() }}
-                </span>
                 <button
                   type="button"
                   class="text-3xs text-muted-foreground/70 hover:text-foreground"
@@ -333,7 +326,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 >
                   −
                 </button>
-              </li>
+              </StatusFileRow>
             </template>
           </ul>
         </div>
@@ -349,28 +342,19 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
             @bulk="onStageAll"
           />
           <ul v-if="!collapsedUnstaged && viewMode === 'path'">
-            <li
+            <StatusFileRow
               v-for="f in filteredUnstaged"
               :key="`u-${f.path}`"
-              class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-              :class="isSelected(f.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
-              draggable="true"
-              :title="t('status.fullscreenTitle')"
-              role="button"
-              tabindex="0"
-              @click="onFileClick(f.path, false)"
-              @keydown.enter.self="onFileClick(f.path, false)"
-              @keydown.space.self.prevent="onFileClick(f.path, false)"
+              :path="f.path"
+              :label="statusLabel(f.status)"
+              :color="statusColor(f.status)"
+              :display="f.path"
+              :selected="isSelected(f.path)"
+              :draggable="true"
+              @select="onFileClick(f.path, false)"
               @dblclick="openFullscreen(f.path, false)"
               @contextmenu="onFileContextMenu($event, f.path, false)"
-              @dragstart="
-                (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', f.path)
-              "
             >
-              <span :class="['shrink-0 w-12 text-3xs uppercase', statusColor(f.status)]">
-                {{ statusLabel(f.status) }}
-              </span>
-              <span class="flex-1 truncate font-mono text-xs">{{ f.path }}</span>
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
@@ -407,7 +391,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               >
                 +
               </button>
-            </li>
+            </StatusFileRow>
           </ul>
 
           <!-- Sprint c25-2.1 — Tree 모드: 디렉토리 collapse + indent. file row 액션 동등. -->
@@ -421,28 +405,18 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 :path="row.path"
                 @toggle="toggleDir"
               />
-              <li
+              <StatusFileRow
                 v-else
-                class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-                :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
-                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                draggable="true"
-                role="button"
-                tabindex="0"
-                @click="onFileClick(row.path, false)"
-                @keydown.enter.self="onFileClick(row.path, false)"
-                @keydown.space.self.prevent="onFileClick(row.path, false)"
+                :path="row.path"
+                :label="statusLabel(row.meta.status)"
+                :color="statusColor(row.meta.status)"
+                :display="row.path.split('/').pop() ?? ''"
+                :selected="isSelected(row.path)"
+                :depth="row.depth"
+                :draggable="true"
+                @select="onFileClick(row.path, false)"
                 @contextmenu="onFileContextMenu($event, row.path, false)"
-                @dragstart="
-                  (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', row.path)
-                "
               >
-                <span :class="['shrink-0 w-12 text-3xs uppercase', statusColor(row.meta.status)]">
-                  {{ statusLabel(row.meta.status) }}
-                </span>
-                <span class="flex-1 truncate font-mono text-xs" :title="row.path">
-                  {{ row.path.split('/').pop() }}
-                </span>
                 <button
                   type="button"
                   class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
@@ -479,7 +453,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 >
                   +
                 </button>
-              </li>
+              </StatusFileRow>
             </template>
           </ul>
         </div>
@@ -493,25 +467,18 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
             @update:collapsed="collapsedUntracked = $event"
           />
           <ul v-if="!collapsedUntracked && viewMode === 'path'">
-            <li
+            <StatusFileRow
               v-for="p in filteredUntracked"
               :key="`n-${p}`"
-              class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-              :class="isSelected(p) ? 'bg-accent ring-1 ring-primary/40' : ''"
-              draggable="true"
-              :title="t('status.fullscreenTitle')"
-              role="button"
-              tabindex="0"
-              @click="onFileClick(p, false)"
-              @keydown.enter.self="onFileClick(p, false)"
-              @keydown.space.self.prevent="onFileClick(p, false)"
+              :path="p"
+              label="new"
+              color="text-muted-foreground"
+              :display="p"
+              :selected="isSelected(p)"
+              :draggable="true"
+              @select="onFileClick(p, false)"
               @dblclick="openFullscreen(p, false)"
-              @dragstart="
-                (e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', p)
-              "
             >
-              <span class="shrink-0 w-12 text-3xs uppercase text-muted-foreground"> new </span>
-              <span class="flex-1 truncate font-mono text-xs">{{ p }}</span>
               <button
                 type="button"
                 class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
@@ -521,7 +488,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               >
                 +
               </button>
-            </li>
+            </StatusFileRow>
           </ul>
 
           <!-- c25-2.3 — Tree 모드: Untracked (string row, action='+' stage) -->
@@ -535,21 +502,16 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 :path="row.path"
                 @toggle="toggleDir"
               />
-              <li
+              <StatusFileRow
                 v-else
-                class="group flex items-center gap-2 rounded px-1 py-0.5 hover:bg-accent/40"
-                :class="isSelected(row.path) ? 'bg-accent ring-1 ring-primary/40' : ''"
-                :style="{ paddingLeft: `${row.depth * 12 + 4}px` }"
-                role="button"
-                tabindex="0"
-                @click="onFileClick(row.path, false)"
-                @keydown.enter.self="onFileClick(row.path, false)"
-                @keydown.space.self.prevent="onFileClick(row.path, false)"
+                :path="row.path"
+                label="new"
+                color="text-muted-foreground"
+                :display="row.name"
+                :selected="isSelected(row.path)"
+                :depth="row.depth"
+                @select="onFileClick(row.path, false)"
               >
-                <span class="shrink-0 w-12 text-3xs uppercase text-muted-foreground">new</span>
-                <span class="flex-1 truncate font-mono text-xs" :title="row.path">{{
-                  row.name
-                }}</span>
                 <button
                   type="button"
                   class="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-xs text-muted-foreground hover:text-foreground"
@@ -559,7 +521,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 >
                   +
                 </button>
-              </li>
+              </StatusFileRow>
             </template>
           </ul>
         </div>
