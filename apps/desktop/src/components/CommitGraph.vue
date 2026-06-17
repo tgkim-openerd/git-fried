@@ -73,26 +73,10 @@ const { visibleRef, soloRef, toggleSoloRef, hideRefByName, refKindOf } = useGrap
   () => props.repoId,
 )
 
-// /verify 2026-06-04 — ref 라벨 겹침 수정. 좁은 branchTag 컬럼에 ref 가 많으면 pill 이
-// (단일행화 후에도) overflow-hidden 으로 잘려 일부 ref 가 표시 안 됨 → 첫 N 개만 노출 + "+K".
-const MAX_REF_PILLS = 3
-function shownRefs(refs: readonly string[] | undefined): string[] {
-  return (refs ?? []).filter((r) => visibleRef.value(r)).slice(0, MAX_REF_PILLS)
-}
-function extraRefCount(refs: readonly string[] | undefined): number {
-  const n = (refs ?? []).filter((r) => visibleRef.value(r)).length
-  return Math.max(0, n - MAX_REF_PILLS)
-}
-function hiddenRefNames(refs: readonly string[] | undefined): string {
-  return (refs ?? [])
-    .filter((r) => visibleRef.value(r))
-    .slice(MAX_REF_PILLS)
-    .join('\n')
-}
-
-// Sprint c51 — GitKraken parity Minor (body 첫 줄 / ref-pill 색 / avatar) — c65 useCommitGraphPresentation 위임.
-// c73 ARCH-002 — getter 패턴 마이그 (family 일관).
-const { bodyFirstLine, refPillClass, authorInitial, authorAvatarBg } = useCommitGraphPresentation({
+// ref 라벨 겹침 수정(/verify 2026-06-04: 첫 N 개 pill + "+K") + body/avatar 헬퍼는
+// Sprint c103 (B-3) 에서 CommitGraphRow.vue 로 이전. CommitGraph 는 refPillClass(sticky
+// overlay + row prop) 만 사용 — visibleRef/soloRef/toggle/hide 도 sticky overlay 와 공유.
+const { refPillClass } = useCommitGraphPresentation({
   soloRef: () => soloRef.value,
   refKindOf,
 })
@@ -212,7 +196,6 @@ const {
   headerMenuOpen,
   headerMenuRef,
   headerOrder,
-  branchTagColumnVisible,
   branchTagSticky,
   openHeaderMenu,
   onReorder,
@@ -503,156 +486,33 @@ void [searchInputRef, moveSelection, headerMenuRef]
             </span>
           </div>
 
-          <!-- commit row -->
-          <!-- PR-B.2 보류: v-memo 는 v-for 와 같은 element 에만 가능 (vue/valid-v-memo).
-               virtualizer outer <template v-for> 안의 v-if/v-else 분기 둘 다 v-memo 적용
-               불가. 별도 sprint 에서 outer wrapper div + branch 통합 구조로 재설계 후 적용. -->
-          <div
+          <!-- commit row — Sprint c103 (B-3) CommitGraphRow.vue 로 분리.
+               v-memo(virtualizer 행 re-render skip)는 v-for 와 같은 element 에만 가능
+               (vue/valid-v-memo). outer <template v-for> 의 v-if/v-else 분기엔 적용 불가 →
+               wrapper div + branch 통합 DOM 재설계 필요 (별도 sprint). 본 분리는 DOM-identical. -->
+          <CommitGraphRow
             v-else
-            :style="{
-              position: 'absolute',
-              top: v.start + 'px',
-              left: graphWidth + 'px',
-              right: 0,
-              height: ROW_H + 'px',
-            }"
-            class="flex cursor-pointer items-center gap-2 px-2 text-sm hover:bg-accent/40 transition-opacity"
-            :class="[
-              selectedSha === commitRowAt(v.index)?.commit.sha
-                ? 'bg-accent text-accent-foreground'
-                : '',
-              searchQuery && commitRowAt(v.index) && isMatch(commitRowAt(v.index)!, searchQuery)
-                ? 'bg-yellow-100 dark:bg-yellow-700/25 ring-1 ring-yellow-500/40'
-                : '',
-              searchQuery && commitRowAt(v.index) && !isMatch(commitRowAt(v.index)!, searchQuery)
-                ? 'opacity-30 grayscale'
-                : '',
-            ]"
-            :data-testid="`commit-row-${commitRowAt(v.index)?.commit.sha?.slice(0, 7) ?? `idx-${v.index}`}`"
-            draggable="true"
-            @dragstart="
-              (ev: DragEvent) => {
-                const sha = commitRowAt(v.index)?.commit.sha
-                if (sha && ev.dataTransfer) {
-                  ev.dataTransfer.setData('application/x-git-fried-commit', sha)
-                  ev.dataTransfer.effectAllowed = 'copy'
-                }
-              }
-            "
-            role="button"
-            tabindex="0"
-            @click="selectRow(commitRowAt(v.index))"
-            @keydown.enter.self="selectRow(commitRowAt(v.index))"
-            @keydown.space.self.prevent="selectRow(commitRowAt(v.index))"
+            :row="commitRowAt(v.index)"
+            :index="v.index"
+            :top="v.start"
+            :graph-width="graphWidth"
+            :row-height="ROW_H"
+            :selected="selectedSha === commitRowAt(v.index)?.commit.sha"
+            :search-active="!!searchQuery"
+            :matched="!!(commitRowAt(v.index) && isMatch(commitRowAt(v.index)!, searchQuery))"
+            :columns="cols.visibleColumns.value"
+            :branch-tag-sticky="branchTagSticky"
+            :tooltip="commitTooltip(commitRowAt(v.index))"
+            :date="formatDate(commitRowAt(v.index)?.commit.authorAt ?? 0)"
+            :visible-ref="visibleRef"
+            :solo-ref="soloRef"
+            :ref-pill-class="refPillClass"
+            :toggle-solo-ref="toggleSoloRef"
+            :hide-ref-by-name="hideRefByName"
+            @select="selectRow(commitRowAt(v.index))"
             @dblclick="onRowDblClick(commitRowAt(v.index) ?? undefined)"
             @contextmenu="onRowContextMenu($event, commitRowAt(v.index) ?? undefined)"
-          >
-            <template v-for="col in cols.visibleColumns.value" :key="col.id">
-              <!-- branchTag (Phase 13-4 — GitKraken parity 별도 컬럼).
-                   Sprint c52 — branchTagSticky 시 sticky overlay (위) 가 chip 책임,
-                   여기는 width placeholder 만 (layout 보존, chip 중복 방지). -->
-              <span
-                v-if="col.id === 'branchTag' && branchTagSticky"
-                :class="[col.widthClass]"
-                aria-hidden="true"
-              />
-              <span
-                v-else-if="col.id === 'branchTag'"
-                :class="[col.widthClass, 'flex items-center gap-1 overflow-hidden']"
-              >
-                <CommitRefPill
-                  v-for="r in shownRefs(commitRowAt(v.index)?.commit.refs)"
-                  :key="r"
-                  :name="r"
-                  :solo-ref="soloRef"
-                  :pill-class="refPillClass(r)"
-                  @solo="toggleSoloRef"
-                  @hide="hideRefByName"
-                />
-                <span
-                  v-if="extraRefCount(commitRowAt(v.index)?.commit.refs) > 0"
-                  class="shrink-0 rounded bg-muted/50 px-1 py-0.5 text-3xs text-muted-foreground"
-                  :title="hiddenRefNames(commitRowAt(v.index)?.commit.refs)"
-                >
-                  +{{ extraRefCount(commitRowAt(v.index)?.commit.refs) }}
-                </span>
-              </span>
-              <!-- sha -->
-              <span
-                v-else-if="col.id === 'sha'"
-                :class="[col.widthClass, 'truncate font-mono text-xs text-muted-foreground']"
-              >
-                {{ commitRowAt(v.index)?.commit.shortSha }}
-              </span>
-              <!-- message + body 첫 줄 회색 inline (Sprint c51 GitKraken parity) + (refs only when branchTag column hidden — backward compat) -->
-              <span
-                v-else-if="col.id === 'message'"
-                :class="[col.widthClass, 'truncate']"
-                :title="commitTooltip(commitRowAt(v.index))"
-              >
-                {{ commitRowAt(v.index)?.commit.subject }}
-                <span
-                  v-if="bodyFirstLine(commitRowAt(v.index)?.commit.body)"
-                  class="ml-2 text-2xs text-muted-foreground/70"
-                >
-                  {{ bodyFirstLine(commitRowAt(v.index)?.commit.body) }}
-                </span>
-                <template v-if="!branchTagColumnVisible">
-                  <template v-for="r in commitRowAt(v.index)?.commit.refs ?? []" :key="r">
-                    <CommitRefPill
-                      v-if="visibleRef(r)"
-                      :name="r"
-                      :solo-ref="soloRef"
-                      :pill-class="refPillClass(r)"
-                      extra-class="ml-1.5"
-                      :shrink="false"
-                      @solo="toggleSoloRef"
-                      @hide="hideRefByName"
-                    />
-                  </template>
-                </template>
-              </span>
-              <!-- author + Sprint c51 avatar prefix (initial-letter mini circle, hash-color) -->
-              <span
-                v-else-if="col.id === 'author'"
-                :class="[
-                  col.widthClass,
-                  'flex items-center gap-1.5 truncate text-xs text-muted-foreground',
-                ]"
-              >
-                <span
-                  class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full font-semibold text-white"
-                  :class="[
-                    authorAvatarBg(commitRowAt(v.index)?.commit.authorName),
-                    /* c58 P3-5 보강 — 한글 2글자 시 font 축소 + tracking-tight (w-4 14px fit) */
-                    authorInitial(commitRowAt(v.index)?.commit.authorName).length >= 2
-                      ? 'text-[7px] tracking-tighter'
-                      : 'text-4xs',
-                  ]"
-                  :title="commitRowAt(v.index)?.commit.authorEmail || ''"
-                  aria-hidden="true"
-                >
-                  {{ authorInitial(commitRowAt(v.index)?.commit.authorName) }}
-                </span>
-                <span class="truncate">{{ commitRowAt(v.index)?.commit.authorName }}</span>
-              </span>
-              <!-- date -->
-              <span
-                v-else-if="col.id === 'date'"
-                :class="[col.widthClass, 'text-xs text-muted-foreground']"
-              >
-                {{ formatDate(commitRowAt(v.index)?.commit.authorAt ?? 0) }}
-              </span>
-              <!-- signed -->
-              <span
-                v-else-if="col.id === 'signed'"
-                :class="[col.widthClass, 'text-xs']"
-                :title="commitRowAt(v.index)?.commit.signed ? 'GPG 서명' : ''"
-              >
-                <span v-if="commitRowAt(v.index)?.commit.signed" class="text-diff-add">✓</span>
-              </span>
-            </template>
-          </div>
+          />
         </template>
       </div>
     </div>
