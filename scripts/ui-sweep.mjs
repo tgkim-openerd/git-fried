@@ -15,6 +15,7 @@ import { join } from 'node:path'
 import { chromium } from '@playwright/test'
 
 const PORT = 9222
+const RENDER_SETTLE_MS = 900 // QUAL-010: surface 캡처 전 렌더 안정화 대기 (named const)
 const OUT = join(tmpdir(), 'gitfried-ui-sweep')
 mkdirSync(OUT, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -76,7 +77,9 @@ const DOM_SMOKE = () => {
   }
   // nested-interactive (ARIA 부적절 + 키보드 트랩 위험): 상호작용 요소 안의 상호작용 요소.
   // 예: `<li role="button" tabindex="0">` 안의 `<button>` (행 클릭 + 내부 액션 버튼 패턴).
-  const INTER = 'button,a[href],[role=button],[role=tab],[role=menuitem],[role=link]'
+  // CDX-003: native form controls(input/select/textarea) + summary + contenteditable 도 상호작용 — 검출 대상 포함.
+  const INTER =
+    'button,a[href],input,select,textarea,summary,[role=button],[role=tab],[role=menuitem],[role=link],[contenteditable]:not([contenteditable="false"])'
   const INTER_ANC = INTER + ',[tabindex="0"]'
   for (const el of document.querySelectorAll(INTER)) {
     if (!vis(el)) continue
@@ -95,7 +98,7 @@ const report = []
 const consoleErrors = []
 
 async function capture(page, name) {
-  await sleep(900) // 렌더 안정화
+  await sleep(RENDER_SETTLE_MS) // 렌더 안정화
   const smoke = await page.evaluate(DOM_SMOKE).catch((e) => ({ error: String(e) }))
   const file = join(OUT, `${name}.png`)
   await page.screenshot({ path: file }).catch(() => {})
@@ -106,8 +109,9 @@ async function capture(page, name) {
     (smoke.offscreen?.length || 0)
   const nested = smoke.nestedInteractive?.length || 0
   report.push({ name, url: page.url(), smoke, flagged, nested })
+  // CDX-002: nested-interactive 만 있는 surface 도 ✓ 가 아니라 ⚠ 로 표시 (silently ✓ 방지).
   console.log(
-    `  ${flagged ? '⚠' : '✓'} ${name} (rootOverflow=${smoke.rootOverflow} wrap=${smoke.wrapped?.length || 0} clip=${smoke.clipped?.length || 0} off=${smoke.offscreen?.length || 0}${nested ? ` nested-interactive=${nested}` : ''})`,
+    `  ${flagged || nested ? '⚠' : '✓'} ${name} (rootOverflow=${smoke.rootOverflow} wrap=${smoke.wrapped?.length || 0} clip=${smoke.clipped?.length || 0} off=${smoke.offscreen?.length || 0}${nested ? ` nested-interactive=${nested}` : ''})`,
   )
 }
 
@@ -208,9 +212,14 @@ try {
   writeFileSync(join(OUT, 'report.json'), JSON.stringify({ report, consoleErrors }, null, 2))
   await browser.close().catch(() => {})
   const flaggedSurfaces = report.filter((r) => r.flagged > 0)
+  // CDX-002: nested-interactive surface 를 별도 라인으로 surface (visual flagged 와 분리 유지하되 가시화).
+  const nestedSurfaces = report.filter((r) => (r.nested || 0) > 0)
   console.log(`\nOUTDIR=${OUT}`)
-  console.log(`SURFACES=${report.length} FLAGGED=${flaggedSurfaces.length} CONSOLE_ERRORS=${consoleErrors.length}`)
+  console.log(
+    `SURFACES=${report.length} FLAGGED=${flaggedSurfaces.length} NESTED_INTERACTIVE=${nestedSurfaces.length} CONSOLE_ERRORS=${consoleErrors.length}`,
+  )
   console.log('FLAGGED:', flaggedSurfaces.map((r) => r.name).join(', ') || '(none)')
+  console.log('NESTED-INTERACTIVE:', nestedSurfaces.map((r) => `${r.name}(${r.nested})`).join(', ') || '(none)')
 } catch (e) {
   console.error('FAIL:', e.message)
 } finally {
