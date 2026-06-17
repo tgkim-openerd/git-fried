@@ -1,39 +1,17 @@
-// Sprint c40 god comp 분리 — PrDetailModal.vue (589 LOC) 의 6 mutation +
-// 2 confirm handler + suggestion form state 분리 (/analyze 후속).
+// Sprint c40 god comp 분리 — PrDetailModal.vue 의 6 mutation + 2 confirm handler +
+// suggestion form state 분리. Sprint c103(B-2)에서 conversation/action 두 축으로
+// 추가 분할 — 본 파일은 둘을 compose 하는 thin wrapper (레거시 통합 API + 테스트 호환).
 //
-// 책임:
-//   - addCommentMut / reviewMut / mergeMut / closeMut / reopenMut + suggestionMut
-//   - onMerge / onClose (confirm dialog → mutate)
-//   - suggestion form state (open / path / line / newCode / context + reset)
+// PrConversationTab.vue 는 usePrConversationMutations 를, PrDetailModal footer 는
+// usePrActionMutations 를 직접 사용. 본 wrapper 는 통합 shape 가 필요한 호출부(및
+// usePrMutations.test 의 mutateMockFns 호출 순서 0~5)를 위해 유지한다.
 //
-// 사용:
-//   const {
-//     addCommentMut, reviewMut, mergeMut, closeMut, reopenMut,
-//     suggestion, onMerge, onClose, resetForm,
-//   } = usePrMutations({
-//     repoId: () => props.repoId,
-//     number: () => props.number,
-//     newComment, reviewBody, verdict, mergeMethod,
-//     onMergeClose: () => emit('close'),
-//   })
-//
-// LOC 절감: PrDetailModal 96-202 + 228-248 (~ 125 LOC) → ~30 LOC.
-import { ref, type Ref } from 'vue'
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import {
-  addPrComment,
-  addReviewComment,
-  closePr,
-  mergePr,
-  reopenPr,
-  submitPrReview,
-} from '@/api/git'
+// **호출 순서 계약**: conversation(#0 suggestion / #1 addComment / #2 review) 다음에
+// action(#3 merge / #4 close / #5 reopen) — usePrMutations.test 의 mutateMockFns 인덱스.
+import type { Ref } from 'vue'
 import type { MergeMethod, ReviewVerdict } from '@/api/git'
-import { describeError } from '@/api/errors'
-import { useToast } from '@/composables/useToast'
-import { useNotification } from '@/composables/useNotification'
-import { useI18n } from 'vue-i18n'
-import { confirmDialog } from '@/composables/useConfirm'
+import { usePrConversationMutations } from '@/composables/usePrConversationMutations'
+import { usePrActionMutations } from '@/composables/usePrActionMutations'
 
 export interface UsePrMutationsOptions {
   repoId: () => number | null
@@ -46,171 +24,17 @@ export interface UsePrMutationsOptions {
 }
 
 export function usePrMutations(opts: UsePrMutationsOptions) {
-  const { t } = useI18n()
-  const toast = useToast()
-  const notification = useNotification()
-  const qc = useQueryClient()
-
-  // Suggestion form state.
-  const suggestionOpen = ref(false)
-  const sugPath = ref('')
-  const sugLine = ref<number | null>(null)
-  const sugNewCode = ref('')
-  const sugContext = ref('')
-
-  function resetSuggestion() {
-    suggestionOpen.value = false
-    sugPath.value = ''
-    sugLine.value = null
-    sugNewCode.value = ''
-    sugContext.value = ''
-  }
-
-  const suggestionMut = useMutation({
-    mutationFn: () => {
-      const id = opts.repoId()
-      const num = opts.number()
-      if (id == null || num == null) return Promise.reject(new Error('no selection'))
-      if (!sugPath.value.trim() || sugLine.value == null || sugLine.value < 1) {
-        return Promise.reject(new Error(t('pr.errPathLineRequired')))
-      }
-      if (!sugNewCode.value.trim()) {
-        return Promise.reject(new Error(t('pr.errNewCodeRequired')))
-      }
-      const ctx = sugContext.value.trim()
-      const body =
-        (ctx ? `${ctx}\n\n` : '') +
-        '```suggestion\n' +
-        sugNewCode.value.replace(/\n+$/, '') +
-        '\n```'
-      return addReviewComment(id, num, sugPath.value.trim(), sugLine.value, body)
-    },
-    onSuccess: () => {
-      toast.success(t('pr.suggestionAdded'), `${sugPath.value}:${sugLine.value}`)
-      resetSuggestion()
-      qc.invalidateQueries({ queryKey: ['pr-comments', opts.repoId(), opts.number()] })
-    },
-    onError: (e) => toast.error(t('pr.suggestionAddFailed'), describeError(e)),
-  })
-
-  const addCommentMut = useMutation({
-    mutationFn: () => {
-      const id = opts.repoId()
-      const num = opts.number()
-      if (id == null || num == null) return Promise.reject(new Error('no selection'))
-      return addPrComment(id, num, opts.newComment.value)
-    },
-    onSuccess: () => {
-      opts.newComment.value = ''
-      qc.invalidateQueries({ queryKey: ['pr-comments', opts.repoId(), opts.number()] })
-    },
-    onError: (e) => toast.error(t('pr.commentAddFailed'), describeError(e)),
-  })
-
-  const reviewMut = useMutation({
-    mutationFn: () => {
-      const id = opts.repoId()
-      const num = opts.number()
-      if (id == null || num == null) return Promise.reject(new Error('no selection'))
-      return submitPrReview(id, num, opts.verdict.value, opts.reviewBody.value)
-    },
-    onSuccess: () => {
-      opts.reviewBody.value = ''
-      opts.verdict.value = 'comment'
-      qc.invalidateQueries({ queryKey: ['pr-comments'] })
-      qc.invalidateQueries({ queryKey: ['pr'] })
-      qc.invalidateQueries({ queryKey: ['prs'] })
-      qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
-    },
-    onError: (e) => toast.error(t('pr.reviewSubmitFailed'), describeError(e)),
-  })
-
-  const mergeMut = useMutation({
-    mutationFn: () => {
-      const id = opts.repoId()
-      const num = opts.number()
-      if (id == null || num == null) return Promise.reject(new Error('no selection'))
-      return mergePr(id, num, opts.mergeMethod.value)
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['pr'] })
-      qc.invalidateQueries({ queryKey: ['prs'] })
-      qc.invalidateQueries({ queryKey: ['launchpad-prs'] })
-      const num = opts.number() ?? ''
-      toast.success(t('pr.mergeSuccess'), `#${num}`)
-      void notification.notify(t('pr.mergeSuccess'), `#${num}`)
-      opts.onMergeClose()
-    },
-    onError: (e) => toast.error(t('pr.mergeFailed'), describeError(e)),
-  })
-
-  const closeMut = useMutation({
-    mutationFn: () => {
-      const id = opts.repoId()
-      const num = opts.number()
-      if (id == null || num == null) return Promise.reject(new Error('no selection'))
-      return closePr(id, num)
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['pr'] })
-      qc.invalidateQueries({ queryKey: ['prs'] })
-    },
-    onError: (e) => toast.error(t('pr.closeFailed'), describeError(e)),
-  })
-
-  const reopenMut = useMutation({
-    mutationFn: () => {
-      const id = opts.repoId()
-      const num = opts.number()
-      if (id == null || num == null) return Promise.reject(new Error('no selection'))
-      return reopenPr(id, num)
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['pr'] })
-      qc.invalidateQueries({ queryKey: ['prs'] })
-    },
-    onError: (e) => toast.error(t('pr.reopenFailed'), describeError(e)),
-  })
-
-  async function onMerge() {
-    const ok = await confirmDialog({
-      title: t('confirm.mergePrTitle'),
-      message: t('confirm.mergePrMessage', {
-        method: opts.mergeMethod.value,
-        number: opts.number(),
-      }),
-      danger: true,
-    })
-    if (!ok) return
-    mergeMut.mutate()
-  }
-
-  async function onClose() {
-    const ok = await confirmDialog({
-      title: t('confirm.closePrTitle'),
-      message: t('confirm.closePrMessage', { number: opts.number() }),
-      danger: true,
-    })
-    if (!ok) return
-    closeMut.mutate()
-  }
-
+  // 순서 보존: conversation 먼저(#0~2) → action(#3~5).
+  const conversation = usePrConversationMutations(opts)
+  const action = usePrActionMutations(opts)
   return {
-    addCommentMut,
-    reviewMut,
-    mergeMut,
-    closeMut,
-    reopenMut,
-    suggestion: {
-      open: suggestionOpen,
-      path: sugPath,
-      line: sugLine,
-      newCode: sugNewCode,
-      context: sugContext,
-      mut: suggestionMut,
-      reset: resetSuggestion,
-    },
-    onMerge,
-    onClose,
+    addCommentMut: conversation.addCommentMut,
+    reviewMut: conversation.reviewMut,
+    suggestion: conversation.suggestion,
+    mergeMut: action.mergeMut,
+    closeMut: action.closeMut,
+    reopenMut: action.reopenMut,
+    onMerge: action.onMerge,
+    onClose: action.onClose,
   }
 }
