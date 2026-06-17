@@ -3,7 +3,7 @@
 // - staged / unstaged / untracked / conflicted 분리
 // - 파일 클릭 시 stage / unstage 토글
 // - "+ 모두 stage" / "− 모두 unstage" 단축
-import { computed, useTemplateRef } from 'vue'
+import { useTemplateRef } from 'vue'
 import { useStatus } from '@/composables/useStatus'
 import ContextMenu, { type ContextMenuExpose } from './ContextMenu.vue'
 import { useStageMutations } from '@/composables/useStageMutations'
@@ -161,7 +161,11 @@ const {
 // Sprint c54+ — selectedIsStaged 제거 (StatusInlineDiff prop 전용이었음, 우측 inline preview 폐기 후 사용처 0).
 // selectedPath 는 vim shortcut + copyPath + isSelected hover 표시 용도로 잔존.
 
-const isSelected = computed(() => (path: string) => selectedPath.value === path)
+// QUAL-011: computed-returns-function 대신 순수 함수 — selectedPath.value 를 직접 읽어
+// 반응성 유지하면서 매 렌더 새 함수 인스턴스 생성 제거.
+function isSelected(path: string): boolean {
+  return selectedPath.value === path
+}
 </script>
 
 <template>

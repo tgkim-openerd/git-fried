@@ -40,9 +40,9 @@ const aliases = useRepoAliases()
 const toast = useToast()
 const { t } = useI18n()
 
-const cloneOpen = ref(false)
-const filter = ref('')
-const bulkResultOpen = ref(false)
+const cloneOpen = ref<boolean>(false)
+const filter = ref<string>('')
+const bulkResultOpen = ref<boolean>(false)
 const bulkResultStore = useBulkFetchResult()
 const bulkResultFailedCount = computed(
   () => bulkResultStore.last.value?.results.filter((r) => !r.success).length ?? 0,

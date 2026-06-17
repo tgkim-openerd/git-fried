@@ -30,7 +30,7 @@ function save(repoId: number, v: string) {
 export function useWipNote(repoId: number): Ref<string> {
   let r = cache.get(repoId)
   if (!r) {
-    r = ref(load(repoId))
+    r = ref<string>(load(repoId))
     watch(r, (v) => save(repoId, v))
     cache.set(repoId, r)
   }

@@ -36,8 +36,8 @@ export function useGraphSearch(
   rows: Ref<GraphRow[]> | ComputedRef<GraphRow[]>,
   opts: UseGraphSearchOptions = {},
 ): UseGraphSearchReturn {
-  const searchQuery = ref('')
-  const searchOpen = ref(false)
+  const searchQuery = ref<string>('')
+  const searchOpen = ref<boolean>(false)
   const searchInputRef = ref<HTMLInputElement | null>(null)
 
   function isMatch(r: GraphRow, q: string): boolean {

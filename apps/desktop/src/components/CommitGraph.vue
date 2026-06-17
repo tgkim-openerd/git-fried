@@ -67,7 +67,7 @@ const emit = defineEmits<{
 
 // Sprint c75-A — 무한 스크롤 (useGraphInfiniteScroll 분리). graphLimit 은 useGraph 가 필요로
 // 하므로 caller 가 ref 로 만들어 주입 (Pattern 9 caller-decision).
-const graphLimit = ref(GRAPH_LIMIT_STEP)
+const graphLimit = ref<number>(GRAPH_LIMIT_STEP)
 const { data: graph, isFetching } = useGraph(() => props.repoId, graphLimit)
 const { visibleRef, soloRef, toggleSoloRef, hideRefByName, refKindOf } = useGraphRefVisibility(
   () => props.repoId,
