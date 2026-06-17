@@ -109,9 +109,13 @@ const { onStashContextMenu } = useStashInteraction({
       <li
         v-for="s in stashes ?? []"
         :key="`ms-${s.index}`"
-        class="group flex items-center gap-1 rounded px-1 py-1 text-2xs hover:bg-accent/30 cursor-pointer"
+        class="group flex items-center gap-1 rounded px-1 py-1 text-2xs hover:bg-accent/30 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50"
         :title="`stash@{${s.index}} on ${s.branch ?? 'unknown'} — ${s.message}`"
+        role="button"
+        tabindex="0"
         @click="onStashClick(s.sha)"
+        @keydown.enter.self="onStashClick(s.sha)"
+        @keydown.space.self.prevent="onStashClick(s.sha)"
         @contextmenu="onStashContextMenu($event, s)"
       >
         <span class="shrink-0 font-mono text-3xs text-muted-foreground">@{{ s.index }}</span>
@@ -119,7 +123,7 @@ const { onStashContextMenu } = useStashInteraction({
         <!-- S-3: createdAt epoch sec → relative time (formatRelativeTime ko/en) -->
         <span
           v-if="s.createdAt"
-          class="shrink-0 text-4xs text-muted-foreground/70"
+          class="shrink-0 text-2xs text-muted-foreground"
           :title="new Date(s.createdAt * 1000).toLocaleString()"
         >
           {{ formatRelativeTime(s.createdAt) }}

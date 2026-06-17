@@ -115,16 +115,18 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
         <div v-if="sha" class="flex items-center gap-1 border-l border-border pl-1">
           <button
             type="button"
-            class="rounded border border-border px-1.5 py-0.5 text-2xs hover:bg-accent/40"
+            class="inline-flex min-h-[24px] min-w-[24px] items-center justify-center rounded border border-border px-1.5 py-0.5 text-2xs hover:bg-accent/40"
             title="cherry-pick"
+            aria-label="이 commit cherry-pick"
             @click="cd.onCherryPick"
           >
             🍒
           </button>
           <button
             type="button"
-            class="rounded border border-border px-1.5 py-0.5 text-2xs hover:bg-accent/40"
+            class="inline-flex min-h-[24px] min-w-[24px] items-center justify-center rounded border border-border px-1.5 py-0.5 text-2xs hover:bg-accent/40"
             title="revert (새 commit 생성)"
+            aria-label="이 commit revert (새 commit 생성)"
             @click="cd.onRevert"
           >
             ↩
@@ -132,7 +134,7 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
           <div class="flex items-center gap-0.5 rounded border border-border bg-muted/40 p-0.5">
             <select
               v-model="cd.resetMode.value"
-              class="rounded bg-transparent px-1 text-3xs text-muted-foreground focus:outline-none"
+              class="rounded bg-transparent px-1 text-3xs text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               title="Reset 모드"
             >
               <option value="soft">soft</option>
@@ -141,9 +143,10 @@ const isSplit = computed(() => cd.diffMode.mode.value === 'split')
             </select>
             <button
               type="button"
-              class="rounded px-1 py-0.5 text-2xs hover:bg-accent/40"
+              class="inline-flex min-h-[24px] min-w-[24px] items-center justify-center rounded px-1 py-0.5 text-2xs hover:bg-accent/40"
               :class="cd.resetMode.value === 'hard' ? 'text-destructive' : ''"
               title="HEAD reset to this commit"
+              aria-label="HEAD를 이 commit으로 reset"
               @click="cd.onReset"
             >
               ⏮

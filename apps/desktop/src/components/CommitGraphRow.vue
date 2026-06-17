@@ -141,7 +141,7 @@ function onDragStart(ev: DragEvent) {
       <!-- message + body 첫 줄 회색 inline + (branchTag 컬럼 숨김 시 inline refs) -->
       <span v-else-if="col.id === 'message'" :class="[col.widthClass, 'truncate']" :title="tooltip">
         {{ row?.commit.subject }}
-        <span v-if="bodyFirstLine(row?.commit.body)" class="ml-2 text-2xs text-muted-foreground/70">
+        <span v-if="bodyFirstLine(row?.commit.body)" class="ml-2 text-2xs text-muted-foreground">
           {{ bodyFirstLine(row?.commit.body) }}
         </span>
         <template v-if="!branchTagColumnVisible">

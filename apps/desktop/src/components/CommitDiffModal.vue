@@ -150,7 +150,7 @@ cd.registerHunkNavShortcut(diffRef, openRef)
             <div class="flex items-center gap-0.5 rounded border border-border bg-muted/40 p-0.5">
               <select
                 v-model="cd.resetMode.value"
-                class="rounded bg-transparent px-1 text-3xs text-muted-foreground focus:outline-none"
+                class="rounded bg-transparent px-1 text-3xs text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 :title="t('commitDiff.resetModeTitle')"
               >
                 <option value="soft">soft</option>

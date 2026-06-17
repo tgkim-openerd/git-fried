@@ -38,16 +38,18 @@ defineExpose({ refit })
       <div class="flex items-center gap-2">
         <button
           type="button"
-          class="text-muted-foreground hover:text-foreground"
+          class="inline-flex min-h-[24px] min-w-[24px] items-center justify-center text-muted-foreground hover:text-foreground"
           title="재시작"
+          aria-label="재시작"
           @click="spawn"
         >
           ⟳
         </button>
         <button
           type="button"
-          class="text-muted-foreground hover:text-foreground"
+          class="inline-flex min-h-[24px] min-w-[24px] items-center justify-center text-muted-foreground hover:text-foreground"
           title="닫기 (⌘`)"
+          aria-label="닫기"
           @click="emit('close')"
         >
           ✕

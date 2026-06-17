@@ -243,6 +243,7 @@ const {
             type="button"
             class="flex items-center justify-center rounded-r min-h-[24px] min-w-[24px] px-1 text-2xs text-muted-foreground opacity-0 hover:bg-destructive/20 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
             :aria-label="t('launchpad.deleteSavedView', { name: v.name })"
+            :disabled="savedViews.deleteMut.isPending.value"
             @click.stop="savedViews.deleteMut.mutate(v.id)"
           >
             ✕
