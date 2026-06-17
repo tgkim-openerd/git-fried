@@ -99,23 +99,43 @@
 
 ---
 
-## 다음 세션 우선순위 백로그 (착수 순서)
+## 백로그 (2026-06-17 갱신 — 9건 해소 후 실 상태)
 
-| 순위 | ID | 작업 | 파일:라인 | 효과 |
+> ⚠️ 아래 표의 C-1~C-5 / A-1~A-3 / B-1 (9건) 은 **commit `56c350f` 에서 모두 해소** (라이브 코드 재확인: MiniStashList role/tabindex/keydown ✓, MiniSubmoduleList SHA→`text-2xs` full muted ✓, CommitDiffPanel aria-label 5개 ✓). 아래는 이력 보존용 + **실 남은 작업(WL-1/WL-2 + 검증 4건)** 강조.
+
+### ✅ 해소 완료 (commit `56c350f`)
+| ID | 작업 | 상태 |
+|---|---|---|
+| C-1/C-2 | Mini 리스트 행 `role=button tabindex=0` + Enter/Space + focus ring | ✅ |
+| C-3/C-4 | icon 버튼 `aria-label` + `min-h/min-w 24px` | ✅ |
+| C-5 | reset select `focus-visible:ring-2` | ✅ |
+| A-1/A-3 | submodule SHA·stash time → `text-2xs(11px)` full muted (2.31:1→AA) | ✅ |
+| A-2 | commit body 미리보기 대비 | ✅ |
+| B-1 | Launchpad saved-view 삭제 pending-disable | ✅ |
+
+### 🔄 세션 2 추가 진행 (2026-06-17 오후 — 자율, sweep 검증)
+평가 백로그를 "순차 자율 진행" 지시로 받아 **검증 가능한 안전 범위**만 처리:
+
+- **WL-1 부분 (안전 subset)** — 초소형(text-3xs/4xs)+text-alpha(`/70`) 대비 위반 **6곳** full `text-muted-foreground` 로 교체(2.73:1→4.83:1 AA): CommitGraph.vue:484 / StatusPanel.vue ×4 (hunk stage·unstage 버튼) / repositories.vue:518. **레이아웃 변화 0** (대비만). 잔여 232회 `text-3xs(10px)` density 승급은 **디자인 결정(사용자) 대기** — blind 일괄 변경 시 행높이/컬럼 회귀 위험이라 미진행.
+- **WL-2 부분 (clean file-row 패턴)** — `FileRow` + `StatusFileRow` 를 full-width 내부 `<button>` 패턴으로 통일 (행 `<li>` 비상호작용화, primary select=내부 button, action/slot=형제). `FileRow.test.ts` +1 (nested-interactive 회귀 test) → **vitest 930 / typecheck 0**. **CommitGraphRow·BranchPanel 은 미진행** — nested-interactive 가 컬럼 내부 깊숙한 `CommitRefPill`(solo/hide) 이라 clean 분리 불가 → 그래프 행 구조 재설계 필요(큰 UI 결정, hands-on 검토 권장). Mini 리스트/모달은 sweep 가 빈 상태라 시각 검증 불가 → 동일 패턴 적용은 hands-on.
+- **WL-4 부분** — `ui:sweep` 에 **nested-interactive DOM detector 추가**(상호작용 요소 안의 상호작용 요소 검출). 현재 인벤토리: `maintab-00-graph=1`(CommitGraphRow), `maintab-01-branches=1`(BranchPanel). 빈 상태 리스트(stash/submodule/pr)는 0(미렌더). 모달 capture 자동화는 per-modal 트리거 맵 필요 → follow-up.
+- **검증**: typecheck 0 / vitest **930** / `ui:sweep` 27 surface **console 0 · wrap 0 · rootOverflow 0**(회귀 없음, clip/off 는 기존 의도 FP). 단 status-panel·Mini 행은 sweep 가 빈 저장소라 populated 시각 검증은 미실시(hands-on 사인오프 권장).
+- **WL-5 (NVDA)**: headless 환경에서 실 스크린리더 구동 불가 → **자율 검증 blocker**, 사용자 수동 통과 필요(코드 정량 aria-label 139·focus-visible 33 은 충족).
+- **WL-3/6**: sweep 정적 캡처 한계 — 동적 상태(WL-3)·고DPI deviceScaleFactor(WL-6)는 sweep 확장 follow-up.
+
+### 🔲 남은 작업 (세션 2 이후 갱신)
+| ID | 작업 | 범위 | Tier·사이즈 | 선행 결정 |
 |---|---|---|---|---|
-| **1** | C-1 | MiniStashList 행 `<button>` 화 또는 `role=button tabindex=0` + Enter/Space + focus ring | `MiniStashList.vue:112` | 키보드 사용자 stash 접근 복구 (HIGH a11y) |
-| **2** | C-2 | MiniSubmoduleList 행 키보드 primary action(Enter→openAsRepo) 추가 | `MiniSubmoduleList.vue:98` | 동일 (HIGH a11y) |
-| **3** | A-1 | submodule SHA → `text-2xs` 이상 + alpha 제거 | `MiniSubmoduleList.vue:114` | 2.31:1 → AA 통과 (HIGH 가독성) |
-| **4** | C-3 | CommitDiffPanel icon 버튼 `aria-label` + `min-h-[24px] min-w-[24px]` | `CommitDiffPanel.vue:116` | a11y + 클릭 타깃 |
-| **5** | A-2/A-3 | alpha-muted 메타데이터(commit body·stash time) full-opacity + ≥11px | 각 파일 | 복수 4.5:1 미달 해소 |
-| 6 | C-4 | TerminalPanel `title`→`aria-label` + 24px | `TerminalPanel.vue:39` | a11y |
-| 7 | C-5 | reset select `focus-visible:ring-2` | `CommitDiffPanel.vue:135` | 파괴적 컨트롤 focus 가시화 |
-| 8 | 토큰 | `text-3xs(10px)` 213회 중 **중요 정보** loci 를 `text-2xs+` 로 점진 승급 (전수 audit 별도) | 광범위 | 가독성 floor 상향 |
-| 9 | B-1 | Launchpad saved-view 삭제 confirm/undo + pending 비활성 | `launchpad.vue:244` | UX 안전 (LOW) |
+| **WL-1** | `text-3xs(10px)` floor audit — 중요 정보 loci 를 `text-2xs+` 승급 | **라이브 232회** (components+pages) | HIGH·L | 메타데이터 floor(11/12px) + dense 예외 범위 + alpha 정책 (디자인 판단) |
+| **WL-2** | button-in-button nested-interactive 통일 (내부 full-width `<button>` 래퍼) | **13 컴포넌트** (BranchPanel/CommitGraphRow/FileRow/FullscreenDiffView/GlobalSearchModal/IssuesPanel/MiniPrList/MiniStashList/MiniSubmoduleList/ProfileSwitcher/PrPanel/StatusFileRow/WipRow) | MED·M | 전역 패턴 결정 |
+| WL-3 | 동적 상태(hover/focus/drag 후) 시각 검사 | sweep 정적 한계 (§UI Breakage #10) | MED·M | — (자율) |
+| WL-4 | 모달·오버레이 sweep 편입 | 현 27 surface 모달 미포함 (§#6) | MED·M | — (자율) |
+| WL-5 | 실 스크린리더(NVDA) 통과 | 정량만, 실 reader 미검증 | LOW·M | headless 불가 — 수동 |
+| WL-6 | 고DPI·색맹 시뮬 + 폰트 줌-크롭 실측 | 썸네일 한계 | LOW·S | — (자율) |
 
 ### 권장 진입점
-**1군(a11y HIGH, 빠른 수정)**: C-1 + C-2 + C-3 (Mini 리스트 키보드 + icon 버튼) — 패턴 동일(role/tabindex/keydown/aria-label), 한 sprint 일괄.
-**2군(가독성)**: A-1 → A-2/A-3 → 토큰 전수(#8) — 디자인 토큰 결정(메타데이터 floor + alpha 정책) 선행 후 일괄 치환.
+- **즉시 자율**: WL-4(모달 sweep 편입) → WL-3(동적 상태) — 결정 불요, 깨짐 사각 보강.
+- **디자인 결정 후 일괄**: WL-1 토큰 정책 → 232회 audit. WL-2 는 같은 컴포넌트군이라 묶어 처리.
 
 ---
 

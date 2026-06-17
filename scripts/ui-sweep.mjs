@@ -30,7 +30,7 @@ async function fetchJson(url) {
 // ── DOM geometry smoke (page context) — overflow/wrap/offscreen 후보 ──
 const DOM_SMOKE = () => {
   const tol = 2
-  const out = { rootOverflow: false, wrapped: [], clipped: [], offscreen: [] }
+  const out = { rootOverflow: false, wrapped: [], clipped: [], offscreen: [], nestedInteractive: [] }
   const de = document.documentElement
   out.rootOverflow =
     de.scrollWidth > de.clientWidth + tol || document.body.scrollWidth > de.clientWidth + tol
@@ -74,10 +74,20 @@ const DOM_SMOKE = () => {
       out.offscreen.push(label(el))
     }
   }
+  // nested-interactive (ARIA 부적절 + 키보드 트랩 위험): 상호작용 요소 안의 상호작용 요소.
+  // 예: `<li role="button" tabindex="0">` 안의 `<button>` (행 클릭 + 내부 액션 버튼 패턴).
+  const INTER = 'button,a[href],[role=button],[role=tab],[role=menuitem],[role=link]'
+  const INTER_ANC = INTER + ',[tabindex="0"]'
+  for (const el of document.querySelectorAll(INTER)) {
+    if (!vis(el)) continue
+    const anc = el.parentElement && el.parentElement.closest(INTER_ANC)
+    if (anc) out.nestedInteractive.push(label(el) + ' ⊂ ' + label(anc))
+  }
   const uniq = (a) => [...new Set(a)]
   out.wrapped = uniq(out.wrapped)
   out.clipped = uniq(out.clipped).slice(0, 25)
   out.offscreen = uniq(out.offscreen)
+  out.nestedInteractive = uniq(out.nestedInteractive).slice(0, 25)
   return out
 }
 
@@ -94,9 +104,10 @@ async function capture(page, name) {
     (smoke.wrapped?.length || 0) +
     (smoke.clipped?.length || 0) +
     (smoke.offscreen?.length || 0)
-  report.push({ name, url: page.url(), smoke, flagged })
+  const nested = smoke.nestedInteractive?.length || 0
+  report.push({ name, url: page.url(), smoke, flagged, nested })
   console.log(
-    `  ${flagged ? '⚠' : '✓'} ${name} (rootOverflow=${smoke.rootOverflow} wrap=${smoke.wrapped?.length || 0} clip=${smoke.clipped?.length || 0} off=${smoke.offscreen?.length || 0})`,
+    `  ${flagged ? '⚠' : '✓'} ${name} (rootOverflow=${smoke.rootOverflow} wrap=${smoke.wrapped?.length || 0} clip=${smoke.clipped?.length || 0} off=${smoke.offscreen?.length || 0}${nested ? ` nested-interactive=${nested}` : ''})`,
   )
 }
 
