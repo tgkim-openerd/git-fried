@@ -65,8 +65,25 @@ describe('FileRow', () => {
         actionTitle: 'Stage',
       },
     })
-    await w.trigger('click')
+    // WL-2: select 는 내부 full-width <button> (행 li 는 더 이상 role=button 아님)
+    await w.get('button').trigger('click')
     expect(w.emitted('select')).toBeTruthy()
+  })
+
+  it('WL-2 a11y: 행 li 는 role=button 아님 + 내부 select button 에 status badge 포함', () => {
+    const w = mount(FileRow, {
+      props: {
+        file: mockFile,
+        label: 'M',
+        color: 'text-warning-amber',
+        action: '+',
+        actionTitle: 'Stage',
+      },
+    })
+    // nested-interactive 제거: li 는 비상호작용 컨테이너
+    expect(w.attributes('role')).toBeUndefined()
+    // primary select 는 내부 button (badge 를 감쌈)
+    expect(w.get('button').find('[role="status"]').exists()).toBe(true)
   })
 
   it('dblclick → dblclick emit (fullscreen diff trigger)', async () => {
@@ -93,7 +110,8 @@ describe('FileRow', () => {
         actionTitle: 'Stage this file',
       },
     })
-    const btn = w.find('button')
+    // WL-2: 첫 button 은 내부 select 래퍼 → action 버튼은 title 로 특정
+    const btn = w.get('button[title="Stage this file"]')
     expect(btn.text()).toBe('+')
     expect(btn.attributes('title')).toBe('Stage this file')
     await btn.trigger('click')

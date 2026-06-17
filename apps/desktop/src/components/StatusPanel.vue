@@ -275,7 +275,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               <template #extra>
                 <button
                   type="button"
-                  class="text-3xs text-muted-foreground/70 hover:text-foreground"
+                  class="text-3xs text-muted-foreground hover:text-foreground"
                   :title="t('status.hunkUnstageTooltip')"
                   :aria-label="t('status.hunkUnstageAria', { path: f.path })"
                   @click.stop="openHunk(f.path, true)"
@@ -310,7 +310,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               >
                 <button
                   type="button"
-                  class="text-3xs text-muted-foreground/70 hover:text-foreground"
+                  class="text-3xs text-muted-foreground hover:text-foreground"
                   title="Hunk-level unstage"
                   :aria-label="t('status.hunkUnstageAria', { path: row.path })"
                   @click.stop="openHunk(row.path, true)"
@@ -375,7 +375,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
               </button>
               <button
                 type="button"
-                class="text-3xs text-muted-foreground/70 hover:text-foreground"
+                class="text-3xs text-muted-foreground hover:text-foreground"
                 :title="t('status.hunkStageTooltip')"
                 :aria-label="t('status.hunkStageAria', { path: f.path })"
                 @click.stop="openHunk(f.path, false)"
@@ -437,7 +437,7 @@ const isSelected = computed(() => (path: string) => selectedPath.value === path)
                 </button>
                 <button
                   type="button"
-                  class="text-3xs text-muted-foreground/70 hover:text-foreground"
+                  class="text-3xs text-muted-foreground hover:text-foreground"
                   title="Hunk-level stage"
                   :aria-label="t('status.hunkStageAria', { path: row.path })"
                   @click.stop="openHunk(row.path, false)"

@@ -481,7 +481,7 @@ void [searchInputRef, moveSelection, headerMenuRef]
             <span v-if="wipNoteRef" class="text-2xs text-amber-300/90 font-medium">
               {{ wipNoteRef }}
             </span>
-            <span v-else class="text-3xs text-muted-foreground/70">
+            <span v-else class="text-3xs text-muted-foreground">
               (작업 중인 변경 — 클릭하면 우측 staging 패널)
             </span>
           </div>

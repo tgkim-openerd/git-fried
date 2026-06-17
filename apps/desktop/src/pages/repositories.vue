@@ -515,7 +515,7 @@ function workspaceName(id: number | null): string {
                 </button>
                 <span
                   v-if="repo.workspaceId != null"
-                  class="hidden text-3xs text-muted-foreground/70 sm:inline"
+                  class="hidden text-3xs text-muted-foreground sm:inline"
                   :title="`workspace: ${workspaceName(repo.workspaceId)}`"
                 >
                   {{ workspaceName(repo.workspaceId) }}

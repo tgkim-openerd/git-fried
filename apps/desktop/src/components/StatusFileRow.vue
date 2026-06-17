@@ -40,22 +40,25 @@ defineEmits<{ select: []; dblclick: []; contextmenu: [e: MouseEvent] }>()
     :class="selected ? 'bg-accent ring-1 ring-primary/40' : ''"
     :style="depth != null ? { paddingLeft: `${depth * 12 + 4}px` } : undefined"
     :draggable="draggable || undefined"
-    role="button"
-    tabindex="0"
     :title="depth == null ? t('status.fullscreenTitle') : undefined"
-    @click="$emit('select')"
-    @keydown.enter.self="$emit('select')"
-    @keydown.space.self.prevent="$emit('select')"
     @dblclick="$emit('dblclick')"
     @contextmenu="$emit('contextmenu', $event)"
     @dragstart="
       (e: DragEvent) => draggable && e.dataTransfer && e.dataTransfer.setData('text/plain', path)
     "
   >
-    <span :class="['shrink-0 w-12 text-3xs uppercase', color]">{{ label }}</span>
-    <span class="flex-1 truncate font-mono text-xs" :title="depth != null ? path : undefined">{{
-      display
-    }}</span>
+    <!-- WL-2 a11y: 행 role=button + slot 내부 hunk 버튼 = nested-interactive. primary select 를
+         full-width 내부 <button> 으로 분리, slot(hunk 액션)은 형제. dblclick/contextmenu/drag 는 li 유지. -->
+    <button
+      type="button"
+      class="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50"
+      @click="$emit('select')"
+    >
+      <span :class="['shrink-0 w-12 text-3xs uppercase', color]">{{ label }}</span>
+      <span class="flex-1 truncate font-mono text-xs" :title="depth != null ? path : undefined">{{
+        display
+      }}</span>
+    </button>
     <slot />
   </li>
 </template>
