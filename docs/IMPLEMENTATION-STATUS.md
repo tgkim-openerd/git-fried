@@ -6,6 +6,8 @@
 >
 > **2026-05-18 doc-sync 갱신**: `/analyze` SoT 재집계 — composable 125→**197** (-72 drift, c80~c95+ 누적 추출), IPC 167→**172** (-5 drift, c89 후속), 자세한 finding 은 `docs/analyze/2026-05-18-164133.md`. 이하 본문은 c77 시점 스냅샷 + 점진 갱신 (전수 재작성 보류 — 사용자 결정).
 >
+> **2026-06-17 doc-sync 갱신 (plan #45)**: 실측 SoT — `.vue` 94→**107**, composable 197→**203** (`ls apps/desktop/src/{components/*.vue,composables/*.ts} | wc -l`). 증분: plan #45 B god-comp 추출 5 파일 — components `StatusFileRow` / `PrConversationTab` / `CommitGraphRow` (+3), composables `usePrConversationMutations` / `usePrActionMutations` (+2, usePrMutations 분할). 그 외 review fix(C-1 clone 취소 bool / M-2 DB 격리 seq / M3 nextTick) + git2 0.20(RUSTSEC-2026-0008). 상세 `docs/plan/45-worklist-full-impl-plan.md` §B + `docs/ui-ux/2026-06-16-plan45-real-run-uiux-score.md`. 본문 c77 스냅샷 점진 갱신 유지.
+>
 > **연계**: [docs/plan/13-implementation-vs-plan-diff.md](plan/13-implementation-vs-plan-diff.md) (76 commits 시점 95% 흡수 검증), [CHANGELOG.md](../CHANGELOG.md) (Sprint c25~c30 Phase 10 누적), [docs/plan/INDEX.md](plan/) (없음 — `ls docs/plan/` 으로 38 문서 인덱스 대체).
 >
 > **검증 SoT**: `apps/desktop/src-tauri/src/lib.rs` invoke_handler (**172 IPC** — `grep -rE "^#\[tauri::command\]" apps/desktop/src-tauri/src --include="*.rs" | wc -l`, 자동 카탈로그는 `bun scripts/generate-tauri-commands-index.mjs` → `docs/api/tauri-commands.md`), `apps/desktop/src-tauri/src/storage/migrations/` (**8 migration**, 0001~0008), CHANGELOG `[Unreleased]`, plan/13 + plan/14 + plan/16 + plan/22 + plan/25 의 자체 self-check 표.
