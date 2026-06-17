@@ -237,6 +237,12 @@ Codex(GPT-5.x) 적대적 검토(no-shell, 인라인) 반영:
 
 **검증**: cargo test 333 · vitest 929(94 files) · clippy -D warnings 0 · typecheck/lint/i18n대칭 green.
 
+**B 진행 (2026-06-17, GUI 검증 환경 확보 후)**:
+- **B-1 StatusFileRow** — ✅ 완료(commit ee22fcf). StatusPanel 5 중복 `<li>`(staged-tree / modified-path / modified-tree / untracked-path / untracked-tree) → DOM-identical 공용 컴포넌트(7 prop + 액션 slot). title/span-title 은 depth 파생, Conflicted 2 변형은 구조 상이(destructive)라 의도적 제외, Staged-path 는 기존 FileRow 유지. 검증: typecheck 0 / lint 0 / vitest 929 / **ui:sweep 시각 회귀 0**(route-01-index ✓ clip0 off0, console 0). StatusPanel 668→630, god-comp Layer A 이탈(template-heavy INFO 만).
+- **B-3 CommitGraphRow / B-2 PrConversationTab** — deferred (증거 기반, clean template lift 아님):
+  - **B-3**: commit row 헬퍼가 `useGraphRefVisibility`(soloRef/hiddenRefs **state**) + `useCommitGraphPresentation` 출처. sticky overlay(부모, CommitGraph.vue:459)와 rows 가 동일 ref-visibility state 공유 → 자식 composable 재인스턴스화 시 state desync → ~18 prop/함수번들 하향(Vue anti-pattern) 필요. clean 형태(v-memo unblock)는 outer wrapper div 재설계(DOM 변경)인데 코드 주석(CommitGraph.vue:507-509)이 이미 별도 sprint 로 명시.
+  - **B-2**: `usePrMutations`(PrDetailModal:103)가 conversation 탭(addComment/review/suggestion) + 항상-표시 `#footer`(merge/close/reopen, :477-527) **양쪽 공급** → PrFilesTab 식 자체-소유 불가. clean 형태는 composable 분할(shared infra 변경) 필요.
+  - 둘 다 *hacky* 추출(함수번들 prop / composable 중복)은 god comp 보다 유지보수성 **악화** → B 목적 역행. **composable 분할(B-2) / v-memo wrapper 재설계(B-3)** 를 다루는 별도 focused sprint 로 분리 권고.
+
 **미완 (deferred, 사용자 결정)**:
-- **B (god-comp template 추출: CommitGraphRow/StatusFileRow/PrConversationTab)** — 옵션 A 수용(2026-06-16). 사유: 후보 전부 고의존 template 추출 + 시각 회귀 검증(ui:sweep)이 실 Tauri WebView2 CDP(GUI) 필요 → 자율 flow 검증 불가, non-blocking warning 강행 시 silent UI regression 위험. GUI 검증 환경 별도 sprint.
 - **M5b tauri.conf.json 서명 키 + macOS** — cert 보유 후 사용자 적용 (CI scaffold 는 완료). updater 는 defer.
