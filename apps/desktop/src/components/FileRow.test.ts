@@ -65,9 +65,12 @@ describe('FileRow', () => {
         actionTitle: 'Stage',
       },
     })
-    // WL-2: select 는 내부 full-width <button> (행 li 는 더 이상 role=button 아님)
+    // CDX-001: 행 전체(li) 클릭 → select (마우스 편의 복원)
+    await w.trigger('click')
+    expect(w.emitted('select')).toHaveLength(1)
+    // 내부 select button 클릭은 @click.stop 으로 li 에 안 번져 이중 emit 없음 (누적 2회)
     await w.get('button').trigger('click')
-    expect(w.emitted('select')).toBeTruthy()
+    expect(w.emitted('select')).toHaveLength(2)
   })
 
   it('WL-2 a11y: 행 li 는 role=button 아님 + 내부 select button 에 status badge 포함', () => {

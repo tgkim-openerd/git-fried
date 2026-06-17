@@ -41,18 +41,20 @@ defineEmits<{ select: []; dblclick: []; contextmenu: [e: MouseEvent] }>()
     :style="depth != null ? { paddingLeft: `${depth * 12 + 4}px` } : undefined"
     :draggable="draggable || undefined"
     :title="depth == null ? t('status.fullscreenTitle') : undefined"
+    @click="$emit('select')"
     @dblclick="$emit('dblclick')"
     @contextmenu="$emit('contextmenu', $event)"
     @dragstart="
       (e: DragEvent) => draggable && e.dataTransfer && e.dataTransfer.setData('text/plain', path)
     "
   >
-    <!-- WL-2 a11y: 행 role=button + slot 내부 hunk 버튼 = nested-interactive. primary select 를
-         full-width 내부 <button> 으로 분리, slot(hunk 액션)은 형제. dblclick/contextmenu/drag 는 li 유지. -->
+    <!-- WL-2 a11y: 행은 plain li(role=button 아님) → slot 내부 hunk 버튼이 nested-interactive 아님.
+         primary select = full-width 내부 <button>(키보드). li @click 은 행 전체 클릭(마우스), 내부
+         button 은 @click.stop 으로 이중 emit 방지(CDX-001). slot(hunk)·dblclick·contextmenu·drag 는 li. -->
     <button
       type="button"
       class="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50"
-      @click="$emit('select')"
+      @click.stop="$emit('select')"
     >
       <span :class="['shrink-0 w-12 text-3xs uppercase', color]">{{ label }}</span>
       <span class="flex-1 truncate font-mono text-xs" :title="depth != null ? path : undefined">{{

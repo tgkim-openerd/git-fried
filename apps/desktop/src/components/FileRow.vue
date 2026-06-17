@@ -22,15 +22,17 @@ defineEmits<{ action: []; select: []; dblclick: [] }>()
     :class="selected ? 'bg-accent ring-1 ring-primary/40' : ''"
     draggable="true"
     :title="t('templ.fileRowTitle')"
+    @click="$emit('select')"
     @dblclick="$emit('dblclick')"
     @dragstart="(e: DragEvent) => e.dataTransfer && e.dataTransfer.setData('text/plain', file.path)"
   >
-    <!-- WL-2 a11y: 행을 role=button 으로 두면 내부 action 버튼이 nested-interactive(ARIA 부적절).
-         primary select 를 full-width 내부 <button> 으로 분리, action 은 형제. dblclick/drag 는 li 유지. -->
+    <!-- WL-2 a11y: 행은 role=button 아님(plain li) → 내부 action 버튼이 nested-interactive 아님.
+         primary select = full-width 내부 <button>(키보드 포커스/Enter). li @click 은 행 전체 클릭(마우스)
+         편의 — 내부 button 은 @click.stop 으로 이중 emit 방지(CDX-001). dblclick/drag 는 li 유지. -->
     <button
       type="button"
       class="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50"
-      @click="$emit('select')"
+      @click.stop="$emit('select')"
     >
       <span
         :class="['shrink-0 w-12 text-3xs uppercase font-bold', color]"
