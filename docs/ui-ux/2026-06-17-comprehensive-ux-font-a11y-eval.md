@@ -123,6 +123,15 @@
 - **WL-5 (NVDA)**: headless 환경에서 실 스크린리더 구동 불가 → **자율 검증 blocker**, 사용자 수동 통과 필요(코드 정량 aria-label 139·focus-visible 33 은 충족).
 - **WL-3/6**: sweep 정적 캡처 한계 — 동적 상태(WL-3)·고DPI deviceScaleFactor(WL-6)는 sweep 확장 follow-up.
 
+### 🔍 `/code-review all` (6 reviewer + Codex 알레르) 결과 — 세션2 변경 검증
+- **branch-introduced defect = Codex 3건뿐**(arch reviewer 독립 판정 "branch-introduced: 0"). 전부 해소:
+  - **CDX-001**(low) 파일행 dead-zone 클릭 select 안 됨 → li @click 복원 + 내부 button @click.stop(이중 emit 방지), nested-interactive 재발 없음 + no-double 회귀 test (`57b99e9`).
+  - **CDX-002/003**(med/low) ui-sweep detector: nested-only surface 가 ✓ 로 숨던 것 → NESTED 요약 라인 + ⚠; 선택자에 native 폼컨트롤 추가 (`174fc11`).
+- **pre-existing 자율 fix**: ref<T> 제네릭 ×4(repositories/useGraphSearch/useWipNote/CommitGraph) + StatusPanel isSelected 순수함수화 (`c4eef88`).
+- **REFUTED**: QUAL-001(high, wipNoteRef stale) = **false positive** — `useWipNote` 모듈 cache 로 같은 repoId 동일 ref 공유, computed 가 그 ref 추적해 정상 반응. watcher leak 없음(cache 가 재생성 차단).
+- **defer(사유)**: ARCH-001(11 컴포넌트 nested-interactive) → **`<SelectableRow>` primitive** 권장(graph/branch 는 CommitRefPill 깊은 중첩 + 키보드라 blind 재구조화 위험, hands-on). ARCH-003 + BranchPanel 하드코딩 한글 → **i18n batch pass**(부분 i18n 비일관). QUAL-002/003/012 = 한계효용(Map.get O(1)/critical-path cosmetic). SEC-001 = dev-only deps(`/tech-debt deps` 후보).
+- **검증**: lint 0 / vue-tsc 0 / vitest 930 / sweep 27 surface console0·wrap0·회귀0 / NESTED_INTERACTIVE=2(graph/branches, detector 추적).
+
 ### 🔲 남은 작업 (세션 2 이후 갱신)
 | ID | 작업 | 범위 | Tier·사이즈 | 선행 결정 |
 |---|---|---|---|---|
